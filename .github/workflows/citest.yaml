@@ -26,12 +26,18 @@ jobs:
     # The type of runner that the job will run on
     runs-on: [self-hosted, unittest-t4]
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: lint
+        shell: bash
         run: |
           pip install -r requirements/tests.txt
+          pwd
+          who
+          pre-commit install
           pre-commit run --all-files
       - name: Run unittest
+        shell: bash
         run: |
           UNITTEST_OSS_CONFIG=~/.ossutilconfig.unittest
           if [ ! -e $UNITTEST_OSS_CONFIG ]; then
