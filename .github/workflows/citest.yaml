@@ -32,8 +32,6 @@ jobs:
         shell: bash
         run: |
           pip install -r requirements/tests.txt
-          pwd
-          who
           pre-commit install
           pre-commit run --all-files
       - name: Run unittest
@@ -54,5 +52,5 @@ jobs:
           # pip install -r requirements.txt
           #run test
           export CUDA_VISIBLE_DEVICES=6
-          source activate evtorch_torch1.8.0
+          conda activate evtorch_torch1.8.0
           PYTHONPATH=. python tests/run.py
