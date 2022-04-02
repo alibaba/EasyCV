@@ -2,6 +2,9 @@ name: citest
 
 on:
   push:
+    branches:
+      - master
+      - "release/**"
     paths-ignore:
       - "docs/**"
       - "tools/**"
@@ -24,7 +27,7 @@ concurrency:
 jobs:
   ut-torch180:
     # The type of runner that the job will run on
-    runs-on: [self-hosted, unittest-t4]
+    runs-on: [unittest-t4]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -37,6 +40,7 @@ jobs:
       - name: Run unittest
         shell: bash
         run: |
+          set -e
           UNITTEST_OSS_CONFIG=~/.ossutilconfig.unittest
           if [ ! -e $UNITTEST_OSS_CONFIG ]; then
               echo "$UNITTEST_OSS_CONFIG does not exists"
