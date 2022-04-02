@@ -31,12 +31,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: lint
-        shell: bash
-        run: |
-          pip install -r requirements/tests.txt
-          pre-commit install
-          pre-commit run --all-files
       - name: Run unittest
         shell: bash
         run: |
