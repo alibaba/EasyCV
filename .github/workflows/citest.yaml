@@ -56,5 +56,6 @@ jobs:
           # pip install -r requirements.txt
           #run test
           export CUDA_VISIBLE_DEVICES=6
+          conda init
           conda activate evtorch_torch1.8.0
           PYTHONPATH=. python tests/run.py
