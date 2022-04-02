@@ -1,0 +1,46 @@
+=============================================================
+EasyCV is a open source tool developed by Alibaba PAI Team
+Copyright (c) 2020-2022, Alibaba Group Holding Limited.
+Licensed under the Apache License, Version 2.0
+
+=============================================================
+This toolkit contains various third-party components under
+different open source licenses
+
+---------------------------
+mtcnn
+MIT License
+Copyright (c) 2019 Iván de Paz Centeno
+
+---------------------------
+U2SOD
+Apache License, Version 2.0
+
+==============================================================
+This toolkit implements some models refer to some repositories
+under different open source licenses
+
+
+-----------------------------
+moby
+MIT License
+Copyright (c) Microsoft Corporation.
+
+-----------------------------
+dino
+Apache License, Version 2.0
+Copyright (c) Meta, Inc
+
+-----------------------------
+yolox
+Apache License, Version 2.0
+Copyright (c) 2014-2021 Megvii Inc
+
+preprocess pipeline for yolox
+Apache License, Version 2.0
+Copyright (c) OpenMMLab
+
+-----------------------------
+training evaluation pipeline and keypoint-model
+Apache License, Version 2.0
+Copyright (c) OpenMMLab

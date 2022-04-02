@@ -1,0 +1,2 @@
+recursive-include easycv/configs *.py
+recursive-include easycv/tools *.py

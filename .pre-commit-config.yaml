@@ -1,0 +1,42 @@
+repos:
+  - repo: https://gitlab.com/pycqa/flake8.git
+    rev: 3.8.3
+    hooks:
+      - id: flake8
+        exclude: thirdparty/|examples/
+  # - repo: https://github.com/asottile/seed-isort-config
+  #   rev: v2.2.0
+  #   hooks:
+  #     - id: seed-isort-config
+  #       exclude: thirdparty/
+  - repo: https://github.com/timothycrosley/isort
+    rev: 4.3.21
+    hooks:
+      - id: isort
+        exclude: thirdparty/|examples/|pai_jobs/
+  - repo: https://github.com/pre-commit/mirrors-yapf
+    rev: v0.30.0
+    hooks:
+      - id: yapf
+        exclude: thirdparty/|examples/
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.1.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: thirdparty/
+      - id: check-yaml
+        exclude: thirdparty/
+      - id: end-of-file-fixer
+        exclude: thirdparty/|.git_bin_url|.git_bin_path
+      - id: requirements-txt-fixer
+        exclude: thirdparty/
+      - id: double-quote-string-fixer
+        exclude: thirdparty/
+      - id: check-merge-conflict
+        exclude: thirdparty/
+      - id: fix-encoding-pragma
+        exclude: thirdparty/
+        args: ["--remove"]
+      - id: mixed-line-ending
+        exclude: thirdparty/
+        args: ["--fix=lf"]

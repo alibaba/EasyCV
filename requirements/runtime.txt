@@ -1,0 +1,14 @@
+faiss-gpu==1.6.1
+future
+matplotlib
+mmcv-full==1.0.5
+numpy
+packaging
+# need older pillow until torchvision is fixed
+Pillow<=6.2.2
+six
+sklearn
+tensorboard
+terminaltables
+torchvision==0.6.1
+tqdm
