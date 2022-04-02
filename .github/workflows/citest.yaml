@@ -1,0 +1,52 @@
+name: citest
+
+on:
+  push:
+    paths-ignore:
+      - "docs/**"
+      - "tools/**"
+      - "scripts/**"
+      - "README.md"
+      - "README_zh-CN.md"
+
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "tools/**"
+      - "scripts/**"
+      - "README.md"
+      - "README_zh-CN.md"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ut-torch180:
+    # The type of runner that the job will run on
+    runs-on: [self-hosted, unittest-t4]
+    steps:
+      - uses: actions/checkout@v2
+      - name: lint
+        run: |
+          pip install -r requirements/tests.txt
+          pre-commit run --all-files
+      - name: Run unittest
+        run: |
+          UNITTEST_OSS_CONFIG=~/.ossutilconfig.unittest
+          if [ ! -e $UNITTEST_OSS_CONFIG ]; then
+              echo "$UNITTEST_OSS_CONFIG does not exists"
+              exit
+          fi
+
+          export OSS_CONFIG_FILE=$UNITTEST_OSS_CONFIG
+
+          export PYTHONPATH=.
+          export TEST_DIR="/tmp/easycv_test_${USER}_`date +%s`"
+
+          # do not uncomments, casue faild in Online UT, install requirements by yourself on UT machine
+          # pip install -r requirements.txt
+          #run test
+          export CUDA_VISIBLE_DEVICES=6
+          source activate evtorch_torch1.8.0
+          PYTHONPATH=. python tests/run.py
