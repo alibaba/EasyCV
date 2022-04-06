@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import inspect
 import copy
+import inspect
+
 from torchvision import transforms as _transforms
 
 from easycv.datasets.registry import PIPELINES
@@ -21,7 +22,6 @@ def wrap_torchvision_transforms(transform_obj):
 
         return results
 
-    
     setattr(transform_obj, '__call__', _new_call)
 
 
