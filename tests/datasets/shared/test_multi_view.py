@@ -43,6 +43,7 @@ class MultiViewDatasetTest(unittest.TestCase):
                 p=1.0),
             dict(type='ToTensor'),
             dict(type='Normalize', **IMG_NORM_CFG),
+            dict(type='Collect', keys=['img'])
         ]
         pipeline2 = [
             dict(
@@ -73,6 +74,7 @@ class MultiViewDatasetTest(unittest.TestCase):
                 p=0.2),
             dict(type='ToTensor'),
             dict(type='Normalize', **IMG_NORM_CFG),
+            dict(type='Collect', keys=['img'])
         ]
         pipeline3 = [
             dict(
@@ -99,6 +101,7 @@ class MultiViewDatasetTest(unittest.TestCase):
                 p=0.5),
             dict(type='ToTensor'),
             dict(type='Normalize', **IMG_NORM_CFG),
+            dict(type='Collect', keys=['img'])
         ]
 
         train_data = dict(

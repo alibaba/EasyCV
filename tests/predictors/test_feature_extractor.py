@@ -91,6 +91,7 @@ class TorchFeatureExtractorTest(unittest.TestCase):
             dict(type='Resize', size=[224, 224]),
             dict(type='ToTensor'),
             dict(type='Normalize', **img_norm_cfg),
+            dict(type='Collect', keys=['img'])
         ]
 
         CONFIG = dict(

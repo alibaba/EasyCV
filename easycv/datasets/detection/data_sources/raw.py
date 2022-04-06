@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import logging
 import os
 
 import numpy as np
@@ -65,24 +66,29 @@ class DetSourceRaw(DetSourceVOC):
         self.img_files = [
             os.path.join(self.img_root_path, i)
             for i in io.listdir(self.img_root_path, recursive=True)
-        ]
-        self.img_files = sorted([
-            i for i in self.img_files
             if os.path.splitext(i)[-1].lower() in img_formats
-        ])
-        assert len(
-            self.img_files) > 0, 'No images found in %s' % self.img_root_path
-
-        self.label_files = [
-            os.path.join(self.label_root_path, i)
-            for i in io.listdir(self.label_root_path, recursive=True)
         ]
-        self.label_files = sorted([
-            i for i in self.label_files
-            if os.path.splitext(i)[-1].lower() in label_formats
-        ])
-        assert len(self.label_files
-                   ) > 0, 'No labels found in %s.' % self.label_root_path
+
+        self.label_files = []
+        for img_path in self.img_files:
+            img_name = os.path.splitext(os.path.basename(img_path))[0]
+            find_label_path = False
+            for label_format in label_formats:
+                lable_path = os.path.join(self.label_root_path,
+                                          img_name + label_format)
+                if io.exists(lable_path):
+                    find_label_path = True
+                    self.label_files.append(lable_path)
+                    break
+            if not find_label_path:
+                logging.warning(
+                    'Not find label file %s for img: %s, skip the sample!' %
+                    (lable_path, img_path))
+                self.img_files.remove(img_path)
+
+        assert len(self.img_files) == len(self.label_files)
+        assert len(
+            self.img_files) > 0, 'No samples found in %s' % self.img_root_path
 
         # TODO: filter bad sample
         self.samples_list = self.build_samples(

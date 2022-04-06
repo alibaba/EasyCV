@@ -43,6 +43,13 @@ class Classification(BaseModel):
         else:
             self.sobel_layer = None
 
+        self.preprocess_key_map = {
+            'bninceptionPre': bninceptionPre,
+            'gaussianBlur': gaussianBlur,
+            'mixUpCls': mixUpCls,
+            'randomErasing': randomErasing
+        }
+
         if 'mixUp' in train_preprocess:
             rank, _ = get_dist_info()
             np.random.seed(rank + 12)
@@ -63,7 +70,9 @@ class Classification(BaseModel):
             self.mixup = Mixup(**mixup_cfg)
             head.loss_config = {'type': 'SoftTargetCrossEntropy'}
             train_preprocess.remove('mixUp')
-        self.train_preprocess = [eval(i) for i in train_preprocess]
+        self.train_preprocess = [
+            self.preprocess_key_map[i] for i in train_preprocess
+        ]
         self.backbone = builder.build_backbone(backbone)
 
         assert head is not None, 'Classification head should be configed'
@@ -137,7 +146,7 @@ class Classification(BaseModel):
         return x
 
     @torch.jit.unused
-    def forward_train(self, img, gt_label) -> Dict[str, torch.Tensor]:
+    def forward_train(self, img, gt_labels) -> Dict[str, torch.Tensor]:
         """
             In forward train, model will forward backbone + neck / multi-neck, get alist of output tensor,
             and put this list to head / multi-head, to compute each loss
@@ -150,13 +159,13 @@ class Classification(BaseModel):
                 img.shape[4]
             ]
             img = img.view(new_shape)
-            gt_label = gt_label.view([-1])
+            gt_labels = gt_labels.view([-1])
 
         for preprocess in self.train_preprocess:
             img = preprocess(img)
 
         if hasattr(self, 'mixup'):
-            img, gt_label = self.mixup(img, gt_label)
+            img, gt_labels = self.mixup(img, gt_labels)
 
         x = self.forward_backbone(img)
 
@@ -173,7 +182,7 @@ class Classification(BaseModel):
         for idx in range(self.head_num):
             h = getattr(self, 'head_%d' % idx)
             outs = h(x)
-            loss_inputs = (outs, gt_label)
+            loss_inputs = (outs, gt_labels)
             hlosses = h.loss(*loss_inputs)
             if 'loss' in losses.keys():
                 losses['loss'] += hlosses['loss']
@@ -207,7 +216,7 @@ class Classification(BaseModel):
         return result
 
     @torch.jit.unused
-    def forward_test_label(self, img, gt_label) -> Dict[str, torch.Tensor]:
+    def forward_test_label(self, img, gt_labels) -> Dict[str, torch.Tensor]:
         """
             forward_test_label means generate prob/class from image only support one neck  + one head
             ps : head init need set the input feature idx
@@ -220,7 +229,7 @@ class Classification(BaseModel):
         out = [self.head_0(x)[0].cpu()]
         keys = ['neck']
         keys.append('gt_labels')
-        out.append(gt_label.cpu())
+        out.append(gt_labels.cpu())
         return dict(zip(keys, out))
 
     def aug_test(self, imgs):
@@ -262,18 +271,21 @@ class Classification(BaseModel):
         return
 
     def forward(
-            self,
-            img: torch.Tensor,
-            mode: str = 'train',
-            gt_label: Optional[torch.Tensor] = None
+        self,
+        img: torch.Tensor,
+        mode: str = 'train',
+        gt_labels: Optional[torch.Tensor] = None,
+        img_metas: Optional[torch.Tensor] = None,
     ) -> Dict[str, torch.Tensor]:
 
+        # TODO: support Dict[any, any] type of img_metas
+        del img_metas  # fake img_metas for support jit
         if mode == 'train':
-            assert gt_label is not None
-            return self.forward_train(img, gt_label)
+            assert gt_labels is not None
+            return self.forward_train(img, gt_labels)
         elif mode == 'test':
-            if gt_label is not None:
-                return self.forward_test_label(img, gt_label)
+            if gt_labels is not None:
+                return self.forward_test_label(img, gt_labels)
             else:
                 return self.forward_test(img)
         elif mode == 'extract':
@@ -286,8 +298,8 @@ class Classification(BaseModel):
                     raise ValueError(
                         'Extract {} is not support in classification models'.
                         format(name))
-            if gt_label is not None:
-                rv['gt_labels'] = gt_label.cpu()
+            if gt_labels is not None:
+                rv['gt_labels'] = gt_labels.cpu()
             return rv
         else:
             raise Exception('No such mode: {}'.format(mode))

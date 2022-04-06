@@ -53,13 +53,13 @@ class DaliLoaderWrapper(object):
         if self.label_offset == 0:
             return {
                 'img': data[0]['data'],
-                'gt_label': (data[0]['label']).squeeze().cuda().long()
+                'gt_labels': (data[0]['label']).squeeze().cuda().long()
             }
         else:
             return {
                 'img':
                 data[0]['data'],
-                'gt_label':
+                'gt_labels':
                 (data[0]['label'] - self.label_offset *
                  torch.ones_like(data[0]['label'])).squeeze().cuda().long()
             }

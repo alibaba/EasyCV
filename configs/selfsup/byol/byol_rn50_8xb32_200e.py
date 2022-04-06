@@ -57,6 +57,7 @@ train_pipeline1 = [
         p=0.),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img'])
 ]
 train_pipeline2 = [
     dict(type='RandomResizedCrop', size=224, interpolation=3),  # bicubic
@@ -85,6 +86,7 @@ train_pipeline2 = [
         p=0.2),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img'])
 ]
 
 data = dict(

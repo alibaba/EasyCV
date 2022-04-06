@@ -20,24 +20,26 @@ class ClsDataset(BaseDataset):
         super(ClsDataset, self).__init__(data_source, pipeline)
 
     def __getitem__(self, idx):
-
-        img, target = self.data_source.get_sample(idx)
-
+        results = self.data_source.get_sample(idx)
+        img = results['img']
+        gt_labels = results['gt_labels']
         if isinstance(img, list):
             # img is list, means contains multi img
-            mlist = []
-            for m in img:
-                assert isinstance(m, Image.Image), \
-                    f'The output from the data source must be an Image, got: {type(m)}. \
+            imgs_list = []
+            for img_i in img:
+                assert isinstance(img_i, Image.Image), \
+                    f'The output from the data source must be an Image, got: {type(img_i)}. \
                     Please ensure that the list file does not contain labels.'
 
-                m = (self.pipeline(m)).unsqueeze(0)
-                mlist.append(m)
-            img_cat = torch.cat(mlist, dim=0)
-            return dict(img=img_cat, gt_label=torch.tensor(target).long())
+                results['img'] = img_i
+                img_i = self.pipeline(results)['img'].unsqueeze(0)
+                imgs_list.append(img_i)
+            results['img'] = torch.cat(imgs_list, dim=0)
+            results['gt_labels'] = torch.tensor(gt_labels).long()
         else:
-            img = self.pipeline(img)
-            return dict(img=img, gt_label=target)
+            results = self.pipeline(results)
+
+        return results
 
     def evaluate(self, results, evaluators, logger=None, topk=(1, 5)):
         '''evaluate classification task

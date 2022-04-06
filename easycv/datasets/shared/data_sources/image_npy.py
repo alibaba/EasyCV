@@ -24,8 +24,8 @@ class ImageNpy(object):
                 io.copy(image_file, dst_path)
                 image_file = dst_path
 
-        self.has_labels = label_file != None
-        if self.has_labels:
+        self.labels = None
+        if label_file:
             if is_oss_path(label_file):
                 with dist_zero_exec():
                     dst_path = os.path.join(cache_root, label_file)
@@ -42,8 +42,9 @@ class ImageNpy(object):
 
         img = Image.fromarray(cv2.cvtColor(self.data[idx], cv2.COLOR_BGR2RGB))
 
-        if self.has_labels:
-            target = self.labels[idx]
-            return img, target
-        else:
-            return img
+        results = {'img': img}
+        if self.labels is not None:
+            label = self.labels[idx]
+            results.update({'gt_labels': label})
+
+        return results

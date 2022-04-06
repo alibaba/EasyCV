@@ -38,6 +38,7 @@ train_pipeline = [
     dict(type='RandomHorizontalFlip'),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img', 'gt_labels'])
 ]
 data = dict(
     imgs_per_gpu=32,  # total 256
@@ -55,6 +56,7 @@ test_pipeline = [
     dict(type='CenterCrop', size=224),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img', 'gt_labels'])
 ]
 val_data_list = dict(
     imgs_per_gpu=20,

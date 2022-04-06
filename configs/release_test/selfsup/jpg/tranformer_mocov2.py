@@ -53,6 +53,7 @@ train_pipeline = [
     dict(type='RandomHorizontalFlip'),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img'])
 ]
 data = dict(
     imgs_per_gpu=32,  # total 32*8=256

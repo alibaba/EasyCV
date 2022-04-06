@@ -61,8 +61,8 @@ class DaliImageNetTFRecordDataSetTest(unittest.TestCase):
         for _, data_batch in enumerate(data_loader):
             self.assertEqual(data_batch['img'].shape,
                              torch.Size([2, 3, 224, 224]))
-            self.assertEqual(data_batch['gt_label'].shape, torch.Size([2]))
-            labels = data_batch['gt_label'].cpu().numpy()
+            self.assertEqual(data_batch['gt_labels'].shape, torch.Size([2]))
+            labels = data_batch['gt_labels'].cpu().numpy()
             for l in labels:
                 self.assertTrue(l in range(1000))
             break
@@ -107,8 +107,8 @@ class DaliImageNetTFRecordDataSetTest(unittest.TestCase):
         for _, data_batch in enumerate(data_loader):
             self.assertEqual(data_batch['img'].shape,
                              torch.Size([2, 3, 224, 224]))
-            self.assertEqual(data_batch['gt_label'].shape, torch.Size([2]))
-            labels = data_batch['gt_label'].cpu().numpy()
+            self.assertEqual(data_batch['gt_labels'].shape, torch.Size([2]))
+            labels = data_batch['gt_labels'].cpu().numpy()
             for l in labels:
                 self.assertTrue(l in range(1000))
             break

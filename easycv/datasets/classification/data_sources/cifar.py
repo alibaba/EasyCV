@@ -24,8 +24,9 @@ class ClsSourceCifar10(object):
 
     def get_sample(self, idx):
         img = Image.fromarray(self.cifar.data[idx])
-        target = self.labels[idx]  # img: HWC, RGB
-        return img, target
+        label = self.labels[idx]  # img: HWC, RGB
+        result_dict = {'img': img, 'gt_labels': label}
+        return result_dict
 
 
 @DATASOURCES.register_module
@@ -46,5 +47,6 @@ class ClsSourceCifar100(object):
 
     def get_sample(self, idx):
         img = Image.fromarray(self.cifar.data[idx])
-        target = self.labels[idx]  # img: HWC, RGB
-        return img, target
+        label = self.labels[idx]  # img: HWC, RGB
+        result_dict = {'img': img, 'gt_labels': label}
+        return result_dict

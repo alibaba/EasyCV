@@ -75,12 +75,22 @@ class MAEFtAugment(object):
             t.append(_transforms.Normalize(mean, std))
             self.trans = _transforms.Compose(t)
 
-    def __call__(self, img):
-        return self.trans(img)
+    def __call__(self, results):
+        return self.trans(results)
 
     def __repr__(self) -> str:
         repr_str = self.__class__.__name__
         return repr_str
+
+
+class _RandomApply(_transforms.RandomApply):
+
+    def forward(self, results):
+        if self.p < torch.rand(1):
+            return results
+        for t in self.transforms:
+            results = t(results)
+        return results
 
 
 @PIPELINES.register_module
@@ -92,10 +102,10 @@ class RandomAppliedTrans(object):
 
     def __init__(self, transforms, p=0.5):
         t = [build_from_cfg(t, PIPELINES) for t in transforms]
-        self.trans = _transforms.RandomApply(t, p=p)
+        self.trans = _RandomApply(t, p=p)
 
-    def __call__(self, img):
-        return self.trans(img)
+    def __call__(self, results):
+        return self.trans(results)
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -122,19 +132,23 @@ class Lighting(object):
         self.eigval = self._IMAGENET_PCA['eigval']
         self.eigvec = self._IMAGENET_PCA['eigvec']
 
-    def __call__(self, img):
-        assert isinstance(img, torch.Tensor), \
-            'Expect torch.Tensor, got {}'.format(type(img))
-        if self.alphastd == 0:
-            return img
+    def __call__(self, results):
+        for key in results.get('img_fields', ['img']):
+            img = results[key]
+            assert isinstance(img, torch.Tensor), \
+                'Expect torch.Tensor, got {}'.format(type(img))
+            if self.alphastd == 0:
+                continue
 
-        alpha = img.new().resize_(3).normal_(0, self.alphastd)
-        rgb = self.eigvec.type_as(img).clone()\
-            .mul(alpha.view(1, 3).expand(3, 3))\
-            .mul(self.eigval.view(1, 3).expand(3, 3))\
-            .sum(1).squeeze()
+            alpha = img.new().resize_(3).normal_(0, self.alphastd)
+            rgb = self.eigvec.type_as(img).clone()\
+                .mul(alpha.view(1, 3).expand(3, 3))\
+                .mul(self.eigval.view(1, 3).expand(3, 3))\
+                .sum(1).squeeze()
 
-        return img.add(rgb.view(3, 1, 1).expand_as(img))
+            results[key] = img.add(rgb.view(3, 1, 1).expand_as(img))
+
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -151,11 +165,15 @@ if LooseVersion(torch.__version__) < LooseVersion('1.7.0'):
             self.sigma_max = sigma[1]
             self.kernel_size = kernel_size
 
-        def __call__(self, img):
-            sigma = np.random.uniform(self.sigma_min, self.sigma_max)
-            img = cv2.GaussianBlur(
-                np.array(img), (self.kernel_size, self.kernel_size), sigma)
-            return Image.fromarray(img.astype(np.uint8))
+        def __call__(self, results):
+            for key in results.get('img_fields', ['img']):
+                img = results[key]
+                sigma = np.random.uniform(self.sigma_min, self.sigma_max)
+                img = cv2.GaussianBlur(
+                    np.array(img), (self.kernel_size, self.kernel_size), sigma)
+                results[key] = Image.fromarray(img.astype(np.uint8))
+
+            return results
 
         def __repr__(self):
             repr_str = self.__class__.__name__
@@ -168,10 +186,14 @@ class Solarization(object):
     def __init__(self, threshold=128):
         self.threshold = threshold
 
-    def __call__(self, img):
-        img = np.array(img)
-        img = np.where(img < self.threshold, img, 255 - img)
-        return Image.fromarray(img.astype(np.uint8))
+    def __call__(self, results):
+        for key in results.get('img_fields', ['img']):
+            img = results[key]
+            img = np.array(img)
+            img = np.where(img < self.threshold, img, 255 - img)
+            results[key] = Image.fromarray(img.astype(np.uint8))
+
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__

@@ -23,7 +23,8 @@ class SSLSourceImageListTest(unittest.TestCase):
 
         index_list = random.choices(list(range(100)), k=3)
         for idx in index_list:
-            img = data_source.get_sample(idx)
+            results = data_source.get_sample(idx)
+            img = results['img']
             self.assertEqual(img.mode, 'RGB')
             img.close()
 

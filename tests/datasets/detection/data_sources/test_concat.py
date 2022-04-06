@@ -21,12 +21,14 @@ class DetSourceCocoTest(unittest.TestCase):
             data_source_list=[
                 dict(
                     type='DetSourceRaw',
-                    img_root_path=os.path.join(data_root, 'images'),
-                    label_root_path=os.path.join(data_root, 'labels')),
+                    img_root_path=os.path.join(data_root, 'images/train2017'),
+                    label_root_path=os.path.join(data_root,
+                                                 'labels/train2017')),
                 dict(
                     type='DetSourceRaw',
-                    img_root_path=os.path.join(data_root, 'images'),
-                    label_root_path=os.path.join(data_root, 'labels'))
+                    img_root_path=os.path.join(data_root, 'images/train2017'),
+                    label_root_path=os.path.join(data_root,
+                                                 'labels/train2017'))
             ])
 
         data_source = build_datasource(data_source)
@@ -57,8 +59,10 @@ class DetSourceCocoTest(unittest.TestCase):
                     classes=VOC_CLASSES),
                 dict(
                     type='DetSourceRaw',
-                    img_root_path=os.path.join(raw_data_root, 'images'),
-                    label_root_path=os.path.join(raw_data_root, 'labels'))
+                    img_root_path=os.path.join(raw_data_root,
+                                               'images/train2017'),
+                    label_root_path=os.path.join(raw_data_root,
+                                                 'labels/train2017'))
             ])
 
         data_source = build_datasource(data_source)

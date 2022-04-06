@@ -15,7 +15,6 @@ data = dict(
     workers_per_gpu=4,
     extract=dict(
         type='RawDataset',
-        with_label=True,
         data_source=dict(
             type='ClsSourceImageList', list_file=data_all_list,
             root=data_root),
