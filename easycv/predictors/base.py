@@ -18,8 +18,10 @@ from easycv.utils.constant import CACHE_DIR
 
 class NumpyToPIL(object):
 
-    def __call__(self, img):
-        return Image.fromarray(np.uint8(img)).convert('RGB')
+    def __call__(self, results):
+        img = results['img']
+        results['img'] = Image.fromarray(np.uint8(img)).convert('RGB')
+        return results
 
 
 class Predictor(object):
@@ -67,7 +69,14 @@ class Predictor(object):
         self.pipeline = Compose(pipeline)
 
     def preprocess(self, image_list):
-        return [self.pipeline(img) for img in image_list]
+        # only perform transform to img
+        output_imgs_list = []
+        for img in image_list:
+            tmp_input = {'img': img}
+            tmp_results = self.pipeline(tmp_input)
+            output_imgs_list.append(tmp_results['img'])
+
+        return output_imgs_list
 
     def predict_batch(self, image_batch, **forward_kwargs):
         """ predict using batched data

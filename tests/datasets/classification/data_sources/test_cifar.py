@@ -19,9 +19,11 @@ class ClsSourceCifarTest(unittest.TestCase):
 
         index_list = random.choices(list(range(100)), k=3)
         for idx in index_list:
-            img, target = data_source.get_sample(idx)
+            results = data_source.get_sample(idx)
+            img = results['img']
+            label = results['gt_labels']
             self.assertEqual(img.mode, 'RGB')
-            self.assertIn(target, list(range(10)))
+            self.assertIn(label, list(range(10)))
             img.close()
 
         length = data_source.get_length()
@@ -35,9 +37,11 @@ class ClsSourceCifarTest(unittest.TestCase):
 
         index_list = random.choices(list(range(100)), k=3)
         for idx in index_list:
-            img, target = data_source.get_sample(idx)
+            results = data_source.get_sample(idx)
+            img = results['img']
+            label = results['gt_labels']
             self.assertEqual(img.mode, 'RGB')
-            self.assertIn(target, list(range(100)))
+            self.assertIn(label, list(range(100)))
             img.close()
 
         length = data_source.get_length()

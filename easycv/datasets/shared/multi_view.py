@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import copy
 import random
 
 from PIL import Image, ImageFilter, ImageOps
@@ -35,20 +36,23 @@ class MultiViewDataset(BaseDataset):
             self.transforms_list.extend([pipelines_list[i]] * num_views[i])
 
     def __getitem__(self, idx):
+        results = self.data_source.get_sample(idx)
 
-        if hasattr(self.data_source,
-                   'has_labels') and self.data_source.has_labels:
-            img, _ = self.data_source.get_sample(idx)
-        else:
-            img = self.data_source.get_sample(idx)
-
+        img = results['img']
         assert isinstance(img, Image.Image), \
             f'The output from the data source must be an Image, got: {type(img)}. \
             Please ensure that the list file does not contain labels.'
 
-        outputs = list(map(lambda trans: trans(img), self.transforms_list))
+        imgs_list = []
+        # only perform transforms to img
+        for trans in self.transforms_list:
+            tmp_input = {'img': copy.deepcopy(img)}
+            tmp_result = trans(tmp_input)
+            imgs_list.append(tmp_result['img'])
 
-        return dict(img=outputs)
+        results['img'] = imgs_list
+
+        return results
 
     def evaluate(self, results, evaluators, logger=None):
         raise NotImplementedError

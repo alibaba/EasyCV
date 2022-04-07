@@ -77,12 +77,14 @@ train_pipeline = [
         hue=0.),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img', 'gt_labels'])
 ]
 test_pipeline = [
     dict(type='Resize', size=256),
     dict(type='CenterCrop', size=224),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img', 'gt_labels'])
 ]
 
 data_train_list = 'dataset/metric_learning/sop_raw/meta/train_1.txt'

@@ -32,7 +32,7 @@ class ClsOdpsDataset(BaseDataset):
             Please ensure that the list file does not contain labels.'
 
         img = self.pipeline(img)
-        return dict(img=img, gt_label=label)
+        return dict(img=img, gt_labels=label)
 
     def evaluate(self, results, evaluators, logger=None):
         raise NotImplementedError

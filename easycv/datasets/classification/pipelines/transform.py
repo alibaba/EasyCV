@@ -1,16 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import inspect
-import math
-import random
 from numbers import Number
 from typing import Sequence
 
-import mmcv
 import numpy as np
 from PIL import Image
 
 from easycv.datasets.registry import PIPELINES
-from .compose import MMCompose
 
 
 @PIPELINES.register_module()
@@ -105,26 +100,29 @@ class MMRandomErasing(object):
         img[top:top + h, left:left + w] = patch
         return img
 
-    def __call__(self, img):
+    def __call__(self, results):
         if np.random.rand() > self.erase_prob:
-            return img
-        img = np.array(img)
-        img_h, img_w = img.shape[:2]
+            return results
 
-        # convert to log aspect to ensure equal probability of aspect ratio
-        log_aspect_range = np.log(
-            np.array(self.aspect_range, dtype=np.float32))
-        aspect_ratio = np.exp(np.random.uniform(*log_aspect_range))
-        area = img_h * img_w
-        area *= np.random.uniform(self.min_area_ratio, self.max_area_ratio)
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            img_h, img_w = img.shape[:2]
 
-        h = min(int(round(np.sqrt(area * aspect_ratio))), img_h)
-        w = min(int(round(np.sqrt(area / aspect_ratio))), img_w)
-        top = np.random.randint(0, img_h - h) if img_h > h else 0
-        left = np.random.randint(0, img_w - w) if img_w > w else 0
-        img = self._fill_pixels(img, top, left, h, w)
+            # convert to log aspect to ensure equal probability of aspect ratio
+            log_aspect_range = np.log(
+                np.array(self.aspect_range, dtype=np.float32))
+            aspect_ratio = np.exp(np.random.uniform(*log_aspect_range))
+            area = img_h * img_w
+            area *= np.random.uniform(self.min_area_ratio, self.max_area_ratio)
 
-        return Image.fromarray(img.astype(np.uint8))
+            h = min(int(round(np.sqrt(area * aspect_ratio))), img_h)
+            w = min(int(round(np.sqrt(area / aspect_ratio))), img_w)
+            top = np.random.randint(0, img_h - h) if img_h > h else 0
+            left = np.random.randint(0, img_w - w) if img_w > w else 0
+            img = self._fill_pixels(img, top, left, h, w)
+            results[key] = Image.fromarray(img.astype(np.uint8))
+
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__

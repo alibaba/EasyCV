@@ -11,8 +11,7 @@ import numpy as np
 from PIL import Image
 
 from easycv.datasets.registry import PIPELINES
-from easycv.utils import build_from_cfg
-from .compose import MMCompose
+from easycv.datasets.shared.pipelines import Compose
 
 # Default hyperparameters for all Ops
 _HPARAMS_DEFAULT = dict(pad_val=128)
@@ -217,11 +216,11 @@ class MMAutoAugment(object):
             merged_sub = [merge_hparams(policy, hparams) for policy in sub]
             self.policies.append(merged_sub)
 
-        self.sub_policy = [MMCompose(policy) for policy in self.policies]
+        self.sub_policy = [Compose(policy) for policy in self.policies]
 
-    def __call__(self, img):
+    def __call__(self, results):
         sub_policy = random.choice(self.sub_policy)
-        return sub_policy(img)
+        return sub_policy(results)
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -352,7 +351,7 @@ class MMRandAugment(object):
             return results
         sub_policy = random.choices(self.policies, k=self.num_policies)
         sub_policy = self._process_policies(sub_policy)
-        sub_policy = MMCompose(sub_policy)
+        sub_policy = Compose(sub_policy)
         return sub_policy(results)
 
     def __repr__(self):
@@ -414,18 +413,21 @@ class Shear(object):
         self.random_negative_prob = random_negative_prob
         self.interpolation = interpolation
 
-    def __call__(self, img):
+    def __call__(self, results):
         if np.random.rand() > self.prob:
-            return img
-        img = np.array(img)
-        magnitude = random_negative(self.magnitude, self.random_negative_prob)
-        img_sheared = mmcv.imshear(
-            img,
-            magnitude,
-            direction=self.direction,
-            border_value=self.pad_val,
-            interpolation=self.interpolation)
-        return Image.fromarray(img_sheared.astype(np.uint8))
+            return results
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            magnitude = random_negative(self.magnitude,
+                                        self.random_negative_prob)
+            img_sheared = mmcv.imshear(
+                img,
+                magnitude,
+                direction=self.direction,
+                border_value=self.pad_val,
+                interpolation=self.interpolation)
+            results[key] = Image.fromarray(img_sheared.astype(np.uint8))
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -491,23 +493,27 @@ class Translate(object):
         self.random_negative_prob = random_negative_prob
         self.interpolation = interpolation
 
-    def __call__(self, img):
+    def __call__(self, results):
         if np.random.rand() > self.prob:
-            return img
-        magnitude = random_negative(self.magnitude, self.random_negative_prob)
-        img = np.array(img)
-        height, width = img.shape[:2]
-        if self.direction == 'horizontal':
-            offset = magnitude * width
-        else:
-            offset = magnitude * height
-        img_translated = mmcv.imtranslate(
-            img,
-            offset,
-            direction=self.direction,
-            border_value=self.pad_val,
-            interpolation=self.interpolation)
-        return Image.fromarray(img_translated.astype(np.uint8))
+            return results
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+
+            magnitude = random_negative(self.magnitude,
+                                        self.random_negative_prob)
+            height, width = img.shape[:2]
+            if self.direction == 'horizontal':
+                offset = magnitude * width
+            else:
+                offset = magnitude * height
+            img_translated = mmcv.imtranslate(
+                img,
+                offset,
+                direction=self.direction,
+                border_value=self.pad_val,
+                interpolation=self.interpolation)
+            results[key] = Image.fromarray(img_translated.astype(np.uint8))
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -581,19 +587,21 @@ class Rotate(object):
         self.random_negative_prob = random_negative_prob
         self.interpolation = interpolation
 
-    def __call__(self, img):
+    def __call__(self, results):
         if np.random.rand() > self.prob:
-            return img
-        img = np.array(img)
-        angle = random_negative(self.angle, self.random_negative_prob)
-        img_rotated = mmcv.imrotate(
-            img,
-            angle,
-            center=self.center,
-            scale=self.scale,
-            border_value=self.pad_val,
-            interpolation=self.interpolation)
-        return Image.fromarray(img_rotated.astype(np.uint8))
+            return results
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            angle = random_negative(self.angle, self.random_negative_prob)
+            img_rotated = mmcv.imrotate(
+                img,
+                angle,
+                center=self.center,
+                scale=self.scale,
+                border_value=self.pad_val,
+                interpolation=self.interpolation)
+            results[key] = Image.fromarray(img_rotated.astype(np.uint8))
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -621,12 +629,14 @@ class AutoContrast(object):
 
         self.prob = prob
 
-    def __call__(self, img):
+    def __call__(self, results):
         if np.random.rand() > self.prob:
-            return img
-        img = np.array(img)
-        img_contrasted = mmcv.auto_contrast(img)
-        return Image.fromarray(img_contrasted.astype(np.uint8))
+            return results
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            img_contrasted = mmcv.auto_contrast(img)
+            results[key] = Image.fromarray(img_contrasted.astype(np.uint8))
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -648,12 +658,14 @@ class Invert(object):
 
         self.prob = prob
 
-    def __call__(self, img):
+    def __call__(self, results):
         if np.random.rand() > self.prob:
-            return img
-        img = np.array(img)
-        img_inverted = mmcv.iminvert(img)
-        return Image.fromarray(img_inverted.astype(np.uint8))
+            return results
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            img_inverted = mmcv.iminvert(img)
+            results[key] = Image.fromarray(img_inverted.astype(np.uint8))
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -675,12 +687,14 @@ class Equalize(object):
 
         self.prob = prob
 
-    def __call__(self, img):
+    def __call__(self, results):
         if np.random.rand() > self.prob:
-            return img
-        img = np.array(img)
-        img_equalized = mmcv.imequalize(img)
-        return Image.fromarray(img_equalized.astype(np.uint8))
+            return results
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            img_equalized = mmcv.imequalize(img)
+            results[key] = Image.fromarray(img_equalized.astype(np.uint8))
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -707,12 +721,14 @@ class Solarize(object):
         self.thr = thr
         self.prob = prob
 
-    def __call__(self, img):
+    def __call__(self, results):
         if np.random.rand() > self.prob:
-            return img
-        img = np.array(img)
-        img_solarized = mmcv.solarize(img, thr=self.thr)
-        return Image.fromarray(img_solarized.astype(np.uint8))
+            return results
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            img_solarized = mmcv.solarize(img, thr=self.thr)
+            results[key] = Image.fromarray(img_solarized.astype(np.uint8))
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -744,13 +760,16 @@ class SolarizeAdd(object):
         self.thr = thr
         self.prob = prob
 
-    def __call__(self, img):
+    def __call__(self, results):
         if np.random.rand() > self.prob:
-            return img
-        img = np.array(img)
-        img_solarized = np.where(img < self.thr,
-                                 np.minimum(img + self.magnitude, 255), img)
-        return Image.fromarray(img_solarized.astype(np.uint8))
+            return results
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            img_solarized = np.where(img < self.thr,
+                                     np.minimum(img + self.magnitude, 255),
+                                     img)
+            results[key] = Image.fromarray(img_solarized.astype(np.uint8))
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -779,12 +798,14 @@ class Posterize(object):
         self.bits = ceil(bits)
         self.prob = prob
 
-    def __call__(self, img):
+    def __call__(self, results):
         if np.random.rand() > self.prob:
-            return img
-        img = np.array(img)
-        img_posterized = mmcv.posterize(img, bits=self.bits)
-        return Image.fromarray(img_posterized.astype(np.uint8))
+            return results
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            img_posterized = mmcv.posterize(img, bits=self.bits)
+            results[key] = Image.fromarray(img_posterized.astype(np.uint8))
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -819,13 +840,16 @@ class Contrast(object):
         self.prob = prob
         self.random_negative_prob = random_negative_prob
 
-    def __call__(self, img):
+    def __call__(self, results):
         if np.random.rand() > self.prob:
-            return img
-        img = np.array(img)
-        magnitude = random_negative(self.magnitude, self.random_negative_prob)
-        img_contrasted = mmcv.adjust_contrast(img, factor=1 + magnitude)
-        return Image.fromarray(img_contrasted.astype(np.uint8))
+            return results
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            magnitude = random_negative(self.magnitude,
+                                        self.random_negative_prob)
+            img_contrasted = mmcv.adjust_contrast(img, factor=1 + magnitude)
+            results[key] = Image.fromarray(img_contrasted.astype(np.uint8))
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -860,13 +884,16 @@ class ColorTransform(object):
         self.prob = prob
         self.random_negative_prob = random_negative_prob
 
-    def __call__(self, img):
+    def __call__(self, results):
         if np.random.rand() > self.prob:
-            return img
-        img = np.array(img)
-        magnitude = random_negative(self.magnitude, self.random_negative_prob)
-        img_color_adjusted = mmcv.adjust_color(img, alpha=1 + magnitude)
-        return Image.fromarray(img_color_adjusted.astype(np.uint8))
+            return results
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            magnitude = random_negative(self.magnitude,
+                                        self.random_negative_prob)
+            img_color_adjusted = mmcv.adjust_color(img, alpha=1 + magnitude)
+            results[key] = Image.fromarray(img_color_adjusted.astype(np.uint8))
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -902,13 +929,16 @@ class Brightness(object):
         self.prob = prob
         self.random_negative_prob = random_negative_prob
 
-    def __call__(self, img):
+    def __call__(self, results):
         if np.random.rand() > self.prob:
-            return img
-        img = np.array(img)
-        magnitude = random_negative(self.magnitude, self.random_negative_prob)
-        img_brightened = mmcv.adjust_brightness(img, factor=1 + magnitude)
-        return Image.fromarray(img_brightened.astype(np.uint8))
+            return results
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            magnitude = random_negative(self.magnitude,
+                                        self.random_negative_prob)
+            img_brightened = mmcv.adjust_brightness(img, factor=1 + magnitude)
+            results[key] = Image.fromarray(img_brightened.astype(np.uint8))
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -944,13 +974,16 @@ class Sharpness(object):
         self.prob = prob
         self.random_negative_prob = random_negative_prob
 
-    def __call__(self, img):
+    def __call__(self, results):
         if np.random.rand() > self.prob:
-            return img
-        img = np.array(img)
-        magnitude = random_negative(self.magnitude, self.random_negative_prob)
-        img_sharpened = mmcv.adjust_sharpness(img, factor=1 + magnitude)
-        return Image.fromarray(img_sharpened.astype(np.uint8))
+            return results
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            magnitude = random_negative(self.magnitude,
+                                        self.random_negative_prob)
+            img_sharpened = mmcv.adjust_sharpness(img, factor=1 + magnitude)
+            results[key] = Image.fromarray(img_sharpened.astype(np.uint8))
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -995,12 +1028,14 @@ class Cutout(object):
         self.pad_val = tuple(pad_val)
         self.prob = prob
 
-    def __call__(self, img):
+    def __call__(self, results):
         if np.random.rand() > self.prob:
-            return img
-        img = np.array(img)
-        img_cutout = mmcv.cutout(img, self.shape, pad_val=self.pad_val)
-        return Image.fromarray(img_cutout.astype(np.uint8))
+            return results
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            img_cutout = mmcv.cutout(img, self.shape, pad_val=self.pad_val)
+            results[key] = Image.fromarray(img_cutout.astype(np.uint8))
+        return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__

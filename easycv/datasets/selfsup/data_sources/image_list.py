@@ -84,4 +84,4 @@ class SSLSourceImageList(object):
         if img is None:
             return self.get_sample(idx + 1)
 
-        return img
+        return {'img': img}

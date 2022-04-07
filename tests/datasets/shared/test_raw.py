@@ -19,7 +19,6 @@ class RawDatasetTest(unittest.TestCase):
         data_train_root = os.path.join(SMALL_IMAGENET_RAW_LOCAL, 'train')
         train_data = dict(
             type='RawDataset',
-            with_label=True,
             data_source=dict(
                 type='ClsSourceImageList',
                 list_file=data_train_list,
@@ -29,13 +28,14 @@ class RawDatasetTest(unittest.TestCase):
                 dict(type='CenterCrop', size=224),
                 dict(type='ToTensor'),
                 dict(type='Normalize', **IMG_NORM_CFG),
+                dict(type='Collect', keys=['img', 'gt_labels'])
             ])
 
         dataset = build_dataset(train_data)
 
         for _, batch in enumerate(dataset):
             self.assertEqual(batch['img'].shape, torch.Size([3, 224, 224]))
-            self.assertIn(batch['gt_label'], list(range(1000)))
+            self.assertIn(batch['gt_labels'], list(range(1000)))
             break
 
         self.assertEqual(len(dataset), 200)
@@ -46,7 +46,6 @@ class RawDatasetTest(unittest.TestCase):
         data_train_root = SMALL_IMAGENET_RAW_LOCAL
         train_data = dict(
             type='RawDataset',
-            with_label=False,
             data_source=dict(
                 type='SSLSourceImageList',
                 list_file=data_train_list,
@@ -56,6 +55,7 @@ class RawDatasetTest(unittest.TestCase):
                 dict(type='Resize', size=(224, 224)),
                 dict(type='ToTensor'),
                 dict(type='Normalize', **IMG_NORM_CFG),
+                dict(type='Collect', keys=['img'])
             ])
 
         dataset = build_dataset(train_data)

@@ -30,19 +30,21 @@ data_test_root = 'data/imagenet_raw/validation/'
 data_all_list = 'data/imagenet_raw/meta/all_labeled.txt'
 data_root = 'data/imagenet_raw/'
 
-dataset_type = 'ClassificationDataset'
+dataset_type = 'ClsDataset'
 img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 train_pipeline = [
     dict(type='RandomResizedCrop', size=224),
     dict(type='RandomHorizontalFlip'),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img', 'gt_labels'])
 ]
 test_pipeline = [
     dict(type='Resize', size=256),
     dict(type='CenterCrop', size=224),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img', 'gt_labels'])
 ]
 
 data = dict(

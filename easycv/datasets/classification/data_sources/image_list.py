@@ -119,6 +119,7 @@ class ClsSourceImageList(object):
         if img is None:
             return self.get_sample(idx + 1)
 
-        target = self.labels[idx]
+        label = self.labels[idx]
 
-        return img, target
+        result_dict = {'img': img, 'gt_labels': label}
+        return result_dict
