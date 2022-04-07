@@ -20,7 +20,7 @@ import tempfile
 import unittest
 
 import numpy as np
-from pycocotools import mask
+from xtcocotools import mask
 
 from easycv.core.evaluation import coco_tools
 from easycv.file import io

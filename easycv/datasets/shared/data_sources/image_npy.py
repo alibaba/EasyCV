@@ -24,6 +24,7 @@ class ImageNpy(object):
                 io.copy(image_file, dst_path)
                 image_file = dst_path
 
+        self.has_labels = label_file != None
         self.labels = None
         if label_file:
             if is_oss_path(label_file):
