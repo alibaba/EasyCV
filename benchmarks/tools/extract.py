@@ -41,7 +41,7 @@ def set_random_seed(seed, deterministic=True):
 
 class ExtractProcess(object):
 
-    def __init__(self, extract_list=['backbone']):
+    def __init__(self, extract_list=['neck']):
         self.extract_list = extract_list
         self.pool = torch.nn.AdaptiveAvgPool2d((1, 1))
 
@@ -55,22 +55,13 @@ class ExtractProcess(object):
         for k in self.extract_list:
             if type(feats[k]) is torch.Tensor:
                 feats[k] = [feats[k]]
-
-        flat_feats = []
-        for feat in feats['backbone']:
-            if len(feat.shape) > 2:
-                feat = self.pool(feat)
-            flat_feats.append(feat.view(feat.size(0), -1))
-
         feat_dict = {
             'feat{}'.format(i + 1): feat.cpu()
-            for i, feat in enumerate(flat_feats)
+            for i, feat in enumerate(feats['neck'])
         }
 
-        if 'label' in kwargs.keys():
-            feat_dict['label'] = kwargs['label']
-        if 'gt_label' in kwargs.keys():
-            feat_dict['label'] = kwargs['gt_label']
+        if 'gt_labels' in kwargs.keys():
+            feat_dict['label'] = kwargs['gt_labels']
         return feat_dict
 
     def extract(self, model, data_loader, distributed=False):
@@ -109,7 +100,7 @@ def parse_args():
     parser.add_argument(
         '--extract_list',
         type=list,
-        default=['backbone'],
+        default=['neck'],
         help='the dir to save logs and models')
     parser.add_argument(
         '--launcher',

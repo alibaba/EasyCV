@@ -72,10 +72,7 @@ class SSLSourceImageNetFeature(object):
 
     def get_sample(self, idx):
         if not self.dynamic_load:
-            results = {
-                'feature': self.embs[idx],
-                'gt_labels': self.labels[idx]
-            }
+            results = {'img': self.embs[idx], 'gt_labels': self.labels[idx]}
             return results
 
         block_idx = int(idx / self.feature_per_block)
@@ -89,7 +86,7 @@ class SSLSourceImageNetFeature(object):
         label = int(self.labels_cache_dict[block_idx][idx %
                                                       self.feature_per_block])
 
-        results = {'feature': feature, 'gt_labels': label}
+        results = {'img': feature, 'gt_labels': label}
         return results
 
     def get_length(self):
