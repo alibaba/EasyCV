@@ -116,4 +116,5 @@ class ClsSourceImageListByClass(object):
             return_img.append(img)
             return_label.append(label)
 
-        return return_img, return_label
+        result_dict = {'img': return_img, 'gt_labels': return_label}
+        return result_dict

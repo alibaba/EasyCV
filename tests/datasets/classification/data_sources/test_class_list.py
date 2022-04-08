@@ -25,11 +25,13 @@ class ClsSourceImageListByClassTest(unittest.TestCase):
 
         index_list = [0, 1]
         for idx in index_list:
-            img_list, target_list = data_source.get_sample(idx)
+            results = data_source.get_sample(idx)
+            img_list = results['img']
+            label_list = results['gt_labels']
             self.assertEqual(len(img_list), 3)
-            self.assertEqual(len(target_list), 3)
+            self.assertEqual(len(label_list), 3)
             self.assertEqual(img_list[0].mode, 'RGB')
-            self.assertIn(target_list[0], list(range(1000)))
+            self.assertIn(label_list[0], list(range(1000)))
             for img in img_list:
                 img.close()
             self.assertEqual(data_source.get_length(), 2)

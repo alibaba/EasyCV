@@ -1,5 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from .format import Collect, DefaultFormatBundle, ImageToTensor
 from .mm_transforms import (LoadAnnotations, LoadImageFromFile,
                             LoadMultiChannelImageFromFiles, MMMixUp, MMMosaic,
                             MMMultiScaleFlipAug, MMNormalize, MMPad,
@@ -8,8 +7,7 @@ from .mm_transforms import (LoadAnnotations, LoadImageFromFile,
                             NormalizeTensor)
 
 __all__ = [
-    'ImageToTensor', 'Collect', 'DefaultFormatBundle', 'MMToTensor',
-    'NormalizeTensor', 'MMMosaic', 'MMMixUp', 'MMRandomAffine',
+    'MMToTensor', 'NormalizeTensor', 'MMMosaic', 'MMMixUp', 'MMRandomAffine',
     'MMPhotoMetricDistortion', 'MMResize', 'MMRandomFlip', 'MMPad',
     'MMNormalize', 'LoadImageFromFile', 'LoadMultiChannelImageFromFiles',
     'LoadAnnotations', 'MMMultiScaleFlipAug'

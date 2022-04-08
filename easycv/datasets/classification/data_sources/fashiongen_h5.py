@@ -52,8 +52,11 @@ class FashionGenH5(object):
             name = db[H5_KEYS[0]][idx]
         img = img[..., [2, 1, 0]]  # transfer to RGB
         img = Image.fromarray(img)
+
+        result_dict = {'img': img}
+
         if self.return_label:
-            target = self.label_list.index(name)
-            return img, target
-        else:
-            return img
+            label = self.label_list.index(name)
+            result_dict.update({'gt_labels': label})
+
+        return result_dict

@@ -21,6 +21,7 @@ class ClsDatasetTest(unittest.TestCase):
             dict(type='RandomHorizontalFlip'),
             dict(type='ToTensor'),
             dict(type='Normalize', **IMG_NORM_CFG),
+            dict(type='Collect', keys=['img', 'gt_labels'])
         ]
         data = dict(
             train=dict(
@@ -33,7 +34,7 @@ class ClsDatasetTest(unittest.TestCase):
         dataset = build_dataset(data['train'])
 
         for _, batch in enumerate(dataset):
-            img, target = batch['img'], batch['gt_label']
+            img, target = batch['img'], batch['gt_labels']
             self.assertEqual(img.shape, torch.Size([3, 224, 224]))
             self.assertIn(target, list(range(1000)))
             break

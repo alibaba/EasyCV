@@ -24,10 +24,12 @@ class ImageNpyTest(unittest.TestCase):
 
         index_list = random.choices(list(range(100)), k=3)
         for idx in index_list:
-            img, target = data_source.get_sample(idx)
+            results = data_source.get_sample(idx)
+            img = results['img']
+            label = results['gt_labels']
             self.assertEqual(img.mode, 'RGB')
             img.close()
-            self.assertIn(target, list(range(1000)))
+            self.assertIn(label, list(range(1000)))
             self.assertEqual(data_source.get_length(), 100)
 
     def test_oss(self):
@@ -44,10 +46,12 @@ class ImageNpyTest(unittest.TestCase):
 
         index_list = random.choices(list(range(100)), k=3)
         for idx in index_list:
-            img, target = data_source.get_sample(idx)
+            results = data_source.get_sample(idx)
+            img = results['img']
+            label = results['gt_labels']
             self.assertEqual(img.mode, 'RGB')
             img.close()
-            self.assertIn(target, list(range(1000)))
+            self.assertIn(label, list(range(1000)))
             self.assertEqual(data_source.get_length(), 100)
 
         io.remove(work_dir)

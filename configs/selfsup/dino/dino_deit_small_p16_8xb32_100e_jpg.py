@@ -85,6 +85,7 @@ train_pipeline1 = [
         p=1.0),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img'])
 ]
 train_pipeline2 = [
     dict(
@@ -116,6 +117,7 @@ train_pipeline2 = [
         p=0.2),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img'])
 ]
 train_pipeline3 = [
     dict(
@@ -142,7 +144,8 @@ train_pipeline3 = [
         transforms=[dict(type='GaussianBlur', kernel_size=23)],
         p=0.5),
     dict(type='ToTensor'),
-    dict(type='Normalize', **img_norm_cfg)
+    dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img'])
 ]
 data = dict(
     imgs_per_gpu=32,  # total 32*8=256
