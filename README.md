@@ -4,8 +4,7 @@
 
 ## Introduction
 
-EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focus on self-supervised learning, image classification, metric-learning, object detection and so on.
-
+EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focus on self-supervised learning, transformer based models, and CV tasks including image classification, metric-learning, object detection and so on.
 
 ### Major features
 
