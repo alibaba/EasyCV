@@ -21,7 +21,7 @@ class SSLSourceImageNetFeatureTest(unittest.TestCase):
         index_list = random.choices(list(range(100)), k=3)
         for idx in index_list:
             results = data_source.get_sample(idx)
-            feat = results['feature']
+            feat = results['img']
             label = results['gt_labels']
             self.assertEqual(feat.shape, (2048, ))
             self.assertIn(label, list(range(1000)))
@@ -37,7 +37,7 @@ class SSLSourceImageNetFeatureTest(unittest.TestCase):
         index_list = random.choices(list(range(100)), k=3)
         for idx in index_list:
             results = data_source.get_sample(idx)
-            feat = results['feature']
+            feat = results['img']
             label = results['gt_labels']
             self.assertEqual(feat.shape, (2048, ))
             self.assertIn(label, list(range(1000)))
