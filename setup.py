@@ -171,7 +171,7 @@ if __name__ == '__main__':
     os.chdir('package')
     install_requires = parse_requirements('requirements.txt')
     setup(
-        name='easycv',
+        name='pai-easycv',
         version=get_version(),
         description='EasyCV framework',
         long_description=readme(),

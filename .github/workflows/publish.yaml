@@ -1,6 +1,10 @@
 name: release
 
-on: push
+on:
+  push:
+    branches:
+      - "release/**"
+
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -8,14 +12,14 @@ concurrency:
 
 jobs:
   build-n-publish:
-    runs-on: [unittest-t4]
+    runs-on: ubuntu-latest
     if: startsWith(github.event.ref, 'refs/tags')
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python
+      - name: Set up Python 3.6
         uses: actions/setup-python@v2
         with:
-          python-version: '3.x'
+          python-version: '3.6'
       - name: Build EasyCV
         run: python setup.py sdist bdist_wheel
       - name: Publish package
