@@ -5,7 +5,6 @@ on:
     branches:
       - "release/**"
 
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -19,11 +18,14 @@ jobs:
       - name: Set up Python 3.6
         uses: actions/setup-python@v2
         with:
-          python-version: '3.6'
+          python-version: 3.6
+      - name: Install torch
+        run: pip install torch
+      - name: Install wheel
+        run: pip install wheel
       - name: Build EasyCV
         run: python setup.py sdist bdist_wheel
-      - name: Publish package
-        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+      - name: Publish distribution to PyPI
+        run: |
+          pip install twine
+          twine upload package/dist/* -u __token__ -p ${{ secrets.pypi_password }}
