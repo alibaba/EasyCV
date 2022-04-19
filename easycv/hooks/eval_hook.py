@@ -45,6 +45,9 @@ class EvalHook(Hook):
 
         self.mode = mode
         self.eval_kwargs = eval_kwargs
+        # hook.evaluate runs every interval epoch or iter, popped at init
+        self.vis_config = self.eval_kwargs.pop('visualization_config', {})
+        self.gpu_collect = self.eval_kwargs.pop('gpu_collect', None)
         self.flush_buffer = flush_buffer
 
     def before_run(self, runner):
@@ -69,14 +72,19 @@ class EvalHook(Hook):
             self.evaluate(runner, results)
 
     def evaluate(self, runner, results):
-
-        gpu_collect = self.eval_kwargs.pop('gpu_collect', None)
         if isinstance(self.dataloader, DataLoader):
             eval_res = self.dataloader.dataset.evaluate(
                 results, logger=runner.logger, **self.eval_kwargs)
+            if hasattr(self.dataloader.dataset, 'visualize'):
+                runner.visualization_buffer.output.update(
+                    self.dataloader.dataset.visualize(results,
+                                                      **self.vis_config))
         else:
             eval_res = self.dataloader.evaluate(
                 results, logger=runner.logger, **self.eval_kwargs)
+            if hasattr(self.dataloader, 'visualize'):
+                runner.visualization_buffer.output.update(
+                    self.dataloader.visualize(results, **self.vis_config))
 
         for name, val in eval_res.items():
             runner.log_buffer.output[name] = val

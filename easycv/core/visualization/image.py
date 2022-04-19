@@ -8,6 +8,60 @@ import numpy as np
 from mmcv.utils.misc import deprecated_api_warning
 
 
+def imshow_label(img,
+                 labels,
+                 text_color='blue',
+                 thickness=1,
+                 font_scale=0.5,
+                 intervel=5,
+                 show=True,
+                 win_name='',
+                 wait_time=0,
+                 out_file=None):
+    """Draw images with labels on an image.
+
+    Args:
+        img (str or ndarray): The image to be displayed.
+        labels (str or list[str]): labels of each image.
+        text_color (str or tuple or :obj:`Color`): Color of texts.
+        thickness (int): Thickness of lines.
+        font_scale (float): Font scales of texts.
+        intervel（int): interval pixels between multiple labels
+        show (bool): Whether to show the image.
+        win_name (str): The window name.
+        wait_time (int): Value of waitKey param.
+        out_file (str, optional): The filename to write the image.
+
+    Returns:
+        ndarray: The image with bboxes drawn on it.
+    """
+
+    img = mmcv.imread(img)
+    img = np.ascontiguousarray(img)
+    labels = [labels] if isinstance(labels, str) else labels
+
+    cur_height = 0
+    for label in labels:
+        # roughly estimate the proper font size
+        text_size, text_baseline = cv2.getTextSize(label,
+                                                   cv2.FONT_HERSHEY_DUPLEX,
+                                                   font_scale, thickness)
+
+        org = (text_baseline + text_size[1],
+               text_baseline + text_size[1] + cur_height)
+        cv2.putText(img, label, org, cv2.FONT_HERSHEY_DUPLEX, font_scale,
+                    mmcv.color_val(text_color), thickness)
+
+        cur_height += text_baseline + text_size[1] + intervel
+
+    if show:
+        mmcv.imshow(img, win_name, wait_time)
+    if out_file is not None:
+        mmcv.imwrite(img, out_file)
+
+    return img
+
+
 def imshow_bboxes(img,
                   bboxes,
                   labels=None,
@@ -58,11 +112,10 @@ def imshow_bboxes(img,
         out_file=None)
 
     if labels is not None:
-        if not isinstance(labels, list):
-            labels = [labels for _ in range(len(bboxes))]
         assert len(labels) == len(bboxes)
 
         for bbox, label, color in zip(bboxes, labels, colors):
+            label = str(label)
             bbox_int = bbox[0, :4].astype(np.int32)
             # roughly estimate the proper font size
             text_size, text_baseline = cv2.getTextSize(label,

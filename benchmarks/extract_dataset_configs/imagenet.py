@@ -23,4 +23,5 @@ data = dict(
             dict(type='CenterCrop', size=224),
             dict(type='ToTensor'),
             dict(type='Normalize', **img_norm_cfg),
+            dict(type='Collect', keys=['img', 'gt_labels'])
         ]))

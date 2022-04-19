@@ -28,3 +28,6 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
     @abstractmethod
     def evaluate(self, results, evaluators, logger=None, **kwargs):
         pass
+
+    def visualize(self, results, **kwargs):
+        return {}
