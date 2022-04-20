@@ -23,4 +23,4 @@ jobs:
       - name: Publish package to PyPI
         run: |
           pip install twine
-          twine upload package/dist/* -u __token__ ${{ secrets.PYPI_API_TOKEN }}
+          twine upload package/dist/* -u __token__ -p ${{ secrets.PYPI_API_TOKEN }}
