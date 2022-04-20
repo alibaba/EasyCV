@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os.path as osp
+from collections import OrderedDict
 
 import torch
 from mmcv.runner import Hook
@@ -45,6 +46,9 @@ class EvalHook(Hook):
 
         self.mode = mode
         self.eval_kwargs = eval_kwargs
+        # hook.evaluate runs every interval epoch or iter, popped at init
+        self.vis_config = self.eval_kwargs.pop('visualization_config', {})
+        self.gpu_collect = self.eval_kwargs.pop('gpu_collect', None)
         self.flush_buffer = flush_buffer
 
     def before_run(self, runner):
@@ -68,9 +72,23 @@ class EvalHook(Hook):
                     runner.model, self.dataloader, mode=self.mode, show=False)
             self.evaluate(runner, results)
 
-    def evaluate(self, runner, results):
+    def add_visualization_info(self, runner, results):
+        if runner.visualization_buffer.output.get('eval_results',
+                                                  None) is None:
+            runner.visualization_buffer.output['eval_results'] = OrderedDict()
 
-        gpu_collect = self.eval_kwargs.pop('gpu_collect', None)
+        if isinstance(self.dataloader, DataLoader):
+            dataset_obj = self.dataloader.dataset
+        else:
+            dataset_obj = self.dataloader
+
+        if hasattr(dataset_obj, 'visualize'):
+            runner.visualization_buffer.output['eval_results'].update(
+                dataset_obj.visualize(results, **self.vis_config))
+
+    def evaluate(self, runner, results):
+        self.add_visualization_info(runner, results)
+
         if isinstance(self.dataloader, DataLoader):
             eval_res = self.dataloader.dataset.evaluate(
                 results, logger=runner.logger, **self.eval_kwargs)

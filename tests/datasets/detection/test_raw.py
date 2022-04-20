@@ -3,6 +3,7 @@ import os
 import time
 import unittest
 
+import numpy as np
 from tests.ut_config import DET_DATA_RAW_LOCAL, IMG_NORM_CFG_255
 
 from easycv.datasets.detection import DetDataset
@@ -13,7 +14,7 @@ class DetDatasetTest(unittest.TestCase):
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
-    def test_load(self):
+    def _get_dataset(self):
         img_scale = (640, 640)
         data_source_cfg = dict(
             type='DetSourceRaw',
@@ -33,6 +34,11 @@ class DetDatasetTest(unittest.TestCase):
         ]
 
         dataset = DetDataset(data_source=data_source_cfg, pipeline=pipeline)
+
+        return dataset
+
+    def test_load(self):
+        dataset = self._get_dataset()
         data_num = len(dataset)
         s = time.time()
         for data in dataset:
@@ -46,6 +52,37 @@ class DetDatasetTest(unittest.TestCase):
         img_metas = data['img_metas'].data
         self.assertTrue('img_shape' in img_metas)
         self.assertTrue('ori_img_shape' in img_metas)
+
+    def test_visualize(self):
+        dataset = self._get_dataset()
+        count = 5
+        detection_boxes = []
+        detection_classes = []
+        img_metas = []
+        for i, data in enumerate(dataset):
+            detection_boxes.append(
+                data['gt_bboxes'].data.cpu().detach().numpy())
+            detection_classes.append(
+                data['gt_labels'].data.cpu().detach().numpy())
+            img_metas.append(data['img_metas'].data)
+            if i > count:
+                break
+
+        detection_scores = []
+        for classes in detection_classes:
+            detection_scores.append(0.1 * np.array(range(len(classes))))
+
+        results = {
+            'detection_boxes': detection_boxes,
+            'detection_scores': detection_scores,
+            'detection_classes': detection_classes,
+            'img_metas': img_metas
+        }
+        output = dataset.visualize(results, vis_num=2, score_thr=0.1)
+        self.assertEqual(len(output['images']), 2)
+        self.assertEqual(len(output['img_metas']), 2)
+        self.assertEqual(len(output['images'][0].shape), 3)
+        self.assertIn('filename', output['img_metas'][0])
 
 
 if __name__ == '__main__':
