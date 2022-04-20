@@ -173,8 +173,9 @@ if __name__ == '__main__':
     setup(
         name='pai-easycv',
         version=get_version(),
-        description='EasyCV framework',
+        description='An all-in-one toolkit for computer vision',
         long_description=readme(),
+        long_description_content_type='text/markdown',
         author='Alibaba PAI team',
         author_email='easycv@list.alibaba-inc.com',
         keywords='self-supvervised, classification, vision',

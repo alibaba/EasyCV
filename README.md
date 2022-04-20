@@ -65,4 +65,6 @@ This project licensed under the [Apache License (Version 2.0)](LICENSE). This to
 
 ## Contact
 
-This repo is currently maintained by PAI-CV team.
+This repo is currently maintained by PAI-CV team, you can contact us by easycv@list.alibaba-inc.com or join the dingding group ([join url](https://h5.dingtalk.com/circle/healthCheckin.html?dtaction=os&corpId=ding3ff8258c1c5850ef6ef3dd1a991739ff&9abd5705-5633=d069c338-d566&cbdbhh=qwertyuiop)).
+
+![dingding group QR code](docs/source/_static/dingding_qrcode.jpg)
