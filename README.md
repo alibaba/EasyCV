@@ -33,6 +33,7 @@ EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focus o
 
 Please refer to the installation section in [quick_start.md](docs/source/quick_start.md) for installation.
 
+
 ## Get Started
 
 Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We also provides tutorials for more usages.
@@ -41,23 +42,25 @@ Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We
 * [image classification](docs/source/tutorials/cls.md)
 * [object detection with yolox](docs/source/tutorials/yolox.md)
 
+
 ## Model Zoo
 
 Please refer to the following model zoo for more details.
 
-- [detection model zoo](docs/source/model_zoo_detection.md)
 - [self-supervised learning model zoo](docs/source/model_zoo_ssl.md)
+- [detection model zoo](docs/source/model_zoo_detection.md)
+
+
+## ChangeLog
+
+* 07/04/2022 EasyCV v0.2.2 was released.
+
+Please refer to [change_log.md](docs/source/change_log.md) for more details and history.
+
 
 ## License
 
 This project licensed under the [Apache License (Version 2.0)](LICENSE). This toolkit also contains various third-party components and some code modified from other repos under other open source licenses. See the [NOTICE](NOTICE) file for more information.
-
-## ChangeLog
-
-EasyCV v0.2.0 was release in  01/04/2022.
-
-Please refer to [change_log.md](docs/source/change_log.md) for more details and history.
-
 
 
 ## Contact
