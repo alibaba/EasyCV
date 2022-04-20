@@ -159,6 +159,7 @@ def pack_resource():
         './thirdparty',
         proj_dir + 'thirdparty',
         ignore=shutil.ignore_patterns('*.pyc'))
+    shutil.copytree('./resource', proj_dir + 'resource')
     shutil.copytree('./requirements', 'package/requirements')
     shutil.copy('./requirements.txt', 'package/requirements.txt')
     shutil.copy('./MANIFEST.in', 'package/MANIFEST.in')
@@ -180,6 +181,7 @@ if __name__ == '__main__':
         keywords='self-supvervised, classification, vision',
         url='https://github.com/alibaba/EasyCV.git',
         packages=find_packages(exclude=('configs', 'tools', 'demo')),
+        include_package_data=True,
         classifiers=[
             'Development Status :: 4 - Beta',
             'License :: OSI Approved :: Apache Software License',

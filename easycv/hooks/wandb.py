@@ -11,21 +11,30 @@ from PIL import Image as PILImage
 class WandbLoggerHookV2(_WandbLoggerHook):
 
     def visualization_log(self, runner):
+        """Images Visulization.
+        `visualization_buffer` is a dictionary containing:
+            images (list): list of visulaized images.
+            img_metas (list of dict, optional): dict containing ori_filename and so on.
+                ori_filename will be displayed as the tag of the image by default.
+        """
         visual_results = runner.visualization_buffer.output
         for vis_key, vis_result in visual_results.items():
             images = vis_result.get('images', [])
-            img_metas = vis_result.get('img_metas', [])
-            assert len(images) == len(
-                img_metas
-            ), 'Output `images` and `img_metas` must keep the same length!'
+            img_metas = vis_result.get('img_metas', None)
+            if img_metas is not None:
+                assert len(images) == len(
+                    img_metas
+                ), 'Output `images` and `img_metas` must keep the same length!'
 
             examples = []
             for i, img in enumerate(images):
                 assert isinstance(img, np.ndarray)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 pil_image = PILImage.fromarray(img, mode='RGB')
-                image = self.wandb.Image(
-                    pil_image, caption=img_metas[i]['ori_filename'])
+                filename = img_metas[i].get(
+                    'ori_filename',
+                    'image') if img_metas is not None else 'image'
+                image = self.wandb.Image(pil_image, caption=filename)
                 examples.append(image)
 
             self.wandb.log({vis_key: examples},

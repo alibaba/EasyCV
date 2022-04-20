@@ -2,40 +2,39 @@
 # Adapt from https://github.com/open-mmlab/mmpose/blob/master/mmpose/core/visualization/image.py
 import math
 import os
-from urllib import request
+from os.path import dirname as opd
 
 import cv2
 import mmcv
 import numpy as np
 from mmcv.utils.misc import deprecated_api_warning
 from PIL import Image, ImageDraw, ImageFont
-from torch.hub import DEFAULT_CACHE_DIR
 
 
-def download_font(save_path=None):
-    url_path = 'http://pai-vision-data-hz.oss-accelerate.aliyuncs.com/EasyCV/pkgs/simhei.ttf'
-    if save_path is None:
-        save_dir = DEFAULT_CACHE_DIR
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        save_path = os.path.join(save_dir, 'simhei.ttf')
-
-    if os.path.exists(save_path):
-        return save_path
-
-    f = request.urlopen(url_path)
-    with open(save_path, 'wb') as fw:
-        fw.write(f.read())
-
-    return save_path
+def get_font_path():
+    root_path = opd(opd(opd(os.path.realpath(__file__))))
+    # find in whl
+    find_path_whl = os.path.join(root_path, 'resource/simhei.ttf')
+    # find in source code
+    find_path_source = os.path.join(opd(root_path), 'resource/simhei.ttf')
+    if os.path.exists(find_path_whl):
+        return find_path_whl
+    elif os.path.exists(find_path_source):
+        return find_path_source
+    else:
+        raise ValueError('Not find font file both in %s and %s' %
+                         (find_path_whl, find_path_source))
 
 
-def put_text(img, xy, text, fill, font_path, size=20):
+_FONT_PATH = get_font_path()
+
+
+def put_text(img, xy, text, fill, size=20):
     """support chinese text
     """
     img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(img)
-    fontText = ImageFont.truetype(font_path, size=size, encoding='utf-8')
+    fontText = ImageFont.truetype(_FONT_PATH, size=size, encoding='utf-8')
     draw.text(xy, text, fill=fill, font=fontText)
     img = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
     return img
@@ -70,7 +69,6 @@ def imshow_label(img,
     Returns:
         ndarray: The image with bboxes drawn on it.
     """
-    font_path = download_font()
     img = mmcv.imread(img)
     img = np.ascontiguousarray(img)
     labels = [labels] if isinstance(labels, str) else labels
@@ -87,13 +85,7 @@ def imshow_label(img,
 
         # support chinese text
         # TODO: Unify the font of cv2 and PIL, and auto get font_size according to the font_scale
-        img = put_text(
-            img,
-            org,
-            text=label,
-            fill=text_color,
-            font_path=font_path,
-            size=font_size)
+        img = put_text(img, org, text=label, fill=text_color, size=font_size)
 
         # cv2.putText(img, label, org, cv2.FONT_HERSHEY_DUPLEX, font_scale,
         #             mmcv.color_val(text_color), thickness)
@@ -141,7 +133,6 @@ def imshow_bboxes(img,
     Returns:
         ndarray: The image with bboxes drawn on it.
     """
-    font_path = download_font()
 
     # adapt to mmcv.imshow_bboxes input format
     bboxes = np.split(
@@ -186,7 +177,6 @@ def imshow_bboxes(img,
                 img, (text_x1, text_y1),
                 text=label,
                 fill=text_color,
-                font_path=font_path,
                 size=font_size)
 
     if show:
