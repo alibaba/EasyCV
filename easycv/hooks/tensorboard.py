@@ -33,9 +33,10 @@ class TensorboardLoggerHookV2(_TensorboardLoggerHook):
                         img, torch.Tensor
                     ), 'Only support np.ndarray and torch.Tensor type!'
 
+                default_name = 'image_%i' % i
                 filename = img_metas[i].get(
                     'ori_filename',
-                    'image') if img_metas is not None else 'image'
+                    default_name) if img_metas is not None else default_name
                 self.writer.add_image(
                     f'{vis_key}/{filename}',
                     img,

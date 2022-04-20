@@ -31,9 +31,10 @@ class WandbLoggerHookV2(_WandbLoggerHook):
                 assert isinstance(img, np.ndarray)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 pil_image = PILImage.fromarray(img, mode='RGB')
+                default_name = 'image_%i' % i
                 filename = img_metas[i].get(
                     'ori_filename',
-                    'image') if img_metas is not None else 'image'
+                    default_name) if img_metas is not None else default_name
                 image = self.wandb.Image(pil_image, caption=filename)
                 examples.append(image)
 
