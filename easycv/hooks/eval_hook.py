@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os.path as osp
+from collections import OrderedDict
 
 import torch
 from mmcv.runner import Hook
@@ -71,20 +72,29 @@ class EvalHook(Hook):
                     runner.model, self.dataloader, mode=self.mode, show=False)
             self.evaluate(runner, results)
 
+    def add_visualization_info(self, runner, results):
+        if runner.visualization_buffer.output.get('eval_results',
+                                                  None) is None:
+            runner.visualization_buffer.output['eval_results'] = OrderedDict()
+
+        if isinstance(self.dataloader, DataLoader):
+            dataset_obj = self.dataloader.dataset
+        else:
+            dataset_obj = self.dataloader
+
+        if hasattr(dataset_obj, 'visualize'):
+            runner.visualization_buffer.output['eval_results'].update(
+                dataset_obj.visualize(results, **self.vis_config))
+
     def evaluate(self, runner, results):
+        self.add_visualization_info(runner, results)
+
         if isinstance(self.dataloader, DataLoader):
             eval_res = self.dataloader.dataset.evaluate(
                 results, logger=runner.logger, **self.eval_kwargs)
-            if hasattr(self.dataloader.dataset, 'visualize'):
-                runner.visualization_buffer.output.update(
-                    self.dataloader.dataset.visualize(results,
-                                                      **self.vis_config))
         else:
             eval_res = self.dataloader.evaluate(
                 results, logger=runner.logger, **self.eval_kwargs)
-            if hasattr(self.dataloader, 'visualize'):
-                runner.visualization_buffer.output.update(
-                    self.dataloader.visualize(results, **self.vis_config))
 
         for name, val in eval_res.items():
             runner.log_buffer.output[name] = val
