@@ -48,7 +48,7 @@
     You can simply install easycv with the following command:
 
     ```shell
-    pip install easycv
+    pip install pai-easycv
     ```
 
     or clone the repository and then install it:
