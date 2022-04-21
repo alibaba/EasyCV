@@ -97,7 +97,7 @@ optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.0001)
 
 # learning policy
 lr_config = dict(policy='step', step=[30, 60, 90])
-checkpoint_config = dict(interval=10)
+checkpoint_config = dict(interval=1)
 
 # runtime settings
 total_epochs = 90
