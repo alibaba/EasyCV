@@ -112,11 +112,20 @@ def _export_cls(model, cfg, filename):
 
     if hasattr(cfg, 'test_pipeline'):
         test_pipeline = cfg.test_pipeline
+        for pipe in test_pipeline:
+            if pipe['type'] == 'Collect':
+                remove_names = []
+                for k in pipe['keys']:
+                    if k.startswith('gt'):
+                        remove_names.append(k)
+                for k in remove_names:
+                    pipe['keys'].remove(k)
     else:
         test_pipeline = [
             dict(type='Resize', size=[224, 224]),
             dict(type='ToTensor'),
             dict(type='Normalize', **img_norm_cfg),
+            dict(type='Collect', keys=['img'])
         ]
 
     config = dict(
