@@ -14,3 +14,5 @@ except Exception as e:
     logging.info(f'Exception: {e}')
     logging.info(
         'Import YOLOX_EDGE failed! please check your CUDA & Pytorch Version')
+
+from .vitdet import RPNHead_Norm, SFP

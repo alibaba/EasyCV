@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from mmcv.runner.hooks import HOOKS
+#from mmcv.runner.hooks import HOOKS
+from easycv.hooks import HOOKS
 from mmcv.runner.hooks.lr_updater import (CosineAnnealingLrUpdaterHook,
                                           annealing_cos)
 
