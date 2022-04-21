@@ -33,18 +33,23 @@ To use Imagenet format data to train metric learning, you can refer to [configs/
 **Single gpu:**
 
 ```shell
-python tools/train.py \
+python -m torch.distributed.launch \
+        --nproc_per_node=1 \
+        --master_port=${PORT} \
 		${CONFIG_PATH} \
-		--work_dir ${WORK_DIR}
+		--work_dir ${WORK_DIR} \
+        --launcher pytorch --fp16
 ```
 
 **Multi gpus:**
 
 ```shell
-bash tools/dist_train.sh \
-		${NUM_GPUS} \
+python -m torch.distributed.launch \
+        --nproc_per_node=${GPUS} \
+        --master_port=${PORT} \
 		${CONFIG_PATH} \
-		--work_dir ${WORK_DIR}
+		--work_dir ${WORK_DIR} \
+        --launcher pytorch --fp16
 ```
 
 <details>
@@ -64,13 +69,12 @@ Edit `data_root`path in the `${CONFIG_PATH}` to your own data path.
 
     single gpu training:
     ```shell
-    python tools/train.py  configs/metric_learning/imagenet_resnet50_1000kid_jpg.py --work_dir work_dirs/metric_learning/imagenet_resnet50_1000kid_jpg --fp16
+    CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500 tools/train.py configs/metric_learning/imagenet_resnet50_1000kid_jpg.py --work_dir ~/projects/work_dirs/ --launcher pytorch --fp16
     ```
 
     multi gpu training
     ```shell
-    GPUS=8
-    bash tools/dist_train.sh configs/metric_learning/imagenet_resnet50_1000kid_jpg.py $GPUS --fp16
+    CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch --nproc_per_node=4 --master_port=29500 tools/train.py configs/metric_learning/imagenet_resnet50_1000kid_jpg.py --work_dir ~/projects/work_dirs/ --launcher pytorch --fp16
     ```
 
     training using python api
@@ -88,19 +92,24 @@ Edit `data_root`path in the `${CONFIG_PATH}` to your own data path.
 **Single gpu:**
 
 ```shell
-python tools/eval.py \
+python -m torch.distributed.launch \
+        --nproc_per_node=1 \
+        --master_port=${PORT} \
 		${CONFIG_PATH} \
-		${CHECKPOINT} \
+		--work_dir ${WORK_DIR} \
+        --launcher pytorch --fp16
 		--eval
 ```
 
 **Multi gpus:**
 
 ```shell
-bash tools/dist_test.sh \
+python -m torch.distributed.launch \
+        --nproc_per_node=${GPUS} \
+        --master_port=${PORT} \
 		${CONFIG_PATH} \
-		${NUM_GPUS} \
-		${CHECKPOINT} \
+		--work_dir ${WORK_DIR} \
+        --launcher pytorch --fp16
 		--eval
 ```
 
@@ -119,14 +128,13 @@ bash tools/dist_test.sh \
 
     single gpu evaluation
     ```shell
-    python tools/eval.py configs/metric_learning/imagenet_resnet50_1000kid_jpg.py work_dirs/metric_learning/imagenet_resnet50_1000kid_jpg/epoch_350.pth --eval --fp16
+    CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500 tools/train.py configs/metric_learning/imagenet_resnet50_1000kid_jpg.py --work_dir ~/projects/work_dirs/ --launcher pytorch --fp16 --eval
     ```
 
     multi-gpu evaluation
 
     ```shell
-    GPUS=8
-    bash tools/dist_test.sh configs/metric_learning/imagenet_resnet50_1000kid_jpg $GPUS work_dirs/metric_learning/imagenet_resnet50_1000kid_jpg/epoch_350.pth --eval --fp16
+    CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch --nproc_per_node=4 --master_port=29500 tools/train.py configs/metric_learning/imagenet_resnet50_1000kid_jpg.py --work_dir ~/projects/work_dirs/ --launcher pytorch --fp16 --eval
     ```
 
     evaluation using python api
@@ -136,7 +144,7 @@ bash tools/dist_test.sh \
     import os
     os.environ['CUDA_VISIBLE_DEVICES']='3,4,5,6'
     config_path = 'configs/metric_learning/imagenet_resnet50_1000kid_jpg'
-    checkpoint_path = 'work_dirs/metric_learning/imagenet_resnet50_1000kid_jpg/epoch_350.pth'
+    checkpoint_path = 'work_dirs/metric_learning/imagenet_resnet50_1000kid_jpg/epoch_90.pth'
     easycv.tools.eval(config_path, checkpoint_path, gpus=8)
     ```
 
@@ -154,8 +162,8 @@ bash tools/dist_test.sh \
 
     ```shell
     python tools/export.py configs/metric_learning/imagenet_resnet50_1000kid_jpg \
-        work_dirs/metric_learning/imagenet_resnet50_1000kid_jpg/epoch_350.pth \
-        work_dirs/metric_learning/imagenet_resnet50_1000kid_jpg/epoch_350_export.pth
+        work_dirs/metric_learning/imagenet_resnet50_1000kid_jpg/epoch_90.pth \
+        work_dirs/metric_learning/imagenet_resnet50_1000kid_jpg/epoch_90_export.pth
     ```
 
     or using python api
@@ -176,7 +184,7 @@ bash tools/dist_test.sh \
     import cv2
     from easycv.predictors.classifier import TorchClassifier
 
-    output_ckpt = 'work_dirs/metric_learning/imagenet_resnet50_1000kid_jpg/epoch_350_export.pth'
+    output_ckpt = 'work_dirs/metric_learning/imagenet_resnet50_1000kid_jpg/epoch_90_export.pth'
     tcls = TorchClassifier(output_ckpt)
 
     img = cv2.imread('aeroplane_s_000004.png')

@@ -31,19 +31,19 @@ model = dict(
             {
                 'type': 'ModelParallelAMSoftmaxLoss',
                 'embedding_size': 2048,
-                'num_classes': 1250000,
+                'num_classes': 100, # if CUDA out of memory, reduce num_classes.
                 'norm': False,
                 'ddp': True,
             }
         ],
         input_feature_index=[0]))
 
-data_train_list = 'data/imagenet_raw/meta/train_labeled.txt'
-data_train_root = 'data/imagenet_raw/'
-data_test_list = 'data/imagenet_raw/meta/val_labeled.txt'
-data_test_root = 'data/imagenet_raw/'
-data_all_list = 'data/imagenet_raw/meta/all_labeled.txt'
-data_root = 'data/imagenet_raw/'
+data_train_list = '/apsarapangu/disk1/yunji.cjy/imagenet_raw/meta/train_labeled.txt'
+data_train_root = '/apsarapangu/disk1/yunji.cjy/imagenet_raw/train'
+data_test_list = '/apsarapangu/disk1/yunji.cjy/imagenet_raw/meta/val_labeled.txt'
+data_test_root = '/apsarapangu/disk1/yunji.cjy/imagenet_raw/val'
+data_all_list = '/apsarapangu/disk1/yunji.cjy/imagenet_raw/meta/all_labeled.txt'
+data_root = '/apsarapangu/disk1/yunji.cjy/imagenet_raw/'
 
 dataset_type = 'ClsDataset'
 img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
