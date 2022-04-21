@@ -52,11 +52,6 @@ class ModelExportTest(unittest.TestCase):
     def test_export_classification_and_inference(self):
         config_file = 'configs/classification/imagenet/imagenet_rn50_jpg.py'
         cfg = mmcv_config_fromfile(config_file)
-        # cfg.model.backbone = dict(
-        #     type='ResNet',
-        #     depth=50,
-        #     out_indices=[4],
-        #     norm_cfg=dict(type='BN'))
         cfg.export = dict(use_jit=False)
         ori_ckpt = PRETRAINED_MODEL_RESNET50
         target_ckpt = f'{self.tmp_dir}/classification_export.pth'
