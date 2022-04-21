@@ -19,7 +19,7 @@ from easycv.datasets.builder import build_dataset
 from easycv.file import io
 from easycv.hooks.sync_random_size_hook import SyncRandomSizeHook
 from easycv.runner import EVRunner
-from easycv.utils import get_root_logger
+from easycv.utils.logger import get_root_logger
 from easycv.utils.test_util import dist_exec_wrapper
 
 

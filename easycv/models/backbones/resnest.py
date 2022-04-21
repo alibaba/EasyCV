@@ -14,7 +14,8 @@ import torch.nn.functional as F
 from torch.nn import Conv2d, Module, ReLU
 from torch.nn.modules.utils import _pair
 
-from easycv.utils import get_root_logger, load_checkpoint
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger
 from ..registry import BACKBONES
 
 

@@ -20,7 +20,8 @@ from easycv.hooks import (BestCkptSaverHook, DistEvalHook, EMAHook, EvalHook,
                           ExportHook, OptimizerHook, OSSSyncHook, build_hook)
 from easycv.hooks.optimizer_hook import AMPFP16OptimizerHook
 from easycv.runner import EVRunner
-from easycv.utils import generate_best_metric_name, get_root_logger, print_log
+from easycv.utils.eval_utils import generate_best_metric_name
+from easycv.utils.logger import get_root_logger, print_log
 
 
 def set_random_seed(seed, deterministic=False):
@@ -150,7 +151,7 @@ def train_model(model,
     if validate:
         interval = cfg.eval_config.pop('interval', 1)
         for idx, eval_pipe in enumerate(cfg.eval_pipelines):
-            data = eval_pipe.data
+            data = eval_pipe.get('data', None) or cfg.data.val
             dist_eval = eval_pipe.get('dist_eval', False)
 
             evaluator_cfg = eval_pipe.evaluators[0]

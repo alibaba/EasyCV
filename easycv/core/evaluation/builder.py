@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from easycv.utils import build_from_cfg
-from easycv.utils.registry import Registry
+from easycv.utils.registry import Registry, build_from_cfg
 
 EVALUATORS = Registry('hook')
 

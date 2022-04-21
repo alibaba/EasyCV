@@ -3,6 +3,7 @@ import numpy as np
 
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
+from easycv.utils.bbox_util import batched_xyxy2cxcywh_with_shape
 
 
 @DATASETS.register_module
@@ -33,44 +34,29 @@ class DetDataset(BaseDataset):
         '''results: a dict of list of Tensors, list length equals to number of test images
         '''
         eval_result = dict()
-        annotations = self.data_source.get_labels()
+
         groundtruth_dict = {}
         groundtruth_dict['groundtruth_boxes'] = [
-            labels[:,
-                   1:] if len(labels) > 0 else np.array([], dtype=np.float32)
-            for labels in annotations
+            batched_xyxy2cxcywh_with_shape(
+                self.data_source.get_ann_info(idx)['bboxes'],
+                results['img_metas'][idx]['ori_img_shape'])
+            for idx in range(len(results['img_metas']))
         ]
         groundtruth_dict['groundtruth_classes'] = [
-            labels[:, 0] if len(labels) > 0 else np.array([], dtype=np.float32)
-            for labels in annotations
+            self.data_source.get_ann_info(idx)['labels']
+            for idx in range(len(results['img_metas']))
         ]
-        # bboxes = [label[:, 1:] for label in annotations]
-        # scores = [label[:, 0] for label in annotations]
+        groundtruth_dict['groundtruth_is_crowd'] = [
+            self.data_source.get_ann_info(idx)['groundtruth_is_crowd']
+            for idx in range(len(results['img_metas']))
+        ]
+
+        groundtruth_dict['groundtruth_instance_masks'] = [
+            self.data_source.get_ann_info(idx).get('masks', None)
+            for idx in range(len(results['img_metas']))
+        ]
+        
         for evaluator in evaluators:
             eval_result.update(evaluator.evaluate(results, groundtruth_dict))
-        # eval_res = {'dummy': 1.0}
-        # img = self.data_source.load_ori_img(0)
-        # num_box = results['detection_scores'][0].size(0)
-        # scores = results['detection_scores'][0].detach().cpu().numpy()
-        # bboxes = torch.cat((results['detection_boxes'][0], results['detection_scores'][0].view(num_box, 1)), axis=1).detach().cpu().numpy()
-        # labels = results['detection_classes'][0].detach().cpu().numpy().astype(np.int32)
-        # # draw bounding boxes
-        # score_th = 0.3
-        # indices = scores > score_th
-        # filter_labels = labels[indices]
-        # print([(self.classes[i], score) for i, score in zip(filter_labels, scores)])
-        # mmcv.imshow_det_bboxes(
-        #     img,
-        #     bboxes,
-        #     labels,
-        #     class_names=self.classes,
-        #     score_thr=score_th,
-        #     bbox_color='red',
-        #     text_color='black',
-        #     thickness=1,
-        #     font_scale=0.5,
-        #     show=False,
-        #     wait_time=0,
-        #     out_file='test.jpg')
 
         return eval_result

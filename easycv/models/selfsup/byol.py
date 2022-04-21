@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 
-from easycv.utils import print_log
+from easycv.utils.logger import print_log
 from .. import builder
 from ..base import BaseModel
 from ..registry import MODELS
