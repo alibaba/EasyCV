@@ -1,4 +1,4 @@
-# compression tutorial
+# YOLOX Compression Tutorial
 
 ## Data preparation
 To download the dataset, please refer to [prepare_data.md](../prepare_data.md).
@@ -20,6 +20,7 @@ To use PAI-Itag format data, use config file `configs/detection/yolox/yolox_s_8x
 
 ### Compression
 **Quantize:**
+This is used to quantize yolox model; The quantized model will be saved in work_dir.
 
 ```shell
 python tools/quantize.py \
@@ -38,11 +39,11 @@ python tools/quantize.py \
 
 - `WORK_DIR`: your path to save models and logs
 
-- `MODEL_PATH`: the quantized models
+- `MODEL_PATH`: the models to be quantized
 
-- `DEVICE`: the device quantized models use
+- `DEVICE`: the device quantized models use (cpu/arm)
 
-- `BACKEND`: the quantized models's framework
+- `BACKEND`: the quantized models's framework (PyTorch/MNN)
 
 </details>
 
@@ -59,6 +60,7 @@ python tools/quantize.py \
 ```
 
 **Prune:**
+This is used to prune yolox model; The pruned model will be saved in work_dir.
 
 ```shell
 python tools/quantize.py \
@@ -79,9 +81,9 @@ python tools/quantize.py \
 
 - `MODEL_PATH`: the quantized models
 
-- `PRUNING_CLASS`: pruning class for pruning models
+- `PRUNING_CLASS`: pruning class for pruning models (AGP)
 
-- `PRUNING_ALGORITHM`: pruning algorithm using by pruning class
+- `PRUNING_ALGORITHM`: pruning algorithm using by pruning class (taylorfo)
 </details>
 
 **Examples:**
@@ -98,43 +100,7 @@ python tools/quantize.py \
 
 ### Evaluation
 
-**Single gpu:**
-
-```shell
-python tools/eval.py \
-		${CONFIG_PATH} \
-		${CHECKPOINT} \
-		--eval
-```
-
-**Multi gpus:**
-
-```shell
-bash tools/dist_test.sh \
-		${CONFIG_PATH} \
-		${NUM_GPUS} \
-		${CHECKPOINT} \
-		--eval
-```
-
-<details>
-<summary>Arguments</summary>
-
-- `CONFIG_PATH`: the config file path of a detection method
-
-- `NUM_GPUS`: number of gpus
-
-- `CHECKPOINT`: the checkpoint file named as quantize_model.pt.
-
-</details>
-
-**Examples:**
-
-```shell
-GPUS=8
-bash tools/dist_test.sh configs/detection/yolox/yolox_s_8xb16_300e_coco.py $GPUS work_dirs/compression/yolox/quantize_model.pt --eval
-```
-
+Model will be auto-eval after compressing. So the result will be writed in the log.
 
 ### Inference
 Download [test_image](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/small_coco_demo/val2017/000000017627.jpg)
