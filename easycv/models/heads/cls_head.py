@@ -7,7 +7,9 @@ import torch.nn.functional as F
 from mmcv.cnn import kaiming_init, normal_init
 from torch.autograd import Variable
 
-from easycv.utils import build_from_cfg, get_root_logger, load_checkpoint
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger
+from easycv.utils.registry import build_from_cfg
 from ..registry import HEADS, LOSSES
 from ..utils import accuracy
 

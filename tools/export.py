@@ -19,7 +19,7 @@ import requests
 from easycv import __version__
 from easycv.apis.export import export
 from easycv.file import io
-from easycv.utils import get_root_logger
+from easycv.utils.logger import get_root_logger
 # from mmcv import Config
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)

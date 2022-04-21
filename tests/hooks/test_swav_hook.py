@@ -15,7 +15,7 @@ from easycv.datasets import build_dataloader
 from easycv.file import io
 from easycv.hooks.swav_hook import SWAVHook
 from easycv.runner import EVRunner
-from easycv.utils import get_root_logger
+from easycv.utils.logger import get_root_logger
 from easycv.utils.test_util import pseudo_dist_init
 
 
