@@ -31,7 +31,7 @@ model = dict(
             {
                 'type': 'ModelParallelAMSoftmaxLoss',
                 'embedding_size': 2048,
-                'num_classes': 100, # if CUDA out of memory, reduce num_classes.
+                'num_classes': 100,  # if CUDA out of memory, reduce num_classes.
                 'norm': False,
                 'ddp': True,
             }

@@ -37,7 +37,7 @@ data = dict(
         type=dataset_type,
         data_source=dict(split='test', **data_source_cfg),
         pipeline=test_pipeline))
-        
+
 # optimizer
 optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.0005)
 # learning policy
