@@ -5,7 +5,8 @@ r""" This model is taken from the official PyTorch model zoo.
 
 from torch import nn
 
-from easycv.utils import get_root_logger, load_checkpoint
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger
 from ..modelzoo import mobilenetv2 as model_urls
 from ..registry import BACKBONES
 

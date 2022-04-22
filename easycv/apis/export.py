@@ -81,7 +81,7 @@ def _export_cls(model, cfg, filename):
     else:
         export_cfg = dict(export_neck=False)
 
-    export_neck = export_cfg.get('export_neck', False)
+    export_neck = export_cfg.get('export_neck', True)
     label_map_path = cfg.get('label_map_path', None)
     class_list = None
     if label_map_path is not None:
@@ -103,7 +103,7 @@ def _export_cls(model, cfg, filename):
         print("this cls model doesn't contain cls head, we add a dummy head!")
         model_config['head'] = head = dict(
             type='ClsHead',
-            with_avg_pool=False,
+            with_avg_pool=True,
             in_channels=model_config['backbone'].get('num_classes', 2048),
             num_classes=1000,
         )
@@ -112,11 +112,15 @@ def _export_cls(model, cfg, filename):
 
     if hasattr(cfg, 'test_pipeline'):
         test_pipeline = cfg.test_pipeline
+        for pipe in test_pipeline:
+            if pipe['type'] == 'Collect':
+                pipe['keys'] = ['img']
     else:
         test_pipeline = [
             dict(type='Resize', size=[224, 224]),
             dict(type='ToTensor'),
             dict(type='Normalize', **img_norm_cfg),
+            dict(type='Collect', keys=['img'])
         ]
 
     config = dict(

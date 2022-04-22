@@ -9,7 +9,7 @@ from timm.data import create_transform
 from torchvision import transforms as _transforms
 
 from easycv.datasets.registry import PIPELINES
-from easycv.utils import build_from_cfg
+from easycv.utils.registry import build_from_cfg
 
 
 @PIPELINES.register_module

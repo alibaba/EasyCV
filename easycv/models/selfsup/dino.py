@@ -9,8 +9,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.runner import get_dist_info
 
-from easycv.utils import (gaussianBlurDynamic, print_log, randomGrayScale,
-                          solarize)
+from easycv.utils.preprocess_function import (gaussianBlurDynamic,
+                                              randomGrayScale, solarize)
 from .. import builder
 from ..base import BaseModel
 from ..registry import MODELS

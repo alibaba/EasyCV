@@ -26,7 +26,7 @@ from easycv.models import build_model
 from easycv.apis import single_cpu_test, single_gpu_test
 from easycv.core.evaluation.builder import build_evaluator
 from easycv.datasets import build_dataloader, build_dataset
-from easycv.utils import get_root_logger
+from easycv.utils.logger import get_root_logger
 from easycv.file import io
 from easycv.toolkit.quantize.quantize_utils import calib, quantize_config
 from easycv.utils.checkpoint import load_checkpoint

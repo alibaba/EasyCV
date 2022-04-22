@@ -5,7 +5,8 @@ import timm
 import torch
 import torch.nn as nn
 
-from easycv.utils import get_root_logger, load_checkpoint
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger
 from ..modelzoo import timm_models as model_urls
 from ..registry import BACKBONES
 from .shuffle_transformer import (shuffletrans_base_p4_w7_224,

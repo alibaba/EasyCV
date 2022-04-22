@@ -4,7 +4,8 @@ import unittest
 
 import numpy as np
 
-from easycv.core.visualization import imshow_bboxes, imshow_keypoints
+from easycv.core.visualization import (imshow_bboxes, imshow_keypoints,
+                                       imshow_label)
 
 
 class ImshowTest(unittest.TestCase):
@@ -32,7 +33,7 @@ class ImshowTest(unittest.TestCase):
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         bboxes = np.array([[10, 10, 30, 30], [10, 50, 30, 80]],
                           dtype=np.float32)
-        labels = ['label 1', 'label 2']
+        labels = ['标签 1', 'label 2']
         colors = ['red', 'green']
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -64,6 +65,17 @@ class ImshowTest(unittest.TestCase):
                 self.assertEqual(type(e), AssertionError)
             else:
                 self.fail('ValueError not raised')
+
+    def test_imshow_label(self):
+        img = np.zeros((100, 100, 3), dtype=np.uint8)
+        labels = ['标签 1', 'label 2']
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _ = imshow_label(
+                img=img,
+                labels=labels,
+                show=False,
+                out_file=f'{tmpdir}/out.png')
 
 
 if __name__ == '__main__':
