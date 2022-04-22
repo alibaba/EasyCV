@@ -79,7 +79,6 @@ class ClsHead(nn.Module):
     def forward(self, x: List[torch.Tensor]) -> List[torch.Tensor]:
 
         x1 = x[self.input_feature_index[0]]
-
         if self.with_avg_pool and x1.dim() > 2:
             assert x1.dim() == 4, \
                 'Tensor must has 4 dims, got: {}'.format(x1.dim())
