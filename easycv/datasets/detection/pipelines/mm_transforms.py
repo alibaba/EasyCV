@@ -1644,20 +1644,21 @@ class LoadAnnotations:
         Returns:
             numpy.ndarray: The decode bitmap mask of shape (img_h, img_w).
         """
-        raise NotImplementedError
-        # if isinstance(mask_ann, list):
-        #     # polygon -- a single object might consist of multiple parts
-        #     # we merge all parts into one mask rle code
-        #     rles = maskUtils.frPyObjects(mask_ann, img_h, img_w)
-        #     rle = maskUtils.merge(rles)
-        # elif isinstance(mask_ann['counts'], list):
-        #     # uncompressed RLE
-        #     rle = maskUtils.frPyObjects(mask_ann, img_h, img_w)
-        # else:
-        #     # rle
-        #     rle = mask_ann
-        # mask = maskUtils.decode(rle)
-        # return mask
+        import xtcocotools.mask as maskUtils
+
+        if isinstance(mask_ann, list):
+            # polygon -- a single object might consist of multiple parts
+            # we merge all parts into one mask rle code
+            rles = maskUtils.frPyObjects(mask_ann, img_h, img_w)
+            rle = maskUtils.merge(rles)
+        elif isinstance(mask_ann['counts'], list):
+            # uncompressed RLE
+            rle = maskUtils.frPyObjects(mask_ann, img_h, img_w)
+        else:
+            # rle
+            rle = mask_ann
+        mask = maskUtils.decode(rle)
+        return mask
 
     def process_polygons(self, polygons):
         """Convert polygons to list of ndarray and filter invalid polygons.
@@ -1687,20 +1688,20 @@ class LoadAnnotations:
                 If ``self.poly2mask`` is set ``True``, `gt_mask` will contain
                 :obj:`PolygonMasks`. Otherwise, :obj:`BitmapMasks` is used.
         """
-        raise NotImplementedError
+        from mmdet.core import BitmapMasks, PolygonMasks
 
-        # h, w = results['img_info']['height'], results['img_info']['width']
-        # gt_masks = results['ann_info']['masks']
-        # if self.poly2mask:
-        #     gt_masks = BitmapMasks(
-        #         [self._poly2mask(mask, h, w) for mask in gt_masks], h, w)
-        # else:
-        #     gt_masks = PolygonMasks(
-        #         [self.process_polygons(polygons) for polygons in gt_masks], h,
-        #         w)
-        # results['gt_masks'] = gt_masks
-        # results['mask_fields'].append('gt_masks')
-        # return results
+        h, w = results['img_info']['height'], results['img_info']['width']
+        gt_masks = results['ann_info']['masks']
+        if self.poly2mask:
+            gt_masks = BitmapMasks(
+                [self._poly2mask(mask, h, w) for mask in gt_masks], h, w)
+        else:
+            gt_masks = PolygonMasks(
+                [self.process_polygons(polygons) for polygons in gt_masks], h,
+                w)
+        results['gt_masks'] = gt_masks
+        results['mask_fields'].append('gt_masks')
+        return results
 
     def _load_semantic_seg(self, results):
         """Private function to load semantic segmentation annotations.

@@ -151,7 +151,7 @@ def train_model(model,
     if validate:
         interval = cfg.eval_config.pop('interval', 1)
         for idx, eval_pipe in enumerate(cfg.eval_pipelines):
-            data = eval_pipe.data
+            data = eval_pipe.get('data', None) or cfg.data.val
             dist_eval = eval_pipe.get('dist_eval', False)
 
             evaluator_cfg = eval_pipe.evaluators[0]
