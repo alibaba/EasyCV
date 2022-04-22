@@ -33,7 +33,6 @@ def get_args(obj):
 
 def _reset_forward(obj):
     original_forward = obj.forward
-    print('forward',obj)
     def _new_forward(self, results):
         img = results['img']
         img = original_forward(self, img)
@@ -45,7 +44,6 @@ def _reset_forward(obj):
 
 def _reset_call(obj):
     original_call = obj.__call__
-    print('call',obj)
     def _new_call(self, results):
         img = results['img']
         img = original_call(self, img)
