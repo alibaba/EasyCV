@@ -191,7 +191,23 @@ class AMPFP16OptimizerHook(OptimizerHook):
             scaler_state_dict = runner.meta['fp16']['loss_scaler']
             self.loss_scaler.load_state_dict(scaler_state_dict)
         print('open fp16')
-        runner.optimizer.zero_grad()
+        #runner.optimizer.zero_grad()
+
+    def copy_grads_to_fp32(self, fp16_net, fp32_weights):
+        """Copy gradients from fp16 model to fp32 weight copy."""
+        for fp32_param, fp16_param in zip(fp32_weights,
+                                            fp16_net.parameters()):
+            if fp16_param.grad is not None:
+                if fp32_param.grad is None:
+                    fp32_param.grad = fp32_param.data.new(
+                        fp32_param.size())
+                fp32_param.grad.copy_(fp16_param.grad)
+
+    def copy_params_to_fp16(self, fp16_net, fp32_weights):
+        """Copy updated params from fp32 weight copy to fp16 model."""
+        for fp16_param, fp32_param in zip(fp16_net.parameters(),
+                                            fp32_weights):
+            fp16_param.data.copy_(fp32_param.data)
 
     def after_train_iter(self, runner):
         """Backward optimization steps for Mixed Precision Training. For
@@ -223,11 +239,11 @@ class AMPFP16OptimizerHook(OptimizerHook):
                     if k in name and runner.epoch < epoch:
                         p.grad = None
 
-            if self.every_n_iters(runner, self.update_interval):
+            if (self.every_n_iters(runner, self.update_interval) or self.is_last_iter(runner)):
                 self.loss_scaler.unscale_(runner.optimizer)
                 if self.grad_clip is not None:
-                    self.loss_scaler.unscale_(runner.optimizer)
                     self.clip_grads(runner.model.parameters())
+                    
                 self.loss_scaler.step(runner.optimizer)
                 self.loss_scaler.update(self._scale_update_param)
 
