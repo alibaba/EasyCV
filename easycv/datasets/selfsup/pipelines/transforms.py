@@ -76,7 +76,10 @@ class MAEFtAugment(object):
             self.trans = _transforms.Compose(t)
 
     def __call__(self, results):
-        return self.trans(results)
+        img = results['img']
+        img = self.trans(img)
+        results['img'] = img
+        return results
 
     def __repr__(self) -> str:
         repr_str = self.__class__.__name__

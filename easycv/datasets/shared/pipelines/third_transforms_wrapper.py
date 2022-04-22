@@ -33,7 +33,7 @@ def get_args(obj):
 
 def _reset_forward(obj):
     original_forward = obj.forward
-
+    print('forward',obj)
     def _new_forward(self, results):
         img = results['img']
         img = original_forward(self, img)
@@ -45,7 +45,7 @@ def _reset_forward(obj):
 
 def _reset_call(obj):
     original_call = obj.__call__
-
+    print('call',obj)
     def _new_call(self, results):
         img = results['img']
         img = original_call(self, img)
@@ -60,7 +60,6 @@ def _reset_call(obj):
 def wrap_torchvision_transforms(transform_obj):
     transform_obj = copy.deepcopy(transform_obj)
     # args_format = ['img', 'pic']
-
     if is_child_of(transform_obj, torch.nn.Module):
         args = get_args(transform_obj.forward)
         if len(args) == 1:  # and args[0] in args_format:
@@ -79,5 +78,6 @@ for member in inspect.getmembers(_transforms, inspect.isclass):
     obj_name, obj = member[0], member[1]
     if obj_name in skip_list:
         continue
-    wrap_torchvision_transforms(obj)
-    PIPELINES.register_module(obj)
+    obj_copy = type(obj_name,(obj,),dict())
+    wrap_torchvision_transforms(obj_copy)
+    PIPELINES.register_module(obj_copy)
