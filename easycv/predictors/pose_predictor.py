@@ -15,10 +15,10 @@ from easycv.file import io
 from easycv.models import build_model
 from easycv.predictors.builder import PREDICTORS
 from easycv.predictors.detector import TorchYoloXPredictor
-from easycv.utils import build_from_cfg
 from easycv.utils.bbox_util import xywh2xyxy_coco, xyxy2xywh_coco
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
+from easycv.utils.registry import build_from_cfg
 
 try:
     from easy_vision.python.inference.predictor import PredictorInterface

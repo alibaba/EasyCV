@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 
 from torch.utils.data import Dataset
 
-from easycv.utils import build_from_cfg
+from easycv.utils.registry import build_from_cfg
 from ..builder import build_datasource
 from ..registry import PIPELINES
 from .pipelines.transforms import Compose

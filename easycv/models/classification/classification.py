@@ -7,8 +7,9 @@ import torch.nn as nn
 from mmcv.runner import get_dist_info
 from timm.data.mixup import Mixup
 
-from easycv.utils import (bninceptionPre, gaussianBlur, mixUpCls, print_log,
-                          randomErasing)
+from easycv.utils.logger import print_log
+from easycv.utils.preprocess_function import (bninceptionPre, gaussianBlur,
+                                              mixUpCls, randomErasing)
 from .. import builder
 from ..base import BaseModel
 from ..registry import MODELS

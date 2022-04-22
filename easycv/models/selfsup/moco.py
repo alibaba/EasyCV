@@ -2,7 +2,8 @@
 import torch
 import torch.nn as nn
 
-from easycv.utils import gaussianBlur, print_log, randomGrayScale
+from easycv.utils.logger import print_log
+from easycv.utils.preprocess_function import gaussianBlur, randomGrayScale
 from .. import builder
 from ..base import BaseModel
 from ..registry import MODELS

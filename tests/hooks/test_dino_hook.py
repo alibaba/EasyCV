@@ -14,7 +14,7 @@ from easycv.datasets import build_dataloader
 from easycv.file import io
 from easycv.hooks.dino_hook import DINOHook
 from easycv.runner import EVRunner
-from easycv.utils import get_root_logger
+from easycv.utils.logger import get_root_logger
 
 
 class DummyDataset(object):
