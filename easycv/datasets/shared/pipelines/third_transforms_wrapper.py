@@ -33,6 +33,7 @@ def get_args(obj):
 
 def _reset_forward(obj):
     original_forward = obj.forward
+
     def _new_forward(self, results):
         img = results['img']
         img = original_forward(self, img)
@@ -44,6 +45,7 @@ def _reset_forward(obj):
 
 def _reset_call(obj):
     original_call = obj.__call__
+
     def _new_call(self, results):
         img = results['img']
         img = original_call(self, img)
@@ -76,6 +78,6 @@ for member in inspect.getmembers(_transforms, inspect.isclass):
     obj_name, obj = member[0], member[1]
     if obj_name in skip_list:
         continue
-    obj_copy = type(obj_name,(obj,),dict())
+    obj_copy = type(obj_name, (obj, ), dict())
     wrap_torchvision_transforms(obj_copy)
     PIPELINES.register_module(obj_copy)
