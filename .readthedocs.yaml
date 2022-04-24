@@ -14,14 +14,12 @@ build:
       - echo "Command run at 'pre_create_environment' step"
     pre_build:
       - echo "Command run at 'pre_build' step"
-      - cd docs && mkdir build/
-      - mkdir -p source/api/
-      - pwd && ls && sphinx-apidoc --module-first -o source/api/ ../easycv/
+      - cd docs && mkdir build/ && mkdir -p source/api/
+      - cd docs && pwd && ls && sphinx-apidoc --module-first -o source/api/ ../easycv/
     post_build:
       - echo "Command run at 'post_build' step"
-      - cp -r ../configs  build/
-      - mkdir -p build/benchmarks/
-      - cp  -r ../benchmarks/selfsup  build/benchmarks/
+      - cd docs && cp -r ../configs  build/
+      - cd docs && mkdir -p build/benchmarks/ && cp  -r ../benchmarks/selfsup  build/benchmarks/
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
