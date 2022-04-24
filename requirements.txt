@@ -9,7 +9,7 @@ http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/third_party/nvidia_dal
 #http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/third_party/mmcv_full-1.2.0%2Btorch1.7.0%2Bcu101-cp36-cp36m-manylinux1_x86_64.whl
 json_tricks
 numpy
-opencv-python-headless==4.4.0.40
+opencv-python-headless==4.1.2.30
 oss2
 packaging
 Pillow<=6.2.2
