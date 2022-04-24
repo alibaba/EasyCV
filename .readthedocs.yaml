@@ -14,8 +14,7 @@ build:
       - echo "Command run at 'pre_create_environment' step"
     pre_build:
       - echo "Command run at 'pre_build' step"
-      - ls
-      - pwd
+      - cd docs && mkdir build/
       - mkdir -p source/api/
       - sphinx-apidoc --module-first -o source/api/ ../easycv/
     post_build:
