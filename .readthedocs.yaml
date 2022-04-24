@@ -10,8 +10,10 @@ build:
     # rust: "1.55"
     # golang: "1.17"
   jobs:
-    pre_create_environment:
-      - echo "Command run at 'pre_create_environment' step"
+    pre_build:
+      - echo "Command run at 'pre_build' step"
+      - pip install torch==1.10.0+cu102 torchvision==0.11.0+cu102 -f https://download.pytorch.org/whl/torch_stable.html
+      - pip install mmcv-full==1.4.1 -f https://download.openmmlab.com/mmcv/dist/cu102/torch1.10.0/index.html
       # - cd docs && pwd && ls && sphinx-apidoc --module-first -o source/api/ ../easycv/
     post_build:
       - echo "Command run at 'post_build' step"
