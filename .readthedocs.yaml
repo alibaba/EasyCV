@@ -33,7 +33,6 @@ sphinx:
 formats: all
 
 python:
-  version: "3.6"
   install:
     - requirements: requirements/docs.txt
     - requirements: requirements/runtime.txt
