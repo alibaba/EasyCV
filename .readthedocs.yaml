@@ -4,8 +4,7 @@ version: 2
 build:
   os: ubuntu-20.04
   tools:
-    python:
-      version: "3.9"
+    python: "3.6"
     # You can also specify other tool versions:
     # nodejs: "16"
     # rust: "1.55"
@@ -34,7 +33,7 @@ sphinx:
 formats: all
 
 python:
-  version: 3.6
+  version: "3.6"
   install:
     - requirements: requirements/docs.txt
     - requirements: requirements/runtime.txt
