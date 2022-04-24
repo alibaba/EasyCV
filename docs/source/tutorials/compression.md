@@ -1,5 +1,24 @@
 # YOLOX Compression Tutorial
 
+## ENV preparation
+### install torch >= 1.10.0
+```shell
+conda install pytorch==1.10.0 torchvision==0.11.0 torchaudio==0.10.0 cudatoolkit=10.2 -c pytorch
+```
+### install mmcv >= 1.3.16 (torch version >= 1.10.0 does not support mmcv version < 1.3.16)
+```shell
+pip install mmcv-full==1.4.4 -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
+```
+### install onnx and pai_nni
+```shell
+pip install onnx
+pip install https://pai-nni.oss-cn-zhangjiakou.aliyuncs.com/release/2.5/pai_nni-2.5-py3-none-manylinux1_x86_64.whl
+```
+### install blade_compression
+```shell
+pip install http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/third_party/blade_compression-0.0.1-py3-none-any.whl
+```
+
 ## Data preparation
 To download the dataset, please refer to [prepare_data.md](../prepare_data.md).
 
