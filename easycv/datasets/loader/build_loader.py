@@ -11,7 +11,7 @@ from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader, RandomSampler
 
 from easycv.datasets.shared.odps_reader import set_dataloader_workid
-from .sampler import DistributedMPSampler, DistributedSampler
+from .sampler import DistributedMPSampler, DistributedSampler, DistributedGroupSampler
 
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
@@ -58,7 +58,7 @@ def build_dataloader(dataset,
     Returns:
         DataLoader: A PyTorch dataloader.
     """
-
+    batch_sampler = None    
     if dist:
         rank, world_size = get_dist_info()
         split_huge_listfile_byrank = getattr(dataset,
@@ -73,12 +73,17 @@ def build_dataloader(dataset,
                 shuffle=shuffle,
                 split_huge_listfile_byrank=split_huge_listfile_byrank)
         else:
-            sampler = DistributedSampler(
-                dataset,
-                world_size,
-                rank,
-                shuffle=shuffle,
-                split_huge_listfile_byrank=split_huge_listfile_byrank)
+            if shuffle:
+                print("!!!!!!!!!!!!!!!")
+                sampler = DistributedGroupSampler(
+                    dataset, imgs_per_gpu, world_size, rank, seed=seed)
+            else:
+                sampler = DistributedSampler(
+                    dataset,
+                    world_size,
+                    rank,
+                    shuffle=shuffle,
+                    split_huge_listfile_byrank=split_huge_listfile_byrank)
         batch_size = imgs_per_gpu
         num_workers = workers_per_gpu
     else:
@@ -113,11 +118,13 @@ def build_dataloader(dataset,
                 worker_init_fn=init_fn,
                 **kwargs)
         else:
+            print("@@@@@@@@@@@@@@@@@@@@@@@@")
             data_loader = DataLoader(
                 dataset,
                 batch_size=batch_size,
                 sampler=sampler,
                 num_workers=num_workers,
+                batch_sampler=batch_sampler,
                 collate_fn=collate_fn,
                 pin_memory=False,
                 worker_init_fn=init_fn,

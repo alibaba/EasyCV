@@ -311,7 +311,8 @@ class DistributedGroupSampler(Sampler):
                  dataset,
                  samples_per_gpu=1,
                  num_replicas=None,
-                 rank=None):
+                 rank=None,
+                 seed=0):
         _rank, _num_replicas = get_dist_info()
         if num_replicas is None:
             num_replicas = _num_replicas
@@ -322,9 +323,11 @@ class DistributedGroupSampler(Sampler):
         self.num_replicas = num_replicas
         self.rank = rank
         self.epoch = 0
+        self.seed = seed if seed is not None else 0
 
-        assert hasattr(self.dataset, 'flag')
-        self.flag = self.dataset.flag
+        print("debug:{}".format(self.dataset))
+        assert hasattr(self.dataset.data_source, 'flag')
+        self.flag = self.dataset.data_source.flag
         self.group_sizes = np.bincount(self.flag)
 
         self.num_samples = 0
@@ -337,7 +340,7 @@ class DistributedGroupSampler(Sampler):
     def __iter__(self):
         # deterministically shuffle based on epoch
         g = torch.Generator()
-        g.manual_seed(self.epoch)
+        g.manual_seed(self.epoch + self.seed)
 
         indices = []
         for i, size in enumerate(self.group_sizes):
