@@ -9,6 +9,14 @@ easycv.datasets.shared.data\_sources package
 Submodules
 ----------
 
+easycv.datasets.shared.data\_sources.concat module
+--------------------------------------------------
+
+.. automodule:: easycv.datasets.shared.data_sources.concat
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 easycv.datasets.shared.data\_sources.image\_npy module
 ------------------------------------------------------
 

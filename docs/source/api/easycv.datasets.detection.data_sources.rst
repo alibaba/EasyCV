@@ -17,14 +17,6 @@ easycv.datasets.detection.data\_sources.coco module
    :undoc-members:
    :show-inheritance:
 
-easycv.datasets.detection.data\_sources.concat module
------------------------------------------------------
-
-.. automodule:: easycv.datasets.detection.data_sources.concat
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 easycv.datasets.detection.data\_sources.pai\_format module
 ----------------------------------------------------------
 
@@ -37,6 +29,14 @@ easycv.datasets.detection.data\_sources.raw module
 --------------------------------------------------
 
 .. automodule:: easycv.datasets.detection.data_sources.raw
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+easycv.datasets.detection.data\_sources.utils module
+----------------------------------------------------
+
+.. automodule:: easycv.datasets.detection.data_sources.utils
    :members:
    :undoc-members:
    :show-inheritance:

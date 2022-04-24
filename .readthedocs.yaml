@@ -12,8 +12,8 @@ build:
   jobs:
     post_checkout:
       - cat requirements/runtime.txt | grep -v opencv-python-headless > a.txt && mv a.txt requirements/runtime.txt
-  #   post_install:
-  #     - pip install opencv-python
+    post_install:
+      - cd docs && rm -rf source/api/ && sphinx-apidoc --module-first -o source/api/ ../easycv/
   #   pre_build:
   #     - echo "Command run at 'pre_build' step"
   #     - pip install torch==1.10.0 torchvision==0.11.0
@@ -32,7 +32,3 @@ python:
     - requirements: requirements/docs.txt
     - requirements: requirements/readthedocs.txt
     - requirements: requirements/runtime.txt
-    # - method: pip
-    #   path: .
-    #   extra_requirements:
-    #     - opencv-python
