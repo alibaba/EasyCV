@@ -148,6 +148,9 @@ class DistEvalHook(EvalHook):
         self.eval_kwargs = eval_kwargs
         self.initial = initial
         self.flush_buffer = flush_buffer
+        # hook.evaluate runs every interval epoch or iter, popped at init
+        self.vis_config = self.eval_kwargs.pop('visualization_config', {})
+        self.gpu_collect = self.eval_kwargs.pop('gpu_collect', None)
 
     def before_run(self, runner):
         if self.initial:
