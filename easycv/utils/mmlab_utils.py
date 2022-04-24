@@ -70,7 +70,7 @@ class MMAdapter:
             mmcv_conflict_list = ['YOLOXLrUpdaterHook']
             from mmcv.runner.hooks import HOOKS
             for conflict in mmcv_conflict_list:
-                HOOKS._module_dict.pop(conflict)
+                HOOKS._module_dict.pop(conflict, None)
 
     def adapt_mmlab_modules(self):
         for module_cfg in self.modules_config:
