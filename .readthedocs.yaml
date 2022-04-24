@@ -10,7 +10,7 @@ build:
     # rust: "1.55"
     # golang: "1.17"
   jobs:
-    post_create_environment:
+    post_install:
       - pip install opencv-python
     pre_build:
       - echo "Command run at 'pre_build' step"
