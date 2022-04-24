@@ -10,6 +10,8 @@ build:
     # rust: "1.55"
     # golang: "1.17"
   jobs:
+    post_create_environment:
+      - pip install opencv-python
     pre_build:
       - echo "Command run at 'pre_build' step"
       - pip install torch==1.10.0+cu102 torchvision==0.11.0+cu102 -f https://download.pytorch.org/whl/torch_stable.html
@@ -27,7 +29,7 @@ python:
   install:
     - requirements: requirements/docs.txt
     - requirements: requirements/runtime.txt
-    - method: pip
-      path: .
-      extra_requirements:
-        - opencv-python
+    # - method: pip
+    #   path: .
+    #   extra_requirements:
+    #     - opencv-python
