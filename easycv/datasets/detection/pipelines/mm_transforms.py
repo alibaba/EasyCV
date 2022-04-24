@@ -973,7 +973,15 @@ class MMResize:
         min_ratio, max_ratio = ratio_range
         assert min_ratio <= max_ratio
         ratio = np.random.random_sample() * (max_ratio - min_ratio) + min_ratio
+
         scale = int(img_scale[0] * ratio), int(img_scale[1] * ratio)
+        short_min_size = 32
+        if min(scale) <= short_min_size:
+            if img_scale[0] > img_scale[1]:
+                scale = int(short_min_size * img_scale[0] / img_scale[1]), short_min_size #avoid nonetype error
+            else:
+                scale = short_min_size, int(short_min_size * img_scale[0] / img_scale[1]) #avoid nonetype error
+        print("scale_debug:{}".format(scale))
         return scale, None
 
     def _random_scale(self, results):

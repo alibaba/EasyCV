@@ -27,9 +27,9 @@ class DetDataset(BaseDataset):
 
     def __getitem__(self, idx):
         data_dict = self.data_source.get_sample(idx)
-        print("debug0:{}".format(data_dict))
+        #print("debug0:{}".format(data_dict))
         data_dict = self.pipeline(data_dict)
-        print("debug1:{}".format(data_dict))
+        #print("debug1:{}".format(data_dict))
         return data_dict
 
     def evaluate(self, results, evaluators, logger=None):
