@@ -56,9 +56,9 @@ test_pipeline = [
             dict(type='MMPad', size_divisor=1024),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img'],
-                    meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
-                                'img_shape', 'pad_shape', 'scale_factor', 'flip',
-                                'flip_direction', 'img_norm_cfg'))
+            meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
+                        'img_shape', 'pad_shape', 'scale_factor', 'flip',
+                        'flip_direction', 'img_norm_cfg'))
         ])
 ]
 
@@ -73,7 +73,7 @@ train_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True, with_mask=True)
         ],
         classes=CLASSES,
-        filter_empty_gt=False,
+        filter_empty_gt=True,
         iscrowd=False),
     pipeline=train_pipeline
 )
@@ -90,10 +90,10 @@ val_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         classes=CLASSES,
-        filter_empty_gt=False,
+        filter_empty_gt=True,
         iscrowd=True),
     pipeline=test_pipeline
 )
 
 data = dict(
-    imgs_per_gpu=2, workers_per_gpu=2, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=1, workers_per_gpu=2, train=train_dataset, val=val_dataset)
