@@ -829,7 +829,7 @@ class MMPhotoMetricDistortion:
         return repr_str
 
 
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class MMResize:
     """Resize images & bbox & mask.
 
@@ -857,8 +857,10 @@ class MMResize:
         ratio_range (tuple[float]): (min_ratio, max_ratio)
         keep_ratio (bool): Whether to keep the aspect ratio when resizing the
             image.
-        bbox_clip_border (bool, optional): Whether clip the objects outside
-            the border of the image. Defaults to True.
+        bbox_clip_border (bool, optional): Whether to clip the objects outside
+            the border of the image. In some dataset like MOT17, the gt bboxes
+            are allowed to cross the border of images. Therefore, we don't
+            need to clip the gt bboxes in these cases. Defaults to True.
         backend (str): Image resize backend, choices are 'cv2' and 'pillow'.
             These two backends generates slightly different results. Defaults
             to 'cv2'.
@@ -878,14 +880,11 @@ class MMResize:
                  bbox_clip_border=True,
                  backend='cv2',
                  override=False):
-
         if img_scale is None:
             self.img_scale = None
         else:
-            if isinstance(img_scale, list) and isinstance(img_scale[0], tuple):
+            if isinstance(img_scale, list):
                 self.img_scale = img_scale
-            elif isinstance(img_scale, list):
-                self.img_scale = [tuple(img_scale)]
             else:
                 self.img_scale = [img_scale]
             assert mmcv.is_list_of(self.img_scale, tuple)
@@ -1076,7 +1075,7 @@ class MMResize:
                     results['scale'],
                     interpolation='nearest',
                     backend=self.backend)
-            results['gt_semantic_seg'] = gt_seg
+            results[key] = gt_seg
 
     def __call__(self, results):
         """Call function to resize images, bounding boxes, masks, semantic
@@ -1285,8 +1284,10 @@ class MMRandomFlip:
 @PIPELINES.register_module()
 class MMRandomCrop:
     """Random crop the image & bboxes & masks.
+
     The absolute `crop_size` is sampled based on `crop_type` and `image_size`,
     then the cropped results are generated.
+
     Args:
         crop_size (tuple): The relative ratio or absolute pixels of
             height and width.
@@ -1305,6 +1306,7 @@ class MMRandomCrop:
             on cropped instance masks. Default False.
         bbox_clip_border (bool, optional): Whether clip the objects outside
             the border of the image. Defaults to True.
+
     Note:
         - If the image is smaller than the absolute crop size, return the
             original image.
@@ -1350,11 +1352,13 @@ class MMRandomCrop:
     def _crop_data(self, results, crop_size, allow_negative_crop):
         """Function to randomly crop images, bounding boxes, masks, semantic
         segmentation maps.
+
         Args:
             results (dict): Result dict from loading pipeline.
             crop_size (tuple): Expected absolute size after cropping, (h, w).
             allow_negative_crop (bool): Whether to allow a crop that does not
                 contain any bbox area. Default to False.
+
         Returns:
             dict: Randomly cropped results, 'img_shape' key in result dict is
                 updated according to crop size.
@@ -1415,8 +1419,10 @@ class MMRandomCrop:
     def _get_crop_size(self, image_size):
         """Randomly generates the absolute crop size based on `crop_type` and
         `image_size`.
+
         Args:
             image_size (tuple): (h, w).
+
         Returns:
             crop_size (tuple): (crop_h, crop_w) in absolute pixels.
         """
@@ -1443,8 +1449,10 @@ class MMRandomCrop:
     def __call__(self, results):
         """Call function to randomly crop images, bounding boxes, masks,
         semantic segmentation maps.
+
         Args:
             results (dict): Result dict from loading pipeline.
+
         Returns:
             dict: Randomly cropped results, 'img_shape' key in result dict is
                 updated according to crop size.
