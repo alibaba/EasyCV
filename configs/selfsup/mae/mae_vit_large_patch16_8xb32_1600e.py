@@ -17,14 +17,14 @@ model = dict(
         img_size=224,
         patch_size=16,
         in_chans=3,
-        embed_dim=768,
-        depth=12,
-        num_heads=12,
+        embed_dim=1024,
+        depth=24,
+        num_heads=16,
         mlp_ratio=4.,
     ),
     neck=dict(
         type='MAENeck',
-        embed_dim=768,
+        embed_dim=1024,
         patch_size=16,
         in_chans=3,
         decoder_embed_dim=512,
@@ -51,7 +51,7 @@ train_pipeline = [
     dict(type='Collect', keys=['img'])
 ]
 data = dict(
-    imgs_per_gpu=64,
+    imgs_per_gpu=32,
     workers_per_gpu=8,
     train=dict(
         type=dataset_type,
@@ -62,9 +62,9 @@ data = dict(
         pipeline=train_pipeline))
 
 # optimizer
-update_interval = 8
+update_interval = 16
 optimizer_config = dict(update_interval=update_interval)
-eff_batch_size = 64 * 8 * update_interval  # 4096
+eff_batch_size = 32 * 8 * update_interval  # 4096
 optimizer = dict(
     type='AdamW',
     lr=1.5e-4 * eff_batch_size / 256,
