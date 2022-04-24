@@ -78,6 +78,7 @@ for member in inspect.getmembers(_transforms, inspect.isclass):
     obj_name, obj = member[0], member[1]
     if obj_name in skip_list:
         continue
+    print(f'convert {obj_name}')
     obj_copy = type(obj_name, (obj, ), dict())
     wrap_torchvision_transforms(obj_copy)
     PIPELINES.register_module(obj_copy)
