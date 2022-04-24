@@ -15,7 +15,7 @@ build:
     pre_build:
       - echo "Command run at 'pre_build' step"
       - cd docs && mkdir build/ && mkdir -p source/api/
-      - cd docs && pwd && ls && sphinx-apidoc --module-first -o source/api/ ../easycv/
+      # - cd docs && pwd && ls && sphinx-apidoc --module-first -o source/api/ ../easycv/
     post_build:
       - echo "Command run at 'post_build' step"
       - cd docs && cp -r ../configs  build/
