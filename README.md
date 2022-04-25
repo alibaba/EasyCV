@@ -64,6 +64,7 @@ Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We
 Please refer to the following model zoo for more details.
 
 - [self-supervised learning model zoo](docs/source/model_zoo_ssl.md)
+- [classification model zoo](docs/source/model_zoo_cls.md)
 - [detection model zoo](docs/source/model_zoo_detection.md)
 
 
