@@ -11,7 +11,7 @@ log_config = dict(
 # yapf:enable
 # runtime settings
 dist_params = dict(backend='nccl')
-cudnn_benchmark = True
+cudnn_benchmark = False
 log_level = 'INFO'
 load_from = None
 resume_from = None

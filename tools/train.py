@@ -128,6 +128,8 @@ def main():
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
 
+    torch.backends.cudnn.enabled = cfg.get('cudnn_enabled', True)
+
     # update configs according to CLI args
     # if args.work_dir is not None and cfg.get('work_dir', None) is None:
     if args.work_dir is not None:

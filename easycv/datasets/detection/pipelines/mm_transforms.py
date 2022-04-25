@@ -975,12 +975,12 @@ class MMResize:
         ratio = np.random.random_sample() * (max_ratio - min_ratio) + min_ratio
 
         scale = int(img_scale[0] * ratio), int(img_scale[1] * ratio)
-        short_min_size = 512
-        if min(scale) <= short_min_size:
-            if img_scale[0] > img_scale[1]:
-                scale = int(short_min_size * img_scale[0] / img_scale[1]), short_min_size #avoid nonetype error
-            else:
-                scale = short_min_size, int(short_min_size * img_scale[0] / img_scale[1]) #avoid nonetype error
+        # short_min_size = 512
+        # if min(scale) <= short_min_size:
+        #     if img_scale[0] > img_scale[1]:
+        #         scale = int(short_min_size * img_scale[0] / img_scale[1]), short_min_size #avoid nonetype error
+        #     else:
+        #         scale = short_min_size, int(short_min_size * img_scale[0] / img_scale[1]) #avoid nonetype error
         #print("scale_debug:{}".format(scale))
         return scale, None
 
@@ -1096,6 +1096,7 @@ class MMResize:
             dict: Resized results, 'img_shape', 'pad_shape', 'scale_factor', \
                 'keep_ratio' keys are added into result dict.
         """
+        print("filename:{}".format(results["filename"]))
 
         if 'scale' not in results:
             if 'scale_factor' in results:

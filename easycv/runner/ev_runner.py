@@ -45,8 +45,6 @@ class EVRunner(EpochBasedRunner):
 
         super().__init__(model, batch_processor, optimizer, work_dir, logger,
                          meta)
-        self.data_loader = None
-        self.fp16_enable = False
 
     def run_iter(self, data_batch, train_mode, **kwargs):
         """ process for each iteration.

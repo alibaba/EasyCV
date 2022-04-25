@@ -3,6 +3,9 @@ _base_ = [
     './_base_/datasets/coco.py',
     'configs/base.py'
 ]
+
+cudnn_enabled = False
+
 CLASSES = [
     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
     'truck', 'boat', 'traffic light', 'fire hydrant', 'stop sign',

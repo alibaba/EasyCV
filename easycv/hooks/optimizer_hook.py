@@ -106,12 +106,6 @@ class AMPFP16OptimizerHook(OptimizerHook):
             self.scaler = amp.GradScaler()
             self._scale_update_param = 512.
 
-    # def before_run(self, runner):
-    #     runner.fp16_enable = True
-    #     print('open fp16')
-    #     runner.model.zero_grad()
-    #     runner.optimizer.zero_grad()
-
     def before_run(self, runner):
         """Preparing steps before Mixed Precision Training."""
         # wrap model mode to fp16

@@ -97,4 +97,4 @@ val_dataset = dict(
 )
 
 data = dict(
-    imgs_per_gpu=1, workers_per_gpu=2, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=2, workers_per_gpu=2, train=train_dataset, val=val_dataset)
