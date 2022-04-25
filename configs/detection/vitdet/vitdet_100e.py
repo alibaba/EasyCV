@@ -61,3 +61,5 @@ eval_pipelines = [
 ]
 
 load_from = '/home/yunji.cjy/pretrain/mae_pretrain_vit_base_1600e.pth'
+
+find_unused_parameters=False
