@@ -12,12 +12,6 @@ build:
   jobs:
     post_checkout:
       - cat requirements/runtime.txt | grep -v opencv-python-headless > a.txt && mv a.txt requirements/runtime.txt
-    post_install:
-      - cd docs && rm -rf source/api/ && sphinx-apidoc --module-first -o source/api/ ../easycv/
-  #   pre_build:
-  #     - echo "Command run at 'pre_build' step"
-  #     - pip install torch==1.10.0 torchvision==0.11.0
-  #     - pip install mmcv==1.4.1
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
