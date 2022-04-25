@@ -1,17 +1,64 @@
-# Copyright (c) Alibaba, Inc. and its affiliates.
-from mmcv.cnn.utils.weight_init import trunc_normal_
+# Copyright (c) OpenMMLab. All rights reserved.
 from typing import Sequence
-import numpy as np
+
 from functools import partial
+import numpy as np
 import torch
 import torch.nn as nn
-from torch.nn import ModuleList
 import torch.nn.functional as F
+from mmcv.cnn import build_norm_layer
+from mmcv.cnn.utils.weight_init import trunc_normal_
+from mmcv.runner.base_module import BaseModule, ModuleList
 from mmcv.utils import to_2tuple
 
-from easycv.utils.logger import get_root_logger
-from ..registry import BACKBONES
-from ..utils import build_norm_layer
+from ...utils import get_root_logger
+from ..builder import BACKBONES
+
+def calc_rel_pos_spatial(
+    attn,
+    q,
+    q_shape,
+    k_shape,
+    rel_pos_h,
+    rel_pos_w,
+    ):
+    """
+    Spatial Relative Positional Embeddings.
+    """
+    sp_idx = 0
+    q_h, q_w = q_shape
+    k_h, k_w = k_shape
+
+    # Scale up rel pos if shapes for q and k are different.
+    q_h_ratio = max(k_h / q_h, 1.0)
+    k_h_ratio = max(q_h / k_h, 1.0)
+    dist_h = (
+        torch.arange(q_h)[:, None] * q_h_ratio - torch.arange(k_h)[None, :] * k_h_ratio
+    )
+    dist_h += (k_h - 1) * k_h_ratio
+    q_w_ratio = max(k_w / q_w, 1.0)
+    k_w_ratio = max(q_w / k_w, 1.0)
+    dist_w = (
+        torch.arange(q_w)[:, None] * q_w_ratio - torch.arange(k_w)[None, :] * k_w_ratio
+    )
+    dist_w += (k_w - 1) * k_w_ratio
+
+    Rh = rel_pos_h[dist_h.long()]
+    Rw = rel_pos_w[dist_w.long()]
+
+    B, n_head, q_N, dim = q.shape
+
+    r_q = q[:, :, sp_idx:].reshape(B, n_head, q_h, q_w, dim)
+    rel_h = torch.einsum("byhwc,hkc->byhwk", r_q, Rh)
+    rel_w = torch.einsum("byhwc,wkc->byhwk", r_q, Rw)
+
+    attn[:, :, sp_idx:, sp_idx:] = (
+        attn[:, :, sp_idx:, sp_idx:].view(B, -1, q_h, q_w, k_h, k_w)
+        + rel_h[:, :, :, :, :, None]
+        + rel_w[:, :, :, :, None, :]
+    ).view(B, -1, q_h * q_w, k_h * k_w)
+
+    return attn
 
 class PatchEmbed(nn.Module):
     """ 2D Image to Patch Embedding
@@ -29,7 +76,7 @@ class PatchEmbed(nn.Module):
         self.flatten = flatten
 
         self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size)
-        self.norm = norm_layer(embed_dim) if norm_layer else nn.Identity()
+        #self.norm = norm_layer(embed_dim) if norm_layer else nn.Identity()
 
     def forward(self, x):
         B, C, H, W = x.shape
@@ -39,7 +86,7 @@ class PatchEmbed(nn.Module):
         x = self.proj(x)
         if self.flatten:
             x = x.flatten(2).transpose(1, 2)  # BCHW -> BNC
-        x = self.norm(x)
+        #x = self.norm(x)
         return x
 
 class Mlp(nn.Module):
@@ -53,16 +100,16 @@ class Mlp(nn.Module):
 
         self.fc1 = nn.Linear(in_features, hidden_features)
         self.act = act_layer()
-        self.drop1 = nn.Dropout(drop_probs[0])
+        #self.drop1 = nn.Dropout(drop_probs[0])
         self.fc2 = nn.Linear(hidden_features, out_features)
-        self.drop2 = nn.Dropout(drop_probs[1])
+        self.drop = nn.Dropout(drop)
 
     def forward(self, x):
         x = self.fc1(x)
         x = self.act(x)
-        x = self.drop1(x)
+        #x = self.drop1(x)
         x = self.fc2(x)
-        x = self.drop2(x)
+        x = self.drop(x)
         return x
 
 def drop_path(x, drop_prob: float = 0., training: bool = False, scale_by_keep: bool = True):
@@ -100,7 +147,7 @@ class DropPath(nn.Module):
         return 'p={}'.format(self.drop_prob)
 
 class Attention(nn.Module):
-    def __init__(self, dim, num_heads=8, qkv_bias=False, attn_drop=0., proj_drop=0.):
+    def __init__(self, dim, num_heads=8, qkv_bias=False, attn_drop=0., proj_drop=0., window_size=None, use_rel_pos_bias=False):
         super().__init__()
         assert dim % num_heads == 0, 'dim should be divisible by num_heads'
         self.num_heads = num_heads
@@ -111,16 +158,27 @@ class Attention(nn.Module):
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
+        
+        self.softmax = nn.Softmax(dim=-1)
+        
+        # set rel_pos_bias
+        self.use_rel_pos_bias = use_rel_pos_bias
+        self.window_size = window_size
+        if use_rel_pos_bias:
+          rel_sp_dim = 2 * window_size[0] - 1
+          self.rel_pos_h = nn.Parameter(torch.zeros(rel_sp_dim, head_dim))
+          self.rel_pos_w = nn.Parameter(torch.zeros(rel_sp_dim, head_dim))
 
-    def forward(self, x, rel_pos_bias=None):
+    def forward(self, x):
         B, N, C = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv.unbind(0)   # make torchscript happy (cannot use tensor as tuple)
 
         attn = (q @ k.transpose(-2, -1)) * self.scale
-        if rel_pos_bias is not None:
-            attn = attn + rel_pos_bias
-        attn = attn.softmax(dim=-1)
+        if self.use_rel_pos_bias:
+            attn = calc_rel_pos_spatial(attn, q, self.window_size, self.window_size, self.rel_pos_h, self.rel_pos_w)
+        #attn = attn.softmax(dim=-1)
+        attn = self.softmax(attn)
         attn = self.attn_drop(attn)
 
         x = (attn @ v).transpose(1, 2).reshape(B, N, C)
@@ -131,62 +189,23 @@ class Attention(nn.Module):
 class Block(nn.Module):
 
     def __init__(self, dim, num_heads, mlp_ratio=4., qkv_bias=False, drop=0., attn_drop=0.,
-                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
+                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, window_size=None, use_rel_pos_bias=False):
         super().__init__()
         self.norm1 = norm_layer(dim)
-        self.attn = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, attn_drop=attn_drop, proj_drop=drop)
+        self.attn = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, attn_drop=attn_drop, proj_drop=drop, window_size=window_size, use_rel_pos_bias=use_rel_pos_bias)
         # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
 
-    def forward(self, x, rel_pos_bias=None):
-        x = x + self.drop_path(self.attn(self.norm1(x), rel_pos_bias=rel_pos_bias))
+    def forward(self, x):
+        x = x + self.drop_path(self.attn(self.norm1(x)))
         x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x
 
-
-class RelativePositionBias(nn.Module):
-    def __init__(self, window_size, num_heads):
-        super().__init__()
-        self.window_size = window_size
-        self.num_relative_distance = (2 * window_size[0] - 1) * (2 * window_size[1] - 1)
-        self.relative_position_bias_table = nn.Parameter(
-            torch.zeros(self.num_relative_distance, num_heads)
-        )  # 2*Wh-1 * 2*Ww-1, nH
-
-        # get pair-wise relative position index for each token inside the window
-        coords_h = torch.arange(window_size[0])
-        coords_w = torch.arange(window_size[1])
-        coords = torch.stack(torch.meshgrid([coords_h, coords_w]))  # 2, Wh, Ww
-        coords_flatten = torch.flatten(coords, 1)  # 2, Wh*Ww
-        relative_coords = (
-            coords_flatten[:, :, None] - coords_flatten[:, None, :]
-        )  # 2, Wh*Ww, Wh*Ww
-        relative_coords = relative_coords.permute(
-            1, 2, 0
-        ).contiguous()  # Wh*Ww, Wh*Ww, 2
-        relative_coords[:, :, 0] += window_size[0] - 1  # shift to start from 0
-        relative_coords[:, :, 1] += window_size[1] - 1
-        relative_coords[:, :, 0] *= 2 * window_size[1] - 1
-        relative_position_index = relative_coords.sum(-1)  # Wh*Ww, Wh*Ww
-
-        self.register_buffer("relative_position_index", relative_position_index)
-
-    def forward(self):
-        relative_position_bias = self.relative_position_bias_table[
-            self.relative_position_index.view(-1)
-        ].view(
-            self.window_size[0] * self.window_size[1],
-            self.window_size[0] * self.window_size[1],
-            -1,
-        )  # Wh*Ww,Wh*Ww,nH
-        return relative_position_bias.permute(2, 0, 1).contiguous()  # nH, Wh*Ww, Wh*Ww
-
-
 @BACKBONES.register_module()
-class ViTDet(nn.Module):
+class ViTDet(BaseModule):
     """Vision Transformer.
 
     A PyTorch implement of : `An Image is Worth 16x16 Words: Transformers
@@ -269,6 +288,7 @@ class ViTDet(nn.Module):
                  img_size=224,
                  patch_size=16,
                  window_size=16,
+                 interval=3,
                  out_indices=-1,
                  drop_rate=0.,
                  drop_path_rate=0.,
@@ -281,7 +301,7 @@ class ViTDet(nn.Module):
                  patch_cfg=dict(),
                  layer_cfgs=dict(),
                  init_cfg=None):
-        super(ViTDet, self).__init__()
+        super(ViTDet, self).__init__(init_cfg)
 
         if isinstance(arch, str):
             arch = arch.lower()
@@ -299,6 +319,7 @@ class ViTDet(nn.Module):
         self.embed_dims = self.arch_settings['embed_dims']
         self.num_layers = self.arch_settings['num_layers']
         self.num_heads = self.arch_settings['num_heads']
+        self.interval = interval
         norm_layer = partial(nn.LayerNorm, eps=1e-6)
         act_layer = nn.GELU
 
@@ -325,8 +346,8 @@ class ViTDet(nn.Module):
         self.out_indices = out_indices
 
         # Set cls token
-        self.output_cls_token = output_cls_token
-        self.cls_token = nn.Parameter(torch.zeros(1, 1, self.embed_dims))
+        #self.output_cls_token = output_cls_token
+        #self.cls_token = nn.Parameter(torch.zeros(1, 1, self.embed_dims))
 
         # set sincos_pos_embed or pos_embed
         self.sincos_pos_embed = sincos_pos_embed
@@ -336,16 +357,8 @@ class ViTDet(nn.Module):
             self.build_2d_sincos_position_embedding()
         else:
             self.pos_embed = nn.Parameter(
-                torch.zeros(1, num_patches + self.num_extra_tokens,
-                            self.embed_dims)) 
-
-        # set rel_pos_bias
-        if use_rel_pos_bias:
-            self.window_rel_pos_bias = RelativePositionBias(window_size=[self.window_size, self.window_size], num_heads=self.num_heads)
-            self.global_rel_pos_bias = RelativePositionBias(window_size=self.grid_size, num_heads=self.num_heads)
-        else:
-            self.window_rel_pos_bias = None
-            self.global_rel_pos_bias = None
+                torch.zeros(1, num_patches,
+                            self.embed_dims))
 
         self.drop_after_pos = nn.Dropout(p=drop_rate)
 
@@ -376,7 +389,9 @@ class ViTDet(nn.Module):
                 attn_drop=0.,
                 drop_path=dpr[i],
                 norm_layer=norm_layer,
-                act_layer=act_layer)
+                act_layer=act_layer,
+                window_size=(self.window_size, self.window_size) if ((i + 1) % interval != 0) else tuple(self.grid_size),
+                use_rel_pos_bias=use_rel_pos_bias)
             self.blocks.append(Block(**_layer_cfg))
 
         self.final_norm = final_norm
@@ -456,8 +471,9 @@ class ViTDet(nn.Module):
         dst_weight = F.interpolate(
             src_weight, size=dst_shape, align_corners=False, mode=mode)
         dst_weight = torch.flatten(dst_weight, 2).transpose(1, 2)
-
-        return torch.cat((extra_tokens, dst_weight), dim=1)
+		
+        return dst_weight
+        #return torch.cat((extra_tokens, dst_weight), dim=1)
 
     def build_2d_sincos_position_embedding(self, temperature=10000.0):
         h, w = self.grid_size
@@ -477,9 +493,10 @@ class ViTDet(nn.Module):
             dim=1,
         )[None, :, :]
 
-        assert self.num_extra_tokens == 1, "Assuming one and only one token, [cls]"
-        pe_token = torch.zeros([1, 1, self.embed_dims], dtype=torch.float32)
-        self.pos_embed = nn.Parameter(torch.cat([pe_token, pos_emb], dim=1))
+        #assert self.num_extra_tokens == 1, "Assuming one and only one token, [cls]"
+        #pe_token = torch.zeros([1, 1, self.embed_dims], dtype=torch.float32)
+        #self.pos_embed = nn.Parameter(torch.cat([pe_token, pos_emb], dim=1))
+        self.pos_embed = nn.Parameter(pos_emb)
         self.pos_embed.requires_grad = False
 
     def window_partition(self, x, grid_size):
@@ -497,9 +514,12 @@ class ViTDet(nn.Module):
         return x
 
     def window_reverse(self, x, grid_size):
+        B, L, C = x.shape
         H, W = grid_size[0], grid_size[1]
+        
+        x = x.view(-1, self.window_size, self.window_size, C)
 
-        B = int(x.shape[0] / ((H + self.pad_t + self.pad_b) * (W + self.pad_l + self.pad_r) / self.window_size / self.window_size))
+        B = int(B / ((H + self.pad_t + self.pad_b) * (W + self.pad_l + self.pad_r) / self.window_size / self.window_size))
         x = x.view(B, (H + self.pad_t + self.pad_b) // self.window_size, (W + self.pad_l + self.pad_r) // self.window_size, self.window_size, self.window_size, -1)
         x = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(B, (H + self.pad_t + self.pad_b), (W + self.pad_l + self.pad_r), -1)
 
@@ -512,7 +532,8 @@ class ViTDet(nn.Module):
     def forward(self, x):
         x = self.patch_embed(x)
 
-        x = x + self.pos_embed[:, self.num_extra_tokens:]
+        #x = x + self.pos_embed[:, self.num_extra_tokens:]
+        x = x + self.pos_embed
 
         x = self.drop_after_pos(x)
 
@@ -522,12 +543,12 @@ class ViTDet(nn.Module):
         outs = []
         for i, layer in enumerate(self.blocks):
             # local self-attention & global self-attention
-            if (self.blocks==12 and (i+1) % 3 == 0) or (self.blocks==24 and (i+1) % 6 == 0):
+            if (i+1) % self.interval == 0:
                 x  = self.window_reverse(x, self.grid_size)
-                x = layer(x, self.global_rel_pos_bias() if self.global_rel_pos_bias is not None else None)
+                x = layer(x)
                 x = self.window_partition(x, self.grid_size)
             else:
-                x = layer(x, self.window_rel_pos_bias() if self.window_rel_pos_bias is not None else None)
+                x = layer(x)
 
             if i in self.out_indices:
                 # window_reverse

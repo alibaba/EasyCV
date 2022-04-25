@@ -64,4 +64,4 @@ eval_pipelines = [
     )
 ]
 
-load_from = '/home/yunji.cjy/pretrain/mae_pretrain_vit_base_1600e.pth'
+load_from = '/mnt/data/EasyCV/mae_pretrain_vit_base_1600e.pth'
