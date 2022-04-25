@@ -11,8 +11,8 @@ from mmcv.cnn.utils.weight_init import trunc_normal_
 from mmcv.runner.base_module import BaseModule, ModuleList
 from mmcv.utils import to_2tuple
 
-from ...utils import get_root_logger
-from ..builder import BACKBONES
+from easycv.utils.logger import get_root_logger
+from ..registry import BACKBONES
 
 def calc_rel_pos_spatial(
     attn,

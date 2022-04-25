@@ -60,4 +60,4 @@ eval_pipelines = [
     )
 ]
 
-load_from = '/mnt/data/EasyCV/mae_pretrain_vit_base_1600e.pth'
+load_from = '/mnt/data/EasyCV2/mae_pretrain_vit_base_1600e.pth'

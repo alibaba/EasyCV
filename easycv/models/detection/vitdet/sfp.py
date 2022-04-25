@@ -73,10 +73,10 @@ class SFP(BaseModule):
                 top_down = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
 
             sfp_out = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, 1),
+                nn.Conv2d(in_channels, out_channels, 1, bias=False),
                 build_norm_layer(norm_cfg, out_channels)[1],
                 #nn.ReLU(inplace=False),
-                nn.Conv2d(out_channels, out_channels, 3, padding=1),
+                nn.Conv2d(out_channels, out_channels, 3, padding=1, bias=False),
                 build_norm_layer(norm_cfg, out_channels)[1],
                 #nn.ReLU(inplace=False),
             )
