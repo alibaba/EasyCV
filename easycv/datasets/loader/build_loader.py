@@ -74,7 +74,7 @@ def build_dataloader(dataset,
                 split_huge_listfile_byrank=split_huge_listfile_byrank)
         else:
             if shuffle:
-                print("!!!!!!!!!!!!!!!")
+                #print("!!!!!!!!!!!!!!!")
                 sampler = DistributedGroupSampler(
                     dataset, imgs_per_gpu, world_size, rank, seed=seed)
             else:
@@ -118,7 +118,7 @@ def build_dataloader(dataset,
                 worker_init_fn=init_fn,
                 **kwargs)
         else:
-            print("@@@@@@@@@@@@@@@@@@@@@@@@")
+            #print("@@@@@@@@@@@@@@@@@@@@@@@@")
             data_loader = DataLoader(
                 dataset,
                 batch_size=batch_size,
