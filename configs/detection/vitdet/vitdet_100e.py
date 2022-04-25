@@ -4,7 +4,7 @@ _base_ = [
     'configs/base.py'
 ]
 
-cudnn_enabled = False
+#cudnn_enabled = False
 
 CLASSES = [
     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',

@@ -34,7 +34,7 @@ train_pipeline = [
         crop_size=image_size,
         recompute_bbox=True,
         allow_negative_crop=True),
-    dict(type='MMFilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2), keep_empty=False),
+    dict(type='MMFilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(type='MMRandomFlip', flip_ratio=0.5),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='MMPad', size=image_size),
