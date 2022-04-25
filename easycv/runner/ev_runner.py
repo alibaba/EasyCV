@@ -88,12 +88,12 @@ class EVRunner(EpochBasedRunner):
             self._inner_iter = i
             self.call_hook('before_train_iter')
             # only in amp from pytorch 1.6 or later, we should use amp.autocast
-            if self.fp16_enable and LooseVersion(
-                    torch.__version__) >= LooseVersion('1.6.0'):
-                with amp.autocast():
-                    self.run_iter(data_batch, train_mode=True)
-            else:
-                self.run_iter(data_batch, train_mode=True)
+            # if self.fp16_enable and LooseVersion(
+            #         torch.__version__) >= LooseVersion('1.6.0'):
+            #     with amp.autocast():
+            #         self.run_iter(data_batch, train_mode=True)
+            # else:
+            self.run_iter(data_batch, train_mode=True)
 
             self.call_hook('after_train_iter')
             self._iter += 1

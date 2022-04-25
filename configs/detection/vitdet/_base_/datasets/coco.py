@@ -25,8 +25,8 @@ train_pipeline = [
     dict(
         type='MMResize',
         img_scale=image_size,
-        #ratio_range=(0.1, 2),
-        ratio_range=(0.01, 0.05),
+        ratio_range=(0.1, 2),
+        #ratio_range=(0.01, 0.05),
         multiscale_mode='range',
         keep_ratio=True),
     dict(
