@@ -56,6 +56,7 @@ Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We
 * [self-supervised learning](docs/source/tutorials/ssl.md)
 * [image classification](docs/source/tutorials/cls.md)
 * [object detection with yolox](docs/source/tutorials/yolox.md)
+* [model compression with yolox](docs/source/tutorials/compression.md)
 
 
 ## Model Zoo
