@@ -48,7 +48,7 @@ def build_sample(source_item, classes, parse_fn, load_img):
     Args:
         source_item: item of source iterator
         classes: classes list
-        parse_fn: parse pn to parse source_item, only accepts two params: source_item and classes
+        parse_fn: parse function to parse source_item, only accepts two params: source_item and classes
         load_img: load image or not, if true, cache all images in memory at init
     """
     result_dict = parse_fn(source_item, classes)
