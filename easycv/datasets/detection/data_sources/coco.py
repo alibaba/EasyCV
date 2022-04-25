@@ -174,9 +174,9 @@ class DetSourceCoco(object):
         for i, ann in enumerate(ann_info):
             if ann.get('ignore', False):
                 continue
-            # if ann.get('iscrowd', False) and (
-            #         not self.iscrowd):  # while training, skip iscrowd
-            #     continue
+            if ann.get('iscrowd', False) and (
+                    not self.iscrowd):  # while training, skip iscrowd
+                continue
 
             x1, y1, w, h = ann['bbox']
             inter_w = max(0, min(x1 + w, img_info['width']) - max(x1, 0))
@@ -191,11 +191,12 @@ class DetSourceCoco(object):
             bbox = [x1, y1, x1 + w, y1 + h]
 
             if ann.get('iscrowd', False):
-                # gt_bboxes.append(
-                #     bbox
-                # )  # add crowded gt bboxes when eval, but not needed in training
-                # gt_labels.append(self.cat2label[ann['category_id']])
-                # gt_masks_ann.append(ann.get('segmentation', None))
+                if self.iscrowd:
+                    gt_bboxes.append(
+                        bbox
+                    )  # add crowded gt bboxes when eval, but not needed in training
+                    gt_labels.append(self.cat2label[ann['category_id']])
+                    gt_masks_ann.append(ann.get('segmentation', None))
                 gt_bboxes_ignore.append(bbox)
                 groundtruth_is_crowd.append(1)
             else:

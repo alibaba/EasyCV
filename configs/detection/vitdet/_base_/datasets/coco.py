@@ -90,7 +90,7 @@ val_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         classes=CLASSES,
-        filter_empty_gt=True,
+        filter_empty_gt=False,
         iscrowd=True),
     pipeline=test_pipeline
 )
