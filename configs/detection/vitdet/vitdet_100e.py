@@ -37,11 +37,7 @@ paramwise_options={
     'pos_embed': dict(weight_decay=0.),
     'cls_token': dict(weight_decay=0.)
 }
-optimizer = dict(type='_AdamW', lr=1e-4, betas=(0.9, 0.999), weight_decay=0.1, 
-                    constructor='TransformerFinetuneConstructor',
-                    #model_type='vit',
-                    #layer_decay=0.70,
-                    paramwise_options=paramwise_options)
+optimizer = dict(type='_AdamW', lr=1e-4, betas=(0.9, 0.999), weight_decay=0.1, paramwise_options=paramwise_options)
 optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
