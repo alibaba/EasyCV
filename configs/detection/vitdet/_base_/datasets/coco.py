@@ -26,7 +26,6 @@ train_pipeline = [
         type='MMResize',
         img_scale=image_size,
         ratio_range=(0.1, 2),
-        #ratio_range=(0.01, 0.05),
         multiscale_mode='range',
         keep_ratio=True),
     dict(
@@ -35,7 +34,7 @@ train_pipeline = [
         crop_size=image_size,
         recompute_bbox=True,
         allow_negative_crop=True),
-    dict(type='MMFilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
+    dict(type='MMFilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2), keep_empty=False),
     dict(type='MMRandomFlip', flip_ratio=0.5),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='MMPad', size=image_size),
@@ -70,7 +69,7 @@ train_dataset = dict(
         ann_file=data_root + 'annotations/instances_train2017.json',
         img_prefix=data_root + 'train2017/',
         pipeline=[
-            dict(type='LoadImageFromFile', to_float32=True),
+            dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True, with_mask=True)
         ],
         classes=CLASSES,
@@ -87,7 +86,7 @@ val_dataset = dict(
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=[
-            dict(type='LoadImageFromFile', to_float32=True),
+            dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         classes=CLASSES,
@@ -97,4 +96,4 @@ val_dataset = dict(
 )
 
 data = dict(
-    imgs_per_gpu=2, workers_per_gpu=2, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=1, workers_per_gpu=2, train=train_dataset, val=val_dataset)

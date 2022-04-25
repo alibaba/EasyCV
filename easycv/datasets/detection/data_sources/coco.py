@@ -174,9 +174,9 @@ class DetSourceCoco(object):
         for i, ann in enumerate(ann_info):
             if ann.get('ignore', False):
                 continue
-            # if ann.get('iscrowd', False) and (
-            #         not self.iscrowd):  # while training, skip iscrowd
-            #     continue
+            if ann.get('iscrowd', False) and (
+                    not self.iscrowd):  # while training, skip iscrowd
+                continue
 
             x1, y1, w, h = ann['bbox']
             inter_w = max(0, min(x1 + w, img_info['width']) - max(x1, 0))
