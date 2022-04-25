@@ -74,7 +74,6 @@ def wrap_torchvision_transforms(transform_obj):
 
 skip_list = ['Compose', 'RandomApply']
 _transforms_names = locals()
-
 # register all existing transforms in torchvision
 for member in inspect.getmembers(_transforms, inspect.isclass):
     obj_name, obj = member[0], member[1]
