@@ -25,8 +25,7 @@ class_list = [
     'airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse',
     'ship', 'truck'
 ]
-data_source_cfg = dict(
-    type='ClsSourceCifar10', root='/home/yunji.cjy/data/cifar')
+data_source_cfg = dict(type='ClsSourceCifar10', root='data/cifar')
 dataset_type = 'ClsDataset'
 img_norm_cfg = dict(mean=[0.4914, 0.4822, 0.4465], std=[0.2023, 0.1994, 0.201])
 train_pipeline = [
