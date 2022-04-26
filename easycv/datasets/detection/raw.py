@@ -26,11 +26,8 @@ class DetDataset(BaseDataset):
         self.img_num = self.data_source.get_length()
 
     def __getitem__(self, idx):
-        #print("debug_idx:{}".format(idx))
         data_dict = self.data_source.get_sample(idx)
-        #print("debug0:{}".format(data_dict))
         data_dict = self.pipeline(data_dict)
-        #print("debug1:{}".format(data_dict))
         return data_dict
 
     def evaluate(self, results, evaluators, logger=None):
@@ -58,7 +55,7 @@ class DetDataset(BaseDataset):
             self.data_source.get_ann_info(idx).get('masks', None)
             for idx in range(len(results['img_metas']))
         ]
-        
+
         for evaluator in evaluators:
             eval_result.update(evaluator.evaluate(results, groundtruth_dict))
 
