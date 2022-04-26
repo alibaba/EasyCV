@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import copy
 import inspect
+from enum import EnumMeta
 
 import torch
 from torchvision import transforms as _transforms
@@ -78,6 +79,8 @@ _transforms_names = locals()
 for member in inspect.getmembers(_transforms, inspect.isclass):
     obj_name, obj = member[0], member[1]
     if obj_name in skip_list:
+        continue
+    if isinstance(obj, EnumMeta):
         continue
     _transforms_names[obj_name] = type(obj_name, (obj, ), dict())
     wrap_torchvision_transforms(_transforms_names[obj_name])
