@@ -1,4 +1,19 @@
 
+<div align="center">
+
+[![PyPI](https://img.shields.io/pypi/v/pai-easycv)](https://pypi.org/project/pai-easycv/)
+[![Documentation Status](https://readthedocs.org/projects/easy-cv/badge/?version=latest)](https://easy-cv.readthedocs.io/en/latest/)
+[![license](https://img.shields.io/github/license/alibaba/EasyCV.svg)](https://github.com/open-mmlab/mmdetection/blob/master/LICENSE)
+[![open issues](https://isitmaintained.com/badge/open/alibaba/EasyCV.svg)](https://github.com/alibaba/EasyCV/issues)
+[![GitHub pull-requests](https://img.shields.io/github/issues-pr/alibaba/EasyCV.svg)](https://GitHub.com/alibaba/EasyCV/pull/)
+[![GitHub latest commit](https://badgen.net/github/last-commit/alibaba/EasyCV)](https://GitHub.com/alibaba/EasyCV/commit/)
+<!-- [![GitHub contributors](https://img.shields.io/github/contributors/alibaba/EasyCV.svg)](https://GitHub.com/alibaba/EasyCV/graphs/contributors/) -->
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
+
+
+</div>
+
+
 # EasyCV
 
 
@@ -33,6 +48,7 @@ EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focus o
 
 Please refer to the installation section in [quick_start.md](docs/source/quick_start.md) for installation.
 
+
 ## Get Started
 
 Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We also provides tutorials for more usages.
@@ -40,26 +56,32 @@ Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We
 * [self-supervised learning](docs/source/tutorials/ssl.md)
 * [image classification](docs/source/tutorials/cls.md)
 * [object detection with yolox](docs/source/tutorials/yolox.md)
+* [model compression with yolox](docs/source/tutorials/compression.md)
+
 
 ## Model Zoo
 
 Please refer to the following model zoo for more details.
 
-- [detection model zoo](docs/source/model_zoo_detection.md)
 - [self-supervised learning model zoo](docs/source/model_zoo_ssl.md)
+- [classification model zoo](docs/source/model_zoo_cls.md)
+- [detection model zoo](docs/source/model_zoo_detection.md)
+
+
+## ChangeLog
+
+* 07/04/2022 EasyCV v0.2.2 was released.
+
+Please refer to [change_log.md](docs/source/change_log.md) for more details and history.
+
 
 ## License
 
 This project licensed under the [Apache License (Version 2.0)](LICENSE). This toolkit also contains various third-party components and some code modified from other repos under other open source licenses. See the [NOTICE](NOTICE) file for more information.
 
-## ChangeLog
-
-EasyCV v0.2.0 was release in  01/04/2022.
-
-Please refer to [change_log.md](docs/source/change_log.md) for more details and history.
-
-
 
 ## Contact
 
-This repo is currently maintained by PAI-CV team.
+This repo is currently maintained by PAI-CV team, you can contact us by easycv@list.alibaba-inc.com or join the dingding group ([join url](https://h5.dingtalk.com/circle/healthCheckin.html?dtaction=os&corpId=ding3ff8258c1c5850ef6ef3dd1a991739ff&9abd5705-5633=d069c338-d566&cbdbhh=qwertyuiop)).
+
+![dingding group QR code](docs/source/_static/dingding_qrcode.jpg)

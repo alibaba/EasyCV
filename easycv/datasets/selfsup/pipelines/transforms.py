@@ -9,7 +9,7 @@ from timm.data import create_transform
 from torchvision import transforms as _transforms
 
 from easycv.datasets.registry import PIPELINES
-from easycv.utils import build_from_cfg
+from easycv.utils.registry import build_from_cfg
 
 
 @PIPELINES.register_module
@@ -76,7 +76,10 @@ class MAEFtAugment(object):
             self.trans = _transforms.Compose(t)
 
     def __call__(self, results):
-        return self.trans(results)
+        img = results['img']
+        img = self.trans(img)
+        results['img'] = img
+        return results
 
     def __repr__(self) -> str:
         repr_str = self.__class__.__name__

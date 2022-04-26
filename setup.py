@@ -159,6 +159,7 @@ def pack_resource():
         './thirdparty',
         proj_dir + 'thirdparty',
         ignore=shutil.ignore_patterns('*.pyc'))
+    shutil.copytree('./resource', proj_dir + 'resource')
     shutil.copytree('./requirements', 'package/requirements')
     shutil.copy('./requirements.txt', 'package/requirements.txt')
     shutil.copy('./MANIFEST.in', 'package/MANIFEST.in')
@@ -173,13 +174,15 @@ if __name__ == '__main__':
     setup(
         name='pai-easycv',
         version=get_version(),
-        description='EasyCV framework',
+        description='An all-in-one toolkit for computer vision',
         long_description=readme(),
+        long_description_content_type='text/markdown',
         author='Alibaba PAI team',
         author_email='easycv@list.alibaba-inc.com',
         keywords='self-supvervised, classification, vision',
         url='https://github.com/alibaba/EasyCV.git',
         packages=find_packages(exclude=('configs', 'tools', 'demo')),
+        include_package_data=True,
         classifiers=[
             'Development Status :: 4 - Beta',
             'License :: OSI Approved :: Apache Software License',

@@ -68,6 +68,7 @@ eff_batch_size = 64 * 8 * update_interval  # 4096
 optimizer = dict(
     type='AdamW',
     lr=1.5e-4 * eff_batch_size / 256,
+    weight_decay=0.05,
     betas=(0.9, 0.95),
     paramwise_options={
         'norm': dict(weight_decay=0.),

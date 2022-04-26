@@ -20,7 +20,8 @@ from easycv.hooks import (BestCkptSaverHook, DistEvalHook, EMAHook, EvalHook,
                           ExportHook, OptimizerHook, OSSSyncHook, build_hook)
 from easycv.hooks.optimizer_hook import AMPFP16OptimizerHook
 from easycv.runner import EVRunner
-from easycv.utils import generate_best_metric_name, get_root_logger, print_log
+from easycv.utils.eval_utils import generate_best_metric_name
+from easycv.utils.logger import get_root_logger, print_log
 
 
 def set_random_seed(seed, deterministic=False):

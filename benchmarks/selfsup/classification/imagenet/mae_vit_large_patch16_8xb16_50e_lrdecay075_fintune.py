@@ -111,6 +111,7 @@ lr_decay = 0.75
 optimizer = dict(
     type='AdamW',
     lr=1e-3 * eff_batch_size / 256,
+    weight_decay=0.05,
     paramwise_options={
         'norm': dict(weight_decay=0.),
         'bias': dict(weight_decay=0.),

@@ -11,11 +11,11 @@ from torchvision.transforms import Compose
 from easycv.datasets.registry import PIPELINES
 from easycv.file import io
 from easycv.models import build_model
-from easycv.utils import build_from_cfg
 from easycv.utils.checkpoint import load_checkpoint
 # from mmcv import Config
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
+from easycv.utils.registry import build_from_cfg
 from .builder import PREDICTORS
 from .classifier import TorchClassifier
 

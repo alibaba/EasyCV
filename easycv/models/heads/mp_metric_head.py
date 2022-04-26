@@ -12,8 +12,8 @@ from torch import Tensor
 
 from easycv.models.loss import CrossEntropyLossWithLabelSmooth
 from easycv.models.utils import DistributedLossWrapper, DistributedMinerWrapper
-from easycv.utils import (CosineSimilarity, build_from_cfg, get_root_logger,
-                          load_checkpoint)
+from easycv.utils.logger import get_root_logger
+from easycv.utils.registry import build_from_cfg
 from ..registry import HEADS, LOSSES
 from ..utils import accuracy
 

@@ -1,5 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from easycv.utils import Registry
+from easycv.utils.registry import Registry
 
 DATASOURCES = Registry('datasource')
 DATASETS = Registry('dataset')

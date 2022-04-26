@@ -1,6 +1,8 @@
 _base_ = './resnet50_b32x8_100e_jpg.py'
 # model settings
-model = dict(head=dict(type='ClsHead', with_avg_pool=True, in_channels=2048, num_classes=10))
+model = dict(
+    head=dict(
+        type='ClsHead', with_avg_pool=True, in_channels=2048, num_classes=10))
 
 # dataset settings
 class_list = [

@@ -14,10 +14,10 @@ from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 from easycv.core.evaluation.builder import build_evaluator
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.models import build_model
-from easycv.utils import (dist_forward_collect, get_root_logger,
-                          nondist_forward_collect, traverse_replace)
+from easycv.utils.collect import dist_forward_collect, nondist_forward_collect
 # from mmcv import Config
-from easycv.utils.config_tools import mmcv_config_fromfile
+from easycv.utils.config_tools import mmcv_config_fromfile, traverse_replace
+from easycv.utils.logger import get_root_logger
 
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 sys.path.append(

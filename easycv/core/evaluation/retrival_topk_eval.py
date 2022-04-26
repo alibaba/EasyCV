@@ -7,8 +7,8 @@ import torch
 from sklearn.decomposition import PCA
 from tqdm import tqdm
 
-from easycv.utils import (CosineSimilarity, DotproductSimilarity, LpDistance,
-                          generate_best_metric_name)
+from easycv.utils.metric_distance import (CosineSimilarity,
+                                          DotproductSimilarity, LpDistance)
 from .base_evaluator import Evaluator
 from .builder import EVALUATORS
 from .metric_registry import METRICS

@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from mmcv.runner import get_dist_info
 
-from easycv.utils import mixUp
+from easycv.utils.preprocess_function import mixUp
 from .. import builder
 from ..registry import MODELS
 from .moco import MOCO

@@ -18,6 +18,8 @@ from .show_time_hook import TIMEHook
 from .swav_hook import SWAVHook
 from .sync_norm_hook import SyncNormHook
 from .sync_random_size_hook import SyncRandomSizeHook
+from .tensorboard import TensorboardLoggerHookV2
+from .wandb import WandbLoggerHookV2
 from .yolox_lr_hook import YOLOXLrUpdaterHook
 from .yolox_mode_switch_hook import YOLOXModeSwitchHook
 

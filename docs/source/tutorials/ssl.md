@@ -29,7 +29,7 @@ the content of filelist is
 
 ## Local & PAI-DSW
 
-We use [configs/selfsup/mocov2/mocov2_rn50_8xb32_200e_jpg.py](../../configs/selfsup/mocov2/mocov2_rn50_8xb32_200e_jpg.py) as an example config in which two config variable should be modified
+We use [configs/selfsup/mocov2/mocov2_rn50_8xb32_200e_jpg.py](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/mocov2/mocov2_rn50_8xb32_200e_jpg.py) as an example config in which two config variable should be modified
 
 ```python
 data_train_list = 'filelist.txt'

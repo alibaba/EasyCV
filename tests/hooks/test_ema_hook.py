@@ -14,7 +14,7 @@ from easycv.file import io
 from easycv.hooks.ema_hook import EMAHook
 from easycv.hooks.optimizer_hook import OptimizerHook
 from easycv.runner import EVRunner
-from easycv.utils import get_root_logger
+from easycv.utils.logger import get_root_logger
 from easycv.utils.test_util import get_tmp_dir
 
 
