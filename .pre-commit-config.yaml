@@ -18,6 +18,7 @@ repos:
     rev: v0.30.0
     hooks:
       - id: yapf
+        entry: bash -c 'yapf "$@"; git add -u' --
         exclude: thirdparty/|examples/
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.1.0
