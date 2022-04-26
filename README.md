@@ -90,4 +90,3 @@ This repo is currently maintained by PAI-CV team, you can contact us by
 If you need EasyCV enterprise service support, or purchase cloud product services, you can contact us by DingDing Group.
 
 ![dingding_qrcode](https://user-images.githubusercontent.com/4771825/165244727-b5d69628-97a6-4e2a-a23f-0c38a8d29341.jpg)
-
