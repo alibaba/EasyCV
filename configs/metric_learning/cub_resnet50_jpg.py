@@ -26,7 +26,7 @@ model = dict(
         }],
         input_feature_index=[0]))
 
-data_root = '/home/yunji.cjy/data/cub200/'
+data_root = 'data/cub200/'
 ann_file = data_root + 'images.txt'
 image_class_labels_file = data_root + 'image_class_labels.txt'
 train_test_split_file = data_root + 'train_test_split.txt'
@@ -73,7 +73,7 @@ data = dict(
             type='ClsSourceCUB'),
         pipeline=test_pipeline))
 
-eval_config = dict(interval=1, gpu_collect=True)
+eval_config = dict(interval=1)
 eval_pipelines = [
     dict(
         mode='test',
@@ -94,3 +94,6 @@ checkpoint_config = dict(interval=10)
 
 # runtime settings
 total_epochs = 90
+
+# export config
+export = dict(export_neck=True)
