@@ -31,19 +31,20 @@ model = dict(
             {
                 'type': 'ModelParallelAMSoftmaxLoss',
                 'embedding_size': 2048,
-                'num_classes': 100,  # if CUDA out of memory, reduce num_classes.
+                'num_classes':
+                100,  # if CUDA out of memory, reduce num_classes.
                 'norm': False,
                 'ddp': True,
             }
         ],
         input_feature_index=[0]))
 
-data_train_list = '/apsarapangu/disk1/yunji.cjy/imagenet_raw/meta/train_labeled.txt'
-data_train_root = '/apsarapangu/disk1/yunji.cjy/imagenet_raw/train'
-data_test_list = '/apsarapangu/disk1/yunji.cjy/imagenet_raw/meta/val_labeled.txt'
-data_test_root = '/apsarapangu/disk1/yunji.cjy/imagenet_raw/val'
-data_all_list = '/apsarapangu/disk1/yunji.cjy/imagenet_raw/meta/all_labeled.txt'
-data_root = '/apsarapangu/disk1/yunji.cjy/imagenet_raw/'
+data_train_list = '/imagenet_raw/meta/train_labeled.txt'
+data_train_root = '/imagenet_raw/train'
+data_test_list = '/imagenet_raw/meta/val_labeled.txt'
+data_test_root = '/imagenet_raw/val'
+data_all_list = '/imagenet_raw/meta/all_labeled.txt'
+data_root = '/imagenet_raw/'
 
 dataset_type = 'ClsDataset'
 img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -97,7 +98,7 @@ optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.0001)
 
 # learning policy
 lr_config = dict(policy='step', step=[30, 60, 90])
-checkpoint_config = dict(interval=1)
+checkpoint_config = dict(interval=10)
 
 # runtime settings
 total_epochs = 90
