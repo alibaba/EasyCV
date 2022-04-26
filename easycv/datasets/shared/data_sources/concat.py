@@ -25,6 +25,9 @@ class SourceConcat(object):
     def get_length(self):
         return self.cumsum_length_list[-1]
 
+    def __len__(self):
+        return self.get_length()
+
     def get_sample(self, idx):
         dataset_idx = bisect.bisect_right(self.cumsum_length_list, idx)
         if dataset_idx == 0:
