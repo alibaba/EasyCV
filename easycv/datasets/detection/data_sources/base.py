@@ -73,7 +73,12 @@ class DetSourceBase(object):
             classes: classes list
             cache_at_init: if set True, will cache in memory in __init__ for faster training
             cache_on_the_fly: if set True, will cache in memroy during training
-            parse_fn: parse function to parse source iterator
+            parse_fn: parse function to parse source iterator, parse_fn should return dict containing:
+                gt_bboxes(np.ndarry): Float32 numpy array of shape [num_boxes, 4] and
+                        format [ymin, xmin, ymax, xmax] in absolute image coordinates.
+                gt_labels(np.ndarry): Integer numpy array of shape [num_boxes]
+                    containing 1-indexed detection classes for the boxes.
+                filename(str): absolute file path.
             num_processes: number of processes to parse samples
         """
         self.CLASSES = classes
@@ -96,10 +101,16 @@ class DetSourceBase(object):
         )
         self.samples_list = self.build_samples(
             source_iter, process_fn=process_fn)
+        self.num_samples = self.get_length()
+        # An error will be raised if failed to load _max_retry_num times in a row
+        self._max_retry_num = self.num_samples
+        self._retry_count = 0
 
     @abstractmethod
     def get_source_iterator():
-        """data list iterator, for multi-process read
+        """Return data list iterator, source iterator will be passed to parse_fn,
+        and parse_fn will receive params of item of source iter and classes for parsing.
+        What does parse_fn need, what does source iterator returns.
         """
         raise NotImplementedError
 
@@ -152,12 +163,14 @@ class DetSourceBase(object):
         result_dict = self.samples_list[idx]
         load_success = True
         try:
-            if result_dict.get('img', None) is None:
+            if not self.cache_at_init and result_dict.get('img', None) is None:
                 result_dict.update(load_image(result_dict['filename']))
-                if self.cache_at_init or self.cache_on_the_fly:
+                if self.cache_on_the_fly:
                     self.samples_list[idx] = result_dict
 
             result_dict = self.post_process_fn(result_dict)
+            # load success,reset to 0
+            self._retry_count = 0
         except Exception as e:
             logging.error(e)
             load_success = False
@@ -166,6 +179,10 @@ class DetSourceBase(object):
             logging.warning(
                 'Something wrong with current sample %s,Try load next sample...'
                 % result_dict.get('filename', ''))
-            result_dict = self.get_sample(idx + 1)
+            self._retry_count += 1
+            if self._retry_count >= self._max_retry_num:
+                raise ValueError('All samples failed to load!')
+
+            result_dict = self.get_sample((idx + 1) % self.num_samples)
 
         return result_dict
