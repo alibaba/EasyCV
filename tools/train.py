@@ -15,7 +15,7 @@ sys.path.append(
         osp.join(os.path.dirname(os.path.dirname(__file__)), '../')))
 
 import time
-
+import cv2
 import requests
 import torch
 from mmcv.runner import init_dist
@@ -32,6 +32,9 @@ from easycv.utils.logger import get_root_logger
 from easycv.utils.config_tools import traverse_replace
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
+
+# refer to: https://github.com/open-mmlab/mmdetection/pull/6867
+cv2.setNumThreads(0)
 
 
 def parse_args():
