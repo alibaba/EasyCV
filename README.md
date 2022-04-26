@@ -82,6 +82,12 @@ This project licensed under the [Apache License (Version 2.0)](LICENSE). This to
 
 ## Contact
 
-This repo is currently maintained by PAI-CV team, you can contact us by easycv@list.alibaba-inc.com or join the dingding group (group number: 41783266).
+This repo is currently maintained by PAI-CV team, you can contact us by
+* Dingding group number: 41783266
+* Email: easycv@list.alibaba-inc.com
 
-![dingding group QR code](docs/source/_static/dingding_qrcode.jpg)
+### Enterprise Service
+If you need EasyCV enterprise service support, or purchase cloud product services, you can contact us by DingDing Group.
+
+![dingding_qrcode](https://user-images.githubusercontent.com/4771825/165242814-e7a41f2f-e95e-41bb-b60b-543d9794dc47.jpg)
+
