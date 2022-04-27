@@ -20,13 +20,13 @@ English | [简体中文](README_zh-CN.md)
 
 ## Introduction
 
-EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focus on self-supervised learning, transformer based models, and CV tasks including image classification, metric-learning, object detection and so on.
+EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focus on self-supervised learning, transformer based models, and CV tasks including image classification, metric-learning, object detection, pose estimation and so on.
 
 ### Major features
 
 - **SOTA SSL Algorithms**
 
-  EasyCV provides state-of-the-art algorithms in self-supervised learning based on contrastive learning such as SimCLR, MoCO V2, Swav, DINO and also MAE based on masked image modeling. We also provides standard benchmark tools for ssl model evaluation.
+  EasyCV provides state-of-the-art algorithms in self-supervised learning based on contrastive learning such as SimCLR, MoCO V2, Swav, DINO and also MAE based on masked image modeling. We also provide standard benchmark tools for ssl model evaluation.
 
 - **Vision Transformers**
 
