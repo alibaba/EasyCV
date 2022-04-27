@@ -86,3 +86,5 @@ eval_pipelines = [
         evaluators=[dict(type='CocoDetectionEvaluator', classes=CLASSES)],
     )
 ]
+
+export = dict(use_jit=True)

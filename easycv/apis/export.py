@@ -151,25 +151,43 @@ def _export_yolox(model, cfg, filename):
         cfg: Config object
         filename (str): filename to save exported models
     """
-    if hasattr(cfg, 'test_pipeline'):
-        # with last pipeline Collect
-        test_pipeline = cfg.test_pipeline
-        print(test_pipeline)
+    cfg.model.type = 'YOLOXExport'
+    if hasattr(cfg, 'export') and getattr(cfg.export, 'use_jit', False):
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        model_export = build_model(cfg.model)
+        model_export.eval()
+        model_export.to(device)
+        model_export.load_state_dict(model.state_dict())
+        batch_size = cfg.export.get('batch_size', 1)
+        input = 255 * torch.rand((batch_size, 3, 640, 640))
+        yolox_trace = torch.jit.trace(model_export, input.to(device))
+        # torch.save(input, 'yolox.inp.pt')
+
+        with io.open(filename + '.jit', 'wb') as ofile:
+            torch.jit.save(yolox_trace, ofile)
+
+        with io.open(filename + '.jit.classnames.json', 'w') as ofile:
+            json.dump(cfg.CLASSES, ofile)
     else:
-        print('test_pipeline not found, using default preprocessing!')
-        raise ValueError('export model config without test_pipeline')
+        if hasattr(cfg, 'test_pipeline'):
+            # with last pipeline Collect
+            test_pipeline = cfg.test_pipeline
+            print(test_pipeline)
+        else:
+            print('test_pipeline not found, using default preprocessing!')
+            raise ValueError('export model config without test_pipeline')
 
-    config = dict(
-        model=cfg.model,
-        test_pipeline=test_pipeline,
-        CLASSES=cfg.CLASSES,
-    )
+        config = dict(
+            model=cfg.model,
+            test_pipeline=test_pipeline,
+            CLASSES=cfg.CLASSES,
+        )
 
-    meta = dict(config=json.dumps(config))
-    checkpoint = dict(
-        state_dict=model.state_dict(), meta=meta, author='EasyCV')
-    with io.open(filename, 'wb') as ofile:
-        torch.save(checkpoint, ofile)
+        meta = dict(config=json.dumps(config))
+        checkpoint = dict(
+            state_dict=model.state_dict(), meta=meta, author='EasyCV')
+        with io.open(filename, 'wb') as ofile:
+            torch.save(checkpoint, ofile)
 
 
 def _export_swav(model, cfg, filename):
