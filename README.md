@@ -8,7 +8,7 @@
 [![GitHub pull-requests](https://img.shields.io/github/issues-pr/alibaba/EasyCV.svg)](https://GitHub.com/alibaba/EasyCV/pull/)
 [![GitHub latest commit](https://badgen.net/github/last-commit/alibaba/EasyCV)](https://GitHub.com/alibaba/EasyCV/commit/)
 <!-- [![GitHub contributors](https://img.shields.io/github/contributors/alibaba/EasyCV.svg)](https://GitHub.com/alibaba/EasyCV/graphs/contributors/) -->
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
+<!-- [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com) -->
 
 
 </div>
@@ -16,27 +16,28 @@
 
 # EasyCV
 
+English | [简体中文](README_zh-CN.md)
 
 ## Introduction
 
-EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focus on self-supervised learning, transformer based models, and CV tasks including image classification, metric-learning, object detection and so on.
+EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focus on self-supervised learning, transformer based models, and CV tasks including image classification, metric-learning, object detection, pose estimation and so on.
 
 ### Major features
 
 - **SOTA SSL Algorithms**
 
-  EasyCV provides state-of-the-art algorithms in self-supervised learning based on contrastive learning such as SimCLR, MoCO V2, Swav, DINO and also MAE based on masked image modeling. We also provides standard benchmark tools for ssl model evaluation.
+  EasyCV provides state-of-the-art algorithms in self-supervised learning based on contrastive learning such as SimCLR, MoCO V2, Swav, DINO and also MAE based on masked image modeling. We also provide standard benchmark tools for ssl model evaluation.
 
 - **Vision Transformers**
 
-  EasyCV aims to provide plenty vision transformer models trained either using supervised learning or self-supervised learning, such as ViT, Swin-Transformer and XCit. More models will be added in the future.
+  EasyCV aims to provide an easy way to use the off-the-shelf SOTA transformer models trained either using supervised learning or self-supervised learning, such as ViT, Swin-Transformer and Shuffle Transformer. More models will be added in the future. In addition, we support all the pretrained models from [timm](https://github.com/rwightman/pytorch-image-models).
 
 - **Functionality & Extensibility**
 
   In addition to SSL, EasyCV also support image classification, object detection, metric learning, and more area will be supported in the future. Although convering different area,
   EasyCV decompose the framework into different componets such as dataset, model, running hook, making it easy to add new compoenets and combining it with existing modules.
 
-  EasyCV provide simple and comprehensive interface for inference. Additionaly,  all models are supported on [PAI-EAS](https://help.aliyun.com/document_detail/113696.html), which can be easily deployed as online service and support automatic scaling and service moniting.
+  EasyCV provide simple and comprehensive interface for inference. Additionaly,  all models are supported on [PAI-EAS](https://help.aliyun.com/document_detail/113696.html), which can be easily deployed as online service and support automatic scaling and service monitoring.
 
 - **Efficiency**
 
@@ -90,4 +91,3 @@ This repo is currently maintained by PAI-CV team, you can contact us by
 If you need EasyCV enterprise service support, or purchase cloud product services, you can contact us by DingDing Group.
 
 ![dingding_qrcode](https://user-images.githubusercontent.com/4771825/165244727-b5d69628-97a6-4e2a-a23f-0c38a8d29341.jpg)
-
