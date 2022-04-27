@@ -95,16 +95,22 @@ data = dict(
 eval_config = dict(initial=False, interval=1, gpu_collect=True)
 eval_pipelines = [
     dict(
-        mode='test',
+        mode='extract',
+        dist_eval=True,
         data=data['val'],
-        evaluators=[dict(type='ClsEvaluator', topk=(1, 5))],
+        evaluators=[
+            dict(
+                type='RetrivalTopKEvaluator',
+                topk=(1, 2, 4, 8),
+                metric_names=('R@K=1', 'R@K=8'))
+        ],
     )
 ]
 
 # additional hooks
 custom_hooks = []
 # optimizer
-optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0001)
 # learning policy
 lr_config = dict(policy='step', step=[30, 60, 90])
 checkpoint_config = dict(interval=10)

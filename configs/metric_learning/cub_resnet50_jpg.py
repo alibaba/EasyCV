@@ -20,7 +20,7 @@ model = dict(
         loss_config=[{
             'type': 'ModelParallelAMSoftmaxLoss',
             'embedding_size': 2048,
-            'num_classes': 100,  # if CUDA out of memory, reduce num_classes.
+            'num_classes': 200,  # if CUDA out of memory, reduce num_classes.
             'norm': False,
             'ddp': True,
         }],
@@ -76,9 +76,15 @@ data = dict(
 eval_config = dict(interval=1)
 eval_pipelines = [
     dict(
-        mode='test',
+        mode='extract',
+        dist_eval=True,
         data=data['val'],
-        evaluators=[dict(type='ClsEvaluator', topk=(1, 5))],
+        evaluators=[
+            dict(
+                type='RetrivalTopKEvaluator',
+                topk=(1, 2, 4, 8),
+                metric_names=('R@K=1', 'R@K=8'))
+        ],
     )
 ]
 
@@ -86,7 +92,7 @@ eval_pipelines = [
 custom_hooks = []
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0001)
 
 # learning policy
 lr_config = dict(policy='step', step=[30, 60, 90])
@@ -97,3 +103,5 @@ total_epochs = 90
 
 # export config
 export = dict(export_neck=True)
+
+load_from = '/home/yunji.cjy/pretrain/easycv/resnet50/epoch_100.pth'
