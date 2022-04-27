@@ -104,4 +104,4 @@ total_epochs = 90
 # export config
 export = dict(export_neck=True)
 
-load_from = '/home/yunji.cjy/pretrain/easycv/resnet50/epoch_100.pth'
+load_from = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/resnet/resnet50/epoch_100.pth'
