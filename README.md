@@ -57,6 +57,13 @@ Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We
 * [image classification](docs/source/tutorials/cls.md)
 * [object detection with yolox](docs/source/tutorials/yolox.md)
 * [model compression with yolox](docs/source/tutorials/compression.md)
+* [metric learning](docs/source/tutorials/metric_learning.md)
+
+notebook
+* [self-supervised learning](docs/source/tutorials/EasyCV图像自监督训练-MAE.ipynb)
+* [image classification](docs/source/tutorials/EasyCV图像分类resnet50.ipynb)
+* [object detection with yolox](docs/source/tutorials/EasyCV图像检测YoloX.ipynb)
+* [metric learning](docs/source/tutorials/EasyCV度量学习resnet50.ipynb)
 
 
 ## Model Zoo
