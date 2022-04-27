@@ -30,7 +30,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 - **视觉Transformers**
 
-  EasyCV聚焦视觉transformer技术，希望通过自监督学习和imagenet预训练，提供完善的视觉transformer预训练模型，例如ViT，Swin-Transformer，Shuffle Transformer，未来也会加入更多相关模型。此外，我们还支持所有[timm](https://github.com/rwightman/pytorch-image-models)仓库中的预训练模型.
+  EasyCV聚焦视觉transformer技术，希望通过一种简洁的方式让用户方便地使用各种SOTA的、基于自监督预训练和imagenet预训练的视觉transformer模型，例如ViT，Swin-Transformer，Shuffle Transformer，未来也会加入更多相关模型。此外，我们还支持所有[timm](https://github.com/rwightman/pytorch-image-models)仓库中的预训练模型.
 
 - **易用性和可扩展性**
 
