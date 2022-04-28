@@ -40,7 +40,6 @@ def single_cpu_test(model,
         # use scatter_kwargs to unpack DataContainer data for raw torch.nn.module
         input_args, kwargs = scatter_kwargs(None, data, [-1])
         with torch.no_grad():
-            kwargs[0]['img'] = kwargs[0]['img'].squeeze(dim=0)
             result = model(**kwargs[0], mode=mode)
 
         for k, v in result.items():
