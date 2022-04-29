@@ -10,6 +10,7 @@ from easycv.file import io
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
                            build_model)
 from easycv.utils.checkpoint import load_checkpoint
+from easycv.toolkit.blade import blade_env_assert, blade_yolox_optimize
 
 __all__ = ['export']
 
@@ -159,15 +160,29 @@ def _export_yolox(model, cfg, filename):
         model_export.to(device)
         model_export.load_state_dict(model.state_dict())
         batch_size = cfg.export.get('batch_size', 1)
-        input = 255 * torch.rand((batch_size, 3, 640, 640))
+        img_scale = cfg.get('img_scale', (640, 640))
+        assert(len(img_scale)==2), 'export yolox predictor config contains img_scale must be (int, int) tuple!'
+        input = 255 * torch.rand((batch_size, 3) + img_scale)
         yolox_trace = torch.jit.trace(model_export, input.to(device))
-        # torch.save(input, 'yolox.inp.pt')
+
+        if getattr(cfg.export, 'use_blade', True):
+            if blade_env_assert() == True:
+                yolox_blade = blade_yolox_optimize(model = yolox_trace, inputs = (input.to(device),))
+
 
         with io.open(filename + '.jit', 'wb') as ofile:
             torch.jit.save(yolox_trace, ofile)
 
+        with io.open(filename + '.ts', 'wb') as ofile:
+            torch.jit.save(yolox_blade, ofile)
+
         with io.open(filename + '.jit.classnames.json', 'w') as ofile:
             json.dump(cfg.CLASSES, ofile)
+        
+        with io.open(filename + '.ts.classnames.json', 'w') as ofile:
+            json.dump(cfg.CLASSES, ofile)
+
+    
     else:
         if hasattr(cfg, 'test_pipeline'):
             # with last pipeline Collect
