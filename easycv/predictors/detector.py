@@ -50,7 +50,8 @@ class TorchYoloXPredictor(PredictorInterface):
         self.model_path = model_path
         self.max_det = max_det
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.use_jit = model_path.endswith('jit') or model_path.endswith('blade')
+        self.use_jit = model_path.endswith('jit') or model_path.endswith(
+            'blade')
 
         if model_config:
             model_config = json.loads(model_config)
@@ -65,10 +66,18 @@ class TorchYoloXPredictor(PredictorInterface):
                 self.model = torch.jit.load(infile, map_location)
             img_size = 640
             img_norm_cfg = dict(
-                mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True)
             test_pipeline = [
-                dict(type='MMResize', img_scale=(img_size,img_size), keep_ratio=True),
-                dict(type='MMPad', pad_to_square=True, pad_val=(114.0, 114.0, 114.0)),
+                dict(
+                    type='MMResize',
+                    img_scale=(img_size, img_size),
+                    keep_ratio=True),
+                dict(
+                    type='MMPad',
+                    pad_to_square=True,
+                    pad_val=(114.0, 114.0, 114.0)),
                 dict(type='MMNormalize', **img_norm_cfg),
                 dict(type='DefaultFormatBundle'),
                 dict(type='Collect', keys=['img'])
@@ -77,9 +86,8 @@ class TorchYoloXPredictor(PredictorInterface):
             with io.open(model_path + '.classnames.json', 'r') as infile:
                 self.CLASSES = json.load(infile)
             self.trace_able = True
-            
-        else:
 
+        else:
 
             with io.open(self.model_path, 'rb') as infile:
                 checkpoint = torch.load(infile, map_location='cpu')
@@ -91,7 +99,7 @@ class TorchYoloXPredictor(PredictorInterface):
             basename = os.path.basename(self.model_path)
             fname, _ = os.path.splitext(basename)
             self.local_config_file = os.path.join(CACHE_DIR,
-                                                f'{fname}_config.json')
+                                                  f'{fname}_config.json')
             if not os.path.exists(CACHE_DIR):
                 os.makedirs(CACHE_DIR)
             with open(self.local_config_file, 'w') as ofile:
@@ -118,7 +126,6 @@ class TorchYoloXPredictor(PredictorInterface):
         pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
         self.pipeline = Compose(pipeline)
 
-
     def post_assign(self, outputs, img_metas):
         detection_boxes = []
         detection_scores = []
@@ -128,18 +135,17 @@ class TorchYoloXPredictor(PredictorInterface):
         for i in range(len(outputs)):
             if img_metas:
                 img_metas_list.append(img_metas[i])
-            if outputs[i].requires_grad== True:
+            if outputs[i].requires_grad == True:
                 outputs[i] = outputs[i].detach()
             if outputs[i] is not None:
-                bboxes = outputs[i][:,
-                                    0:4] if outputs[i] is not None else None
+                bboxes = outputs[i][:, 0:4] if outputs[i] is not None else None
                 if img_metas:
                     bboxes /= img_metas[i]['scale_factor'][0]
                 detection_boxes.append(bboxes.cpu().numpy())
                 detection_scores.append(
                     (outputs[i][:, 4] * outputs[i][:, 5]).cpu().numpy())
-                detection_classes.append(
-                    outputs[i][:, 6].cpu().numpy().astype(np.int32))
+                detection_classes.append(outputs[i][:, 6].cpu().numpy().astype(
+                    np.int32))
             else:
                 detection_boxes.append(None)
                 detection_scores.append(None)
@@ -181,13 +187,14 @@ class TorchYoloXPredictor(PredictorInterface):
             img = data_dict['img']
             img = torch.unsqueeze(img._data, 0).to(self.device)
             data_dict.pop('img')
-            
+
             if self.trace_able:
-                det_out = self.post_assign(self.model(img), img_metas=[data_dict['img_metas']._data])
+                det_out = self.post_assign(
+                    self.model(img), img_metas=[data_dict['img_metas']._data])
             else:
                 det_out = self.model(
                     img, mode='test', img_metas=[data_dict['img_metas']._data])
-            
+
             # det_out = det_out[:self.max_det]
             # scale box to original image scale, this logic has some operation
             # that can not be traced, see

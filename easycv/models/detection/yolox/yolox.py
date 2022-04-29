@@ -177,11 +177,10 @@ class YOLOXExport(YOLOX):
         self.trace_able = True
         self.backbone = self.backbone.to(device)
         self.head = self.head.to(device)
-        for param in self.backbone.parameters():  
-            param.requires_grad=False
-        for param in self.head.parameters():  
-            param.requires_grad=False
-    
+        for param in self.backbone.parameters():
+            param.requires_grad = False
+        for param in self.head.parameters():
+            param.requires_grad = False
 
     def forward(self, img):
         with torch.no_grad():

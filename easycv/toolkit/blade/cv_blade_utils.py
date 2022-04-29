@@ -1,16 +1,17 @@
+import argparse
+import itertools
 import os
 import time
+import timeit
+from contextlib import contextmanager
+
+import numpy as np
+import pandas as pd
 import torch
 import torchvision
-import argparse
-import timeit
-import pandas as pd
-import numpy as np
-from contextlib import contextmanager
-import itertools
 
-os.environ["DISC_ENABLE_STITCH"] = "true"
-os.environ["DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE"] = "true"
+os.environ['DISC_ENABLE_STITCH'] = 'true'
+os.environ['DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE'] = 'true'
 
 try:
     import torch_blade
@@ -21,45 +22,55 @@ try:
 except:
     pass
 
+
 def blade_env_assert():
     env_flag = True
-    
+
     try:
-        import torch 
+        import torch
         torch_version = torch.__version__
         torch_cuda = torch.version.cuda
     except:
         torch_version = 'failed'
         torch_cuda = 'failed'
         env_flag = False
-        print('import torch and torch cuda failed, please install pytorch with cuda correctly')
-    
+        print(
+            'import torch and torch cuda failed, please install pytorch with cuda correctly'
+        )
+
     try:
         import torch_blade
     except:
         env_flag = False
-        print('Import torch_blade failed, please reference to https://help.aliyun.com/document_detail/205134.html')
-        print('Info: your torch version is %s, your torch cuda version is %s'%(torch_version, torch_cuda))
+        print(
+            'Import torch_blade failed, please reference to https://help.aliyun.com/document_detail/205134.html'
+        )
+        print('Info: your torch version is %s, your torch cuda version is %s' %
+              (torch_version, torch_cuda))
 
-    try: 
+    try:
         import torch_blade.tensorrt
     except:
         env_flag = False
-        print('Import torch_blade.tensorrt failed, Install torch_blade.tensorrt and export  xx/tensorrt.so to your python ENV')
+        print(
+            'Import torch_blade.tensorrt failed, Install torch_blade.tensorrt and export  xx/tensorrt.so to your python ENV'
+        )
 
-    print("Welcome to use torch_blade, with torch %s, cuda %s, blade %s"%(torch_version, torch_cuda, torch_blade.version.__version__))
+    print('Welcome to use torch_blade, with torch %s, cuda %s, blade %s' %
+          (torch_version, torch_cuda, torch_blade.version.__version__))
 
     return env_flag
-
 
 
 @contextmanager
 def opt_trt_config(enable_fp16=True):
     from torch_blade import tensorrt
     torch_config = torch_blade.Config()
-    torch_config.optimization_pipeline = "TensorRT"
+    torch_config.optimization_pipeline = 'TensorRT'
     torch_config.enable_fp16 = enable_fp16
-    torch_config.customize_op_black_list = ["aten::select", "aten::index", "aten::slice", "aten::view"]
+    torch_config.customize_op_black_list = [
+        'aten::select', 'aten::index', 'aten::slice', 'aten::view'
+    ]
     torch_config.fp16_fallback_op_ratio = 0.3
     try:
         with torch_config:
@@ -88,18 +99,21 @@ def opt_blade_mixprec():
     finally:
         pass
 
+
 @contextmanager
 def opt_disc_config(enable_fp16=True):
     torch_config = torch_blade.config.Config()
     torch_config.enable_fp16 = enable_fp16
     try:
         with torch_config:
-             yield
+            yield
     finally:
         pass
 
 
 results = []
+
+
 def printStats(backend, timings, batch_size=1, model_name='default'):
     times = np.array(timings)
     steps = len(times)
@@ -111,34 +125,34 @@ def printStats(backend, timings, batch_size=1, model_name='default'):
     speed_mean = np.mean(speeds)
     speed_med = np.median(speeds)
 
-    msg = (
-        "\n%s =================================\n"
-        "batch size=%d, num iterations=%d\n"
-        "  Median FPS: %.1f, mean: %.1f\n"
-        "  Median latency: %.6f, mean: %.6f, 99th_p: %.6f, std_dev: %.6f\n"
-    ) % (
-        backend,
-        batch_size,
-        steps,
-        speed_med,
-        speed_mean,
-        time_med,
-        time_mean,
-        time_99th,
-        time_std,
-    )
+    msg = ('\n%s =================================\n'
+           'batch size=%d, num iterations=%d\n'
+           '  Median FPS: %.1f, mean: %.1f\n'
+           '  Median latency: %.6f, mean: %.6f, 99th_p: %.6f, std_dev: %.6f\n'
+           ) % (
+               backend,
+               batch_size,
+               steps,
+               speed_med,
+               speed_mean,
+               time_med,
+               time_mean,
+               time_99th,
+               time_std,
+           )
     # print(msg)
     meas = {
-        "Name":model_name,
-        "Backend": backend,
-        "Median(FPS)": speed_med,
-        "Mean(FPS)": speed_mean,
-        "Median(ms)": time_med,
-        "Mean(ms)": time_mean,
-        "99th_p": time_99th,
-        "std_dev": time_std,
+        'Name': model_name,
+        'Backend': backend,
+        'Median(FPS)': speed_med,
+        'Mean(FPS)': speed_mean,
+        'Median(ms)': time_med,
+        'Mean(ms)': time_mean,
+        '99th_p': time_99th,
+        'std_dev': time_std,
     }
     results.append(meas)
+
 
 @torch.no_grad()
 def benchmark(model, inp, backend, batch_size, model_name='default'):
@@ -156,6 +170,7 @@ def benchmark(model, inp, backend, batch_size, model_name='default'):
 
     printStats(backend, timings, batch_size, model_name)
 
+
 def collect_tensors(data):
     if isinstance(data, torch.Tensor):
         return [data]
@@ -170,6 +185,7 @@ def collect_tensors(data):
     else:
         return []
 
+
 def check_results(results0, results1):
     from torch_blade.testing.common_utils import assert_almost_equal
 
@@ -178,14 +194,19 @@ def check_results(results0, results1):
 
     try:
         assert_almost_equal(results0, results1, rtol=1e-3, atol=1e-3)
-        print("Accuraccy check passed")
+        print('Accuraccy check passed')
     except Exception as err:
         print(err)
 
 
-def blade_yolox_optimize(script_model, model, inputs, fp16=True, backend = 'TensorRT', batch=1):
+def blade_yolox_optimize(script_model,
+                         model,
+                         inputs,
+                         fp16=True,
+                         backend='TensorRT',
+                         batch=1):
     with opt_trt_config(fp16):
-        opt_model =  optimize(
+        opt_model = optimize(
             model,
             allow_tracing=True,
             model_inputs=tuple(inputs),
@@ -193,7 +214,7 @@ def blade_yolox_optimize(script_model, model, inputs, fp16=True, backend = 'Tens
     benchmark(script_model, inputs, backend, batch, 'easycv')
     benchmark(model, inputs, backend, batch, 'easycv script')
     benchmark(opt_model, inputs, backend, batch, 'blade')
-    print("Model Summary:")
+    print('Model Summary:')
     summary = pd.DataFrame(results)
     print(summary.to_markdown())
 
@@ -210,7 +231,8 @@ def blade_yolox_optimize(script_model, model, inputs, fp16=True, backend = 'Tens
     check_results(output, test_result)
     return opt_model
 
+
 if __name__ == '__main__':
 
-    print("blade test")
+    print('blade test')
     blade_env_assert()

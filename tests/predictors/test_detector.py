@@ -11,7 +11,8 @@ import numpy as np
 from PIL import Image
 
 from easycv.predictors.detector import TorchYoloXPredictor
-from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_EXPORT, PRETRAINED_MODEL_YOLOXS_EXPORT_JIT
+from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_EXPORT,
+                             PRETRAINED_MODEL_YOLOXS_EXPORT_JIT,
                              DET_DATA_SMALL_COCO_LOCAL)
 
 
