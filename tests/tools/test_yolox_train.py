@@ -33,10 +33,15 @@ TRAIN_CONFIGS = [
         'config_file':
         'configs/detection/yolox/yolox_s_8xb16_300e_coco_pai.py',
         'cfg_options': {
-            **_COMMON_OPTIONS, 'data.train.data_source.path':
+            **_COMMON_OPTIONS,
+            'data.train.data_source.path':
             SMALL_COCO_ITAG_DATA_ROOT + 'train2017_20.manifest',
             'data.val.data_source.path':
-            SMALL_COCO_ITAG_DATA_ROOT + 'val2017_20.manifest'
+            SMALL_COCO_ITAG_DATA_ROOT + 'val2017_20.manifest',
+            # not support visualization for oss path
+            'eval_config.visualization_config': {
+                'vis_num': 0
+            },
         }
     },
     {
