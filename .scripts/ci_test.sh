@@ -21,23 +21,6 @@ if [ $? -ne 0 ]; then
     exit -1
 fi
 
-# #setup for git-lfs
-# if [ ! -e git-lfs/git_lfs.py ]; then
-#  ping gitlab.alibaba-inc.com -c 3
-#  # for internal test, use git-lfs
-#  if [ $? -eq 0 ]; then
-#    git submodule init
-#    git submodule update
-#  fi
-# fi
-
-# #add ossconfig for git-lfs
-# OSS_CONFIG=~/.git_oss_config
-# if [ ! -e $OSS_CONFIG ]; then
-#     echo "$OSS_CONFIG does not exists"
-#     exit
-# fi
-
 #add ossconfig for unittest
 UNITTEST_OSS_CONFIG=~/.ossutilconfig.unittest
 if [ ! -e $UNITTEST_OSS_CONFIG ]; then
