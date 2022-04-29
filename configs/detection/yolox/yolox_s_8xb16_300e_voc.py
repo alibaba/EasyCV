@@ -87,4 +87,4 @@ eval_pipelines = [
     )
 ]
 
-export = dict(use_jit=True)
+export = dict(use_jit=True, use_blade=True)

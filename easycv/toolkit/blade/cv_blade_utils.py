@@ -9,6 +9,17 @@ import numpy as np
 from contextlib import contextmanager
 import itertools
 
+os.environ["DISC_ENABLE_STITCH"] = "true"
+os.environ["DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE"] = "true"
+
+try:
+    import torch_blade
+    import torch_blade.tensorrt
+    from torch_blade import optimize
+    import ctypes
+    _cudart = ctypes.CDLL('libcudart.so')
+except:
+    pass
 
 def blade_env_assert():
     env_flag = True
@@ -41,17 +52,6 @@ def blade_env_assert():
     return env_flag
 
 
-import torch_blade
-import torch_blade.tensorrt
-from torch_blade import optimize
-from torch_blade.testing.common_utils import assert_almost_equal
-
-os.environ["DISC_ENABLE_STITCH"] = "true"
-os.environ["DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE"] = "true"
-
-import ctypes
-_cudart = ctypes.CDLL('libcudart.so')
-
 
 @contextmanager
 def opt_trt_config(enable_fp16=True):
@@ -66,6 +66,7 @@ def opt_trt_config(enable_fp16=True):
             yield
     finally:
         pass
+
 
 def cu_prof_start():
     ret = _cudart.cudaProfilerStart()
@@ -99,7 +100,7 @@ def opt_disc_config(enable_fp16=True):
 
 
 results = []
-def printStats(backend, timings, batch_size=1):
+def printStats(backend, timings, batch_size=1, model_name='default'):
     times = np.array(timings)
     steps = len(times)
     speeds = batch_size / times
@@ -126,8 +127,9 @@ def printStats(backend, timings, batch_size=1):
         time_99th,
         time_std,
     )
-    print(msg)
+    # print(msg)
     meas = {
+        "Name":model_name,
         "Backend": backend,
         "Median(FPS)": speed_med,
         "Mean(FPS)": speed_mean,
@@ -139,7 +141,7 @@ def printStats(backend, timings, batch_size=1):
     results.append(meas)
 
 @torch.no_grad()
-def benchmark(model, inp, backend, batch_size):
+def benchmark(model, inp, backend, batch_size, model_name='default'):
     for i in range(100):
         model(*inp)
     torch.cuda.synchronize()
@@ -152,7 +154,7 @@ def benchmark(model, inp, backend, batch_size):
         meas_time = end_time - start_time
         timings.append(meas_time)
 
-    printStats(backend, timings, batch_size)
+    printStats(backend, timings, batch_size, model_name)
 
 def collect_tensors(data):
     if isinstance(data, torch.Tensor):
@@ -169,6 +171,8 @@ def collect_tensors(data):
         return []
 
 def check_results(results0, results1):
+    from torch_blade.testing.common_utils import assert_almost_equal
+
     results0 = collect_tensors(results0)
     results1 = collect_tensors(results1)
 
@@ -178,16 +182,17 @@ def check_results(results0, results1):
     except Exception as err:
         print(err)
 
-def blade_yolox_optimize(model, inputs, fp16=True, backend = 'TensorRT', batch=1):
-    print('yolox optimize')
+
+def blade_yolox_optimize(script_model, model, inputs, fp16=True, backend = 'TensorRT', batch=1):
     with opt_trt_config(fp16):
         opt_model =  optimize(
             model,
             allow_tracing=True,
             model_inputs=tuple(inputs),
         )
-    benchmark(model, inputs, backend, batch)
-    benchmark(opt_model, inputs, backend, batch)
+    benchmark(script_model, inputs, backend, batch, 'easycv')
+    benchmark(model, inputs, backend, batch, 'easycv script')
+    benchmark(opt_model, inputs, backend, batch, 'blade')
     print("Model Summary:")
     summary = pd.DataFrame(results)
     print(summary.to_markdown())
@@ -196,7 +201,7 @@ def blade_yolox_optimize(model, inputs, fp16=True, backend = 'TensorRT', batch=1
     # inputs = (x.to(torch.int32), y.to(torch.int32), z.to(torch.int32))
     output = model(*inputs)
     cu_prof_start()
-    if args.bmp and fp16:
+    if fp16:
         with opt_blade_mixprec():
             test_result = model(*inputs)
     else:
@@ -208,4 +213,4 @@ def blade_yolox_optimize(model, inputs, fp16=True, backend = 'TensorRT', batch=1
 if __name__ == '__main__':
 
     print("blade test")
-    blade_env_assert()ß
+    blade_env_assert()

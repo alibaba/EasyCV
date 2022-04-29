@@ -50,7 +50,7 @@ class TorchYoloXPredictor(PredictorInterface):
         self.model_path = model_path
         self.max_det = max_det
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.use_jit = model_path.endswith('jit') or model_path.endswith('ts')
+        self.use_jit = model_path.endswith('jit') or model_path.endswith('blade')
 
         if model_config:
             model_config = json.loads(model_config)
