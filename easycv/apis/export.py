@@ -168,14 +168,14 @@ def _export_yolox(model, cfg, filename):
         yolox_trace = torch.jit.trace(model_export, input.to(device))
 
         if getattr(cfg.export, 'export_blade', False):
-            blade_config = cfg.export.get('blade_config', dict(enable_fp16=True))
+            blade_config = cfg.export.get('blade_config',
+                                          dict(enable_fp16=True))
             if blade_env_assert() == True:
                 yolox_blade = blade_optimize(
                     script_model=model_export,
                     model=yolox_trace,
                     inputs=(input.to(device), ),
-                    blade_config=blade_config
-                    )
+                    blade_config=blade_config)
                 with io.open(filename + '.blade', 'wb') as ofile:
                     torch.jit.save(yolox_blade, ofile)
                 with io.open(filename + '.blade.classnames.json',

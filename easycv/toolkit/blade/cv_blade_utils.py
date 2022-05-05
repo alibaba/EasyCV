@@ -1,17 +1,19 @@
 import argparse
 import itertools
+import logging
 import os
 import time
 import timeit
-import logging
 from contextlib import contextmanager
 
 import numpy as np
 import pandas as pd
 import torch
 import torchvision
+
 os.environ['DISC_ENABLE_STITCH'] = os.environ.get('DISC_ENABLE_STITCH', 'true')
-os.environ['DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE'] = os.environ.get('DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE', 'true')
+os.environ['DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE'] = os.environ.get(
+    'DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE', 'true')
 
 try:
     import torch_blade
@@ -45,8 +47,9 @@ def blade_env_assert():
         logging.error(
             'Import torch_blade failed, please reference to https://help.aliyun.com/document_detail/205134.html'
         )
-        logging.info('Info: your torch version is %s, your torch cuda version is %s' %
-              (torch_version, torch_cuda))
+        logging.info(
+            'Info: your torch version is %s, your torch cuda version is %s' %
+            (torch_version, torch_cuda))
 
     try:
         import torch_blade.tensorrt
@@ -56,33 +59,39 @@ def blade_env_assert():
             'Import torch_blade.tensorrt failed, Install torch_blade.tensorrt and export  xx/tensorrt.so to your python ENV'
         )
 
-    logging.info('Welcome to use torch_blade, with torch %s, cuda %s, blade %s' %
-          (torch_version, torch_cuda, torch_blade.version.__version__))
+    logging.info(
+        'Welcome to use torch_blade, with torch %s, cuda %s, blade %s' %
+        (torch_version, torch_cuda, torch_blade.version.__version__))
 
     return env_flag
 
 
 @contextmanager
-def opt_trt_config(input_config=dict(enable_fp16=True)): 
+def opt_trt_config(input_config=dict(enable_fp16=True)):
     from torch_blade import tensorrt
     torch_config = torch_blade.Config()
 
     BLADE_CONFIG_DEFAULT = dict(
-        optimization_pipeline = 'TensorRT',
+        optimization_pipeline='TensorRT',
         enable_fp16=True,
-        customize_op_black_list=['aten::select', 'aten::index', 'aten::slice', 'aten::view'],
-        fp16_fallback_op_ratio = 0.3,
+        customize_op_black_list=[
+            'aten::select', 'aten::index', 'aten::slice', 'aten::view'
+        ],
+        fp16_fallback_op_ratio=0.3,
     )
     BLADE_CONFIG_KEYS = list(BLADE_CONFIG_DEFAULT.keys())
 
     for key in BLADE_CONFIG_DEFAULT.keys():
         setattr(torch_config, key, BLADE_CONFIG_DEFAULT[key])
-        logging.info('setting blade torch_config %s to %s by default'%(key, BLADE_CONFIG_DEFAULT[key]))
+        logging.info('setting blade torch_config %s to %s by default' %
+                     (key, BLADE_CONFIG_DEFAULT[key]))
 
     for key in input_config.keys():
         if key in BLADE_CONFIG_KEYS:
             setattr(torch_config, key, input_config[key])
-            logging.warning('setting blade torch_config %s to %s by user config'%(key, input_config[key]))
+            logging.warning(
+                'setting blade torch_config %s to %s by user config' %
+                (key, input_config[key]))
 
     try:
         with torch_config:
@@ -212,11 +221,11 @@ def check_results(results0, results1):
 
 
 def blade_optimize(script_model,
-                         model,
-                         inputs,
-                         blade_config = dict(enable_fp16=True),
-                         backend='TensorRT',
-                         batch=1):
+                   model,
+                   inputs,
+                   blade_config=dict(enable_fp16=True),
+                   backend='TensorRT',
+                   batch=1):
     with opt_trt_config(blade_config):
         opt_model = optimize(
             model,
