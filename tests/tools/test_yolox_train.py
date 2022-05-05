@@ -33,10 +33,15 @@ TRAIN_CONFIGS = [
         'config_file':
         'configs/detection/yolox/yolox_s_8xb16_300e_coco_pai.py',
         'cfg_options': {
-            **_COMMON_OPTIONS, 'data.train.data_source.path':
+            **_COMMON_OPTIONS,
+            'data.train.data_source.path':
             SMALL_COCO_ITAG_DATA_ROOT + 'train2017_20.manifest',
             'data.val.data_source.path':
-            SMALL_COCO_ITAG_DATA_ROOT + 'val2017_20.manifest'
+            SMALL_COCO_ITAG_DATA_ROOT + 'val2017_20.manifest',
+            # not support visualization for oss path
+            'eval_config.visualization_config': {
+                'vis_num': 0
+            },
         }
     },
     {
@@ -63,7 +68,7 @@ class YOLOXTrainTest(unittest.TestCase):
     def tearDown(self):
         super().tearDown()
 
-    def _base_train(self, train_cfgs, dist=False):
+    def _base_train(self, train_cfgs, dist=False, dist_eval=False):
         cfg_file = train_cfgs.pop('config_file')
         cfg_options = train_cfgs.pop('cfg_options', None)
         work_dir = train_cfgs.pop('work_dir', None)
@@ -75,6 +80,7 @@ class YOLOXTrainTest(unittest.TestCase):
             cfg.merge_from_dict(cfg_options)
 
         cfg.eval_pipelines[0].data = dict(**cfg.data.val)  # imgs_per_gpu=1
+        cfg.eval_pipelines[0].dist_eval = dist_eval
 
         tmp_cfg_file = tempfile.NamedTemporaryFile(suffix='.py').name
         cfg.dump(tmp_cfg_file)
@@ -115,7 +121,7 @@ class YOLOXTrainTest(unittest.TestCase):
         train_cfgs = copy.deepcopy(TRAIN_CONFIGS[0])
         train_cfgs['cfg_options'].update(dict(oss_io_config=get_oss_config()))
 
-        self._base_train(train_cfgs)
+        self._base_train(train_cfgs, dist_eval=True)
 
 
 if __name__ == '__main__':

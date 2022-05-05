@@ -201,7 +201,8 @@ def train_model(model,
             eval_cfg['evaluators'] = evaluators
             eval_hook = DistEvalHook if (distributed
                                          and dist_eval) else EvalHook
-            # eval_hook = EvalHook
+            if eval_hook == EvalHook:
+                eval_cfg.pop('gpu_collect', None)  # only use in DistEvalHook
             logger.info(f'register EvaluationHook {eval_cfg}')
             # only flush log buffer at the last eval hook
             flush_buffer = (idx == len(cfg.eval_pipelines) - 1)

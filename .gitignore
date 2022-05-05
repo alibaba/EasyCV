@@ -132,14 +132,11 @@ benchmarks/detection/output
 #log file
 *.log
 
-# scripts
-# scripts/
 pai_jobs/xflow-deploy/
 pai_jobs/easycv/resources/
 *.tar.gz
-*.sh
 thirdparty/test
 scripts/test
 
-# evytorch cache
+# easycv default cache dir
 .easycv_cache

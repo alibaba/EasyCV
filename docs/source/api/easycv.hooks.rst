@@ -129,6 +129,22 @@ easycv.hooks.sync\_random\_size\_hook module
    :undoc-members:
    :show-inheritance:
 
+easycv.hooks.tensorboard module
+-------------------------------
+
+.. automodule:: easycv.hooks.tensorboard
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+easycv.hooks.wandb module
+-------------------------
+
+.. automodule:: easycv.hooks.wandb
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 easycv.hooks.yolox\_lr\_hook module
 -----------------------------------
 

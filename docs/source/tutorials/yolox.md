@@ -6,10 +6,10 @@ To download the dataset, please refer to [prepare_data.md](../prepare_data.md).
 Yolox support both coco format and [PAI-Itag detection format](https://help.aliyun.com/document_detail/311173.html#title-y6p-ger-5l7),
 
 ### COCO format
-To use coco data to train detection, you can refer to [configs/detection/yolox/yolox_s_8xb16_300e_coco.py](../../configs/detection/yolox/yolox_s_8xb16_300e_coco.py) for more configuration details.
+To use coco data to train detection, you can refer to [configs/detection/yolox/yolox_s_8xb16_300e_coco.py](https://github.com/alibaba/EasyCV/tree/master/configs/detection/yolox/yolox_s_8xb16_300e_coco.py) for more configuration details.
 
 ### PAI-Itag detection format
-To use pai-itag detection format data to train detection, you can refer to [configs/detection/yolox/yolox_s_8xb16_300e_coco_pai.py](../../configs/detection/yolox/yolox_s_8xb16_300e_coco_pai.py) for more configuration details.
+To use pai-itag detection format data to train detection, you can refer to [configs/detection/yolox/yolox_s_8xb16_300e_coco_pai.py](https://github.com/alibaba/EasyCV/tree/master/configs/detection/yolox/yolox_s_8xb16_300e_coco_pai.py) for more configuration details.
 
 ## Local & PAI-DSW
 
