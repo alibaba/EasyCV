@@ -167,7 +167,7 @@ def _export_yolox(model, cfg, filename):
         input = 255 * torch.rand((batch_size, 3) + img_scale)
         yolox_trace = torch.jit.trace(model_export, input.to(device))
 
-        if getattr(cfg.export, 'use_blade', False):
+        if getattr(cfg.export, 'export_blade', False):
             if blade_env_assert() == True:
                 yolox_blade = blade_yolox_optimize(
                     script_model=model_export,
