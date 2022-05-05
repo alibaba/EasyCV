@@ -8,7 +8,7 @@ import torch
 from mmcv.parallel import scatter_kwargs
 from mmcv.runner import get_dist_info
 
-from easycv.models.detection.utils import postprocess, yolox_predict
+from easycv.models.detection.utils import postprocess, output_postprocess
 from easycv.models.detection.yolox.yolo_head import YOLOXHead
 
 
@@ -39,10 +39,7 @@ def calib(model, data_loader):
         if cur_iter > 50:
             return
         input_args, kwargs = scatter_kwargs(None, data, [torch.cuda.current_device()]) #[-1]
-        print('calib number: {}'.format((cur_iter)))
         with torch.no_grad():
-            # for cpu test,  use this:
-            # kwargs[0]['img'] = kwargs[0]['img'].squeeze(dim=0)
             model(kwargs[0]['img'])
 
 
@@ -98,7 +95,7 @@ def single_mnn_test(cfg, model_path, data_loader, imgs_per_gpu):
     '''
         MNN models test
     '''
-    # 构建MNN解释器，及input tensor的相关信息
+    # build MNN interpreter, and get input tensor 
     interpreter = MNN.Interpreter(model_path)
     session = interpreter.createSession()
     input_all = interpreter.getSessionInputAll(session)
@@ -121,22 +118,22 @@ def single_mnn_test(cfg, model_path, data_loader, imgs_per_gpu):
         img_meta = kwargs[0]['img_metas']
         images = images.cpu().numpy()
 
-        # 将numpy的ndarray转化为MNN的tensor
+        # transfer ndarray to MNN.tensor
         image_mnn_tensor = MNN.Tensor(images.shape, MNN.Halide_Type_Float,
                                       images, MNN.Tensor_DimensionType_Caffe)
 
         input_image.copyFromHostTensor(image_mnn_tensor)
 
-        # 执行MNN模型的推理
+        # run MNN Session
         interpreter.runSession(session)
 
-        # 获取MNN模型的输出
+        # get MNN session output
         output_tensor = interpreter.getSessionOutputAll(session)
 
-        # 获取模型输出shape
+        # get output shape
         output_shape = model_output_shape(cfg.model.type, imgs_per_gpu)
 
-        # 将MNN模型的输出转化为PyTorch的tensor
+        # transfor MNN's tensor to PyTorch's tensor
         tmp_output = MNN.Tensor(output_shape, MNN.Halide_Type_Float,
                                 np.ones(list(output_shape)).astype(np.float32),
                                 MNN.Tensor_DimensionType_Caffe)
@@ -148,7 +145,7 @@ def single_mnn_test(cfg, model_path, data_loader, imgs_per_gpu):
 
         output = postprocess(output, cfg.model.num_classes,
                              cfg.model.test_conf, cfg.model.nms_thre)
-        output = yolox_predict(output, img_meta)
+        output = output_postprocess(output, img_meta)
 
         for k, v in output.items():
             if k not in results:
