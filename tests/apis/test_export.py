@@ -7,8 +7,9 @@ import unittest
 
 import numpy as np
 import torch
-from tests.ut_config import (IMAGENET_LABEL_TXT, PRETRAINED_MODEL_MOCO, PRETRAINED_MODEL_YOLOXS,
-                             PRETRAINED_MODEL_RESNET50)
+from tests.ut_config import (IMAGENET_LABEL_TXT, PRETRAINED_MODEL_MOCO,
+                             PRETRAINED_MODEL_RESNET50,
+                             PRETRAINED_MODEL_YOLOXS)
 
 from easycv.apis.export import export
 from easycv.utils.config_tools import mmcv_config_fromfile
@@ -102,6 +103,7 @@ class ModelExportTest(unittest.TestCase):
         export_config = json.loads(export_config_str)
         self.assertTrue(
             export_config['model']['backbone']['norm_cfg']['type'] == 'BN')
+
 
 if __name__ == '__main__':
     unittest.main()
