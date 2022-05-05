@@ -10,8 +10,8 @@ import pandas as pd
 import torch
 import torchvision
 
-os.environ['DISC_ENABLE_STITCH'] = 'true'
-os.environ['DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE'] = 'true'
+os.environ['DISC_ENABLE_STITCH'] = os.environ.get('DISC_ENABLE_STITCH', 'true')
+os.environ['DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE'] = os.environ.get('DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE', 'true')
 
 try:
     import torch_blade
