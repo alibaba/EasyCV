@@ -85,7 +85,7 @@ class TorchYoloXPredictor(PredictorInterface):
 
             with io.open(model_path + '.classnames.json', 'r') as infile:
                 self.CLASSES = json.load(infile)
-            self.trace_able = True
+            self.traceable = True
 
         else:
 
@@ -109,7 +109,7 @@ class TorchYoloXPredictor(PredictorInterface):
 
             # build model
             self.model = build_model(self.cfg.model)
-            self.trace_able = getattr(self.model, 'trace_able', False)
+            self.traceable = getattr(self.model, 'trace_able', False)
 
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
             map_location = 'cpu' if self.device == 'cpu' else 'cuda'
@@ -188,7 +188,7 @@ class TorchYoloXPredictor(PredictorInterface):
             img = torch.unsqueeze(img._data, 0).to(self.device)
             data_dict.pop('img')
 
-            if self.trace_able:
+            if self.traceable:
                 det_out = self.post_assign(
                     self.model(img), img_metas=[data_dict['img_metas']._data])
             else:

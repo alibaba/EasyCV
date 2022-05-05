@@ -62,7 +62,7 @@ class YOLOX(BaseModel):
         self.test_conf = test_conf
         self.nms_thre = nms_thre
         self.test_size = test_size
-        self.trace_able = False
+        self.traceable = False
 
     def forward_train(self,
                       img: Tensor,
@@ -174,7 +174,7 @@ class YOLOXExport(YOLOX):
     def __init__(self, *args, **kwargs):
         super(YOLOXExport, self).__init__(*args, **kwargs)
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.trace_able = True
+        self.traceable = True
         self.backbone = self.backbone.to(device)
         self.head = self.head.to(device)
         for param in self.backbone.parameters():
