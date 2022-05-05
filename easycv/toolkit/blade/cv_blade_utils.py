@@ -64,11 +64,20 @@ def blade_env_assert():
 
 
 @contextmanager
-def opt_trt_config(enable_fp16=True):
+# def opt_trt_config(enable_fp16=True):
+def opt_trt_config(input_config=dict(enable_fp16=True)): 
     from torch_blade import tensorrt
     torch_config = torch_blade.Config()
+    
+    BLADE_CONFIG_KEYS=['optimization_pipeline', 'enable_fp16','customize_op_black_list', 'fp16_fallback_op_ratio']
+
+    for key in input_config.keys():
+        if key in BLADE_CONFIG_KEYS:
+            setattr(torch_config, key, input_config[key])
+            logging.info('setting blade torch_config %s to %s'%(key, input_config[key]))
+
     torch_config.optimization_pipeline = 'TensorRT'
-    torch_config.enable_fp16 = enable_fp16
+    torch_config.enable_fp16 = True
     torch_config.customize_op_black_list = [
         'aten::select', 'aten::index', 'aten::slice', 'aten::view'
     ]
@@ -200,13 +209,13 @@ def check_results(results0, results1):
         logging.error(err)
 
 
-def blade_yolox_optimize(script_model,
+def blade_optimize(script_model,
                          model,
                          inputs,
-                         fp16=True,
+                         blade_config = dict(enable_fp16=True),
                          backend='TensorRT',
                          batch=1):
-    with opt_trt_config(fp16):
+    with opt_trt_config(blade_config):
         opt_model = optimize(
             model,
             allow_tracing=True,
@@ -217,14 +226,13 @@ def blade_yolox_optimize(script_model,
     benchmark(opt_model, inputs, backend, batch, 'blade')
     logging.info('Model Summary:')
     summary = pd.DataFrame(results)
-    # print(summary.to_markdown())
-    logging.info(summary.to_markdown())
+    logging.warning(summary.to_markdown())
 
     # x, y, z = inputs
     # inputs = (x.to(torch.int32), y.to(torch.int32), z.to(torch.int32))
     output = model(*inputs)
     cu_prof_start()
-    if fp16:
+    if blade_config.get('enable_fp16', True):
         with opt_blade_mixprec():
             test_result = model(*inputs)
     else:

@@ -9,7 +9,7 @@ from mmcv.utils import Config
 from easycv.file import io
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
                            build_model)
-from easycv.toolkit.blade import blade_env_assert, blade_yolox_optimize
+from easycv.toolkit.blade import blade_env_assert, blade_optimize
 from easycv.utils.checkpoint import load_checkpoint
 
 __all__ = ['export']
@@ -168,11 +168,14 @@ def _export_yolox(model, cfg, filename):
         yolox_trace = torch.jit.trace(model_export, input.to(device))
 
         if getattr(cfg.export, 'export_blade', False):
+            blade_config = cfg.export.get('blade_config', dict(enable_fp16=True))
             if blade_env_assert() == True:
-                yolox_blade = blade_yolox_optimize(
+                yolox_blade = blade_optimize(
                     script_model=model_export,
                     model=yolox_trace,
-                    inputs=(input.to(device), ))
+                    inputs=(input.to(device), ),
+                    blade_config=blade_config
+                    )
                 with io.open(filename + '.blade', 'wb') as ofile:
                     torch.jit.save(yolox_blade, ofile)
                 with io.open(filename + '.blade.classnames.json',
