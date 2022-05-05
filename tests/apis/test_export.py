@@ -7,7 +7,7 @@ import unittest
 
 import numpy as np
 import torch
-from tests.ut_config import (IMAGENET_LABEL_TXT, PRETRAINED_MODEL_MOCO,
+from tests.ut_config import (IMAGENET_LABEL_TXT, PRETRAINED_MODEL_MOCO, PRETRAINED_MODEL_YOLOXS,
                              PRETRAINED_MODEL_RESNET50)
 
 from easycv.apis.export import export
@@ -29,6 +29,26 @@ class ModelExportTest(unittest.TestCase):
         config_file = 'configs/selfsup/mocov2/mocov2_rn50_8xb32_200e_tfrecord.py'
         ori_ckpt = PRETRAINED_MODEL_MOCO
         ckpt_path = f'{self.tmp_dir}/moco_export.pth'
+        stat, output = subprocess.getstatusoutput(
+            f'python tools/export.py {config_file} {ori_ckpt} {ckpt_path}')
+        self.assertTrue(stat == 0, 'export model failed')
+        if stat != 0:
+            print(output)
+
+    def test_export_yolox(self):
+        config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_voc.py'
+        ori_ckpt = PRETRAINED_MODEL_YOLOXS
+        ckpt_path = f'{self.tmp_dir}/export_yolox_s_epoch300.pt'
+        stat, output = subprocess.getstatusoutput(
+            f'python tools/export.py {config_file} {ori_ckpt} {ckpt_path}')
+        self.assertTrue(stat == 0, 'export model failed')
+        if stat != 0:
+            print(output)
+
+    def test_export_yolox_jit(self):
+        config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_voc_jit.py'
+        ori_ckpt = PRETRAINED_MODEL_YOLOXS
+        ckpt_path = f'{self.tmp_dir}/export_yolox_s_epoch300'
         stat, output = subprocess.getstatusoutput(
             f'python tools/export.py {config_file} {ori_ckpt} {ckpt_path}')
         self.assertTrue(stat == 0, 'export model failed')
@@ -82,7 +102,6 @@ class ModelExportTest(unittest.TestCase):
         export_config = json.loads(export_config_str)
         self.assertTrue(
             export_config['model']['backbone']['norm_cfg']['type'] == 'BN')
-
 
 if __name__ == '__main__':
     unittest.main()

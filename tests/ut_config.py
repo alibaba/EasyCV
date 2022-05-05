@@ -68,6 +68,8 @@ COMPRESSION_TEST_DATA = os.path.join(BASE_LOCAL_PATH,
 
 PRETRAINED_MODEL_MOCO = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/selfsup/moco/moco_epoch_200.pth')
+PRETRAINED_MODEL_YOLOXS = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/detection/yolox_s/export_yolox_s_epoch300.pth')
 PRETRAINED_MODEL_RESNET50 = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/classification/resnet/resnet50.pth')
 PRETRAINED_MODEL_RESNET50_WITHOUTHEAD = os.path.join(
