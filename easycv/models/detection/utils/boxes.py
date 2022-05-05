@@ -43,10 +43,10 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
 
     output = [None for _ in range(len(prediction))]
     for i, image_pred in enumerate(prediction):
-
         # If none are remaining => process next image
         if not image_pred.size(0):
             continue
+
         # Get score and class with highest confidence
         class_conf, class_pred = torch.max(
             image_pred[:, 5:5 + num_classes], 1, keepdim=True)
@@ -57,9 +57,9 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
         detections = torch.cat(
             (image_pred[:, :5], class_conf, class_pred.float()), 1)
         detections = detections[conf_mask]
+
         if not detections.size(0):
             continue
-
         if LooseVersion(torchvision.__version__) >= LooseVersion('0.8.0'):
             nms_out_index = torchvision.ops.batched_nms(
                 detections[:, :4], detections[:, 4] * detections[:, 5],

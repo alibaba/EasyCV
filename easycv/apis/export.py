@@ -165,7 +165,13 @@ def _export_yolox(model, cfg, filename):
             len(img_scale) == 2
         ), 'Export YoloX predictor config contains img_scale must be (int, int) tuple!'
         input = 255 * torch.rand((batch_size, 3) + img_scale)
-        yolox_trace = torch.jit.trace(model_export, input.to(device))
+
+        # well trained model will generate reasonable result, otherwise, we should change model.test_conf=0.0 to avoid tensor in inference to be empty
+        try:
+            yolox_trace = torch.jit.trace(model_export, input.to(device))
+        except:
+            model_export.test_conf = 0.0
+            yolox_trace = torch.jit.trace(model_export, input.to(device))
 
         if getattr(cfg.export, 'export_blade', False):
             blade_config = cfg.export.get('blade_config',
