@@ -3,6 +3,7 @@ import itertools
 import os
 import time
 import timeit
+import logging
 from contextlib import contextmanager
 
 import numpy as np
@@ -34,7 +35,7 @@ def blade_env_assert():
         torch_version = 'failed'
         torch_cuda = 'failed'
         env_flag = False
-        print(
+        logging.error(
             'import torch and torch cuda failed, please install pytorch with cuda correctly'
         )
 
@@ -42,21 +43,21 @@ def blade_env_assert():
         import torch_blade
     except:
         env_flag = False
-        print(
+        logging.error(
             'Import torch_blade failed, please reference to https://help.aliyun.com/document_detail/205134.html'
         )
-        print('Info: your torch version is %s, your torch cuda version is %s' %
+        logging.info('Info: your torch version is %s, your torch cuda version is %s' %
               (torch_version, torch_cuda))
 
     try:
         import torch_blade.tensorrt
     except:
         env_flag = False
-        print(
+        logging.error(
             'Import torch_blade.tensorrt failed, Install torch_blade.tensorrt and export  xx/tensorrt.so to your python ENV'
         )
 
-    print('Welcome to use torch_blade, with torch %s, cuda %s, blade %s' %
+    logging.info('Welcome to use torch_blade, with torch %s, cuda %s, blade %s' %
           (torch_version, torch_cuda, torch_blade.version.__version__))
 
     return env_flag
@@ -194,9 +195,9 @@ def check_results(results0, results1):
 
     try:
         assert_almost_equal(results0, results1, rtol=1e-3, atol=1e-3)
-        print('Accuraccy check passed')
+        logging.info('Accuraccy check passed')
     except Exception as err:
-        print(err)
+        logging.error(err)
 
 
 def blade_yolox_optimize(script_model,
@@ -214,9 +215,10 @@ def blade_yolox_optimize(script_model,
     benchmark(script_model, inputs, backend, batch, 'easycv')
     benchmark(model, inputs, backend, batch, 'easycv script')
     benchmark(opt_model, inputs, backend, batch, 'blade')
-    print('Model Summary:')
+    logging.info('Model Summary:')
     summary = pd.DataFrame(results)
-    print(summary.to_markdown())
+    # print(summary.to_markdown())
+    logging.info(summary.to_markdown())
 
     # x, y, z = inputs
     # inputs = (x.to(torch.int32), y.to(torch.int32), z.to(torch.int32))
