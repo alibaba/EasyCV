@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import torch
 import torchvision
-
 os.environ['DISC_ENABLE_STITCH'] = os.environ.get('DISC_ENABLE_STITCH', 'true')
 os.environ['DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE'] = os.environ.get('DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE', 'true')
 
@@ -64,24 +63,27 @@ def blade_env_assert():
 
 
 @contextmanager
-# def opt_trt_config(enable_fp16=True):
 def opt_trt_config(input_config=dict(enable_fp16=True)): 
     from torch_blade import tensorrt
     torch_config = torch_blade.Config()
-    
-    BLADE_CONFIG_KEYS=['optimization_pipeline', 'enable_fp16','customize_op_black_list', 'fp16_fallback_op_ratio']
+
+    BLADE_CONFIG_DEFAULT = dict(
+        optimization_pipeline = 'TensorRT',
+        enable_fp16=True,
+        customize_op_black_list=['aten::select', 'aten::index', 'aten::slice', 'aten::view'],
+        fp16_fallback_op_ratio = 0.3,
+    )
+    BLADE_CONFIG_KEYS = list(BLADE_CONFIG_DEFAULT.keys())
+
+    for key in BLADE_CONFIG_DEFAULT.keys():
+        setattr(torch_config, key, BLADE_CONFIG_DEFAULT[key])
+        logging.info('setting blade torch_config %s to %s by default'%(key, BLADE_CONFIG_DEFAULT[key]))
 
     for key in input_config.keys():
         if key in BLADE_CONFIG_KEYS:
             setattr(torch_config, key, input_config[key])
-            logging.info('setting blade torch_config %s to %s'%(key, input_config[key]))
+            logging.warning('setting blade torch_config %s to %s by user config'%(key, input_config[key]))
 
-    torch_config.optimization_pipeline = 'TensorRT'
-    torch_config.enable_fp16 = True
-    torch_config.customize_op_black_list = [
-        'aten::select', 'aten::index', 'aten::slice', 'aten::view'
-    ]
-    torch_config.fp16_fallback_op_ratio = 0.3
     try:
         with torch_config:
             yield
