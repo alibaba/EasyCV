@@ -36,6 +36,8 @@ def quantize_config_check(device, backend, model_type=''):
 
 def calib(model, data_loader):
     for cur_iter, data in enumerate(data_loader):
+        # This is help to refine the quantized model's output, so no need to use all data.
+        # More than 50 samples will not get better result, but will cost too much more time.
         if cur_iter > 50:
             return
         input_args, kwargs = scatter_kwargs(None, data, [torch.cuda.current_device()]) #[-1]

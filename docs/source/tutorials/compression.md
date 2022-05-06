@@ -82,7 +82,7 @@ python tools/quantize.py \
 This is used to prune yolox model; The pruned model will be saved in work_dir.
 
 ```shell
-python tools/quantize.py \
+python tools/prune.py \
 		${CONFIG_PATH} \
 		${MODEL_PATH} \
 		--work_dir ${WORK_DIR} \
@@ -110,7 +110,7 @@ python tools/quantize.py \
 Edit `data_root`path in the `${CONFIG_PATH}` to your own data path.
 
 ```shell
-python tools/quantize.py \
+python tools/prune.py \
 		configs/detection/yolox/yolox_s_8xb16_300e_coco.py \
 		models/yolox_s.pth \
 		--pruning_class AGP \
