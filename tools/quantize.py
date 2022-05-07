@@ -3,6 +3,7 @@
 isort:skip_file
 """
 import argparse
+from genericpath import exists
 import os
 import os.path as osp
 import sys
@@ -27,8 +28,9 @@ from easycv.apis import single_cpu_test, single_gpu_test
 from easycv.core.evaluation.builder import build_evaluator
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.utils.logger import get_root_logger
+from easycv.utils.flops_counter import get_model_info
 from easycv.file import io
-from easycv.toolkit.quantize.quantize_utils import calib, quantize_config
+from easycv.toolkit.quantize.quantize_utils import calib, quantize_config_check
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
@@ -56,6 +58,16 @@ def parse_args():
         'parameterize param when user specific choose a model config template like CLASSIFICATION: classification.py'
     )
     parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument(
+        '--device',
+        type=str,
+        default='cpu',
+        help='the device quantized models use')
+    parser.add_argument(
+        '--backend',
+        type=str,
+        default='PyTorch',
+        help="the quantized models's framework")
     parser.add_argument(
         '--user_config_params',
         nargs=argparse.REMAINDER,
@@ -167,7 +179,7 @@ def main():
     model = build_model(cfg.model)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    print(f'use device {device}')
+    logger.info(f'use device {device}')
     checkpoint = load_checkpoint(model, args.checkpoint, map_location=device)
     model.eval()
     model.to(device)
@@ -179,17 +191,24 @@ def main():
         model.CLASSES = cfg.CLASSES
 
     # MMDataParallel for gpu
-    base_model = MMDataParallel(model, device_ids=[0])
+    if device == 'cuda':
+        base_model = MMDataParallel(model, device_ids=[0])
+    else:
+        base_model = model
 
     # eval base model before quantizing
+    get_model_info(model, cfg.img_scale, cfg.model, logger)
     quantize_eval(cfg, base_model, device)
 
-    # quantized model on cpu
-    model.to('cpu')
+    # setting quantize config
+    quantize_config = quantize_config_check(args.device, args.backend,
+                                            args.model_type)
 
+    model.to('cuda')
     prepared_backbone = prepare_fx(model.backbone.eval(), quantize_config)
     enable_calibration(prepared_backbone)
     # build calib dataloader, only need 50 samples
+    logger.info('build calib dataloader')
     eval_data = cfg.eval_pipelines[0].data
     imgs_per_gpu = eval_data.pop('imgs_per_gpu', cfg.data.imgs_per_gpu)
 
@@ -202,13 +221,21 @@ def main():
         shuffle=False)
 
     # guarantee accuracy
+    logger.info('guarantee calib')
     calib(prepared_backbone, data_loader)
+
+    # quantized model on cpu
+    model.to('cpu')
+
     # quantizing model
+    logger.info('convert model')
     quantized_backbone, _ = convert(prepared_backbone, quantize_config)
     model.backbone = quantized_backbone
     model.eval()
 
     # cpu eval
+    logger.info('quantized model eval')
+    get_model_info(model, cfg.img_scale, cfg.model, logger)
     quantize_eval(cfg, model, 'cpu')
 
     input_shape = (1, 3, cfg.img_scale[0], cfg.img_scale[1])
