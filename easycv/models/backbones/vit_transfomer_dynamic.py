@@ -15,7 +15,8 @@ import torch.nn as nn
 # from utils import trunc_normal_
 from timm.models.layers import trunc_normal_
 
-from easycv.utils import get_root_logger, load_checkpoint
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger
 
 
 def drop_path(x, drop_prob: float = 0., training: bool = False):

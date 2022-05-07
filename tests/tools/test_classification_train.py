@@ -52,7 +52,7 @@ TRAIN_CONFIGS = [{
 }]
 
 
-class MAETrainTest(unittest.TestCase):
+class ClassificationTrainTest(unittest.TestCase):
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))

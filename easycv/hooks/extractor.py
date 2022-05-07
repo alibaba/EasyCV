@@ -2,7 +2,7 @@
 import torch.nn as nn
 from torch.utils.data import Dataset
 
-from easycv.utils import dist_forward_collect, nondist_forward_collect
+from easycv.utils.collect import dist_forward_collect, nondist_forward_collect
 
 
 class Extractor(object):

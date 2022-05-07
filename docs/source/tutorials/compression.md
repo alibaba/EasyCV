@@ -1,11 +1,13 @@
 # YOLOX Compression Tutorial
 
 ## ENV preparation
-### install torch >= 1.10.0
+### install torch
+blade_compression needs torch >= 1.10.0
 ```shell
 conda install pytorch==1.10.0 torchvision==0.11.0 torchaudio==0.10.0 cudatoolkit=10.2 -c pytorch
 ```
-### install mmcv >= 1.3.16 (torch version >= 1.10.0 does not support mmcv version < 1.3.16)
+### install mmcv
+with torch >=1.10.0, mmcv >=1.3.16 is required
 ```shell
 pip install mmcv-full==1.4.4 -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
 ```

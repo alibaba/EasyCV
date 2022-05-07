@@ -17,6 +17,22 @@ easycv.datasets.shared.pipelines.dali\_transforms module
    :undoc-members:
    :show-inheritance:
 
+easycv.datasets.shared.pipelines.format module
+----------------------------------------------
+
+.. automodule:: easycv.datasets.shared.pipelines.format
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+easycv.datasets.shared.pipelines.third\_transforms\_wrapper module
+------------------------------------------------------------------
+
+.. automodule:: easycv.datasets.shared.pipelines.third_transforms_wrapper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 easycv.datasets.shared.pipelines.transforms module
 --------------------------------------------------
 

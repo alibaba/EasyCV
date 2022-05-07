@@ -14,7 +14,7 @@ from easycv.file import io
 from easycv.hooks.export_hook import ExportHook
 from easycv.models.registry import MODELS
 from easycv.runner import EVRunner
-from easycv.utils import get_root_logger
+from easycv.utils.logger import get_root_logger
 from easycv.utils.test_util import get_tmp_dir
 
 

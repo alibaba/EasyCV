@@ -21,7 +21,7 @@ from easycv.models import build_model
 from easycv.apis import set_random_seed, train_model, build_optimizer
 from easycv.apis.train_misc import build_yolo_optimizer
 from easycv.datasets import build_dataloader, build_dataset
-from easycv.utils import get_root_logger
+from easycv.utils.logger import get_root_logger
 from easycv.file import io
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,

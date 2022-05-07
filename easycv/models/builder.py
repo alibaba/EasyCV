@@ -1,7 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from torch import nn
 
-from easycv.utils import build_from_cfg
+from easycv.utils.registry import build_from_cfg
 from .registry import BACKBONES, HEADS, LOSSES, MEMORIES, MODELS, NECKS
 
 

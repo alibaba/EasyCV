@@ -1,11 +1,103 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Adapt from https://github.com/open-mmlab/mmpose/blob/master/mmpose/core/visualization/image.py
 import math
+import os
+from os.path import dirname as opd
 
 import cv2
 import mmcv
 import numpy as np
 from mmcv.utils.misc import deprecated_api_warning
+from PIL import Image, ImageDraw, ImageFont
+
+
+def get_font_path():
+    root_path = opd(opd(opd(os.path.realpath(__file__))))
+    # find in whl
+    find_path_whl = os.path.join(root_path, 'resource/simhei.ttf')
+    # find in source code
+    find_path_source = os.path.join(opd(root_path), 'resource/simhei.ttf')
+    if os.path.exists(find_path_whl):
+        return find_path_whl
+    elif os.path.exists(find_path_source):
+        return find_path_source
+    else:
+        raise ValueError('Not find font file both in %s and %s' %
+                         (find_path_whl, find_path_source))
+
+
+_FONT_PATH = get_font_path()
+
+
+def put_text(img, xy, text, fill, size=20):
+    """support chinese text
+    """
+    img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    draw = ImageDraw.Draw(img)
+    fontText = ImageFont.truetype(_FONT_PATH, size=size, encoding='utf-8')
+    draw.text(xy, text, fill=fill, font=fontText)
+    img = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+    return img
+
+
+def imshow_label(img,
+                 labels,
+                 text_color='blue',
+                 font_size=20,
+                 thickness=1,
+                 font_scale=0.5,
+                 intervel=5,
+                 show=True,
+                 win_name='',
+                 wait_time=0,
+                 out_file=None):
+    """Draw images with labels on an image.
+
+    Args:
+        img (str or ndarray): The image to be displayed.
+        labels (str or list[str]): labels of each image.
+        text_color (str or tuple or :obj:`Color`): Color of texts.
+        font_size (int): Size of font.
+        thickness (int): Thickness of lines.
+        font_scale (float): Font scales of texts.
+        intervel（int): interval pixels between multiple labels
+        show (bool): Whether to show the image.
+        win_name (str): The window name.
+        wait_time (int): Value of waitKey param.
+        out_file (str, optional): The filename to write the image.
+
+    Returns:
+        ndarray: The image with bboxes drawn on it.
+    """
+    img = mmcv.imread(img)
+    img = np.ascontiguousarray(img)
+    labels = [labels] if isinstance(labels, str) else labels
+
+    cur_height = 0
+    for label in labels:
+        # roughly estimate the proper font size
+        text_size, text_baseline = cv2.getTextSize(label,
+                                                   cv2.FONT_HERSHEY_DUPLEX,
+                                                   font_scale, thickness)
+
+        org = (text_baseline + text_size[1],
+               text_baseline + text_size[1] + cur_height)
+
+        # support chinese text
+        # TODO: Unify the font of cv2 and PIL, and auto get font_size according to the font_scale
+        img = put_text(img, org, text=label, fill=text_color, size=font_size)
+
+        # cv2.putText(img, label, org, cv2.FONT_HERSHEY_DUPLEX, font_scale,
+        #             mmcv.color_val(text_color), thickness)
+
+        cur_height += text_baseline + text_size[1] + intervel
+
+    if show:
+        mmcv.imshow(img, win_name, wait_time)
+    if out_file is not None:
+        mmcv.imwrite(img, out_file)
+
+    return img
 
 
 def imshow_bboxes(img,
@@ -13,6 +105,7 @@ def imshow_bboxes(img,
                   labels=None,
                   colors='green',
                   text_color='white',
+                  font_size=20,
                   thickness=1,
                   font_scale=0.5,
                   show=True,
@@ -29,6 +122,7 @@ def imshow_bboxes(img,
         labels (str or list[str], optional): labels of each bbox.
         colors (list[str or tuple or :obj:`Color`]): A list of colors.
         text_color (str or tuple or :obj:`Color`): Color of texts.
+        font_size (int): Size of font.
         thickness (int): Thickness of lines.
         font_scale (float): Font scales of texts.
         show (bool): Whether to show the image.
@@ -58,11 +152,10 @@ def imshow_bboxes(img,
         out_file=None)
 
     if labels is not None:
-        if not isinstance(labels, list):
-            labels = [labels for _ in range(len(bboxes))]
         assert len(labels) == len(bboxes)
 
         for bbox, label, color in zip(bboxes, labels, colors):
+            label = str(label)
             bbox_int = bbox[0, :4].astype(np.int32)
             # roughly estimate the proper font size
             text_size, text_baseline = cv2.getTextSize(label,
@@ -74,9 +167,17 @@ def imshow_bboxes(img,
             text_y2 = text_y1 + text_size[1] + text_baseline
             cv2.rectangle(img, (text_x1, text_y1), (text_x2, text_y2), color,
                           cv2.FILLED)
-            cv2.putText(img, label, (text_x1, text_y2 - text_baseline),
-                        cv2.FONT_HERSHEY_DUPLEX, font_scale,
-                        mmcv.color_val(text_color), thickness)
+            # cv2.putText(img, label, (text_x1, text_y2 - text_baseline),
+            #             cv2.FONT_HERSHEY_DUPLEX, font_scale,
+            #             mmcv.color_val(text_color), thickness)
+
+            # support chinese text
+            # TODO: Unify the font of cv2 and PIL, and auto get font_size according to the font_scale
+            img = put_text(
+                img, (text_x1, text_y1),
+                text=label,
+                fill=text_color,
+                size=font_size)
 
     if show:
         mmcv.imshow(img, win_name, wait_time)

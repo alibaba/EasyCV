@@ -12,7 +12,8 @@ from easycv.datasets.builder import build_datasource
 from easycv.datasets.loader.sampler import DistributedSampler
 from easycv.datasets.registry import DATASETS, PIPELINES
 from easycv.datasets.shared.pipelines.transforms import Compose
-from easycv.utils import build_from_cfg, dist_utils
+from easycv.utils import dist_utils
+from easycv.utils.registry import build_from_cfg
 
 imagenet_feature = {
     'image/encoded': tfrec.FixedLenFeature((), tfrec.string, ''),

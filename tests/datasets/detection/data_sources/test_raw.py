@@ -42,7 +42,7 @@ class DetSourceRawTest(unittest.TestCase):
                                  data_source.samples_list[exclude_idx[i]])
 
         length = data_source.get_length()
-        self.assertEqual(length, 126)
+        self.assertEqual(length, 128)
 
         exists = False
         for idx in range(length):
