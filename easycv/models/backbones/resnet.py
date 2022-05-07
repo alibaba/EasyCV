@@ -227,7 +227,9 @@ def make_res_layer(block,
                    with_cp=False,
                    conv_cfg=None,
                    norm_cfg=dict(type='BN'),
-                   frelu=False):
+                   frelu=False,
+                   multi_grid=None,
+                   contract_dilation=False,):
     downsample = None
     if stride != 1 or inplanes != planes * block.expansion:
         downsample = nn.Sequential(
@@ -240,14 +242,20 @@ def make_res_layer(block,
                 bias=False),
             build_norm_layer(norm_cfg, planes * block.expansion)[1],
         )
-
+    if multi_grid is None:
+        if dilation > 1 and contract_dilation:
+            first_dilation = dilation // 2
+        else:
+            first_dilation = dilation
+    else:
+        first_dilation = multi_grid[0]
     layers = []
     layers.append(
         block(
             inplanes=inplanes,
             planes=planes,
             stride=stride,
-            dilation=dilation,
+            dilation=first_dilation,
             downsample=downsample,
             style=style,
             with_cp=with_cp,
@@ -261,7 +269,7 @@ def make_res_layer(block,
                 inplanes=inplanes,
                 planes=planes,
                 stride=1,
-                dilation=dilation,
+                dilation=dilation if multi_grid is None else multi_grid[i],
                 style=style,
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
@@ -296,6 +304,10 @@ class ResNet(nn.Module):
         original_inplanes: start channel for first block, default=64
         zero_init_residual (bool): whether to use zero init for last norm layer
             in resblocks to let them behave as identity.
+        multi_grid (Sequence[int]|None): Multi grid dilation rates of last
+            stage. Default: None.
+        contract_dilation (bool): Whether contract first dilation of each layer
+            Default: False.
 
     Example:
         >>> from easycv.models import ResNet
@@ -337,7 +349,9 @@ class ResNet(nn.Module):
                  with_cp=False,
                  frelu=False,
                  original_inplanes=64,
-                 zero_init_residual=False):
+                 zero_init_residual=False,
+                 multi_grid=None,
+                 contract_dilation=False):
         super(ResNet, self).__init__()
         if depth not in self.arch_settings:
             raise KeyError('invalid depth {} for resnet'.format(depth))
@@ -361,6 +375,8 @@ class ResNet(nn.Module):
         self.original_inplanes = original_inplanes
         self.inplanes = original_inplanes
         self.frelu = frelu
+        self.multi_grid = multi_grid
+        self.contract_dilation = contract_dilation
         self.pretrained = model_urls.get(self.__class__.__name__ + str(depth),
                                          None)
 
@@ -370,6 +386,9 @@ class ResNet(nn.Module):
         for i, num_blocks in enumerate(self.stage_blocks):
             stride = strides[i]
             dilation = dilations[i]
+            # multi grid is applied to last layer only
+            stage_multi_grid = multi_grid if i == len(
+                self.stage_blocks) - 1 else None
             planes = self.original_inplanes * 2**i
             res_layer = make_res_layer(
                 self.block,
@@ -382,7 +401,9 @@ class ResNet(nn.Module):
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
-                frelu=self.frelu)
+                frelu=self.frelu,
+                multi_grid=stage_multi_grid,
+                contract_dilation=contract_dilation,)
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)

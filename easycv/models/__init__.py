@@ -8,3 +8,4 @@ from .loss import *
 from .pose import TopDown
 from .registry import BACKBONES, HEADS, LOSSES, MODELS, NECKS
 from .selfsup import *
+from .segmentation import *
