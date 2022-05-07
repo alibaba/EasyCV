@@ -4,7 +4,6 @@ from distutils.version import LooseVersion
 import torch
 import torchvision
 
-
 __all__ = ['bboxes_iou', 'postprocess']
 
 
