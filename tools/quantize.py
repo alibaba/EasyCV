@@ -179,7 +179,7 @@ def main():
     model = build_model(cfg.model)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    print(f'use device {device}')
+    logger.info(f'use device {device}')
     checkpoint = load_checkpoint(model, args.checkpoint, map_location=device)
     model.eval()
     model.to(device)
@@ -201,39 +201,40 @@ def main():
     quantize_eval(cfg, base_model, device)
 
     # setting quantize config
-    quantize_config = quantize_config_check(args.device, args.backend, args.model_type)
+    quantize_config = quantize_config_check(args.device, args.backend,
+                                            args.model_type)
 
     model.to('cuda')
     prepared_backbone = prepare_fx(model.backbone.eval(), quantize_config)
     enable_calibration(prepared_backbone)
     # build calib dataloader, only need 50 samples
-    print(f'build calib dataloader')
+    logger.info('build calib dataloader')
     eval_data = cfg.eval_pipelines[0].data
     imgs_per_gpu = eval_data.pop('imgs_per_gpu', cfg.data.imgs_per_gpu)
 
     dataset = build_dataset(eval_data)
     data_loader = build_dataloader(
-                    dataset,
-                    imgs_per_gpu=imgs_per_gpu,
-                    workers_per_gpu=cfg.data.workers_per_gpu,
-                    dist=False,
-                    shuffle=False)
+        dataset,
+        imgs_per_gpu=imgs_per_gpu,
+        workers_per_gpu=cfg.data.workers_per_gpu,
+        dist=False,
+        shuffle=False)
 
     # guarantee accuracy
-    print(f'guarantee calib')
+    logger.info('guarantee calib')
     calib(prepared_backbone, data_loader)
 
     # quantized model on cpu
     model.to('cpu')
 
     # quantizing model
-    print(f'convert model')
+    logger.info('convert model')
     quantized_backbone, _ = convert(prepared_backbone, quantize_config)
     model.backbone = quantized_backbone
     model.eval()
 
     # cpu eval
-    print(f'quantized model eval')
+    logger.info('quantized model eval')
     get_model_info(model, cfg.img_scale, cfg.model, logger)
     quantize_eval(cfg, model, 'cpu')
 

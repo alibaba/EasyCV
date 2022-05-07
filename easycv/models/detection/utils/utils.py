@@ -12,15 +12,14 @@ def output_postprocess(outputs, img_metas=None):
         if img_metas:
             img_metas_list.append(img_metas[i])
         if outputs[i] is not None:
-            bboxes = outputs[i][:,
-                                0:4] if outputs[i] is not None else None
+            bboxes = outputs[i][:, 0:4] if outputs[i] is not None else None
             if img_metas:
                 bboxes /= img_metas[i]['scale_factor'][0]
             detection_boxes.append(bboxes.cpu().numpy())
             detection_scores.append(
                 (outputs[i][:, 4] * outputs[i][:, 5]).cpu().numpy())
-            detection_classes.append(
-                outputs[i][:, 6].cpu().numpy().astype(np.int32))
+            detection_classes.append(outputs[i][:, 6].cpu().numpy().astype(
+                np.int32))
         else:
             detection_boxes.append(None)
             detection_scores.append(None)
