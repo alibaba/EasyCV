@@ -8,7 +8,7 @@ import torch
 from mmcv.parallel import scatter_kwargs
 from mmcv.runner import get_dist_info
 
-from easycv.models.detection.utils import postprocess, output_postprocess
+from easycv.models.detection.utils import output_postprocess, postprocess
 from easycv.models.detection.yolox.yolo_head import YOLOXHead
 
 
@@ -40,7 +40,8 @@ def calib(model, data_loader):
         # More than 50 samples will not get better result, but will cost too much more time.
         if cur_iter > 50:
             return
-        input_args, kwargs = scatter_kwargs(None, data, [torch.cuda.current_device()]) #[-1]
+        input_args, kwargs = scatter_kwargs(None, data,
+                                            [torch.cuda.current_device()])
         with torch.no_grad():
             model(kwargs[0]['img'])
 
@@ -97,7 +98,7 @@ def single_mnn_test(cfg, model_path, data_loader, imgs_per_gpu):
     '''
         MNN models test
     '''
-    # build MNN interpreter, and get input tensor 
+    # build MNN interpreter, and get input tensor
     interpreter = MNN.Interpreter(model_path)
     session = interpreter.createSession()
     input_all = interpreter.getSessionInputAll(session)
