@@ -18,7 +18,7 @@ from easycv.file import io
 from easycv.hooks.optimizer_hook import OptimizerHook
 from easycv.hooks.sync_norm_hook import SyncNormHook
 from easycv.runner import EVRunner
-from easycv.utils import get_root_logger
+from easycv.utils.logger import get_root_logger
 from easycv.utils.test_util import dist_exec_wrapper
 
 

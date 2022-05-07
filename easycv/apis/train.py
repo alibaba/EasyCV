@@ -20,7 +20,8 @@ from easycv.hooks import (BestCkptSaverHook, DistEvalHook, EMAHook, EvalHook,
                           ExportHook, OptimizerHook, OSSSyncHook, build_hook)
 from easycv.hooks.optimizer_hook import AMPFP16OptimizerHook
 from easycv.runner import EVRunner
-from easycv.utils import generate_best_metric_name, get_root_logger, print_log
+from easycv.utils.eval_utils import generate_best_metric_name
+from easycv.utils.logger import get_root_logger, print_log
 
 
 def set_random_seed(seed, deterministic=False):
@@ -200,7 +201,8 @@ def train_model(model,
             eval_cfg['evaluators'] = evaluators
             eval_hook = DistEvalHook if (distributed
                                          and dist_eval) else EvalHook
-            # eval_hook = EvalHook
+            if eval_hook == EvalHook:
+                eval_cfg.pop('gpu_collect', None)  # only use in DistEvalHook
             logger.info(f'register EvaluationHook {eval_cfg}')
             # only flush log buffer at the last eval hook
             flush_buffer = (idx == len(cfg.eval_pipelines) - 1)

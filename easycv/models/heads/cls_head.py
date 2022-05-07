@@ -7,7 +7,9 @@ import torch.nn.functional as F
 from mmcv.cnn import kaiming_init, normal_init
 from torch.autograd import Variable
 
-from easycv.utils import build_from_cfg, get_root_logger, load_checkpoint
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger
+from easycv.utils.registry import build_from_cfg
 from ..registry import HEADS, LOSSES
 from ..utils import accuracy
 
@@ -77,7 +79,6 @@ class ClsHead(nn.Module):
     def forward(self, x: List[torch.Tensor]) -> List[torch.Tensor]:
 
         x1 = x[self.input_feature_index[0]]
-
         if self.with_avg_pool and x1.dim() > 2:
             assert x1.dim() == 4, \
                 'Tensor must has 4 dims, got: {}'.format(x1.dim())

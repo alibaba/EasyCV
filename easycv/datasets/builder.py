@@ -3,7 +3,7 @@ import copy
 
 from easycv.datasets.shared.dataset_wrappers import (ConcatDataset,
                                                      RepeatDataset)
-from easycv.utils import build_from_cfg
+from easycv.utils.registry import build_from_cfg
 from .registry import DALIDATASETS, DATASETS, DATASOURCES
 
 

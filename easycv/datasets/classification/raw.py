@@ -3,6 +3,7 @@
 import torch
 from PIL import Image
 
+from easycv.core.visualization.image import imshow_label
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
 
@@ -59,3 +60,37 @@ class ClsDataset(BaseDataset):
         eval_res = evaluators[0].evaluate(results, gt_labels)
 
         return eval_res
+
+    def visualize(self, results, vis_num=10, **kwargs):
+        """Visulaize the model output on validation data.
+        Args:
+            results: A dictionary containing
+                class: List of length number of test images.
+                img_metas: List of length number of test images,
+                    dict of image meta info, containing filename, img_shape,
+                    origin_img_shape and so on.
+            vis_num: number of images visualized
+        Returns: A dictionary containing
+            images: Visulaized images, list of np.ndarray.
+            img_metas: List of length number of test images,
+                    dict of image meta info, containing filename, img_shape,
+                    origin_img_shape and so on.
+        """
+        vis_imgs = []
+
+        # TODO: support img_metas for torch.jit
+        if results.get('img_metas', None) is None:
+            return {}
+
+        img_metas = results['img_metas'][:vis_num]
+        labels = results['class']
+
+        for i, img_meta in enumerate(img_metas):
+            filename = img_meta['filename']
+
+            vis_img = imshow_label(img=filename, labels=labels, show=False)
+            vis_imgs.append(vis_img)
+
+        output = {'images': vis_imgs, 'img_metas': img_metas}
+
+        return output

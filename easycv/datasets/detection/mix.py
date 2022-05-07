@@ -9,14 +9,13 @@ import numpy as np
 import torch
 
 from easycv.datasets.registry import DATASETS, PIPELINES
-from easycv.datasets.shared.base import BaseDataset
-from easycv.utils import build_from_cfg
-from easycv.utils.bbox_util import batched_xyxy2cxcywh_with_shape
 from easycv.utils.bbox_util import xyxy2xywh as xyxy2cxcywh
+from easycv.utils.registry import build_from_cfg
+from .raw import DetDataset
 
 
 @DATASETS.register_module
-class DetImagesMixDataset(BaseDataset):
+class DetImagesMixDataset(DetDataset):
     """A wrapper of multiple images mixed dataset.
 
     Suitable for training on multiple images mixed data augmentation like
@@ -50,7 +49,7 @@ class DetImagesMixDataset(BaseDataset):
                  label_padding=True):
 
         super(DetImagesMixDataset, self).__init__(
-            data_source, pipeline, profiling=profiling)
+            data_source, pipeline, profiling=profiling, classes=classes)
 
         if skip_type_keys is not None:
             assert all([
@@ -70,10 +69,9 @@ class DetImagesMixDataset(BaseDataset):
             else:
                 raise TypeError('pipeline must be a dict')
 
-        self.CLASSES = classes
         if hasattr(self.data_source, 'flag'):
             self.flag = self.data_source.flag
-        self.num_samples = self.data_source.get_length()
+
         if dynamic_scale is not None:
             assert isinstance(dynamic_scale, tuple)
 
@@ -82,9 +80,6 @@ class DetImagesMixDataset(BaseDataset):
         self.yolo_format = yolo_format
         self.label_padding = label_padding
         self.max_labels_num = 120
-
-    def __len__(self):
-        return self.num_samples
 
     def __getitem__(self, idx):
         results = copy.deepcopy(self.data_source.get_sample(idx))
@@ -116,21 +111,8 @@ class DetImagesMixDataset(BaseDataset):
             if 'img_scale' in results:
                 results.pop('img_scale')
 
-        # print(result.keys())
-
-        # if self.yolo_format:
-        #     # print(type(results['img_metas']), results['img_metas'])
-        #     # print(type(results['img_metas']._data), results['img_metas']._data)
-        #     img_shape = results['img_metas']._data['img_shape'][:2]
-        #     # print(type(results['gt_bboxes']))
-        #     gt_bboxes = xyxy2cxcywh_with_shape(results['gt_bboxes']._data, img_shape)
-        #     results['gt_bboxes'] = gt_bboxes.float()
-
         if self.label_padding:
-
             cxcywh_gt_bboxes = xyxy2cxcywh(results['gt_bboxes']._data)
-            # cxcywh_gt_bboxes = results['gt_bboxes']._data
-
             padded_gt_bboxes = torch.zeros((self.max_labels_num, 4),
                                            device=cxcywh_gt_bboxes.device)
             padded_gt_bboxes[range(cxcywh_gt_bboxes.shape[0])[:self.max_labels_num]] = \
@@ -146,9 +128,6 @@ class DetImagesMixDataset(BaseDataset):
             results['gt_bboxes'] = padded_gt_bboxes
             results['gt_labels'] = padded_labels
 
-        # ['img_metas', 'img', 'gt_bboxes', 'gt_labels']
-        # results.pop('img_metas')
-        # print(results['img_metas'], "hhh", idx)
         return results
 
     def update_skip_type_keys(self, skip_type_keys):
@@ -240,30 +219,3 @@ class DetImagesMixDataset(BaseDataset):
             tmp_dir = None
         result_files = self.results2json(results, jsonfile_prefix)
         return result_files, tmp_dir
-
-    def evaluate(self, results, evaluators=None, logger=None):
-        '''results: a dict of list of Tensors, list length equals to number of test images
-        '''
-
-        eval_result = dict()
-
-        groundtruth_dict = {}
-        groundtruth_dict['groundtruth_boxes'] = [
-            batched_xyxy2cxcywh_with_shape(
-                self.data_source.get_ann_info(idx)['bboxes'],
-                results['img_metas'][idx]['ori_img_shape'])
-            for idx in range(len(results['img_metas']))
-        ]
-        groundtruth_dict['groundtruth_classes'] = [
-            self.data_source.get_ann_info(idx)['labels']
-            for idx in range(len(results['img_metas']))
-        ]
-        groundtruth_dict['groundtruth_is_crowd'] = [
-            self.data_source.get_ann_info(idx)['groundtruth_is_crowd']
-            for idx in range(len(results['img_metas']))
-        ]
-
-        for evaluator in evaluators:
-            eval_result.update(evaluator.evaluate(results, groundtruth_dict))
-        # print(eval_result)
-        return eval_result

@@ -130,7 +130,14 @@ custom_hooks = [
 ]
 
 # evaluation
-eval_config = dict(interval=10, gpu_collect=False)
+eval_config = dict(
+    interval=10,
+    gpu_collect=False,
+    visualization_config=dict(
+        vis_num=10,
+        score_thr=0.5,
+    )  # show by TensorboardLoggerHookV2 and WandbLoggerHookV2
+)
 eval_pipelines = [
     dict(
         mode='test',
@@ -168,7 +175,8 @@ log_config = dict(
     interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHook')
+        dict(type='TensorboardLoggerHookV2'),
+        # dict(type='WandbLoggerHookV2'),
     ])
 
 export = dict(use_jit=False)

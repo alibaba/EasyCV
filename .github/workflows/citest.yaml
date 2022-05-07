@@ -6,19 +6,31 @@ on:
       - master
       - "release/**"
     paths-ignore:
+      - "setup.*"
+      - "requirements.txt"
+      - "requirements/**"
       - "docs/**"
       - "tools/**"
-      - "scripts/**"
+      - ".scripts/**"
       - "README.md"
       - "README_zh-CN.md"
+      - "NOTICE"
+      - ".github/workflows/lint.yaml"
+      - ".github/workflows/publish.yaml"
 
   pull_request:
     paths-ignore:
+      - "setup.*"
+      - "requirements.txt"
+      - "requirements/**"
       - "docs/**"
       - "tools/**"
-      - "scripts/**"
+      - ".scripts/**"
       - "README.md"
       - "README_zh-CN.md"
+      - "NOTICE"
+      - ".github/workflows/lint.yaml"
+      - ".github/workflows/publish.yaml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

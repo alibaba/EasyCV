@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 
 import six
 
-from easycv.utils import generate_best_metric_name
+from easycv.utils.eval_utils import generate_best_metric_name
 
 
 class Evaluator(six.with_metaclass(ABCMeta, object)):
