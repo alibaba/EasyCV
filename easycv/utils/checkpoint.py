@@ -1,6 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
+import re
 import time
+from collections import OrderedDict
 
 import torch
 from mmcv.parallel import is_module_wrapper
@@ -17,7 +19,8 @@ def load_checkpoint(model,
                     filename,
                     map_location='cpu',
                     strict=False,
-                    logger=None):
+                    logger=None,
+                    load_style='mmcv'):
     """Load checkpoint from a file or URI.
 
     Args:
@@ -33,7 +36,10 @@ def load_checkpoint(model,
     Returns:
         dict or OrderedDict: The loaded checkpoint.
     """
-    if not filename.startswith('oss://'):
+    if load_style == 'timm':
+        print('use timm load_pretrained')
+        return model.backbone.model.load_pretrained(filename)
+    elif not filename.startswith('oss://'):
         return mmcv_load_checkpoint(
             model,
             filename,

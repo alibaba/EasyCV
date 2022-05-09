@@ -67,68 +67,80 @@ resnest = {
 }
 
 timm_models = {
-    'resnet50':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/resnet50_ram-a26f946b.pth',
-    'resnet18':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet18.pth',
-    'resnet34':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet34.pth',
-    'resnet101':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet101.pth',
-    'resnet152':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet152.pth',
-    'swin_base_patch4_window7_224_in22k':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_base_patch4_window7_224_22k_statedict.pth',
-    'swin_small_patch4_window7_224':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_small_patch4_window7_224_statedict.pth',
-    'swin_tiny_patch4_window7_224':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_tiny_patch4_window7_224_statedict.pth',
-    'vit_deit_tiny_distilled_patch16_224':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/vit_deit_tiny_distilled_patch16_224_pytorch151.pth',
-    'vit_deit_small_distilled_patch16_224':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/vit_deit_small_distilled_patch16_224_pytorch151.pth',
+    'vit_base_patch16_224':
+    'https://storage.googleapis.com/vit_models/augreg/'
+    'B_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.01-res_224.npz',
+    'vit_large_patch16_224':
+    'https://storage.googleapis.com/vit_models/augreg/'
+    'L_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.1-sd_0.1--imagenet2012-steps_20k-lr_0.01-res_224.npz',
+    'vit_base_patch16_384':
+    'https://storage.googleapis.com/vit_models/augreg/'
+    'B_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.01-res_384.npz',
+    'vit_large_patch16_384':
+    'https://storage.googleapis.com/vit_models/augreg/'
+    'L_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.1-sd_0.1--imagenet2012-steps_20k-lr_0.01-res_384.npz',
+    # 'resnet50':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/resnet50_ram-a26f946b.pth',
+    # 'resnet18':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet18.pth',
+    # 'resnet34':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet34.pth',
+    # 'resnet101':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet101.pth',
+    # 'resnet152':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet152.pth',
+    # 'swin_base_patch4_window7_224_in22k':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_base_patch4_window7_224_22k_statedict.pth',
+    # 'swin_small_patch4_window7_224':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_small_patch4_window7_224_statedict.pth',
+    # 'swin_tiny_patch4_window7_224':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_tiny_patch4_window7_224_statedict.pth',
+    # 'vit_deit_tiny_distilled_patch16_224':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/vit_deit_tiny_distilled_patch16_224_pytorch151.pth',
+    # 'vit_deit_small_distilled_patch16_224':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/vit_deit_small_distilled_patch16_224_pytorch151.pth',
 
-    # facebook xcit
-    'xcit_small_12_p16':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/xcit/dino_xcit_small_12_p16_pretrain.pth',  # 384
-    'xcit_small_12_p8':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/xcit/dino_xcit_small_12_p8_pretrain.pth',  # 384
-    'xcit_medium_24_p16':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/xcit/dino_xcit_medium_24_p16_pretrain.pth',  # 512
-    'xcit_medium_24_p8':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/xcit/dino_xcit_medium_24_p8_pretrain.pth',  # 512
-    'xcit_large_24_p8':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/xcit/xcit_large_24_p8_224.pth',
+    # # facebook xcit
+    # 'xcit_small_12_p16':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/xcit/dino_xcit_small_12_p16_pretrain.pth',  # 384
+    # 'xcit_small_12_p8':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/xcit/dino_xcit_small_12_p8_pretrain.pth',  # 384
+    # 'xcit_medium_24_p16':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/xcit/dino_xcit_medium_24_p16_pretrain.pth',  # 512
+    # 'xcit_medium_24_p8':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/xcit/dino_xcit_medium_24_p8_pretrain.pth',  # 512
+    # 'xcit_large_24_p8':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/xcit/xcit_large_24_p8_224.pth',
 
-    # shuffle_trans
-    'shuffletrans_base_p4_w7_224':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/imagenet/shuffle_transformer/shuffle_base.pth',
-    'shuffletrans_small_p4_w7_224':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/imagenet/shuffle_transformer/shuffle_small.pth',
-    'shuffletrans_tiny_p4_w7_224':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/imagenet/shuffle_transformer/shuffle_tiny.pth',
+    # # shuffle_trans
+    # 'shuffletrans_base_p4_w7_224':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/imagenet/shuffle_transformer/shuffle_base.pth',
+    # 'shuffletrans_small_p4_w7_224':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/imagenet/shuffle_transformer/shuffle_small.pth',
+    # 'shuffletrans_tiny_p4_w7_224':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/imagenet/shuffle_transformer/shuffle_tiny.pth',
 
-    # dynamic swint:
-    'dynamic_swin_base_p4_w7_224':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_base_patch4_window7_224_22k_statedict.pth',
-    'dynamic_swin_small_p4_w7_224':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_small_patch4_window7_224_statedict.pth',
-    'dynamic_swin_tiny_p4_w7_224':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_tiny_patch4_window7_224_statedict.pth',
+    # # dynamic swint:
+    # 'dynamic_swin_base_p4_w7_224':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_base_patch4_window7_224_22k_statedict.pth',
+    # 'dynamic_swin_small_p4_w7_224':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_small_patch4_window7_224_statedict.pth',
+    # 'dynamic_swin_tiny_p4_w7_224':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_tiny_patch4_window7_224_statedict.pth',
 
-    # dynamic vit:
-    'dynamic_deit_tiny_p16':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/vit_deit_tiny_distilled_patch16_224_pytorch151.pth',
-    'dynamic_deit_small_p16':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/vit_deit_small_distilled_patch16_224_pytorch151.pth',
-    'resnet50':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/resnet50_ram-a26f946b.pth',
-    'resnet18':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet18.pth',
-    'resnet34':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet34.pth',
-    'resnet101':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet101.pth',
-    'resnet152':
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet152.pth',
+    # # dynamic vit:
+    # 'dynamic_deit_tiny_p16':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/vit_deit_tiny_distilled_patch16_224_pytorch151.pth',
+    # 'dynamic_deit_small_p16':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/vit_deit_small_distilled_patch16_224_pytorch151.pth',
+    # 'resnet50':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/resnet50_ram-a26f946b.pth',
+    # 'resnet18':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet18.pth',
+    # 'resnet34':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet34.pth',
+    # 'resnet101':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet101.pth',
+    # 'resnet152':
+    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet152.pth',
 }

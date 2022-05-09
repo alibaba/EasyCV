@@ -76,6 +76,11 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
+    parser.add_argument(
+        '--load_style',
+        choices=['mmcv', 'timm'],
+        default='timm',
+        help='load pretrained style')
     parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument(
         '--model_type',
@@ -167,14 +172,19 @@ def main():
     model = build_model(cfg.model)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f'use device {device}')
-    checkpoint = load_checkpoint(model, args.checkpoint, map_location=device)
+    checkpoint = load_checkpoint(
+        model,
+        args.checkpoint,
+        map_location=device,
+        load_style=args.load_style)
     model.to(device)
     # if args.fuse_conv_bn:
     #     model = fuse_module(model)
 
     # old versions did not save class info in checkpoints, this walkaround is
     # for backward compatibility
-    if 'meta' in checkpoint and 'CLASSES' in checkpoint['meta']:
+    if checkpoint is not None and 'meta' in checkpoint and 'CLASSES' in checkpoint[
+            'meta']:
         model.CLASSES = checkpoint['meta']['CLASSES']
     elif hasattr(cfg, 'CLASSES'):
         model.CLASSES = cfg.CLASSES
@@ -206,8 +216,7 @@ def main():
                 imgs_per_gpu=imgs_per_gpu,
                 workers_per_gpu=cfg.data.workers_per_gpu,
                 dist=distributed,
-                shuffle=False,
-                oss_config=cfg.get('oss_io_config', None))
+                shuffle=False)
 
         if not distributed:
             outputs = single_gpu_test(

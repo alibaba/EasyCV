@@ -20,7 +20,7 @@ model = dict(
         type='PytorchImageModelWrapper',
         model_name='vit_base_patch16_224',
         num_classes=1000,
-        pretrained=False,
+        pretrained=True,
     ),
     head=dict(
         type='ClsHead',
@@ -29,12 +29,14 @@ model = dict(
         },
         with_fc=False))
 
-data_train_list = 'data/imagenet_raw/meta/train_labeled.txt'
-data_train_root = 'data/imagenet_raw/train/'
-data_test_list = 'data/imagenet_raw/meta/val_labeled.txt'
-data_test_root = 'data/imagenet_raw/val/'
-data_all_list = 'data/imagenet_raw/meta/all_labeled.txt'
-data_root = 'data/imagenet_raw/'
+load_from = None
+
+data_train_list = '/apsarapangu/disk2/yunji.cjy/imagenet_raw/meta/train_labeled.txt'
+data_train_root = '/apsarapangu/disk2/yunji.cjy/imagenet_raw/train/'
+data_test_list = '/apsarapangu/disk2/yunji.cjy/imagenet_raw/meta/val_labeled.txt'
+data_test_root = '/apsarapangu/disk2/yunji.cjy/imagenet_raw/val/'
+data_all_list = '/apsarapangu/disk2/yunji.cjy/imagenet_raw/meta/all_labeled.txt'
+data_root = '/apsarapangu/disk2/yunji.cjy/imagenet_raw/'
 
 dataset_type = 'ClsDataset'
 img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
