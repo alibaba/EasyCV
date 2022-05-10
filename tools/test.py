@@ -18,6 +18,7 @@ from easycv.utils.collect import dist_forward_collect, nondist_forward_collect
 # from mmcv import Config
 from easycv.utils.config_tools import mmcv_config_fromfile, traverse_replace
 from easycv.utils.logger import get_root_logger
+from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 sys.path.append(
@@ -85,6 +86,9 @@ def main():
     # update configs according to CLI args
     if args.work_dir is not None:
         cfg.work_dir = args.work_dir
+
+    # dynamic adapt mmdet models
+    dynamic_adapt_for_mmlab(cfg)
 
     cfg.model.pretrained = None  # ensure to use checkpoint rather than pretraining
 

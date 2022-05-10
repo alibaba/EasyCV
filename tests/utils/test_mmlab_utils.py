@@ -10,7 +10,8 @@ from tests.ut_config import (COCO_CLASSES, DET_DATA_SMALL_COCO_LOCAL,
 from easycv.apis.test import single_gpu_test
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.models.builder import build_model
-from easycv.utils.config_tools import mmcv_config_fromfile, pre_check_config
+from easycv.utils.config_tools import mmcv_config_fromfile
+from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 
 
 class MMLabUtilTest(unittest.TestCase):
@@ -21,7 +22,7 @@ class MMLabUtilTest(unittest.TestCase):
     def _get_model(self):
         config_path = 'configs/detection/mask_rcnn/mask_rcnn_r50_fpn.py'
         cfg = mmcv_config_fromfile(config_path)
-        pre_check_config(cfg)
+        dynamic_adapt_for_mmlab(cfg)
         model = build_model(cfg.model)
 
         return model

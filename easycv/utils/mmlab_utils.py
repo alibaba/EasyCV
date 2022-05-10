@@ -17,6 +17,7 @@ EASYCV_REGISTRY_MAP = {
 }
 MMDET = 'mmdet'
 SUPPORT_MMLAB_TYPES = [MMDET]
+_MMLAB_COPIES = locals()
 
 
 class MMAdapter:
@@ -105,7 +106,10 @@ class MMAdapter:
         model_obj = self._get_mm_module_obj(mmtype, module_type, module_name)
         # Add mmlab module to my module registry.
         easycv_registry_type = EASYCV_REGISTRY_MAP[module_type]
-        easycv_registry_type.register_module(model_obj, force=force)
+        # Copy a duplicate to avoid directly modifying the properties of the original object
+        _MMLAB_COPIES[module_name] = type(module_name, (model_obj, ), dict())
+        easycv_registry_type.register_module(
+            _MMLAB_COPIES[module_name], force=force)
 
     def _get_mm_module_obj(self, mmtype, module_type, module_name):
         if isinstance(module_name, str):
@@ -231,3 +235,10 @@ class MMDetWrapper:
             return outputs
 
         setattr(cls, 'forward_test', _new_forward_test)
+
+
+def dynamic_adapt_for_mmlab(cfg):
+    mmlab_modules_cfg = cfg.get('mmlab_modules', [])
+    if len(mmlab_modules_cfg) > 1:
+        adapter = MMAdapter(mmlab_modules_cfg)
+        adapter.adapt_mmlab_modules()
