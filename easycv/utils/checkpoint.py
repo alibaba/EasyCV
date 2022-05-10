@@ -1,14 +1,17 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import importlib
 import os
 import re
 import time
 from collections import OrderedDict
+from subprocess import check_output
 
 import torch
 from mmcv.parallel import is_module_wrapper
 from mmcv.runner import load_checkpoint as mmcv_load_checkpoint
 from mmcv.runner.checkpoint import (_save_to_state_dict, get_state_dict,
                                     weights_to_cpu)
+from timm.models.helpers import load_pretrained
 from torch.optim import Optimizer
 
 from easycv.file import io
@@ -38,7 +41,14 @@ def load_checkpoint(model,
     """
     if load_style == 'timm':
         print('use timm load_pretrained')
-        return model.backbone.model.load_pretrained(filename)
+        if filename.endswith('.npz'):
+            return model.backbone.model.load_pretrained(filename)
+        else:
+            backbone_module = importlib.import_module(
+                model.backbone.model.__module__)
+            return load_pretrained(
+                model.backbone.model,
+                filter_fn=backbone_module.checkpoint_filter_fn)
     elif not filename.startswith('oss://'):
         return mmcv_load_checkpoint(
             model,
