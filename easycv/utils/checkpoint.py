@@ -48,7 +48,8 @@ def load_checkpoint(model,
                 model.backbone.model.__module__)
             return load_pretrained(
                 model.backbone.model,
-                filter_fn=backbone_module.checkpoint_filter_fn)
+                filter_fn=backbone_module.checkpoint_filter_fn if hasattr(
+                    backbone_module, 'checkpoint_filter_fn') else None)
     elif not filename.startswith('oss://'):
         return mmcv_load_checkpoint(
             model,
