@@ -5,6 +5,7 @@ from distutils.version import LooseVersion
 
 import torch
 from mmcv.runner import EpochBasedRunner
+from mmcv.runner.log_buffer import LogBuffer
 
 from easycv.file import io
 from easycv.utils.checkpoint import load_checkpoint, save_checkpoint
@@ -45,6 +46,9 @@ class EVRunner(EpochBasedRunner):
 
         super().__init__(model, batch_processor, optimizer, work_dir, logger,
                          meta)
+        self.data_loader = None
+        self.fp16_enable = False
+        self.visualization_buffer = LogBuffer()
 
     def run_iter(self, data_batch, train_mode, **kwargs):
         """ process for each iteration.

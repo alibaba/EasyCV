@@ -17,6 +17,7 @@ EASYCV_REGISTRY_MAP = {
 }
 MMDET = 'mmdet'
 SUPPORT_MMLAB_TYPES = [MMDET]
+_MMLAB_COPIES = locals()
 
 
 class MMAdapter:
@@ -39,6 +40,8 @@ class MMAdapter:
             self.mmtype_list.add(mmtype)
 
         self.check_env()
+        self.fix_conflicts()
+
         self.MMTYPE_REGISTRY_MAP = self._get_mmtype_registry_map()
         self.modules_config = modules_config
 
@@ -61,6 +64,14 @@ class MMAdapter:
                     'Failed to install mmdet, '
                     'please refer to https://github.com/open-mmlab/mmdetection to install.'
                 )
+
+    def fix_conflicts(self):
+        # mmdet and easycv both register
+        if MMDET in self.mmtype_list:
+            mmcv_conflict_list = ['YOLOXLrUpdaterHook']
+            from mmcv.runner.hooks import HOOKS
+            for conflict in mmcv_conflict_list:
+                HOOKS._module_dict.pop(conflict, None)
 
     def adapt_mmlab_modules(self):
         for module_cfg in self.modules_config:
@@ -95,7 +106,10 @@ class MMAdapter:
         model_obj = self._get_mm_module_obj(mmtype, module_type, module_name)
         # Add mmlab module to my module registry.
         easycv_registry_type = EASYCV_REGISTRY_MAP[module_type]
-        easycv_registry_type.register_module(model_obj, force=force)
+        # Copy a duplicate to avoid directly modifying the properties of the original object
+        _MMLAB_COPIES[module_name] = type(module_name, (model_obj, ), dict())
+        easycv_registry_type.register_module(
+            _MMLAB_COPIES[module_name], force=force)
 
     def _get_mm_module_obj(self, mmtype, module_type, module_name):
         if isinstance(module_name, str):
@@ -221,3 +235,10 @@ class MMDetWrapper:
             return outputs
 
         setattr(cls, 'forward_test', _new_forward_test)
+
+
+def dynamic_adapt_for_mmlab(cfg):
+    mmlab_modules_cfg = cfg.get('mmlab_modules', [])
+    if len(mmlab_modules_cfg) > 1:
+        adapter = MMAdapter(mmlab_modules_cfg)
+        adapter.adapt_mmlab_modules()

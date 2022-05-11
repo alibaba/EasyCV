@@ -12,9 +12,9 @@ from torch import optim
 
 from easycv.apis.train_misc import build_yolo_optimizer
 from easycv.core import optimizer
-from easycv.core.optimizer import build_optimizer_constructor
 from easycv.core.evaluation.builder import build_evaluator
 from easycv.core.evaluation.metric_registry import METRICS
+from easycv.core.optimizer import build_optimizer_constructor
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.datasets.utils import is_dali_dataset_type
 from easycv.hooks import (BestCkptSaverHook, DistEvalHook, EMAHook, EvalHook,
@@ -203,7 +203,8 @@ def train_model(model,
             eval_cfg['evaluators'] = evaluators
             eval_hook = DistEvalHook if (distributed
                                          and dist_eval) else EvalHook
-            # eval_hook = EvalHook
+            if eval_hook == EvalHook:
+                eval_cfg.pop('gpu_collect', None)  # only use in DistEvalHook
             logger.info(f'register EvaluationHook {eval_cfg}')
             # only flush log buffer at the last eval hook
             flush_buffer = (idx == len(cfg.eval_pipelines) - 1)
@@ -390,7 +391,7 @@ def build_optimizer(model, optimizer_cfg):
 
     if constructor_type is not None:
         optimizer_cls = getattr(optimizer, optimizer_cfg.pop('type'))
-        optim_constructor= build_optimizer_constructor(
+        optim_constructor = build_optimizer_constructor(
             dict(
                 type=constructor_type,
                 optimizer_cfg=optimizer_cfg,

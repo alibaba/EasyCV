@@ -25,14 +25,6 @@ easycv.models.utils.activation module
    :undoc-members:
    :show-inheritance:
 
-easycv.models.utils.activations module
---------------------------------------
-
-.. automodule:: easycv.models.utils.activations
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 easycv.models.utils.conv\_module module
 ---------------------------------------
 
@@ -101,6 +93,14 @@ easycv.models.utils.pos\_embed module
 -------------------------------------
 
 .. automodule:: easycv.models.utils.pos_embed
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+easycv.models.utils.res\_layer module
+-------------------------------------
+
+.. automodule:: easycv.models.utils.res_layer
    :members:
    :undoc-members:
    :show-inheritance:

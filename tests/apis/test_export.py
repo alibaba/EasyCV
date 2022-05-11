@@ -5,8 +5,10 @@ import subprocess
 import tempfile
 import unittest
 
+import numpy as np
 import torch
-from tests.ut_config import PRETRAINED_MODEL_MOCO, PRETRAINED_MODEL_RESNET50
+from tests.ut_config import (IMAGENET_LABEL_TXT, PRETRAINED_MODEL_MOCO,
+                             PRETRAINED_MODEL_RESNET50)
 
 from easycv.apis.export import export
 from easycv.utils.config_tools import mmcv_config_fromfile
@@ -46,6 +48,21 @@ class ModelExportTest(unittest.TestCase):
         target_ckpt = f'{self.tmp_dir}/classification.pth.jit'
         export(cfg, ori_ckpt, target_ckpt)
         self.assertTrue(os.path.exists(target_ckpt))
+
+    def test_export_classification_and_inference(self):
+        config_file = 'configs/classification/imagenet/imagenet_rn50_jpg.py'
+        cfg = mmcv_config_fromfile(config_file)
+        cfg.export = dict(use_jit=False)
+        ori_ckpt = PRETRAINED_MODEL_RESNET50
+        target_ckpt = f'{self.tmp_dir}/classification_export.pth'
+        export(cfg, ori_ckpt, target_ckpt)
+        self.assertTrue(os.path.exists(target_ckpt))
+
+        from easycv.predictors.classifier import TorchClassifier
+        classifier = TorchClassifier(
+            target_ckpt, label_map_path=IMAGENET_LABEL_TXT)
+        img = np.random.randint(0, 255, (256, 256, 3))
+        r = classifier.predict([img])
 
     def test_export_cls_syncbn(self):
         config_file = 'configs/classification/imagenet/imagenet_rn50_jpg.py'

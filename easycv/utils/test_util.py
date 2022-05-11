@@ -75,7 +75,7 @@ def run_in_subprocess(cmd):
             if return_code:
                 raise subprocess.CalledProcessError(return_code, return_info)
     except Exception as e:
-        logging.info(e)
+        raise e
 
 
 def dist_exec_wrapper(cmd,
