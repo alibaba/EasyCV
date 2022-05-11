@@ -1,16 +1,16 @@
-# Use mmlab's models in EasyCV
+# Use mmdet's models in EasyCV
 
 **We only support mmdet's models and do not support other series in mmlab and other modules such as transforms, dataset api, etc. are not supported either.**
 
 The models module of EasyCV is divided into four modules: `backbone`, `head`, `neck`, and `model`.
 
-So we support the models combination of EasyCV and mmlab from these four levels.
+So we support the models combination of EasyCV and mmdet from these four levels.
 
 **We will not adapt the other apis involved in these four levels modules, we package the entire api for use.**
 
 > **Note: **
 >
-> **If you want to combine the models part of mmdet and easycv, please pay attention to the compatibility between the apis, we do not guarantee that the api of EasyCV and mmlab are compatible.**
+> **If you want to combine the models part of mmdet and easycv, please pay attention to the compatibility between the apis, we do not guarantee that the api of EasyCV and mmdet are compatible.**
 
 Take the `MaskRCNN` model as an example, please refer to [mask_rcnn_r50_fpn.py](https://github.com/alibaba/EasyCV/tree/master/configs/detection/mask_rcnn/mask_rcnn_r50_fpn.py). Except for the backbone, other parts in this model are all mmdet apis.
 
