@@ -70,6 +70,10 @@ class DetDataset(BaseDataset):
             self.data_source.get_ann_info(idx)['groundtruth_is_crowd']
             for idx in range(len(results['img_metas']))
         ]
+        groundtruth_dict['groundtruth_instance_masks'] = [
+            self.data_source.get_ann_info(idx).get('masks', None)
+            for idx in range(len(results['img_metas']))
+        ]
 
         for evaluator in evaluators:
             eval_result.update(evaluator.evaluate(results, groundtruth_dict))

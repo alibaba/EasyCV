@@ -473,7 +473,8 @@ class CocoMaskEvaluator(Evaluator):
         groundtruth_masks_shape = self._image_id_to_mask_shape_map[image_id]
         detection_masks = detections_dict[
             standard_fields.DetectionResultFields.detection_masks]
-        if groundtruth_masks_shape[1:] != detection_masks.shape[1:]:
+        if len(detection_masks
+               ) and groundtruth_masks_shape[1:] != detection_masks.shape[1:]:
             raise ValueError(
                 'Spatial shape of groundtruth masks and detection masks '
                 'are incompatible: {} vs {}'.format(groundtruth_masks_shape,
@@ -601,6 +602,9 @@ class CocoMaskEvaluator(Evaluator):
             else:
                 groundtruth_is_crowd = groundtruth_is_crowd_list[idx]
 
+            gt_masks = np.array(
+                [self._ann_to_mask(mask, height, width) for mask in gt_masks],
+                dtype=np.uint8)
             groundtruth_dict = {
                 'groundtruth_boxes': gt_boxes_absolute,
                 'groundtruth_instance_masks': gt_masks,
@@ -609,6 +613,11 @@ class CocoMaskEvaluator(Evaluator):
             }
             self.add_single_ground_truth_image_info(image_id, groundtruth_dict)
 
+            detection_masks = np.array([
+                self._ann_to_mask(mask, height, width)
+                for mask in detection_masks
+            ],
+                                       dtype=np.uint8)
             # add detection info
             detection_dict = {
                 'detection_masks': detection_masks,
@@ -620,6 +629,27 @@ class CocoMaskEvaluator(Evaluator):
         eval_dict = self._evaluate()
         self.clear()
         return eval_dict
+
+    def _ann_to_mask(self, segmentation, height, width):
+        from xtcocotools import mask as maskUtils
+        segm = segmentation
+        h = height
+        w = width
+
+        if type(segm) == list:
+            # polygon -- a single object might consist of multiple parts
+            # we merge all parts into one mask rle code
+            rles = maskUtils.frPyObjects(segm, h, w)
+            rle = maskUtils.merge(rles)
+        elif type(segm['counts']) == list:
+            # uncompressed RLE
+            rle = maskUtils.frPyObjects(segm, h, w)
+        else:
+            # rle
+            rle = segm
+
+        m = maskUtils.decode(rle)
+        return m
 
 
 @EVALUATORS.register_module
