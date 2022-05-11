@@ -1,4 +1,6 @@
-# Use mmdet's models in EasyCV
+# Use mmdetection's models in EasyCV
+
+For details of mmdetection, please refer to :https://github.com/open-mmlab/mmdetection
 
 **We only support mmdet's models and do not support other series in mmlab and other modules such as transforms, dataset api, etc. are not supported either.**
 
