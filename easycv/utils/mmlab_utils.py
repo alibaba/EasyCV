@@ -157,16 +157,13 @@ class MMDetWrapper:
 
         def _parse_losses(self, losses):
             for key in losses.keys():
-                print(key, losses[key])
                 if isinstance(losses[key], list):
                     for i in range(len(losses[key])):
                         if torch.isnan(losses[key][i]):
-                            losses[key][i] = torch.FloatTensor(0).to(
-                                losses[key][i].device)
+                            losses[key][i].data.zero_()
                 elif isinstance(losses[key], torch.Tensor):
                     if torch.isnan(losses[key]):
-                        losses[key] = torch.FloatTensor(0).to(
-                            losses[key].device)
+                        losses[key].data.zero_()
                 else:
                     raise TypeError(
                         f'{losses[key]} is not a tensor or list of tensors')
