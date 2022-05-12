@@ -1,10 +1,6 @@
 _base_ = [
-    './_base_/models/vitdet.py',
-    './_base_/datasets/coco.py',
-    'configs/base.py'
+    './_base_/models/vitdet.py', './_base_/datasets/coco.py', 'configs/base.py'
 ]
-
-#cudnn_enabled = False
 
 CLASSES = [
     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
@@ -31,13 +27,18 @@ log_config = dict(
 
 checkpoint_config = dict(interval=10)
 # optimizer
-paramwise_options={
+paramwise_options = {
     'norm': dict(weight_decay=0.),
     'bias': dict(weight_decay=0.),
     'pos_embed': dict(weight_decay=0.),
     'cls_token': dict(weight_decay=0.)
 }
-optimizer = dict(type='_AdamW', lr=1e-4, betas=(0.9, 0.999), weight_decay=0.1, paramwise_options=paramwise_options)
+optimizer = dict(
+    type='_AdamW',
+    lr=1e-4,
+    betas=(0.9, 0.999),
+    weight_decay=0.1,
+    paramwise_options=paramwise_options)
 optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
@@ -56,10 +57,10 @@ eval_pipelines = [
         evaluators=[
             dict(type='CocoDetectionEvaluator', classes=CLASSES),
             dict(type='CocoMaskEvaluator', classes=CLASSES)
-            ],
+        ],
     )
 ]
 
-load_from = '/home/yunji.cjy/pretrain/mae_pretrain_vit_base_1600e.pth'
+load_from = '/mnt/data/EasyCV3/mae_pretrain_vit_base_1600e.pth'
 
-find_unused_parameters=False
+find_unused_parameters = False

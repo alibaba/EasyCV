@@ -19,7 +19,8 @@ class DetSourceCoco(object):
                  pipeline,
                  filter_empty_gt=False,
                  classes=None,
-                 iscrowd=False):
+                 iscrowd=False,
+                 test_mode=False):
         """
         Args:
             ann_file: Path of annotation file.
@@ -33,9 +34,11 @@ class DetSourceCoco(object):
         self.CLASSES = classes
         # load annotations (and proposals)
         self.data_infos = self.load_annotations(self.ann_file)
-        valid_inds = self._filter_imgs()
-        self.data_infos = [self.data_infos[i] for i in valid_inds]
-        self._set_group_flag()
+        self.test_mode = test_mode
+        if not test_mode:
+            valid_inds = self._filter_imgs()
+            self.data_infos = [self.data_infos[i] for i in valid_inds]
+            self._set_group_flag()
 
         self.iscrowd = iscrowd
         self.max_labels_num = 120
@@ -191,7 +194,6 @@ class DetSourceCoco(object):
             bbox = [x1, y1, x1 + w, y1 + h]
 
             if ann.get('iscrowd', False):
-                #if self.iscrowd:
                 gt_bboxes.append(
                     bbox
                 )  # add crowded gt bboxes when eval, but not needed in training

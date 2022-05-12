@@ -214,6 +214,7 @@ def main():
         assert isinstance(args.pretrained, str)
         cfg.model.pretrained = args.pretrained
     model = build_model(cfg.model)
+    model.init_weights()
 
     if 'stage' in cfg.model and cfg.model['stage'] == 'EDGE':
         get_model_info(model, cfg.img_scale, cfg.model, logger)

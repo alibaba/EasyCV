@@ -15,7 +15,7 @@ CLASSES = [
 ]
 
 # dataset settings
-data_root = '/home/yunji.cjy/data/coco/'
+data_root = '/apsarapangu/disk2/yunji.cjy/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -25,24 +25,26 @@ train_pipeline = [
     dict(
         type='MMResize',
         img_scale=image_size,
-        ratio_range=(0.1, 2),
+        ratio_range=(0.1, 2.0),
         multiscale_mode='range',
         keep_ratio=True),
     dict(
         type='MMRandomCrop',
         crop_type='absolute_range',
         crop_size=image_size,
-        recompute_bbox=True,
+        recompute_bbox=False,
         allow_negative_crop=True),
     dict(type='MMFilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(type='MMRandomFlip', flip_ratio=0.5),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='MMPad', size=image_size),
     dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks'],
-            meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
-                        'img_shape', 'pad_shape', 'scale_factor', 'flip',
-                        'flip_direction', 'img_norm_cfg'))
+    dict(
+        type='Collect',
+        keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks'],
+        meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
+                   'img_shape', 'pad_shape', 'scale_factor', 'flip',
+                   'flip_direction', 'img_norm_cfg'))
 ]
 test_pipeline = [
     dict(
@@ -55,10 +57,13 @@ test_pipeline = [
             dict(type='MMNormalize', **img_norm_cfg),
             dict(type='MMPad', size_divisor=1024),
             dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img'],
-            meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
-                        'img_shape', 'pad_shape', 'scale_factor', 'flip',
-                        'flip_direction', 'img_norm_cfg'))
+            dict(
+                type='Collect',
+                keys=['img'],
+                meta_keys=('filename', 'ori_filename', 'ori_shape',
+                           'ori_img_shape', 'img_shape', 'pad_shape',
+                           'scale_factor', 'flip', 'flip_direction',
+                           'img_norm_cfg'))
         ])
 ]
 
@@ -73,10 +78,10 @@ train_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True, with_mask=True)
         ],
         classes=CLASSES,
+        test_mode=False,
         filter_empty_gt=True,
         iscrowd=False),
-    pipeline=train_pipeline
-)
+    pipeline=train_pipeline)
 
 val_dataset = dict(
     type='DetDataset',
@@ -90,10 +95,10 @@ val_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         classes=CLASSES,
+        test_mode=True,
         filter_empty_gt=False,
         iscrowd=True),
-    pipeline=test_pipeline
-)
+    pipeline=test_pipeline)
 
 data = dict(
     imgs_per_gpu=1, workers_per_gpu=2, train=train_dataset, val=val_dataset)

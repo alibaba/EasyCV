@@ -150,6 +150,29 @@ class MMDetWrapper:
         if module_type == 'model':
             self._wrap_model_forward(cls)
             self._wrap_model_forward_test(cls)
+            self._wrap_parse_losses(cls)
+
+    def _wrap_parse_losses(self, cls):
+        origin_parse_losses = cls._parse_losses
+
+        def _parse_losses(self, losses):
+            for key in losses.keys():
+                print(key, losses[key])
+                if isinstance(losses[key], list):
+                    for i in range(len(losses[key])):
+                        if torch.isnan(losses[key][i]):
+                            losses[key][i] = torch.FloatTensor(0).to(
+                                losses[key][i].device)
+                elif isinstance(losses[key], torch.Tensor):
+                    if torch.isnan(losses[key]):
+                        losses[key] = torch.FloatTensor(0).to(
+                            losses[key].device)
+                else:
+                    raise TypeError(
+                        f'{losses[key]} is not a tensor or list of tensors')
+            return origin_parse_losses(self, losses)
+
+        setattr(cls, '_parse_losses', _parse_losses)
 
     def _wrap_model_forward(self, cls):
         origin_forward = cls.forward
