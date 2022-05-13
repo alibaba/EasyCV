@@ -148,8 +148,18 @@ class MMDetWrapper:
 
     def wrap_module(self, cls, module_type):
         if module_type == 'model':
+            self._wrap_model_init(cls)
             self._wrap_model_forward(cls)
             self._wrap_model_forward_test(cls)
+
+    def _wrap_model_init(self, cls):
+        origin_init = cls.__init__
+
+        def _new_init(self, *args, **kwargs):
+            origin_init(self, *args, **kwargs)
+            self.init_weights()
+
+        setattr(cls, '__init__', _new_init)
 
     def _wrap_model_forward(self, cls):
         origin_forward = cls.forward
