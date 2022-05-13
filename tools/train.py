@@ -41,7 +41,6 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a model')
     parser.add_argument(
         'config', help='train config file path', type=str, default=None)
-    # parser.add_argument('--config', help='train config file path', default="configs/classification/imagenet/r50.py")
     parser.add_argument(
         '--work_dir',
         type=str,
@@ -49,9 +48,6 @@ def parse_args():
         help='the dir to save logs and models')
     parser.add_argument(
         '--resume_from', help='the checkpoint file to resume from')
-    parser.add_argument('--load_from', help='the checkpoint file to load from')
-    parser.add_argument(
-        '--pretrained', default=None, help='pretrained model file')
     parser.add_argument(
         '--gpus',
         type=int,
@@ -146,8 +142,6 @@ def main():
 
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
-    if args.load_from is not None:
-        cfg.load_from = args.load_from
 
     cfg.gpus = args.gpus
 
