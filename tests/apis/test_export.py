@@ -36,7 +36,7 @@ class ModelExportTest(unittest.TestCase):
             print(output)
 
     def test_export_classification_jit(self):
-        config_file = 'configs/classification/imagenet/imagenet_rn50_jpg.py'
+        config_file = 'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py'
         cfg = mmcv_config_fromfile(config_file)
         cfg.model.backbone = dict(
             type='ResNetJIT',
@@ -50,7 +50,7 @@ class ModelExportTest(unittest.TestCase):
         self.assertTrue(os.path.exists(target_ckpt))
 
     def test_export_classification_and_inference(self):
-        config_file = 'configs/classification/imagenet/imagenet_rn50_jpg.py'
+        config_file = 'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py'
         cfg = mmcv_config_fromfile(config_file)
         cfg.export = dict(use_jit=False)
         ori_ckpt = PRETRAINED_MODEL_RESNET50
@@ -65,7 +65,7 @@ class ModelExportTest(unittest.TestCase):
         r = classifier.predict([img])
 
     def test_export_cls_syncbn(self):
-        config_file = 'configs/classification/imagenet/imagenet_rn50_jpg.py'
+        config_file = 'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py'
         cfg = mmcv_config_fromfile(config_file)
         cfg_options = {
             'model.backbone.norm_cfg.type': 'SyncBN',
