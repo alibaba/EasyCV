@@ -193,7 +193,7 @@ def main():
 
     assert 'eval_pipelines' in cfg, 'eval_pipelines is needed for testting'
     for eval_pipe in cfg.eval_pipelines:
-        eval_data = eval_pipe.data
+        eval_data = cfg.data.val
         # build the dataloader
         if eval_data.get('dali', False):
             data_loader = datasets.build_dali_dataset(
@@ -210,8 +210,8 @@ def main():
                 imgs_per_gpu=imgs_per_gpu,
                 workers_per_gpu=cfg.data.workers_per_gpu,
                 dist=distributed,
-                shuffle=False,
-                oss_config=cfg.get('oss_io_config', None))
+                shuffle=False)
+            # oss_config=cfg.get('oss_io_config', None))
 
         if not distributed:
             outputs = single_gpu_test(
