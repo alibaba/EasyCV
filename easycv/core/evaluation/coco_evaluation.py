@@ -306,20 +306,13 @@ class CocoDetectionEvaluator(Evaluator):
                 detection_classes = detection_classes.cpu().numpy().astype(
                     np.int32)
 
-            whwh = np.array([width, height, width, height], dtype=np.float32)
-
-            # target boxes
-            if len(gt_boxes) > 0:
-                gt_boxes_absolute = xywh2xyxy(gt_boxes) * whwh
-            else:
-                continue
             if groundtruth_is_crowd_list is None:
                 groundtruth_is_crowd = None
             else:
                 groundtruth_is_crowd = groundtruth_is_crowd_list[idx]
 
             groundtruth_dict = {
-                'groundtruth_boxes': gt_boxes_absolute,
+                'groundtruth_boxes': gt_boxes,
                 'groundtruth_classes': gt_classes,
                 'groundtruth_is_crowd': groundtruth_is_crowd,
             }
@@ -431,7 +424,10 @@ class CocoMaskEvaluator(Evaluator):
                     standard_fields.InputDataFields.groundtruth_boxes],
                 groundtruth_classes=groundtruth_dict[
                     standard_fields.InputDataFields.groundtruth_classes],
-                groundtruth_masks=groundtruth_instance_masks))
+                groundtruth_masks=groundtruth_instance_masks,
+                groundtruth_is_crowd=groundtruth_dict.get(
+                    standard_fields.InputDataFields.groundtruth_is_crowd,
+                    None)))
         self._annotation_id += groundtruth_dict[
             standard_fields.InputDataFields.groundtruth_boxes].shape[0]
         self._image_id_to_mask_shape_map[image_id] = groundtruth_dict[
@@ -473,8 +469,8 @@ class CocoMaskEvaluator(Evaluator):
         groundtruth_masks_shape = self._image_id_to_mask_shape_map[image_id]
         detection_masks = detections_dict[
             standard_fields.DetectionResultFields.detection_masks]
-        if len(detection_masks
-               ) and groundtruth_masks_shape[1:] != detection_masks.shape[1:]:
+        if (len(detection_masks) and groundtruth_masks_shape[0] != 0
+                and groundtruth_masks_shape[1:] != detection_masks.shape[1:]):
             raise ValueError(
                 'Spatial shape of groundtruth masks and detection masks '
                 'are incompatible: {} vs {}'.format(groundtruth_masks_shape,
@@ -589,24 +585,21 @@ class CocoMaskEvaluator(Evaluator):
                 detection_classes = detection_classes.cpu().numpy().astype(
                     np.int32)
 
-            whwh = np.array([width, height, width, height], dtype=np.float32)
-
-            # target boxes
-            if len(gt_boxes) > 0:
-                gt_boxes_absolute = xywh2xyxy(gt_boxes) * whwh
-            else:
-                continue
-
             if groundtruth_is_crowd_list is None:
                 groundtruth_is_crowd = None
             else:
                 groundtruth_is_crowd = groundtruth_is_crowd_list[idx]
 
-            gt_masks = np.array(
-                [self._ann_to_mask(mask, height, width) for mask in gt_masks],
-                dtype=np.uint8)
+            if len(gt_masks) == 0:
+                gt_masks = np.array([], dtype=np.uint8).reshape(
+                    (0, height, width))
+            else:
+                gt_masks = np.array([
+                    self._ann_to_mask(mask, height, width) for mask in gt_masks
+                ],
+                                    dtype=np.uint8)
             groundtruth_dict = {
-                'groundtruth_boxes': gt_boxes_absolute,
+                'groundtruth_boxes': gt_boxes,
                 'groundtruth_instance_masks': gt_masks,
                 'groundtruth_classes': gt_classes,
                 'groundtruth_is_crowd': groundtruth_is_crowd,
