@@ -44,6 +44,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Run unittest
+        id: run_ci_test
         shell: bash
         run: |
           set -e
@@ -65,3 +66,13 @@ jobs:
           source ~/workspace/anaconda2/etc/profile.d/conda.sh
           conda activate evtorch_torch1.8.0
           PYTHONPATH=. python tests/run.py
+      - name: SignalFail
+        env:
+          CI_TEST_PASSED: ${{steps.run_ci_test.outputs.ci_test_passed}}
+        run: |
+          echo "CI_TEST_PASSED=${CI_TEST_PASSED}"
+          if [ $CI_TEST_PASSED -ne 1 ]
+          then
+            echo "ci_test_failed, will exit"
+            exit 1
+          fi
