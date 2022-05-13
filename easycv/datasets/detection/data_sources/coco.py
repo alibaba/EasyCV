@@ -17,6 +17,7 @@ class DetSourceCoco(object):
                  ann_file,
                  img_prefix,
                  pipeline,
+                 test_mode=False,
                  filter_empty_gt=False,
                  classes=None,
                  iscrowd=False):
@@ -24,7 +25,11 @@ class DetSourceCoco(object):
         Args:
             ann_file: Path of annotation file.
             img_prefix: coco path prefix
-            filter_empty_gt: bool, if filter empty gt
+            test_mode (bool, optional): If set True, `self._filter_imgs` will not works.
+            filter_empty_gt (bool, optional): If set true, images without bounding
+                boxes of the dataset's classes will be filtered out. This option
+                only works when `test_mode=False`, i.e., we never filter images
+                during tests.
             iscrowd: when traing setted as False, when val setted as Tre
         """
         self.ann_file = ann_file
@@ -33,9 +38,11 @@ class DetSourceCoco(object):
         self.CLASSES = classes
         # load annotations (and proposals)
         self.data_infos = self.load_annotations(self.ann_file)
-        valid_inds = self._filter_imgs()
-        self.data_infos = [self.data_infos[i] for i in valid_inds]
-        self._set_group_flag()
+        self.test_mode = test_mode
+        if not test_mode:
+            valid_inds = self._filter_imgs()
+            self.data_infos = [self.data_infos[i] for i in valid_inds]
+            self._set_group_flag()
 
         self.iscrowd = iscrowd
         self.max_labels_num = 120
