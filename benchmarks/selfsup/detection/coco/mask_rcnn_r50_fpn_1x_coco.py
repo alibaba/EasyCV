@@ -27,8 +27,7 @@ model = dict(
         out_indices=(1, 2, 3, 4),
         frozen_stages=-1,
         norm_cfg=norm_cfg,
-        norm_eval=False
-    ),
+        norm_eval=False),
     # mmdet ResNet
     # backbone=dict(
     #     type='ResNet',
@@ -151,7 +150,7 @@ model = dict(
             max_per_img=100,
             mask_thr_binary=0.5)))
 
-mmlab_modules=[
+mmlab_modules = [
     dict(type='mmdet', name='MaskRCNN', module='model'),
     # dict(type=MMDET, name='ResNet', module='backbone'),  # comment out, use EasyCV ResNet
     dict(type='mmdet', name='FPN', module='neck'),
@@ -175,10 +174,12 @@ train_pipeline = [
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='MMPad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks'],
-            meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
-                        'img_shape', 'pad_shape', 'scale_factor', 'flip',
-                        'flip_direction', 'img_norm_cfg'))
+    dict(
+        type='Collect',
+        keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks'],
+        meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
+                   'img_shape', 'pad_shape', 'scale_factor', 'flip',
+                   'flip_direction', 'img_norm_cfg'))
 ]
 
 test_pipeline = [
@@ -192,10 +193,13 @@ test_pipeline = [
             dict(type='MMNormalize', **img_norm_cfg),
             dict(type='MMPad', size_divisor=32),
             dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img'],
-                    meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
-                        'img_shape', 'pad_shape', 'scale_factor', 'flip',
-                        'flip_direction', 'img_norm_cfg')),
+            dict(
+                type='Collect',
+                keys=['img'],
+                meta_keys=('filename', 'ori_filename', 'ori_shape',
+                           'ori_img_shape', 'img_shape', 'pad_shape',
+                           'scale_factor', 'flip', 'flip_direction',
+                           'img_norm_cfg')),
         ])
 ]
 
@@ -213,8 +217,7 @@ train_dataset = dict(
         filter_empty_gt=True,
         iscrowd=False,
     ),
-    pipeline=train_pipeline
-)
+    pipeline=train_pipeline)
 
 val_dataset = dict(
     type='DetDataset',
@@ -230,8 +233,7 @@ val_dataset = dict(
         classes=CLASSES,
         test_mode=True,
         iscrowd=True),
-    pipeline=test_pipeline
-)
+    pipeline=test_pipeline)
 
 data = dict(
     imgs_per_gpu=2, workers_per_gpu=2, train=train_dataset, val=val_dataset)
@@ -257,6 +259,6 @@ eval_pipelines = [
         evaluators=[
             dict(type='CocoDetectionEvaluator', classes=CLASSES),
             dict(type='CocoMaskEvaluator', classes=CLASSES)
-            ],
+        ],
     )
 ]
