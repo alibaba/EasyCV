@@ -66,6 +66,13 @@ jobs:
           source ~/workspace/anaconda2/etc/profile.d/conda.sh
           conda activate evtorch_torch1.8.0
           PYTHONPATH=. python tests/run.py
+
+          if [ $? -eq 0 ]
+          then
+            echo "::set-output name=ci_test_passed::1"
+          else
+            echo "::set-output name=ci_test_passed::0"
+          fi
       - name: SignalFail
         env:
           CI_TEST_PASSED: ${{steps.run_ci_test.outputs.ci_test_passed}}
