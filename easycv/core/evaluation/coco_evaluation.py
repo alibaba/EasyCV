@@ -274,11 +274,28 @@ class CocoDetectionEvaluator(Evaluator):
     def _evaluate_impl(self, prediction_dict, groundtruth_dict):
         '''
         Args:
-            prediction_dict:  a dict of k-v pair, each v is a list of
-                tensor or numpy array for detection result
-
-            groundtruth_dict: a dict of k-v pair, each v is a list of
-                tensor or numpy array for groundtruth info
+            prediction_dict:  A dict of k-v pair, each v is a list of
+                tensor or numpy array for detection result. A dictionary containing
+                :groundtruth_boxes: float32 numpy array of shape
+                    [num_boxes, 4] containing `num_boxes` groundtruth boxes of the format
+                    [ymin, xmin, ymax, xmax] in absolute image coordinates.
+                :groundtruth_classes: integer numpy array of shape
+                    [num_boxes] containing 1-indexed groundtruth classes for the boxes.
+                    InputDataFields.groundtruth_is_crowd (optional): integer numpy array of
+                    shape [num_boxes] containing iscrowd flag for groundtruth boxes.
+                :img_metas: List of length number of test images,
+                        dict of image meta info, containing filename, ori_img_shape, and so on.
+            groundtruth_dict: A dict of k-v pair, each v is a list of
+                tensor or numpy array for groundtruth info. A dictionary containing
+                :DetectionResultFields.detection_boxes: float32 numpy array of shape
+                    [num_boxes, 4] containing `num_boxes` detection boxes of the format
+                    [ymin, xmin, ymax, xmax] in absolute image coordinates.
+                :DetectionResultFields.detection_scores: float32 numpy array of shape
+                    [num_boxes] containing detection scores for the boxes.
+                :DetectionResultFields.detection_classes: integer numpy array of shape
+                    [num_boxes] containing 1-indexed detection classes for the boxes.
+                :groundtruth_is_crowd: integer numpy array of
+                    shape [num_boxes] containing iscrowd flag for groundtruth boxes.
 
         Return:
             dict,  each key is metric_name, value is metric value
@@ -557,9 +574,29 @@ class CocoMaskEvaluator(Evaluator):
         """Evaluate with prediction and groundtruth dict
 
         Args:
-            image_id: A unique string/integer identifier for the image.
-            info_dict: A dictionary of groundtruth and detection numpy
-                arrays required for evaluations.
+            detections_dict: A dictionary containing -
+                :DetectionResultFields.detection_scores: float32 numpy array of shape
+                    [num_boxes] containing detection scores for the boxes.
+                :DetectionResultFields.detection_classes: integer numpy array of shape
+                    [num_boxes] containing 1-indexed detection classes for the boxes.
+                :DetectionResultFields.detection_masks: mask rle code or optional uint8
+                    numpy array of shape [num_boxes, image_height, image_width] containing
+                    instance masks corresponding to the boxes. The elements of the array
+                    must be in {0, 1}.
+                :img_metas: List of length number of test images,
+                    dict of image meta info, containing filename, ori_img_shape, and so on.
+            groundtruth_dict: A dictionary containing
+                :InputDataFields.groundtruth_boxes: float32 numpy array of shape
+                    [num_boxes, 4] containing `num_boxes` groundtruth boxes of the format
+                    [ymin, xmin, ymax, xmax] in absolute image coordinates.
+                :InputDataFields.groundtruth_classes: integer numpy array of shape
+                    [num_boxes] containing 1-indexed groundtruth classes for the boxes.
+                :InputDataFields.groundtruth_instance_masks: mask rle code or uint8
+                    numpy array of shape [num_boxes, image_height, image_width] containing
+                    groundtruth masks corresponding to the boxes. The elements of the array
+                    must be in {0, 1}.
+                :groundtruth_is_crowd: integer numpy array of
+                    shape [num_boxes] containing iscrowd flag for groundtruth boxes.
         """
         num_images_det = len(
             prediction_dict[DetectionResultFields.detection_boxes])
