@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import copy
 import functools
 import logging
 import time
@@ -160,7 +161,10 @@ class DetSourceBase(object):
         return result_dict
 
     def get_sample(self, idx):
-        result_dict = self.samples_list[idx]
+        # `post_process_fn` may modify the value of `self.samples_list`,
+        # and repeated tries may causing repeated processing operations, which may cause some problems.
+        # Use deepcopy to avoid potential problems.
+        result_dict = copy.deepcopy(self.samples_list[idx])
         load_success = True
         try:
             if not self.cache_at_init and result_dict.get('img', None) is None:
@@ -185,4 +189,4 @@ class DetSourceBase(object):
 
             result_dict = self.get_sample((idx + 1) % self.num_samples)
 
-        return result_dict
+        return copy.deepcopy(result_dict)

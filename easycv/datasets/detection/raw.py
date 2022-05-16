@@ -110,7 +110,7 @@ class DetDataset(BaseDataset):
         elif hasattr(self.data_source, 'classes'):
             class_names = self.data_source.classes
 
-        if class_names is not None:
+        if class_names is not None and len(class_names) > 0:
             detection_classes = []
             for classes_id in results['detection_classes']:
                 if classes_id is None:

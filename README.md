@@ -82,7 +82,7 @@ Please refer to the following model zoo for more details.
     * Update moby pretrained model to deit small
     * Add mae vit-large benchmark and pretrained models
     * Support image visualization for tensorboard and wandb
-  
+
 * 07/04/2022 EasyCV v0.2.2 was released.
 
 Please refer to [change_log.md](docs/source/change_log.md) for more details and history.
