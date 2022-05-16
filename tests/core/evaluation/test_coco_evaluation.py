@@ -291,10 +291,9 @@ class CocoDetectionEvaluationTest(unittest.TestCase):
         coco_evaluator = coco_evaluation.CocoDetectionEvaluator(category_list)
         gt_dict = dict(
             image_id=['image1', 'image2', 'image3'],
-            # x_c, y_c, w, h in normalized coord
-            groundtruth_boxes=np.array([[[0.15, 0.15, 0.1, 0.1]],
-                                        [[0.075, 0.075, 0.05, 0.05]],
-                                        [[0.0375, 0.0375, .025, .025]]]),
+            groundtruth_boxes=np.array([[[100., 100., 200., 200.]],
+                                        [[50., 50., 100., 100.]],
+                                        [[25., 25., 50., 50.]]]),
             groundtruth_classes=np.array([[1], [1], [1]]))
         det_dict = dict(
             img_metas=[
