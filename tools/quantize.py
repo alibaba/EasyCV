@@ -109,7 +109,7 @@ def quantize_eval(cfg, model, eval_mode):
 def main():
     args = parse_args()
 
-    if args.model_type is not None:
+    if args.model_type is not None and args.config is None:
         assert args.model_type in CONFIG_TEMPLATE_ZOO, 'model_type must be in [%s]' % (
             ', '.join(CONFIG_TEMPLATE_ZOO.keys()))
         print('model_type=%s, config file will be replaced by %s' %
