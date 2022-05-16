@@ -161,18 +161,17 @@ class DetSourceBase(object):
         return result_dict
 
     def get_sample(self, idx):
-        # `post_process_fn` may modify the value of `self.samples_list`,
-        # and repeated tries may causing repeated processing operations, which may cause some problems.
-        # Use deepcopy to avoid potential problems.
-        result_dict = copy.deepcopy(self.samples_list[idx])
+        result_dict = self.samples_list[idx]
         load_success = True
         try:
             if not self.cache_at_init and result_dict.get('img', None) is None:
                 result_dict.update(load_image(result_dict['filename']))
                 if self.cache_on_the_fly:
                     self.samples_list[idx] = result_dict
-
-            result_dict = self.post_process_fn(result_dict)
+            # `post_process_fn` may modify the value of `self.samples_list`,
+            # and repeated tries may causing repeated processing operations, which may cause some problems.
+            # Use deepcopy to avoid potential problems.
+            result_dict = self.post_process_fn(copy.deepcopy(result_dict))
             # load success,reset to 0
             self._retry_count = 0
         except Exception as e:
@@ -189,4 +188,4 @@ class DetSourceBase(object):
 
             result_dict = self.get_sample((idx + 1) % self.num_samples)
 
-        return copy.deepcopy(result_dict)
+        return result_dict
