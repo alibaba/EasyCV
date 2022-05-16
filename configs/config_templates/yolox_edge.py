@@ -192,8 +192,8 @@ workflow = [('train', 1)]
 export = dict(use_jit=False)
 
 # oss io config
-oss_io_config = dict(
-    ak_id='xxx',
-    ak_secret='xxx',
-    hosts='oss-cn-zhangjiakou.aliyuncs.com',
-    buckets=['your_bucket'])
+# oss_io_config = dict(
+#     ak_id='xxx',
+#     ak_secret='xxx',
+#     hosts='oss-cn-zhangjiakou.aliyuncs.com',
+#     buckets=['your_bucket'])

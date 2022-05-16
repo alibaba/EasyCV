@@ -4,6 +4,7 @@ isort:skip_file
 """
 import argparse
 from genericpath import exists
+import imp
 import os
 import os.path as osp
 import sys
@@ -82,7 +83,6 @@ def quantize_eval(cfg, model, eval_mode):
         eval_data = eval_pipe.data
         # build the dataloader
         imgs_per_gpu = eval_data.pop('imgs_per_gpu', cfg.data.imgs_per_gpu)
-
         dataset = build_dataset(eval_data)
         data_loader = build_dataloader(
             dataset,
@@ -109,7 +109,7 @@ def quantize_eval(cfg, model, eval_mode):
 def main():
     args = parse_args()
 
-    if args.model_type is not None:
+    if args.model_type is not None and args.config is None:
         assert args.model_type in CONFIG_TEMPLATE_ZOO, 'model_type must be in [%s]' % (
             ', '.join(CONFIG_TEMPLATE_ZOO.keys()))
         print('model_type=%s, config file will be replaced by %s' %
