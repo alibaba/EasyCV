@@ -165,3 +165,13 @@ class YOLOX(BaseModel):
         outputs = self.head(fpn_outs)
 
         return outputs
+
+    def forward_export(self, img):
+        with torch.no_grad():
+            fpn_outs = self.backbone(img)
+            outputs = self.head(fpn_outs)
+
+            outputs = postprocess(outputs, self.num_classes, self.test_conf,
+                                  self.nms_thre)
+
+        return outputs

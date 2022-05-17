@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import copy
 import json
 import logging
 from collections import OrderedDict
@@ -10,6 +11,8 @@ from easycv.file import io
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
                            build_model)
 from easycv.utils.checkpoint import load_checkpoint
+from easycv.toolkit.blade import blade_env_assert, blade_optimize
+
 
 __all__ = ['export']
 
@@ -145,32 +148,86 @@ def _export_cls(model, cfg, filename):
 
 def _export_yolox(model, cfg, filename):
     """ export cls (cls & metric learning)model and preprocess config
-
     Args:
         model (nn.Module):  model to be exported
         cfg: Config object
         filename (str): filename to save exported models
     """
-    if hasattr(cfg, 'test_pipeline'):
-        # with last pipeline Collect
-        test_pipeline = cfg.test_pipeline
-        print(test_pipeline)
+
+    if hasattr(cfg, 'export') and getattr(cfg.export, 'use_jit', False):
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        model = copy.deepcopy(model)
+        model.eval()
+        model.to(device)
+
+        batch_size = cfg.export.get('batch_size', 1)
+        img_scale = cfg.get('img_scale', (640, 640))
+        assert (
+            len(img_scale) == 2
+        ), 'Export YoloX predictor config contains img_scale must be (int, int) tuple!'
+        input = 255 * torch.rand((batch_size, 3) + img_scale)
+
+        model_export = End2endModelExportWrapper(
+            model,
+            input.to(device),
+            preprocess_fn=None,
+            postprocess_fn=None,
+            trace_model=False,
+        )
+
+        model_export.eval().to(device)
+
+        # well trained model will generate reasonable result, otherwise, we should change model.test_conf=0.0 to avoid tensor in inference to be empty
+        try:
+            yolox_trace = torch.jit.trace(model_export, input.to(device))
+        except:
+            model_export.test_conf = 0.0
+            yolox_trace = torch.jit.trace(model_export, input.to(device))
+
+        if getattr(cfg.export, 'export_blade', False):
+            blade_config = cfg.export.get('blade_config',
+                                          dict(enable_fp16=True))
+            if blade_env_assert() == True:
+                yolox_blade = blade_optimize(
+                    script_model=model_export,
+                    model=yolox_trace,
+                    inputs=(input.to(device), ),
+                    blade_config=blade_config)
+                with io.open(filename + '.blade', 'wb') as ofile:
+                    torch.jit.save(yolox_blade, ofile)
+                with io.open(filename + '.blade.classnames.json',
+                             'w') as ofile:
+                    json.dump(cfg.CLASSES, ofile)
+            else:
+                logging.warning('Export YoloX predictor with blade failed!')
+
+        with io.open(filename + '.jit', 'wb') as ofile:
+            torch.jit.save(yolox_trace, ofile)
+
+        with io.open(filename + '.jit.classnames.json', 'w') as ofile:
+            json.dump(cfg.CLASSES, ofile)
+
     else:
-        print('test_pipeline not found, using default preprocessing!')
-        raise ValueError('export model config without test_pipeline')
+        if hasattr(cfg, 'test_pipeline'):
+            # with last pipeline Collect
+            test_pipeline = cfg.test_pipeline
+            print(test_pipeline)
+        else:
+            print('test_pipeline not found, using default preprocessing!')
+            raise ValueError('export model config without test_pipeline')
 
-    config = dict(
-        model=cfg.model,
-        test_pipeline=test_pipeline,
-        CLASSES=cfg.CLASSES,
-    )
+        config = dict(
+            model=cfg.model,
+            test_pipeline=test_pipeline,
+            CLASSES=cfg.CLASSES,
+        )
 
-    meta = dict(config=json.dumps(config))
-    checkpoint = dict(
-        state_dict=model.state_dict(), meta=meta, author='EasyCV')
-    with io.open(filename, 'wb') as ofile:
-        torch.save(checkpoint, ofile)
-
+        meta = dict(config=json.dumps(config))
+        checkpoint = dict(
+            state_dict=model.state_dict(), meta=meta, author='EasyCV')
+        with io.open(filename, 'wb') as ofile:
+            torch.save(checkpoint, ofile)
 
 def _export_swav(model, cfg, filename):
     """ export cls (cls & metric learning)model and preprocess config
@@ -372,3 +429,59 @@ def replace_syncbn(backbone_cfg):
             backbone_cfg['norm_cfg']['type'] = 'IBN'
 
     return backbone_cfg
+
+
+class End2endModelExportWrapper(torch.nn.Module):
+    """
+    Wrap the model to export an end2end model in a unified way.
+    The prepocess_fn and prostprocess_fn is optional.
+    Each model mush have a 'forward_export' function.
+    The 'export_init' function is optional.
+    """
+
+    def __init__(self,
+                 model,
+                 fake_input,
+                 preprocess_fn = None,
+                 postprocess_fn = None,
+                 trace_model: bool = True
+                 ) -> None:
+        super().__init__()
+
+        self.model = model
+        self.fake_input = fake_input
+        self.preprocess_fn = preprocess_fn
+        self.postprocess_fn = postprocess_fn
+        # `export_init` for initialize
+        # self.model.export_init()
+        self.trace_model = trace_model
+        if self.trace_model:
+            self.trace_module()
+
+    def trace_module(self, **kwargs):
+        trace_model = torch.jit.trace_module(
+            self.model,
+            {"forward_export": self.fake_input},
+            **kwargs
+        )
+        self.model = trace_model
+
+    def forward(self, image):
+        preprocess_outputs = ()
+
+        if self.preprocess_fn is not None:
+            output = self.preprocess_fn(image)
+            # if multi values ​​are returned, the first one must be image, others ​​are optional,
+            # and others will all be passed into postprocess_fn
+            if isinstance(output, tuple):
+                image = output[0]
+                preprocess_outputs = output[1:]
+            else:
+                image = output
+
+        model_output = self.model.forward_export(image)
+
+        if self.postprocess_fn is not None:
+            model_output = self.postprocess_fn(model_output, *preprocess_outputs)
+
+        return model_output
