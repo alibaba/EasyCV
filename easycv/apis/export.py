@@ -10,9 +10,8 @@ from mmcv.utils import Config
 from easycv.file import io
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
                            build_model)
-from easycv.utils.checkpoint import load_checkpoint
 from easycv.toolkit.blade import blade_env_assert, blade_optimize
-
+from easycv.utils.checkpoint import load_checkpoint
 
 __all__ = ['export']
 
@@ -229,6 +228,7 @@ def _export_yolox(model, cfg, filename):
         with io.open(filename, 'wb') as ofile:
             torch.save(checkpoint, ofile)
 
+
 def _export_swav(model, cfg, filename):
     """ export cls (cls & metric learning)model and preprocess config
 
@@ -442,10 +442,9 @@ class End2endModelExportWrapper(torch.nn.Module):
     def __init__(self,
                  model,
                  fake_input,
-                 preprocess_fn = None,
-                 postprocess_fn = None,
-                 trace_model: bool = True
-                 ) -> None:
+                 preprocess_fn=None,
+                 postprocess_fn=None,
+                 trace_model: bool = True) -> None:
         super().__init__()
 
         self.model = model
@@ -460,10 +459,7 @@ class End2endModelExportWrapper(torch.nn.Module):
 
     def trace_module(self, **kwargs):
         trace_model = torch.jit.trace_module(
-            self.model,
-            {"forward_export": self.fake_input},
-            **kwargs
-        )
+            self.model, {'forward_export': self.fake_input}, **kwargs)
         self.model = trace_model
 
     def forward(self, image):
@@ -482,6 +478,7 @@ class End2endModelExportWrapper(torch.nn.Module):
         model_output = self.model.forward_export(image)
 
         if self.postprocess_fn is not None:
-            model_output = self.postprocess_fn(model_output, *preprocess_outputs)
+            model_output = self.postprocess_fn(model_output,
+                                               *preprocess_outputs)
 
         return model_output
