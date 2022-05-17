@@ -4,7 +4,7 @@
 - [Prepare Imagenet](#Prepare-Imagenet)
 - [Prepare Imagenet-TFrecords](#Prepare-Imagenet-TFrecords)
 - [Prepare COCO](#Prepare-COCO)
-- [Prepare PAI-Itag detection](#Prepare-PAI-Itag detection)
+- [Prepare PAI-Itag detection](#Prepare-PAI-Itag-detection)
 
 ## Prepare Cifar
 
