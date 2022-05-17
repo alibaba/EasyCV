@@ -31,9 +31,13 @@ class DetDataset(BaseDataset):
         return self.num_samples
 
     def __getitem__(self, idx):
-        data_dict = self.data_source.get_sample(idx)
-        data_dict = self.pipeline(data_dict)
-        return data_dict
+        while True:
+            data_dict = self.data_source.get_sample(idx)
+            data_dict = self.pipeline(data_dict)
+            if data_dict is None:
+                idx = self._rand_another(idx)
+                continue
+            return data_dict
 
     def evaluate(self, results, evaluators=None, logger=None):
         '''Evaluates the detection boxes.
