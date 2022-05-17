@@ -206,8 +206,8 @@ def main():
                 imgs_per_gpu=imgs_per_gpu,
                 workers_per_gpu=cfg.data.workers_per_gpu,
                 dist=distributed,
-                shuffle=False,
-                oss_config=cfg.get('oss_io_config', None))
+                shuffle=False)
+                # oss_config=cfg.get('oss_io_config', None))
 
         if not distributed:
             outputs = single_gpu_test(

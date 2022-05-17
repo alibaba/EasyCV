@@ -44,6 +44,9 @@ class YOLOX(BaseModel):
                  test_size: tuple = (640, 640),
                  test_conf: float = 0.01,
                  nms_thre: float = 0.65,
+                 use_att: str = None,
+                 obj_loss_type: str = 'l1',
+                 reg_loss_type: str = 'l1',
                  pretrained: str = None):
         super(YOLOX, self).__init__()
         assert model_type in self.param_map, f'invalid model_type for yolox {model_type}, valid ones are {list(self.param_map.keys())}'
@@ -52,8 +55,8 @@ class YOLOX(BaseModel):
         depth = self.param_map[model_type][0]
         width = self.param_map[model_type][1]
 
-        self.backbone = YOLOPAFPN(depth, width, in_channels=in_channels)
-        self.head = YOLOXHead(num_classes, width, in_channels=in_channels)
+        self.backbone = YOLOPAFPN(depth, width, in_channels=in_channels, use_att=use_att)
+        self.head = YOLOXHead(num_classes, width, in_channels=in_channels, obj_loss_type=obj_loss_type, reg_loss_type=reg_loss_type)
 
         self.apply(init_yolo)  # init_yolo(self)
         self.head.initialize_biases(1e-2)

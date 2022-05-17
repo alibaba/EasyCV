@@ -6,7 +6,11 @@ model = dict(
     num_classes=80,
     model_type='s',  # s m l x tiny nano
     test_conf=0.01,
-    nms_thre=0.65)
+    nms_thre=0.65,
+    use_att=None,
+    obj_loss_type='focal',
+    reg_loss_type= 'ciou'
+)
 
 # s m l x
 img_scale = (640, 640)
@@ -35,7 +39,8 @@ CLASSES = [
 ]
 
 # dataset settings
-data_root = 'data/coco/'
+data_root = '/apsarapangu/disk5/zxy/data/coco/'
+# data_root = '/data/coco'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 

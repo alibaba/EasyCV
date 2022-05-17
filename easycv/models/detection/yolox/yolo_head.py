@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from easycv.models.backbones.network_blocks import BaseConv, DWConv
 from easycv.models.detection.utils import bboxes_iou
 from easycv.models.loss import IOUloss
+from easycv.models.loss import FocalLoss,VarifocalLoss
 
 
 class YOLOXHead(nn.Module):
@@ -21,7 +22,9 @@ class YOLOXHead(nn.Module):
                  in_channels=[256, 512, 1024],
                  act='silu',
                  depthwise=False,
-                 stage='CLOUD'):
+                 stage='CLOUD',
+                 obj_loss_type='l1',
+                 reg_loss_type='l1'):
         """
         Args:
             num_classes (int): detection class numbers.
@@ -31,6 +34,8 @@ class YOLOXHead(nn.Module):
             act (str): activation type of conv. Defalut value: "silu".
             depthwise (bool): whether apply depthwise conv in conv branch. Default value: False.
             stage (str): model stage, distinguish edge head to cloud head. Default value: CLOUD.
+            obj_loss_type (str): the loss function of the obj conf. Default value: l1.
+            reg_loss_type (str): the loss function of the box prediction. Default value: l1.
         """
         super().__init__()
 
@@ -115,10 +120,26 @@ class YOLOXHead(nn.Module):
                     padding=0,
                 ))
 
-        self.use_l1 = False
-        self.l1_loss = nn.L1Loss(reduction='none')
+
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction='none')
-        self.iou_loss = IOUloss(reduction='none')
+
+        if reg_loss_type=='l1':
+            self.use_l1 = True
+            self.l1_loss = nn.L1Loss(reduction='none')
+        else:
+            self.use_l1 = False
+
+        self.iou_loss = IOUloss(reduction='none',loss_type=reg_loss_type)
+
+        if obj_loss_type=='BCE':
+            self.obj_loss = nn.BCEWithLogitsLoss(reduction='none')
+        elif obj_loss_type=='focal':
+            self.obj_loss = FocalLoss(reduction='none')
+        elif obj_loss_type=='v_focal':
+            self.obj_loss = VarifocalLoss(reduction='none')
+        else:
+            assert "Undefined loss type: {}".format(obj_loss_type)
+
         self.strides = strides
         self.grids = [torch.zeros(1)] * len(in_channels)
 
@@ -355,6 +376,7 @@ class YOLOXHead(nn.Module):
                     self.num_classes) * pred_ious_this_matching.unsqueeze(-1)
                 obj_target = fg_mask.unsqueeze(-1)
                 reg_target = gt_bboxes_per_image[matched_gt_inds]
+
                 if self.use_l1:
                     l1_target = self.get_l1_target(
                         outputs.new_zeros((num_fg_img, 4)),
@@ -375,17 +397,20 @@ class YOLOXHead(nn.Module):
         reg_targets = torch.cat(reg_targets, 0)
         obj_targets = torch.cat(obj_targets, 0)
         fg_masks = torch.cat(fg_masks, 0)
+
         if self.use_l1:
             l1_targets = torch.cat(l1_targets, 0)
 
         num_fg = max(num_fg, 1)
+
         loss_iou = (self.iou_loss(
             bbox_preds.view(-1, 4)[fg_masks], reg_targets)).sum() / num_fg
-        loss_obj = (self.bcewithlog_loss(obj_preds.view(-1, 1),
+        loss_obj = (self.obj_loss(obj_preds.view(-1, 1),
                                          obj_targets)).sum() / num_fg
         loss_cls = (self.bcewithlog_loss(
             cls_preds.view(-1, self.num_classes)[fg_masks],
             cls_targets)).sum() / num_fg
+
         if self.use_l1:
             loss_l1 = (self.l1_loss(
                 origin_preds.view(-1, 4)[fg_masks], l1_targets)).sum() / num_fg

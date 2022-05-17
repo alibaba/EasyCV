@@ -5,7 +5,8 @@ import torch.nn as nn
 
 from easycv.models.backbones.darknet import CSPDarknet
 from easycv.models.backbones.network_blocks import BaseConv, CSPLayer, DWConv
-
+from .attention import SE, CBAM, ECA
+from .ASFF import ASFF
 
 class YOLOPAFPN(nn.Module):
     """
@@ -20,6 +21,7 @@ class YOLOPAFPN(nn.Module):
         in_channels=[256, 512, 1024],
         depthwise=False,
         act='silu',
+        use_att=None
     ):
         super().__init__()
         self.backbone = CSPDarknet(depth, width, depthwise=depthwise, act=act)
@@ -86,6 +88,28 @@ class YOLOPAFPN(nn.Module):
             depthwise=depthwise,
             act=act)
 
+        self.use_att=use_att
+
+        if self.use_att!=None and self.use_att!='ASFF':
+            # add attention layer
+            if self.use_att=="CBAM":
+                ATT = CBAM
+            elif self.use_att=="SE":
+                ATT = SE
+            elif self.use_att=="ECA":
+                ATT = ECA
+            else:
+                assert "Unknown Attention Layer!"
+
+            self.att_1 = ATT(int(in_channels[2] * width))  # 对应dark5输出的1024维度通道
+            self.att_2 = ATT(int(in_channels[1] * width))  # 对应dark4输出的512维度通道
+            self.att_3 = ATT(int(in_channels[0] * width))  # 对应dark3输出的256维度通道
+
+        if self.use_att=='ASFF':
+            self.asff_1 = ASFF(level=0, multiplier=width)
+            self.asff_2 = ASFF(level=1, multiplier=width)
+            self.asff_3 = ASFF(level=2, multiplier=width)
+
     def forward(self, input):
         """
         Args:
@@ -99,6 +123,12 @@ class YOLOPAFPN(nn.Module):
         out_features = self.backbone(input)
         features = [out_features[f] for f in self.in_features]
         [x2, x1, x0] = features
+
+        # add attention
+        if self.use_att!=None and self.use_att!='ASFF':
+            x0 = self.att_1(x0)
+            x1 = self.att_2(x1)
+            x2 = self.att_3(x2)
 
         fpn_out0 = self.lateral_conv0(x0)  # 1024->512/32
         f_out0 = self.upsample(fpn_out0)  # 512/16
@@ -119,4 +149,11 @@ class YOLOPAFPN(nn.Module):
         pan_out0 = self.C3_n4(p_out0)  # 1024->1024/32
 
         outputs = (pan_out2, pan_out1, pan_out0)
+
+        if self.use_att=='ASFF':
+            pan_out0 = self.asff_1(outputs)
+            pan_out1 = self.asff_2(outputs)
+            pan_out2 = self.asff_3(outputs)
+            outputs = (pan_out2, pan_out1, pan_out0)
+
         return outputs
