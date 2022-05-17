@@ -32,7 +32,7 @@ train_pipeline = [
         type='MMRandomCrop',
         crop_type='absolute_range',
         crop_size=image_size,
-        recompute_bbox=False,
+        recompute_bbox=True,
         allow_negative_crop=True),
     dict(type='MMFilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(type='MMRandomFlip', flip_ratio=0.5),
