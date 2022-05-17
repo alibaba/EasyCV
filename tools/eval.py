@@ -38,7 +38,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='EasyCV test (and eval) a model')
     parser.add_argument('config', help='test config file path')
-    parser.add_argument('checkpoint', help='checkpoint file')
+    parser.add_argument('--checkpoint', default=None, help='checkpoint file')
     parser.add_argument('--out', help='output result file in pickle format')
     # parser.add_argument(
     #     '--fuse-conv-bn',
@@ -76,11 +76,6 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
-    parser.add_argument(
-        '--load_style',
-        choices=['mmcv', 'timm'],
-        default='timm',
-        help='load pretrained style')
     parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument(
         '--model_type',
@@ -151,7 +146,6 @@ def main():
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
-    cfg.model.pretrained = None
     if cfg.model.get('neck'):
         if type(cfg.model.neck) is list:
             pass
@@ -172,18 +166,16 @@ def main():
     model = build_model(cfg.model)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f'use device {device}')
-    checkpoint = load_checkpoint(
-        model,
-        args.checkpoint,
-        map_location=device,
-        load_style=args.load_style)
+    if args.checkpoint is not None:
+        checkpoint = load_checkpoint(
+            model, args.checkpoint, map_location=device)
     model.to(device)
     # if args.fuse_conv_bn:
     #     model = fuse_module(model)
 
     # old versions did not save class info in checkpoints, this walkaround is
     # for backward compatibility
-    if checkpoint is not None and 'meta' in checkpoint and 'CLASSES' in checkpoint[
+    if args.checkpoint is not None and 'meta' in checkpoint and 'CLASSES' in checkpoint[
             'meta']:
         model.CLASSES = checkpoint['meta']['CLASSES']
     elif hasattr(cfg, 'CLASSES'):

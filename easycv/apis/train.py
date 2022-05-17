@@ -272,9 +272,9 @@ def train_model(model,
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)
-    elif cfg.model.pretrained:
-        runner.logger.info(f'load checkpoint from {cfg.model.pretrained}')
-        runner.load_checkpoint(cfg.model.pretrained)
+    elif cfg.load_from:
+        runner.logger.info(f'load checkpoint from {cfg.load_from}')
+        runner.load_checkpoint(cfg.load_from)
 
     runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
 

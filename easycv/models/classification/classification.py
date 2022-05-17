@@ -16,15 +16,6 @@ from ..registry import MODELS
 from ..utils import Sobel
 
 
-def distill_loss(cls_score, teacher_score, tempreature=1.0):
-    """ Soft cross entropy loss
-    """
-    log_prob = torch.nn.functional.log_softmax(cls_score / tempreature, dim=-1)
-    targets_prob = torch.nn.functional.softmax(
-        teacher_score / tempreature, dim=-1)
-    return (torch.sum(-targets_prob * log_prob, dim=1)).mean()
-
-
 @MODELS.register_module
 class Classification(BaseModel):
 
@@ -34,8 +25,6 @@ class Classification(BaseModel):
                  with_sobel=False,
                  head=None,
                  neck=None,
-                 teacher=None,
-                 pretrained=None,
                  mixup_cfg=None):
         super(Classification, self).__init__()
         self.with_sobel = with_sobel
@@ -103,21 +92,6 @@ class Classification(BaseModel):
         for idx, n in enumerate(tmp_neck_list):
             setattr(self, 'neck_%d' % idx, n)
 
-        if teacher is not None:
-            self.temperature = teacher.pop('temperature', 1)
-            self.teacher_loss_weight = teacher.pop('loss_weight', 1.0)
-            teacher_pretrained = teacher.pop('pretrained', None)
-
-            self.teacher = builder.build_backbone(teacher)
-            if teacher_pretrained is None:
-                self.teacher.init_weights(pretrained=self.teacher.pretrained)
-            else:
-                self.teacher.init_weights(pretrained=teacher_pretrained)
-            self.teacher.eval()
-        else:
-            self.teacher = None
-
-        self.init_weights(pretrained=pretrained)
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.activate_fn = nn.Softmax(dim=1)
         self.extract_list = ['neck']
@@ -189,13 +163,6 @@ class Classification(BaseModel):
                 losses['loss'] += hlosses['loss']
             else:
                 losses['loss'] = hlosses['loss']
-
-            # need to check this head can be teacher
-            if self.teacher is not None:
-                with torch.no_grad():
-                    teacher_outs = self.teacher(img)[0].detach()
-                losses['loss'] += self.teacher_loss_weight * distill_loss(
-                    outs[0], teacher_outs, self.temperature)
 
         return losses
 

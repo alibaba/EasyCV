@@ -198,9 +198,6 @@ def main():
     cfg.seed = args.seed
     meta['seed'] = args.seed
 
-    if args.pretrained is not None:
-        assert isinstance(args.pretrained, str)
-        cfg.model.pretrained = args.pretrained
     model = build_model(cfg.model)
 
     if 'stage' in cfg.model and cfg.model['stage'] == 'EDGE':
