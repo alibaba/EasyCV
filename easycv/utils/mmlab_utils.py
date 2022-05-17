@@ -153,9 +153,11 @@ class MMDetWrapper:
 
     def _wrap_model_forward(self, cls):
         origin_forward = cls.forward
+        print("model_name:{}".format(cls.__name__))
 
         def _new_forward(self, img, mode='train', **kwargs):
             img_metas = kwargs.pop('img_metas', None)
+            print("kwargs:{}".format(kwargs))
 
             if mode == 'train':
                 return origin_forward(

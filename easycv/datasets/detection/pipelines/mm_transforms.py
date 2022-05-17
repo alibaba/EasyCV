@@ -1992,7 +1992,7 @@ class MMFilterAnnotations:
         keep = (w > self.min_gt_bbox_wh[0]) & (h > self.min_gt_bbox_wh[1])
         if not keep.any():
             if self.keep_empty:
-                print("results:{}".format(results))
+                #print("results:{}".format(results))
                 return None
             else:
                 return results

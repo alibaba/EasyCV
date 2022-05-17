@@ -35,7 +35,7 @@ class DetDataset(BaseDataset):
             data_dict = self.data_source.get_sample(idx)
             data_dict = self.pipeline(data_dict)
             if data_dict is None:
-                idx = self._rand_another(idx)
+                idx = self.data_source._rand_another(idx)
                 continue
             return data_dict
 
