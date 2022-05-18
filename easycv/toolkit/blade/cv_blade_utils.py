@@ -1,3 +1,5 @@
+# Copyright (c) Alibaba, Inc. and its affiliates.
+
 import argparse
 import itertools
 import logging
@@ -132,10 +134,10 @@ def opt_disc_config(enable_fp16=True):
         pass
 
 
-results = []
-
-
-def printStats(backend, timings, batch_size=1, model_name='default'):
+def computeStats(backend, timings, batch_size=1, model_name='default'):
+    """
+    compute the statistical metric of time and speed
+    """
     times = np.array(timings)
     steps = len(times)
     speeds = batch_size / times
@@ -161,7 +163,7 @@ def printStats(backend, timings, batch_size=1, model_name='default'):
                time_99th,
                time_std,
            )
-    # print(msg)
+
     meas = {
         'Name': model_name,
         'Backend': backend,
@@ -172,11 +174,15 @@ def printStats(backend, timings, batch_size=1, model_name='default'):
         '99th_p': time_99th,
         'std_dev': time_std,
     }
-    results.append(meas)
+
+    return meas
 
 
 @torch.no_grad()
 def benchmark(model, inp, backend, batch_size, model_name='default'):
+    """
+    evaluate the time and speed for 200 forward of different models
+    """
     for i in range(100):
         model(*inp)
     torch.cuda.synchronize()
@@ -189,7 +195,7 @@ def benchmark(model, inp, backend, batch_size, model_name='default'):
         meas_time = end_time - start_time
         timings.append(meas_time)
 
-    printStats(backend, timings, batch_size, model_name)
+    return computeStats(backend, timings, batch_size, model_name)
 
 
 def collect_tensors(data):
@@ -232,15 +238,17 @@ def blade_optimize(script_model,
             allow_tracing=True,
             model_inputs=tuple(inputs),
         )
-    benchmark(script_model, inputs, backend, batch, 'easycv')
-    benchmark(model, inputs, backend, batch, 'easycv script')
-    benchmark(opt_model, inputs, backend, batch, 'blade')
+
+    results = []
+
+    results.append(benchmark(script_model, inputs, backend, batch, 'easycv'))
+    results.append(benchmark(model, inputs, backend, batch, 'easycv script'))
+    results.append(benchmark(opt_model, inputs, backend, batch, 'blade'))
+
     logging.info('Model Summary:')
     summary = pd.DataFrame(results)
     logging.warning(summary.to_markdown())
 
-    # x, y, z = inputs
-    # inputs = (x.to(torch.int32), y.to(torch.int32), z.to(torch.int32))
     output = model(*inputs)
     cu_prof_start()
     if blade_config.get('enable_fp16', True):
@@ -251,9 +259,3 @@ def blade_optimize(script_model,
     cu_prof_stop()
     check_results(output, test_result)
     return opt_model
-
-
-if __name__ == '__main__':
-
-    print('blade test')
-    blade_env_assert()

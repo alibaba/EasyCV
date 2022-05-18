@@ -90,25 +90,6 @@ class DetSourceVOCTest(unittest.TestCase):
             cache_on_the_fly=True)
         self._base_test(data_source)
 
-    def test_max_retry_num(self):
-        data_root = DET_DATA_SMALL_VOC_LOCAL
-        data_source = DetSourceVOC(
-            path=os.path.join(data_root, 'ImageSets/Main/train_20.txt'),
-            classes=VOC_CLASSES,
-            img_root_path=os.path.join(data_root, 'fault_path'),
-            label_root_path=os.path.join(data_root, 'Annotations'))
-        data_source._max_retry_num = 2
-        num_samples = data_source.num_samples
-        with self.assertRaises(ValueError) as cm:
-            for idx in range(num_samples - 1, num_samples * 2):
-                _ = data_source.get_sample(idx)
-
-        exception = cm.exception
-
-        self.assertEqual(num_samples, 20)
-        self.assertEqual(data_source._retry_count, 2)
-        self.assertEqual(exception.args[0], 'All samples failed to load!')
-
 
 if __name__ == '__main__':
     unittest.main()

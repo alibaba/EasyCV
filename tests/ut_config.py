@@ -46,8 +46,16 @@ SMALL_IMAGENET_TFRECORD_OSS = os.path.join(
 
 IO_DATA_TXTX_OSS = os.path.join(BASE_OSS_PATH, 'data/io_test_dir/txts/')
 
-DET_DATA_SMALL_COCO_LOCAL = os.path.join(BASE_LOCAL_PATH,
-                                         'data/detection/small_coco')
+# DET_DATA_SMALL_COCO_LOCAL = os.path.join(BASE_LOCAL_PATH,
+#                                          'data/detection/small_coco')
+DET_DATA_SMALL_COCO_LOCAL = '/apsarapangu/disk5/zxy/data/coco/'
+
+PRETRAINED_MODEL_YOLOXS_EXPORT = '/apsarapangu/disk5/zxy/UT_data/yoloxs_epoch_300.pth'
+PRETRAINED_MODEL_YOLOXS_EXPORT_JIT = '/apsarapangu/disk5/zxy/UT_data/yoloxs_epoch_300_export.jit'
+PRETRAINED_MODEL_YOLOXS_EXPORT_BLADE = '/apsarapangu/disk5/zxy/UT_data/yoloxs_epoch_300_export.blade'
+
+CONFIG_PATH = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
+
 DET_DATA_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/detection/raw_data')
 DET_DATA_SMALL_VOC_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                         'data/detection/small_voc')
@@ -75,12 +83,11 @@ PRETRAINED_MODEL_RESNET50_WITHOUTHEAD = os.path.join(
     'pretrained_models/classification/resnet/resnet50_withhead.pth')
 PRETRAINED_MODEL_FACEID = os.path.join(BASE_LOCAL_PATH,
                                        'pretrained_models/faceid')
-PRETRAINED_MODEL_YOLOXS_EXPORT = os.path.join(
-    BASE_LOCAL_PATH,
-    'pretrained_models/detection/yolox_s/yolox_s_epoch_300_export.pt')
+
 PRETRAINED_MODEL_YOLOXS = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/detection/yolox_s/yolox_s_epoch_300.pth')
+
 PRETRAINED_MODEL_POSE_HRNET_EXPORT = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/pose/hrnet/pose_hrnet_epoch_210_export.pt')
