@@ -123,13 +123,6 @@ def main():
               (args.model_type, CONFIG_TEMPLATE_ZOO[args.model_type]))
         args.config = CONFIG_TEMPLATE_ZOO[args.model_type]
 
-    rank, _ = get_dist_info()
-    if args.work_dir is not None and rank == 0:
-        if not io.exists(args.work_dir):
-            io.makedirs(args.work_dir)
-        timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
-        log_file = osp.join(args.work_dir, 'eval_{}.json'.format(timestamp))
-
     if args.config.startswith('http'):
 
         r = requests.get(args.config)
@@ -177,6 +170,14 @@ def main():
     else:
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
+
+    rank, _ = get_dist_info()
+
+    if args.work_dir is not None and rank == 0:
+        if not io.exists(args.work_dir):
+            io.makedirs(args.work_dir)
+        timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+        log_file = osp.join(args.work_dir, 'eval_{}.json'.format(timestamp))
 
     # build the model and load checkpoint
     model = build_model(cfg.model)

@@ -125,7 +125,7 @@ class EvalTest(unittest.TestCase):
         eval_cfgs = copy.deepcopy(TRAIN_CONFIGS[0])
         eval_cfgs['cfg_options'].update(dict(oss_io_config=get_oss_config()))
 
-        self._base_eval(eval_cfgs, dist_eval=True)
+        self._base_eval(eval_cfgs, dist=True, dist_eval=True)
 
 
 if __name__ == '__main__':
