@@ -6,6 +6,8 @@ from glob import glob
 import cv2
 import numpy as np
 import torch
+import torch_blade
+from tests.ut_config import CONFIG_PATH
 from torchvision.transforms import Compose
 
 from easycv.datasets.registry import PIPELINES
@@ -49,6 +51,10 @@ class TorchYoloXPredictor(PredictorInterface):
         """
         self.model_path = model_path
         self.max_det = max_det
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.use_jit = model_path.endswith('jit') or model_path.endswith(
+            'blade')
+
         if model_config:
             model_config = json.loads(model_config)
         else:
@@ -56,44 +62,105 @@ class TorchYoloXPredictor(PredictorInterface):
         self.score_thresh = model_config[
             'score_thresh'] if 'score_thresh' in model_config else score_thresh
 
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        if self.use_jit:
+            with io.open(model_path, 'rb') as infile:
+                map_location = 'cpu' if self.device == 'cpu' else 'cuda'
+                self.model = torch.jit.load(infile, map_location)
 
-        with io.open(self.model_path, 'rb') as infile:
-            checkpoint = torch.load(infile, map_location='cpu')
+            img_size = 640
+            img_norm_cfg = dict(
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True)
+            test_pipeline = [
+                dict(
+                    type='MMResize',
+                    img_scale=(img_size, img_size),
+                    keep_ratio=True),
+                dict(
+                    type='MMPad',
+                    pad_to_square=True,
+                    pad_val=(114.0, 114.0, 114.0)),
+                dict(type='MMNormalize', **img_norm_cfg),
+                dict(type='DefaultFormatBundle'),
+                dict(type='Collect', keys=['img'])
+            ]
 
-        assert 'meta' in checkpoint and 'config' in checkpoint[
-            'meta'], 'meta.config is missing from checkpoint'
-        config_str = checkpoint['meta']['config']
-        # get config
-        basename = os.path.basename(self.model_path)
-        fname, _ = os.path.splitext(basename)
-        self.local_config_file = os.path.join(CACHE_DIR,
-                                              f'{fname}_config.json')
-        if not os.path.exists(CACHE_DIR):
-            os.makedirs(CACHE_DIR)
-        with open(self.local_config_file, 'w') as ofile:
-            ofile.write(config_str)
+            with io.open(model_path + '.classnames.json', 'r') as infile:
+                self.CLASSES = json.load(infile)
+            self.traceable = True
 
-        self.cfg = mmcv_config_fromfile(self.local_config_file)
+        else:
+            # with io.open(self.model_path, 'rb') as infile:
+            #     checkpoint = torch.load(infile, map_location='cpu')
 
-        # build model
-        self.model = build_model(self.cfg.model)
+            # assert 'meta' in checkpoint and 'config' in checkpoint[
+            #     'meta'], 'meta.config is missing from checkpoint'
+            # config_str = checkpoint['meta']['config']
+            # # get config
+            # basename = os.path.basename(self.model_path)
+            # fname, _ = os.path.splitext(basename)
+            # self.local_config_file = os.path.join(CACHE_DIR,
+            #                                       f'{fname}_config.json')
+            # if not os.path.exists(CACHE_DIR):
+            #     os.makedirs(CACHE_DIR)
+            # with open(self.local_config_file, 'w') as ofile:
+            #     ofile.write(config_str)
+            self.local_config_file = CONFIG_PATH
 
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        map_location = 'cpu' if self.device == 'cpu' else 'cuda'
-        self.ckpt = load_checkpoint(
-            self.model, self.model_path, map_location=map_location)
+            self.cfg = mmcv_config_fromfile(self.local_config_file)
 
-        self.model.to(self.device)
-        self.model.eval()
+            # build model
+            self.model = build_model(self.cfg.model)
+            self.traceable = getattr(self.model, 'trace_able', False)
 
-        test_pipeline = self.cfg.test_pipeline
+            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            map_location = 'cpu' if self.device == 'cpu' else 'cuda'
+            self.ckpt = load_checkpoint(
+                self.model, self.model_path, map_location=map_location)
 
-        self.CLASSES = self.cfg.CLASSES
+            self.model.to(self.device)
+            self.model.eval()
+
+            test_pipeline = self.cfg.test_pipeline
+            self.CLASSES = self.cfg.CLASSES
 
         # build pipeline
         pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
         self.pipeline = Compose(pipeline)
+
+    def post_assign(self, outputs, img_metas):
+        detection_boxes = []
+        detection_scores = []
+        detection_classes = []
+        img_metas_list = []
+
+        for i in range(len(outputs)):
+            if img_metas:
+                img_metas_list.append(img_metas[i])
+            if outputs[i].requires_grad == True:
+                outputs[i] = outputs[i].detach()
+            if outputs[i] is not None:
+                bboxes = outputs[i][:, 0:4] if outputs[i] is not None else None
+                if img_metas:
+                    bboxes /= img_metas[i]['scale_factor'][0]
+                detection_boxes.append(bboxes.cpu().numpy())
+                detection_scores.append(
+                    (outputs[i][:, 4] * outputs[i][:, 5]).cpu().numpy())
+                detection_classes.append(outputs[i][:, 6].cpu().numpy().astype(
+                    np.int32))
+            else:
+                detection_boxes.append(None)
+                detection_scores.append(None)
+                detection_classes.append(None)
+
+        test_outputs = {
+            'detection_boxes': detection_boxes,
+            'detection_scores': detection_scores,
+            'detection_classes': detection_classes,
+            'img_metas': img_metas_list
+        }
+        return test_outputs
 
     def predict(self, input_data_list, batch_size=-1):
         """
@@ -123,8 +190,14 @@ class TorchYoloXPredictor(PredictorInterface):
             img = data_dict['img']
             img = torch.unsqueeze(img._data, 0).to(self.device)
             data_dict.pop('img')
-            det_out = self.model(
-                img, mode='test', img_metas=[data_dict['img_metas']._data])
+
+            if self.traceable:
+                det_out = self.post_assign(
+                    self.model(img), img_metas=[data_dict['img_metas']._data])
+            else:
+                det_out = self.model(
+                    img, mode='test', img_metas=[data_dict['img_metas']._data])
+
             # det_out = det_out[:self.max_det]
             # scale box to original image scale, this logic has some operation
             # that can not be traced, see
