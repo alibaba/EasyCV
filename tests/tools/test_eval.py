@@ -24,12 +24,7 @@ logging.basicConfig(level=logging.INFO)
 SMALL_COCO_DATA_ROOT = DET_DATA_SMALL_COCO_LOCAL.rstrip('/') + '/'
 SMALL_COCO_ITAG_DATA_ROOT = DET_DATA_MANIFEST_OSS.rstrip('/') + '/'
 _COMMON_OPTIONS = {
-    'checkpoint_config.interval': 1,
-    'eval_config.interval': 1,
-    'total_epochs': 1,
-    'data.imgs_per_gpu': 8,
-    'load_from': PRETRAINED_MODEL_YOLOXS,
-    'optimizer.lr': 0.0
+    'data.imgs_per_gpu': 1,
 }
 
 TRAIN_CONFIGS = [
@@ -61,7 +56,7 @@ TRAIN_CONFIGS = [
 ]
 
 
-class YOLOXTrainTest(unittest.TestCase):
+class EvalTest(unittest.TestCase):
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
@@ -70,18 +65,23 @@ class YOLOXTrainTest(unittest.TestCase):
         super().tearDown()
 
     def check_metric(self, work_dir):
-        json_file = glob.glob(os.path.join(work_dir, '*.log.json'))
+        json_file = glob.glob(os.path.join(work_dir, '*.json'))
         with io.open(json_file[0], 'r') as f:
             content = f.readlines()
-            res = json.loads(content[1])
-            self.assertGreater(res['DetectionBoxes_Precision/mAP'], 0.4)
-            self.assertGreater(res['DetectionBoxes_Precision/mAP@.50IOU'], 0.5)
-            self.assertGreater(res['DetectionBoxes_Precision/mAP@.75IOU'], 0.4)
+            res = json.loads(content[0])
+            self.assertAlmostEqual(
+                res['DetectionBoxes_Precision/mAP'], 0.423, delta=0.001)
+            self.assertAlmostEqual(
+                res['DetectionBoxes_Precision/mAP@.50IOU'],
+                0.5816,
+                delta=0.001)
+            self.assertAlmostEqual(
+                res['DetectionBoxes_Precision/mAP@.75IOU'], 0.451, delta=0.001)
 
-    def _base_train(self, train_cfgs, dist=False, dist_eval=False):
-        cfg_file = train_cfgs.pop('config_file')
-        cfg_options = train_cfgs.pop('cfg_options', None)
-        work_dir = train_cfgs.pop('work_dir', None)
+    def _base_eval(self, eval_cfgs, dist=False, dist_eval=False):
+        cfg_file = eval_cfgs.pop('config_file')
+        cfg_options = eval_cfgs.pop('cfg_options', None)
+        work_dir = eval_cfgs.pop('work_dir', None)
         if not work_dir:
             work_dir = tempfile.TemporaryDirectory().name
 
@@ -96,43 +96,36 @@ class YOLOXTrainTest(unittest.TestCase):
         cfg.dump(tmp_cfg_file)
 
         args_str = ' '.join(
-            ['='.join((str(k), str(v))) for k, v in train_cfgs.items()])
+            ['='.join((str(k), str(v))) for k, v in eval_cfgs.items()])
 
         if dist:
             nproc_per_node = 2
-            cmd = 'bash tools/dist_train.sh %s %s --launcher pytorch --work_dir=%s %s ' % (
-                tmp_cfg_file, nproc_per_node, work_dir, args_str)
+            cmd = 'bash tools/dist_test.sh %s %s %s --eval --work_dir=%s %s ' % (
+                tmp_cfg_file, nproc_per_node, PRETRAINED_MODEL_YOLOXS,
+                work_dir, args_str)
         else:
-            cmd = 'python tools/train.py %s --work_dir=%s %s' % (
-                tmp_cfg_file, work_dir, args_str)
+            cmd = 'python tools/eval.py %s %s --eval --work_dir=%s %s' % (
+                tmp_cfg_file, PRETRAINED_MODEL_YOLOXS, work_dir, args_str)
 
         logging.info('run command: %s' % cmd)
         run_in_subprocess(cmd)
 
-        output_files = io.listdir(work_dir)
-        self.assertIn('epoch_1.pth', output_files)
         self.check_metric(work_dir)
 
         io.remove(work_dir)
         io.remove(tmp_cfg_file)
 
-    def test_yolox_itag(self):
-        train_cfgs = copy.deepcopy(TRAIN_CONFIGS[0])
-        train_cfgs['cfg_options'].update(dict(oss_io_config=get_oss_config()))
+    def test_eval(self):
+        eval_cfgs = copy.deepcopy(TRAIN_CONFIGS[1])
 
-        self._base_train(train_cfgs)
-
-    def test_yolox_coco(self):
-        train_cfgs = copy.deepcopy(TRAIN_CONFIGS[1])
-
-        self._base_train(train_cfgs)
+        self._base_eval(eval_cfgs)
 
     @unittest.skipIf(torch.cuda.device_count() <= 1, 'distributed unittest')
-    def test_yolox_itag_dist(self):
-        train_cfgs = copy.deepcopy(TRAIN_CONFIGS[0])
-        train_cfgs['cfg_options'].update(dict(oss_io_config=get_oss_config()))
+    def test_eval_dist(self):
+        eval_cfgs = copy.deepcopy(TRAIN_CONFIGS[0])
+        eval_cfgs['cfg_options'].update(dict(oss_io_config=get_oss_config()))
 
-        self._base_train(train_cfgs, dist_eval=True)
+        self._base_eval(eval_cfgs, dist_eval=True)
 
 
 if __name__ == '__main__':

@@ -78,6 +78,9 @@ PRETRAINED_MODEL_FACEID = os.path.join(BASE_LOCAL_PATH,
 PRETRAINED_MODEL_YOLOXS_EXPORT = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/detection/yolox_s/yolox_s_epoch_300_export.pt')
+PRETRAINED_MODEL_YOLOXS = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/detection/yolox_s/yolox_s_epoch_300.pth')
 PRETRAINED_MODEL_POSE_HRNET_EXPORT = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/pose/hrnet/pose_hrnet_epoch_210_export.pt')
