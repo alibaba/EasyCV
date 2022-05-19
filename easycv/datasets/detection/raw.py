@@ -4,7 +4,6 @@ import numpy as np
 from easycv.core.visualization.image import imshow_bboxes
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
-from easycv.utils.bbox_util import batched_xyxy2cxcywh_with_shape
 
 
 @DATASETS.register_module
@@ -57,9 +56,7 @@ class DetDataset(BaseDataset):
 
         groundtruth_dict = {}
         groundtruth_dict['groundtruth_boxes'] = [
-            batched_xyxy2cxcywh_with_shape(
-                self.data_source.get_ann_info(idx)['bboxes'],
-                results['img_metas'][idx]['ori_img_shape'])
+            self.data_source.get_ann_info(idx)['bboxes']
             for idx in range(len(results['img_metas']))
         ]
         groundtruth_dict['groundtruth_classes'] = [
@@ -68,6 +65,10 @@ class DetDataset(BaseDataset):
         ]
         groundtruth_dict['groundtruth_is_crowd'] = [
             self.data_source.get_ann_info(idx)['groundtruth_is_crowd']
+            for idx in range(len(results['img_metas']))
+        ]
+        groundtruth_dict['groundtruth_instance_masks'] = [
+            self.data_source.get_ann_info(idx).get('masks', None)
             for idx in range(len(results['img_metas']))
         ]
 
@@ -106,7 +107,7 @@ class DetDataset(BaseDataset):
         elif hasattr(self.data_source, 'classes'):
             class_names = self.data_source.classes
 
-        if class_names is not None:
+        if class_names is not None and len(class_names) > 0:
             detection_classes = []
             for classes_id in results['detection_classes']:
                 if classes_id is None:

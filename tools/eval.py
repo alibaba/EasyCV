@@ -28,6 +28,7 @@ from easycv.models import build_model
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
+from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 
 # from tools.fuse_conv_bn import fuse_module
 
@@ -143,6 +144,9 @@ def main():
     if cfg.get('oss_io_config', None) is not None:
         io.access_oss(**cfg.oss_io_config)
 
+    # dynamic adapt mmdet models
+    dynamic_adapt_for_mmlab(cfg)
+
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -207,7 +211,10 @@ def main():
                 workers_per_gpu=cfg.data.workers_per_gpu,
                 dist=distributed,
                 shuffle=False)
+<<<<<<< HEAD
                 # oss_config=cfg.get('oss_io_config', None))
+=======
+>>>>>>> upstream/master
 
         if not distributed:
             outputs = single_gpu_test(

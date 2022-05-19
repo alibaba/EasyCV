@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import copy
 import functools
 import logging
 import time
@@ -167,8 +168,10 @@ class DetSourceBase(object):
                 result_dict.update(load_image(result_dict['filename']))
                 if self.cache_on_the_fly:
                     self.samples_list[idx] = result_dict
-
-            result_dict = self.post_process_fn(result_dict)
+            # `post_process_fn` may modify the value of `self.samples_list`,
+            # and repeated tries may causing repeated processing operations, which may cause some problems.
+            # Use deepcopy to avoid potential problems.
+            result_dict = self.post_process_fn(copy.deepcopy(result_dict))
             # load success,reset to 0
             self._retry_count = 0
         except Exception as e:
