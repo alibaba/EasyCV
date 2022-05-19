@@ -110,6 +110,8 @@ class DetDataset(BaseDataset):
 
         # If class_names is not None, class_id will be converted to class_name for visualization,
         # otherwise the class_id will be displayed.
+        # And don't try to modify the value in results, it may cause some bugs or even precision problems,
+        # because `self.evaluate` will also use the results, refer to: https://github.com/alibaba/EasyCV/pull/67
         if class_names is not None and len(class_names) > 0:
             detection_classes = []
             for classes_id in results['detection_classes']:
