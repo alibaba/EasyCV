@@ -5,7 +5,7 @@ EasyCV provides various datasets for multi tasks. Please refer to the following 
 - [Image Classification](#Image-Classification)
 - [Object Detection](#Object-Detection)
 - [Self-Supervised Learning](#Self-Supervised-Learning)
-- [Pose (Keypoint)](#Pose-(Keypoint))
+- [Pose (Keypoint)](#Pose)
 
 ## Image Classification
 
@@ -315,7 +315,7 @@ Refer to [Image Classification: Imagenet-1k](#Imagenet-1k).
 
 Refer to [Image Classification: Imagenet-1k-TFrecords](#Imagenet-1k-TFrecords).
 
-## Pose (Keypoint)
+## Pose
 
 - [COCO2017](#Pose-COCO2017)
 
