@@ -13,6 +13,7 @@ from .utils import is_oss_path
 def load_image(img_path, mode='BGR', max_try_times=MAX_READ_IMAGE_TRY_TIMES):
     """Return np.ndarray[unit8]
     """
+    # TODO: functions of multi tries should be in the `io.open`
     try_cnt = 0
     img = None
     while try_cnt < max_try_times:
@@ -33,10 +34,14 @@ def load_image(img_path, mode='BGR', max_try_times=MAX_READ_IMAGE_TRY_TIMES):
                 img_path, try_cnt))
             # frequent access to oss will cause error, sleep can aviod it
             if is_oss_path(img_path):
-                time.sleep(1)
+                sleep_time = 1
+                logging.warning(
+                    'Sleep {}s, frequent access to oss file may cause error.'.
+                    format(sleep_time))
+                time.sleep(sleep_time)
         try_cnt += 1
 
     if img is None:
-        raise ValueError('Read Image Times Out: ' + img_path)
+        raise ValueError('Read Image Error: ' + img_path)
 
     return img
