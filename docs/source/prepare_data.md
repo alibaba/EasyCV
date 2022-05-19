@@ -2,6 +2,11 @@
 
 EasyCV provides various datasets for multi tasks. Please refer to the following guide for data preparation and keep the same data structure.
 
+- [Image Classification](#Image-Classification)
+- [Object Detection](#Object-Detection)
+- [Self-Supervised Learning](#Self-Supervised-Learning)
+- [Pose (Keypoint)](#Pose-(Keypoint))
+
 ## Image Classification
 
 - [Cifar10](#Cifar10)
@@ -214,9 +219,9 @@ Directory structure is as follows:
 data/VOCdevkit
 └── VOC2007
     └── Annotations
-			  ├── 000005.xml
-			  ├── 001010.xml
-    	  ├── ...
+        ├── 000005.xml
+        ├── 001010.xml
+    	├── ...
     └── JPEGImages
         ├── 000005.jpg
         ├── 001010.jpg
@@ -231,17 +236,17 @@ data/VOCdevkit
         ├── ...
     └── ImageSets
         └── Layout
-        	  ├── train.txt
-        	  ├── trainval.txt
-        	  ├── val.txt
+            ├── train.txt
+            ├── trainval.txt
+            ├── val.txt
         └── Main
-        	  ├── train.txt
-        	  ├── val.txt
-         	  ├── ...
+            ├── train.txt
+            ├── val.txt
+            ├── ...
         └── Segmentation
-        	  ├── train.txt
-        	  ├── trainval.txt
-        	  ├── val.txt
+            ├── train.txt
+            ├── trainval.txt
+            ├── val.txt
 ```
 
 ### VOC2012
@@ -267,9 +272,9 @@ Directory structure is as follows:
 data/VOCdevkit
 └── VOC2012
     └── Annotations
-			  ├── 000005.xml
-			  ├── 001010.xml
-    	  ├── ...
+        ├── 000005.xml
+        ├── 001010.xml
+    	├── ...
     └── JPEGImages
         ├── 000005.jpg
         ├── 001010.jpg
@@ -284,17 +289,17 @@ data/VOCdevkit
         ├── ...
     └── ImageSets
         └── Layout
-        	  ├── train.txt
-        	  ├── trainval.txt
-        	  ├── val.txt
+            ├── train.txt
+            ├── trainval.txt
+            ├── val.txt
         └── Main
-        	  ├── train.txt
-        	  ├── val.txt
-         	  ├── ...
+            ├── train.txt
+            ├── val.txt
+            ├── ...
         └── Segmentation
-        	  ├── train.txt
-        	  ├── trainval.txt
-        	  ├── val.txt
+            ├── train.txt
+            ├── trainval.txt
+            ├── val.txt
 ```
 
 ## Self-Supervised Learning
