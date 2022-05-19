@@ -1,16 +1,11 @@
 _base_ = '../../base.py'
 
-# model settings s m l x
 model = dict(
     type='YOLOX',
     num_classes=80,
     model_type='s',  # s m l x tiny nano
     test_conf=0.01,
-    nms_thre=0.65,
-    use_att=None,
-    obj_loss_type='BSE',
-    reg_loss_type='iou'
-)
+    nms_thre=0.65)
 
 # s m l x
 img_scale = (640, 640)
@@ -40,7 +35,8 @@ CLASSES = [
 
 # dataset settings
 data_root = '/apsarapangu/disk5/zxy/data/coco/'
-# data_root = '/data/coco'
+data_root = '/tmp/coco/'
+dataset_type = 'CocoDataset'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -68,6 +64,8 @@ train_pipeline = [
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
 ]
+
+
 test_pipeline = [
     dict(type='MMResize', img_scale=img_scale, keep_ratio=True),
     dict(type='MMPad', pad_to_square=True, pad_val=(114.0, 114.0, 114.0)),
@@ -77,9 +75,9 @@ test_pipeline = [
 ]
 
 train_dataset = dict(
-    type='DetImagesMixDataset',
+    type='MultiImageMixDataset',
     data_source=dict(
-        type='DetSourceCoco',
+        type='CocoSource',
         ann_file=data_root + 'annotations/instances_train2017.json',
         img_prefix=data_root + 'train2017/',
         pipeline=[
@@ -93,10 +91,10 @@ train_dataset = dict(
     dynamic_scale=img_scale)
 
 val_dataset = dict(
-    type='DetImagesMixDataset',
+    type='MultiImageMixDataset',
     imgs_per_gpu=2,
     data_source=dict(
-        type='DetSourceCoco',
+        type='CocoSource',
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
         pipeline=[
@@ -111,7 +109,10 @@ val_dataset = dict(
     label_padding=False)
 
 data = dict(
-    imgs_per_gpu=16, workers_per_gpu=4, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=16,
+    workers_per_gpu=4,
+    train=train_dataset,
+    val=val_dataset)
 
 # additional hooks
 interval = 10
@@ -133,16 +134,8 @@ custom_hooks = [
         interval=interval,
         priority=48)
 ]
-
 # evaluation
-eval_config = dict(
-    interval=1,
-    gpu_collect=False,
-    visualization_config=dict(
-        vis_num=10,
-        score_thr=0.5,
-    )  # show by TensorboardLoggerHookV2 and WandbLoggerHookV2
-)
+eval_config = dict(interval=10, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',
@@ -154,8 +147,14 @@ eval_pipelines = [
 checkpoint_config = dict(interval=interval)
 
 # optimizer
+# basic_lr_per_img = 0.01 / 64.0
 optimizer = dict(
-    type='SGD', lr=0.02, momentum=0.9, weight_decay=5e-4, nesterov=True)
+  type='SGD',
+  # lr=0.01,
+  lr=0.02,
+  momentum=0.9,
+  weight_decay=5e-4,
+  nesterov=True)
 optimizer_config = {}
 
 # learning policy
@@ -180,8 +179,16 @@ log_config = dict(
     interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHookV2'),
-        # dict(type='WandbLoggerHookV2'),
+        dict(type='TensorboardLoggerHook')
     ])
+# yapf:enable
+# runtime settings
+dist_params = dict(backend='nccl')
+cudnn_benchmark = True
+log_level = 'INFO'
+# load_from = '/apsarapangu/disk3/peizixiang.pzx/workspace/code/codereviews/ev-torch/work_dirs/modify_ckpts/yoloxs_coco_official_export.pt'
+load_from = None
+resume_from = None
+workflow = [('train', 1)]
 
-export = dict(use_jit=True)
+export = dict(use_jit=False)
