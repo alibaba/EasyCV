@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from cmath import nan
 from typing import Sequence
 
 from functools import partial
@@ -12,6 +13,7 @@ from mmcv.runner.base_module import BaseModule, ModuleList
 from mmcv.utils import to_2tuple
 
 from easycv.utils.logger import get_root_logger
+from easycv.utils.dist_utils import get_dist_info
 from ..registry import BACKBONES
 
 def calc_rel_pos_spatial(
@@ -76,7 +78,6 @@ class PatchEmbed(nn.Module):
         self.flatten = flatten
 
         self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size)
-        #self.norm = norm_layer(embed_dim) if norm_layer else nn.Identity()
 
     def forward(self, x):
         B, C, H, W = x.shape
@@ -86,7 +87,6 @@ class PatchEmbed(nn.Module):
         x = self.proj(x)
         if self.flatten:
             x = x.flatten(2).transpose(1, 2)  # BCHW -> BNC
-        #x = self.norm(x)
         return x
 
 class Mlp(nn.Module):
@@ -100,14 +100,12 @@ class Mlp(nn.Module):
 
         self.fc1 = nn.Linear(in_features, hidden_features)
         self.act = act_layer()
-        #self.drop1 = nn.Dropout(drop_probs[0])
         self.fc2 = nn.Linear(hidden_features, out_features)
         self.drop = nn.Dropout(drop)
 
     def forward(self, x):
         x = self.fc1(x)
         x = self.act(x)
-        #x = self.drop1(x)
         x = self.fc2(x)
         x = self.drop(x)
         return x
@@ -147,60 +145,188 @@ class DropPath(nn.Module):
         return 'p={}'.format(self.drop_prob)
 
 class Attention(nn.Module):
-    def __init__(self, dim, num_heads=8, qkv_bias=False, attn_drop=0., proj_drop=0., window_size=None, use_rel_pos_bias=False):
+    def __init__(
+            self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0.,
+            proj_drop=0., window_size=None, attn_head_dim=None, use_rel_pos_bias=False):
         super().__init__()
-        assert dim % num_heads == 0, 'dim should be divisible by num_heads'
         self.num_heads = num_heads
         head_dim = dim // num_heads
-        self.scale = head_dim ** -0.5
+        if attn_head_dim is not None:
+            head_dim = attn_head_dim
+        all_head_dim = head_dim * self.num_heads
+        # NOTE scale factor was wrong in my original version, can set manually to be compat with prev weights
+        self.scale = qk_scale or head_dim ** -0.5
+
+        self.qkv = nn.Linear(dim, all_head_dim * 3, bias=qkv_bias)
+        self.window_size = window_size
+        q_size = window_size[0]
+        kv_size = q_size
+        rel_sp_dim = 2 * q_size - 1
+        self.rel_pos_h = nn.Parameter(torch.zeros(rel_sp_dim, head_dim))
+        self.rel_pos_w = nn.Parameter(torch.zeros(rel_sp_dim, head_dim))
+
+        self.attn_drop = nn.Dropout(attn_drop)
+        self.proj = nn.Linear(all_head_dim, dim)
+        self.proj_drop = nn.Dropout(proj_drop)
+
+        self.use_rel_pos_bias = use_rel_pos_bias
+
+    def forward(self, x, H, W, rel_pos_bias=None):
+        B, N, C = x.shape
+
+        qkv = self.qkv(x)
+        qkv = qkv.reshape(B, N, 3, self.num_heads, -1).permute(2, 0, 3, 1, 4)
+        q, k, v = qkv[0], qkv[1], qkv[2]   # make torchscript happy (cannot use tensor as tuple)
+
+        q = q * self.scale
+        attn = (q @ k.transpose(-2, -1))
+
+        if self.use_rel_pos_bias:
+            attn = calc_rel_pos_spatial(attn, q, self.window_size, self.window_size, self.rel_pos_h, self.rel_pos_w)
+        
+        attn = attn.softmax(dim=-1)
+        attn = self.attn_drop(attn)
+
+        x = (attn @ v).transpose(1, 2).reshape(B, N, -1)
+        x = self.proj(x)
+        x = self.proj_drop(x)
+        return x
+
+def window_partition(x, window_size):
+    """
+    Args:
+        x: (B, H, W, C)
+        window_size (int): window size
+    Returns:
+        windows: (num_windows*B, window_size, window_size, C)
+    """
+    B, H, W, C = x.shape
+    x = x.view(B, H // window_size, window_size, W // window_size, window_size, C)
+    windows = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(-1, window_size, window_size, C)
+    return windows
+
+
+def window_reverse(windows, window_size, H, W):
+    """
+    Args:
+        windows: (num_windows*B, window_size, window_size, C)
+        window_size (int): Window size
+        H (int): Height of image
+        W (int): Width of image
+    Returns:
+        x: (B, H, W, C)
+    """
+    B = int(windows.shape[0] / (H * W / window_size / window_size))
+    x = windows.view(B, H // window_size, W // window_size, window_size, window_size, -1)
+    x = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(B, H, W, -1)
+    return x
+
+class WindowAttention(nn.Module):
+    """ Window based multi-head self attention (W-MSA) module with relative position bias.
+    It supports both of shifted and non-shifted window.
+    Args:
+        dim (int): Number of input channels.
+        window_size (tuple[int]): The height and width of the window.
+        num_heads (int): Number of attention heads.
+        qkv_bias (bool, optional):  If True, add a learnable bias to query, key, value. Default: True
+        qk_scale (float | None, optional): Override default qk scale of head_dim ** -0.5 if set
+        attn_drop (float, optional): Dropout ratio of attention weight. Default: 0.0
+        proj_drop (float, optional): Dropout ratio of output. Default: 0.0
+    """
+
+    def __init__(self, dim, window_size, num_heads, qkv_bias=True, qk_scale=None, attn_drop=0., proj_drop=0., attn_head_dim=None, use_rel_pos_bias=False):
+
+        super().__init__()
+        self.dim = dim
+        self.window_size = window_size  # Wh, Ww
+        self.num_heads = num_heads
+        head_dim = dim // num_heads
+        self.scale = qk_scale or head_dim ** -0.5
+
+        q_size = window_size[0]
+        kv_size = window_size[1]
+        rel_sp_dim = 2 * q_size - 1
+        self.rel_pos_h = nn.Parameter(torch.zeros(rel_sp_dim, head_dim))
+        self.rel_pos_w = nn.Parameter(torch.zeros(rel_sp_dim, head_dim))
 
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
-        
+
+        # trunc_normal_(self.relative_position_bias_table, std=.02)
         self.softmax = nn.Softmax(dim=-1)
-        
-        # set rel_pos_bias
+
         self.use_rel_pos_bias = use_rel_pos_bias
-        self.window_size = window_size
-        if use_rel_pos_bias:
-          rel_sp_dim = 2 * window_size[0] - 1
-          self.rel_pos_h = nn.Parameter(torch.zeros(rel_sp_dim, head_dim))
-          self.rel_pos_w = nn.Parameter(torch.zeros(rel_sp_dim, head_dim))
 
-    def forward(self, x):
-        B, N, C = x.shape
-        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
-        q, k, v = qkv.unbind(0)   # make torchscript happy (cannot use tensor as tuple)
+    def forward(self, x, H, W):
+        """ Forward function.
+        Args:
+            x: input features with shape of (num_windows*B, N, C)
+            mask: (0/-inf) mask with shape of (num_windows, Wh*Ww, Wh*Ww) or None
+        """
+        B_, N, C = x.shape
+        x = x.reshape(B_, H, W, C)
+        pad_l = pad_t = 0
+        pad_r = (self.window_size[1] - W % self.window_size[1]) % self.window_size[1]
+        pad_b = (self.window_size[0] - H % self.window_size[0]) % self.window_size[0]
 
-        attn = (q @ k.transpose(-2, -1)) * self.scale
+        x = F.pad(x, (0, 0, pad_l, pad_r, pad_t, pad_b))
+        _, Hp, Wp, _ = x.shape
+
+        x = window_partition(x, self.window_size[0])  # nW*B, window_size, window_size, C
+        x = x.view(-1, self.window_size[1] * self.window_size[0], C)  # nW*B, window_size*window_size, C
+        B_w = x.shape[0]
+        N_w = x.shape[1]
+        qkv = self.qkv(x).reshape(B_w, N_w, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+        q, k, v = qkv[0], qkv[1], qkv[2]  # make torchscript happy (cannot use tensor as tuple)
+
+        q = q * self.scale
+        attn = (q @ k.transpose(-2, -1))
+
         if self.use_rel_pos_bias:
             attn = calc_rel_pos_spatial(attn, q, self.window_size, self.window_size, self.rel_pos_h, self.rel_pos_w)
-        #attn = attn.softmax(dim=-1)
+
         attn = self.softmax(attn)
+
         attn = self.attn_drop(attn)
 
-        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+        x = (attn @ v).transpose(1, 2).reshape(B_w, N_w, C)
         x = self.proj(x)
         x = self.proj_drop(x)
+
+        x = x.view(-1, self.window_size[1], self.window_size[0], C)
+        x = window_reverse(x, self.window_size[0], Hp, Wp)  # B H' W' C
+
+        if pad_r > 0 or pad_b > 0:
+            x = x[:, :H, :W, :].contiguous()
+
+        x = x.view(B_, H * W, C)
+
         return x
 
 class Block(nn.Module):
 
-    def __init__(self, dim, num_heads, mlp_ratio=4., qkv_bias=False, drop=0., attn_drop=0.,
-                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, window_size=None, use_rel_pos_bias=False):
+    def __init__(self, dim, num_heads, mlp_ratio=4., qk_scale=None, qkv_bias=False, drop=0., attn_drop=0.,
+                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, attn_head_dim=None, window_size=None, use_rel_pos_bias=False, window=False):
         super().__init__()
         self.norm1 = norm_layer(dim)
-        self.attn = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, attn_drop=attn_drop, proj_drop=drop, window_size=window_size, use_rel_pos_bias=use_rel_pos_bias)
+        if not window:
+            self.attn = Attention(
+            dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale,
+            attn_drop=attn_drop, proj_drop=drop, window_size=window_size, attn_head_dim=attn_head_dim, use_rel_pos_bias=use_rel_pos_bias)
+        else:
+            self.attn = WindowAttention(
+            dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale,
+            attn_drop=attn_drop, proj_drop=drop, window_size=window_size, attn_head_dim=attn_head_dim, use_rel_pos_bias=use_rel_pos_bias)
         # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
 
-    def forward(self, x):
-        x = x + self.drop_path(self.attn(self.norm1(x)))
+    def forward(self, x, H, W):
+        x = x + self.drop_path(self.attn(self.norm1(x), H, W))
         x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x
 
@@ -331,23 +457,8 @@ class ViTDet(BaseModule):
         self.grid_size = self.patch_embed.grid_size
         self.window_size = window_size
 
-        if self.grid_size[0] % self.window_size:
-            self.pad_l = 0
-            self.pad_t = 0
-            self.pad_r = (self.window_size - self.grid_size[1] % self.window_size) % self.window_size
-            self.pad_b = (self.window_size - self.grid_size[0] % self.window_size) % self.window_size
-        else:
-            self.pad_l = 0
-            self.pad_t = 0
-            self.pad_r = 0
-            self.pad_b = 0
-
         self.patch_size = patch_size
         self.out_indices = out_indices
-
-        # Set cls token
-        #self.output_cls_token = output_cls_token
-        #self.cls_token = nn.Parameter(torch.zeros(1, 1, self.embed_dims))
 
         # set sincos_pos_embed or pos_embed
         self.sincos_pos_embed = sincos_pos_embed
@@ -391,6 +502,7 @@ class ViTDet(BaseModule):
                 norm_layer=norm_layer,
                 act_layer=act_layer,
                 window_size=(self.window_size, self.window_size) if ((i + 1) % interval != 0) else tuple(self.grid_size),
+                window=((i + 1) % interval != 0),
                 use_rel_pos_bias=use_rel_pos_bias)
             self.blocks.append(Block(**_layer_cfg))
 
@@ -418,62 +530,29 @@ class ViTDet(BaseModule):
             return
         else:
             # resize pos_embed
-            ckpt_pos_embed_shape = state_dict[name].shape
-            if self.pos_embed.shape != ckpt_pos_embed_shape:
-                from mmcv.utils import print_log
-                logger = get_root_logger()
-                print_log(
-                    f'Resize the pos_embed shape from {ckpt_pos_embed_shape} '
-                    f'to {self.pos_embed.shape}.',
-                    logger=logger)
-
-                ckpt_pos_embed_shape = to_2tuple(
-                    int(np.sqrt(ckpt_pos_embed_shape[1] - self.num_extra_tokens)))
-                pos_embed_shape = self.grid_size
-
-                state_dict[name] = self.resize_pos_embed(state_dict[name],
-                                                    ckpt_pos_embed_shape,
-                                                    pos_embed_shape,
-                                                    self.interpolate_mode,
-                                                    self.num_extra_tokens)
-
-
-    @staticmethod
-    def resize_pos_embed(pos_embed,
-                         src_shape,
-                         dst_shape,
-                         mode='bicubic',
-                         num_extra_tokens=1):
-        """Resize pos_embed weights.
-
-        Args:
-            pos_embed (torch.Tensor): Position embedding weights with shape
-                [1, L, C].
-            src_shape (tuple): The resolution of downsampled origin training
-                image.
-            dst_shape (tuple): The resolution of downsampled new training
-                image.
-            mode (str): Algorithm used for upsampling:
-                ``'nearest'`` | ``'linear'`` | ``'bilinear'`` | ``'bicubic'`` |
-                ``'trilinear'``. Default: ``'bicubic'``
-        Return:
-            torch.Tensor: The resized pos_embed of shape [1, L_new, C]
-        """
-        assert pos_embed.ndim == 3, 'shape of pos_embed must be [1, L, C]'
-        _, L, C = pos_embed.shape
-        src_h, src_w = src_shape
-        assert L == src_h * src_w + num_extra_tokens
-        extra_tokens = pos_embed[:, :num_extra_tokens]
-
-        src_weight = pos_embed[:, num_extra_tokens:]
-        src_weight = src_weight.reshape(1, src_h, src_w, C).permute(0, 3, 1, 2)
-
-        dst_weight = F.interpolate(
-            src_weight, size=dst_shape, align_corners=False, mode=mode)
-        dst_weight = torch.flatten(dst_weight, 2).transpose(1, 2)
-		
-        return dst_weight
-        #return torch.cat((extra_tokens, dst_weight), dim=1)
+            pos_embed_checkpoint = state_dict[name]
+            embedding_size = pos_embed_checkpoint.shape[-1]
+            H, W = self.patch_embed.grid_size
+            num_patches = self.patch_embed.num_patches
+            num_extra_tokens = 1
+            # height (== width) for the checkpoint position embedding
+            orig_size = int((pos_embed_checkpoint.shape[-2] - num_extra_tokens) ** 0.5)
+            # height (== width) for the new position embedding
+            new_size = int(num_patches ** 0.5)
+            # class_token and dist_token are kept unchanged
+            rank, _ = get_dist_info()
+            if orig_size != new_size:
+                if rank == 0:
+                    print("Position interpolate from %dx%d to %dx%d" % (orig_size, orig_size, H, W))
+                # extra_tokens = pos_embed_checkpoint[:, :num_extra_tokens]
+                # only the position tokens are interpolated
+                pos_tokens = pos_embed_checkpoint[:, num_extra_tokens:]
+                pos_tokens = pos_tokens.reshape(-1, orig_size, orig_size, embedding_size).permute(0, 3, 1, 2)
+                pos_tokens = torch.nn.functional.interpolate(
+                    pos_tokens, size=(H, W), mode='bicubic', align_corners=False)
+                new_pos_embed = pos_tokens.permute(0, 2, 3, 1).flatten(1, 2)
+                # new_pos_embed = torch.cat((extra_tokens, pos_tokens), dim=1)
+                state_dict[name] = new_pos_embed
 
     def build_2d_sincos_position_embedding(self, temperature=10000.0):
         h, w = self.grid_size
@@ -493,70 +572,25 @@ class ViTDet(BaseModule):
             dim=1,
         )[None, :, :]
 
-        #assert self.num_extra_tokens == 1, "Assuming one and only one token, [cls]"
-        #pe_token = torch.zeros([1, 1, self.embed_dims], dtype=torch.float32)
-        #self.pos_embed = nn.Parameter(torch.cat([pe_token, pos_emb], dim=1))
         self.pos_embed = nn.Parameter(pos_emb)
         self.pos_embed.requires_grad = False
-
-    def window_partition(self, x, grid_size):
-        B, L, C = x.shape
-        H, W = grid_size[0], grid_size[1]
-
-        x = x.reshape(B, H, W, C)
-        if H % self.window_size:
-            x = F.pad(x, (0, 0, self.pad_l, self.pad_r, self.pad_t, self.pad_b))
-        _, Hp, Wp, _ = x.shape
-        x = x.view(B, Hp // self.window_size, self.window_size, Wp // self.window_size, self.window_size, C)
-
-        x = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(-1, self.window_size, self.window_size, C)
-        x = x.view(-1, self.window_size * self.window_size, C)
-        return x
-
-    def window_reverse(self, x, grid_size):
-        B, L, C = x.shape
-        H, W = grid_size[0], grid_size[1]
-        
-        x = x.view(-1, self.window_size, self.window_size, C)
-
-        B = int(B / ((H + self.pad_t + self.pad_b) * (W + self.pad_l + self.pad_r) / self.window_size / self.window_size))
-        x = x.view(B, (H + self.pad_t + self.pad_b) // self.window_size, (W + self.pad_l + self.pad_r) // self.window_size, self.window_size, self.window_size, -1)
-        x = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(B, (H + self.pad_t + self.pad_b), (W + self.pad_l + self.pad_r), -1)
-
-        if H % self.window_size:
-            x = x[:, :H, :W, :].contiguous()
-        x = x.view(B, H * W, -1)
-
-        return x  
 
     def forward(self, x):
         x = self.patch_embed(x)
 
-        #x = x + self.pos_embed[:, self.num_extra_tokens:]
         x = x + self.pos_embed
 
         x = self.drop_after_pos(x)
 
-        # window_partition
-        x = self.window_partition(x, self.grid_size)
-
         outs = []
         for i, layer in enumerate(self.blocks):
-            # local self-attention & global self-attention
-            if (i+1) % self.interval == 0:
-                x  = self.window_reverse(x, self.grid_size)
-                x = layer(x)
-                x = self.window_partition(x, self.grid_size)
-            else:
-                x = layer(x)
+            x = layer(x, self.grid_size[0], self.grid_size[1])
 
             if i in self.out_indices:
-                # window_reverse
-                out = self.window_reverse(x, self.grid_size)
 
                 if i == len(self.blocks) - 1:
                     if self.final_norm:
-                        out = self.norm(out)
+                        out = self.norm(x)
                         
                 B, _, C = out.shape
                 out = out.reshape(B, self.grid_size[0], self.grid_size[1], C).permute(0, 3, 1, 2).contiguous()

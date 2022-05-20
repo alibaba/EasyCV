@@ -95,7 +95,8 @@ class EVRunner(EpochBasedRunner):
             #     with amp.autocast():
             #         self.run_iter(data_batch, train_mode=True)
             # else:
-            self.run_iter(data_batch, train_mode=True)
+            #print("train_kwargs:{}".format(kwargs))
+            self.run_iter(data_batch, train_mode=True, **kwargs)
 
             self.call_hook('after_train_iter')
             self._iter += 1
