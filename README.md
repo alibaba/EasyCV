@@ -75,6 +75,11 @@ Please refer to the following model zoo for more details.
 - [classification model zoo](docs/source/model_zoo_cls.md)
 - [detection model zoo](docs/source/model_zoo_detection.md)
 
+## Data Hub
+
+EasyCV summarized various datasets in different fields.
+
+Please refer to [data_hub.md](https://github.com/alibaba/EasyCV/blob/master/docs/source/data_hub.md).
 
 ## ChangeLog
 
