@@ -197,10 +197,13 @@ class TorchYoloXPredictor(PredictorInterface):
 
                 if self.traceable:
                     det_out = self.post_assign(
-                        self.model(img), img_metas=[data_dict['img_metas']._data])
+                        self.model(img),
+                        img_metas=[data_dict['img_metas']._data])
                 else:
                     det_out = self.model(
-                        img, mode='test', img_metas=[data_dict['img_metas']._data])
+                        img,
+                        mode='test',
+                        img_metas=[data_dict['img_metas']._data])
 
                 # det_out = det_out[:self.max_det]
                 # scale box to original image scale, this logic has some operation
