@@ -7,16 +7,15 @@ from distutils.version import LooseVersion
 from typing import Callable, Dict, List, Optional, Tuple
 
 import torch
-from mmcv.utils import Config
 import torchvision.transforms.functional as t_f
+from mmcv.utils import Config
 
 from easycv.file import io
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
                            build_model)
 from easycv.toolkit.blade import blade_env_assert, blade_optimize
-from easycv.utils.checkpoint import load_checkpoint
-
 from easycv.utils.bbox_util import scale_coords
+from easycv.utils.checkpoint import load_checkpoint
 
 __all__ = [
     'export', 'PreProcess', 'DetPostProcess', 'End2endModelExportWrapper'
@@ -160,8 +159,6 @@ def _export_yolox(model, cfg, filename):
         filename (str): filename to save exported models
     """
 
-
-
     if hasattr(cfg, 'export') and getattr(cfg.export, 'use_jit', False):
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -205,7 +202,7 @@ def _export_yolox(model, cfg, filename):
                                           dict(enable_fp16=True))
             if blade_env_assert() == True:
                 if end2end:
-                    input =  255 * torch.rand(img_scale+(3,))
+                    input = 255 * torch.rand(img_scale + (3, ))
 
                 yolox_blade = blade_optimize(
                     script_model=model_export,
@@ -449,6 +446,7 @@ def replace_syncbn(backbone_cfg):
 
     return backbone_cfg
 
+
 if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
 
     @torch.jit.script
@@ -643,4 +641,3 @@ class End2endModelExportWrapper(torch.nn.Module):
                                                *preprocess_outputs)
 
         return model_output
-

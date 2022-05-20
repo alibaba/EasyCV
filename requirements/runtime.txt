@@ -9,6 +9,7 @@ numpy
 opencv-python-headless==4.1.2.30
 oss2
 packaging
+pai_blade_gpu==3.21.0+cu102 -f https://pai-blade.oss-cn-zhangjiakou.aliyuncs.com/release/repo_ext.html
 Pillow<=6.2.2
 pycocotools
 pytorch_metric_learning==0.9.89
@@ -17,7 +18,6 @@ sklearn
 tensorboard
 thop
 timm==0.4.9
+torch_blade==3.21.0+1.8.1.cu102 -f https://pai-blade.oss-cn-zhangjiakou.aliyuncs.com/release/repo_ext.html
 xtcocotools
 yacs
-pai_blade_gpu==3.21.0+cu102 -f https://pai-blade.oss-cn-zhangjiakou.aliyuncs.com/release/repo_ext.html
-torch_blade==3.21.0+1.8.1.cu102 -f https://pai-blade.oss-cn-zhangjiakou.aliyuncs.com/release/repo_ext.html

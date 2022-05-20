@@ -22,7 +22,6 @@ class DetectorTest(unittest.TestCase):
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
-
     def test_yolox_jit_detector(self):
         detection_model_path = PRETRAINED_MODEL_YOLOXS_EXPORT_JIT
 
@@ -39,7 +38,6 @@ class DetectorTest(unittest.TestCase):
         self.assertIn('detection_classes', output)
 
         self.assertEqual(len(output['detection_boxes']), 60)
-
 
     def test_yolox_blade_detector(self):
         detection_model_path = PRETRAINED_MODEL_YOLOXS_EXPORT_BLADE
