@@ -20,8 +20,7 @@ class DetSourceCoco(object):
                  test_mode=False,
                  filter_empty_gt=False,
                  classes=None,
-                 iscrowd=False,
-                 test_mode=False):
+                 iscrowd=False):
         """
         Args:
             ann_file: Path of annotation file.
