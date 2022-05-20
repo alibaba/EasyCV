@@ -17,6 +17,7 @@ class DetSourceCoco(object):
                  ann_file,
                  img_prefix,
                  pipeline,
+                 test_mode=False,
                  filter_empty_gt=False,
                  classes=None,
                  iscrowd=False,
@@ -25,7 +26,11 @@ class DetSourceCoco(object):
         Args:
             ann_file: Path of annotation file.
             img_prefix: coco path prefix
-            filter_empty_gt: bool, if filter empty gt
+            test_mode (bool, optional): If set True, `self._filter_imgs` will not works.
+            filter_empty_gt (bool, optional): If set true, images without bounding
+                boxes of the dataset's classes will be filtered out. This option
+                only works when `test_mode=False`, i.e., we never filter images
+                during tests.
             iscrowd: when traing setted as False, when val setted as Tre
         """
         self.ann_file = ann_file

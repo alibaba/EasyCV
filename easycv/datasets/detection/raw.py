@@ -4,7 +4,7 @@ import numpy as np
 from easycv.core.visualization.image import imshow_bboxes
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
-from easycv.utils.bbox_util import batched_xyxy2cxcywh_with_shape
+from easycv.file.image import load_image
 
 
 @DATASETS.register_module
@@ -61,9 +61,7 @@ class DetDataset(BaseDataset):
 
         groundtruth_dict = {}
         groundtruth_dict['groundtruth_boxes'] = [
-            batched_xyxy2cxcywh_with_shape(
-                self.data_source.get_ann_info(idx)['bboxes'],
-                results['img_metas'][idx]['ori_img_shape'])
+            self.data_source.get_ann_info(idx)['bboxes']
             for idx in range(len(results['img_metas']))
         ]
         groundtruth_dict['groundtruth_classes'] = [
@@ -114,22 +112,26 @@ class DetDataset(BaseDataset):
         elif hasattr(self.data_source, 'classes'):
             class_names = self.data_source.classes
 
-        if class_names is not None:
+        # If class_names is not None, class_id will be converted to class_name for visualization,
+        # otherwise the class_id will be displayed.
+        # And don't try to modify the value in results, it may cause some bugs or even precision problems,
+        # because `self.evaluate` will also use the results, refer to: https://github.com/alibaba/EasyCV/pull/67
+        if class_names is not None and len(class_names) > 0:
             detection_classes = []
             for classes_id in results['detection_classes']:
                 if classes_id is None:
                     detection_classes.append(None)
                 else:
                     detection_classes.append(
-                        np.array([class_names[id] for id in classes_id]))
-            results['detection_classes'] = detection_classes
+                        np.array([class_names[int(id)] for id in classes_id]))
+        else:
+            detection_classes = results.get('detection_classes', [])
 
         vis_imgs = []
 
         img_metas = results['img_metas'][:vis_num]
         detection_boxes = results.get('detection_boxes', [])
         detection_scores = results.get('detection_scores', [])
-        detection_classes = results.get('detection_classes', [])
 
         for i, img_meta in enumerate(img_metas):
             filename = img_meta['filename']
@@ -143,8 +145,9 @@ class DetDataset(BaseDataset):
                 bboxes = bboxes[inds]
                 classes = classes[inds]
 
+            img = load_image(filename)
             vis_img = imshow_bboxes(
-                img=filename, bboxes=bboxes, labels=classes, show=False)
+                img=img, bboxes=bboxes, labels=classes, show=False)
             vis_imgs.append(vis_img)
 
         output = {'images': vis_imgs, 'img_metas': img_metas}

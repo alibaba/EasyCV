@@ -24,7 +24,8 @@ _COMMON_OPTIONS = {
 }
 
 TRAIN_CONFIGS = [{
-    'config_file': 'configs/classification/imagenet/imagenet_rn50_jpg.py',
+    'config_file':
+    'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py',
     'cfg_options': {
         **_COMMON_OPTIONS,
         'data.train.data_source.root':
@@ -37,7 +38,8 @@ TRAIN_CONFIGS = [{
         SMALL_IMAGENET_DATA_ROOT + 'meta/val_labeled_100.txt',
     }
 }, {
-    'config_file': 'configs/classification/imagenet/imagenet_rn50_jpg.py',
+    'config_file':
+    'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py',
     'cfg_options': {
         **_COMMON_OPTIONS, 'data.train.data_source.root':
         SMALL_IMAGENET_DATA_ROOT + 'train/',

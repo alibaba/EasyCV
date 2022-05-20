@@ -6,6 +6,9 @@ import torch
 from mmcv.runner import Hook
 from torch.utils.data import DataLoader
 
+from easycv.hooks.tensorboard import TensorboardLoggerHookV2
+from easycv.hooks.wandb import WandbLoggerHookV2
+
 if torch.cuda.is_available():
     from easycv.datasets.shared.dali_tfrecord_imagenet import DaliLoaderWrapper
 
@@ -86,7 +89,11 @@ class EvalHook(Hook):
                 dataset_obj.visualize(results, **self.vis_config))
 
     def evaluate(self, runner, results):
-        self.add_visualization_info(runner, results)
+        for _hook in runner.hooks:
+            # Only apply `add_visualization_info` when visualization hook is specified
+            if isinstance(_hook, (TensorboardLoggerHookV2, WandbLoggerHookV2)):
+                self.add_visualization_info(runner, results)
+                break
 
         if isinstance(self.dataloader, DataLoader):
             eval_res = self.dataloader.dataset.evaluate(

@@ -2,6 +2,8 @@
 """
 isort:skip_file
 """
+import time
+import json
 import argparse
 import os
 import os.path as osp
@@ -40,6 +42,8 @@ def parse_args():
         description='EasyCV test (and eval) a model')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
+    parser.add_argument(
+        '--work_dir', help='the directory to save evaluation logs')
     parser.add_argument('--out', help='output result file in pickle format')
     # parser.add_argument(
     #     '--fuse-conv-bn',
@@ -167,6 +171,14 @@ def main():
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
 
+    rank, _ = get_dist_info()
+
+    if args.work_dir is not None and rank == 0:
+        if not io.exists(args.work_dir):
+            io.makedirs(args.work_dir)
+        timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+        log_file = osp.join(args.work_dir, 'eval_{}.json'.format(timestamp))
+
     # build the model and load checkpoint
     model = build_model(cfg.model)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -211,7 +223,6 @@ def main():
                 workers_per_gpu=cfg.data.workers_per_gpu,
                 dist=distributed,
                 shuffle=False)
-            # oss_config=cfg.get('oss_io_config', None))
 
         if not distributed:
             outputs = single_gpu_test(
@@ -225,7 +236,6 @@ def main():
                 gpu_collect=args.gpu_collect,
                 use_fp16=args.fp16)
 
-        rank, _ = get_dist_info()
         if rank == 0:
             if args.out:
                 print(f'\nwriting results to {args.out}')
@@ -244,6 +254,9 @@ def main():
                 evaluators = build_evaluator(eval_pipe.evaluators)
                 eval_result = dataset.evaluate(outputs, evaluators=evaluators)
                 print(f'\n eval_result {eval_result}')
+                if args.work_dir is not None:
+                    with io.open(log_file, 'w') as f:
+                        json.dump(eval_result, f)
 
 
 if __name__ == '__main__':
