@@ -3,9 +3,12 @@ import copy
 import json
 import logging
 from collections import OrderedDict
+from distutils.version import LooseVersion
+from typing import Callable, Dict, List, Optional, Tuple
 
 import torch
 from mmcv.utils import Config
+import torchvision.transforms.functional as t_f
 
 from easycv.file import io
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
@@ -13,7 +16,11 @@ from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
 from easycv.toolkit.blade import blade_env_assert, blade_optimize
 from easycv.utils.checkpoint import load_checkpoint
 
-__all__ = ['export']
+from easycv.utils.bbox_util import scale_coords
+
+__all__ = [
+    'export', 'PreProcess', 'DetPostProcess', 'End2endModelExportWrapper'
+]
 
 
 def export(cfg, ckpt_path, filename):
@@ -153,12 +160,18 @@ def _export_yolox(model, cfg, filename):
         filename (str): filename to save exported models
     """
 
+
+
     if hasattr(cfg, 'export') and getattr(cfg.export, 'use_jit', False):
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         model = copy.deepcopy(model)
         model.eval()
         model.to(device)
+
+        end2end = cfg.export.get('end2end', False)
+        if LooseVersion(torch.__version__) < LooseVersion('1.7.0') and end2end:
+            raise ValueError('`end2end` only support torch1.7.0 and later!')
 
         batch_size = cfg.export.get('batch_size', 1)
         img_scale = cfg.get('img_scale', (640, 640))
@@ -170,24 +183,30 @@ def _export_yolox(model, cfg, filename):
         model_export = End2endModelExportWrapper(
             model,
             input.to(device),
-            preprocess_fn=None,
-            postprocess_fn=None,
-            trace_model=False,
+            preprocess_fn=PreProcess(target_size=(640,
+                                                  640)) if end2end else None,
+            postprocess_fn=DetPostProcess(max_det=100) if end2end else None,
+            trace_model=True,
         )
 
         model_export.eval().to(device)
 
         # well trained model will generate reasonable result, otherwise, we should change model.test_conf=0.0 to avoid tensor in inference to be empty
         try:
-            yolox_trace = torch.jit.trace(model_export, input.to(device))
+            # yolox_trace = torch.jit.trace(model_export, input.to(device))
+            yolox_trace = torch.jit.script(model_export)
         except:
             model_export.test_conf = 0.0
-            yolox_trace = torch.jit.trace(model_export, input.to(device))
+            yolox_trace = torch.jit.script(model_export)
+            # yolox_trace = torch.jit.trace(model_export, input.to(device))
 
         if getattr(cfg.export, 'export_blade', False):
             blade_config = cfg.export.get('blade_config',
                                           dict(enable_fp16=True))
             if blade_env_assert() == True:
+                if end2end:
+                    input =  255 * torch.rand(img_scale+(3,))
+
                 yolox_blade = blade_optimize(
                     script_model=model_export,
                     model=yolox_trace,
@@ -430,36 +449,178 @@ def replace_syncbn(backbone_cfg):
 
     return backbone_cfg
 
+if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
+
+    @torch.jit.script
+    class PreProcess:
+        """Process the data input to model.
+
+        Args:
+            target_size (Tuple[int, int]): output spatial size.
+            keep_ratio (bool): Whether to keep the aspect ratio when resizing the image.
+        """
+
+        def __init__(self,
+                     target_size: Tuple[int, int],
+                     keep_ratio: bool = True):
+            self.target_size = target_size
+            self.keep_ratio = keep_ratio
+
+        def __call__(
+            self, image: torch.Tensor
+        ) -> Tuple[torch.Tensor, Dict[str, Tuple[float, float]]]:
+            """
+            Args:
+                image (torch.Tensor): image format should be [H, W, C]
+            """
+            input_h, input_w = self.target_size
+            image = image.permute(2, 0, 1)
+            image = torch.unsqueeze(image, 0)
+            ori_h, ori_w = image.shape[-2:]
+
+            if not self.keep_ratio:
+                out_image = t_f.resize(image, [input_h, input_w])
+                pad_l, pad_t, scale = 0, 0, 1.0
+            else:
+                scale = min(input_h / ori_h, input_w / ori_w, 1.0)
+                resize_h, resize_w = int(ori_h * scale), int(ori_w * scale)
+                pad_h, pad_w = input_h - resize_h, input_w - resize_w
+                pad_l, pad_t = pad_w // 2, pad_h // 2
+                pad_r, pad_b = pad_w - pad_l, pad_h - pad_t
+                out_image = t_f.resize(image, [resize_h, resize_w])
+                out_image = t_f.pad(
+                    out_image, [pad_l, pad_t, pad_r, pad_b], fill=114)
+
+            h, w = out_image.shape[-2:]
+            output_info = {
+                'pad': (float(pad_l), float(pad_t)),
+                'scale_factor': (float(scale), float(scale)),
+                'ori_img_shape': (float(ori_h), float(ori_w)),
+                'img_shape': (float(h), float(w))
+            }
+            return out_image, output_info
+
+    @torch.jit.script
+    class DetPostProcess:
+        """Process output values of detection models.
+
+        Args:
+            max_det: max number of detections to keep.
+        """
+
+        def __init__(self, max_det: int = 100):
+            self.max_det = max_det
+
+        def __call__(
+            self, output: List[torch.Tensor], sample_info: Dict[str,
+                                                                Tuple[float,
+                                                                      float]]
+        ) -> Dict[str, torch.Tensor]:
+            """
+            Args:
+                output (List[torch.Tensor]): model output
+                sample_info (dict): sample infomation containing keys:
+                    pad: Pixel size of each side width and height padding
+                    scale_factor: the preprocessing scale factor
+                    ori_img_shape: original image shape
+                    img_shape: processed image shape
+            """
+            pad = sample_info['pad']
+            scale_factor = sample_info['scale_factor']
+            ori_h, ori_w = sample_info['ori_img_shape']
+            h, w = sample_info['img_shape']
+
+            output = output[0]
+            det_out = output[:self.max_det]
+
+            det_out = scale_coords((int(h), int(w)), det_out,
+                                   (int(ori_h), int(ori_w)),
+                                   (scale_factor, pad))
+            detection_boxes = det_out[:, :4].cpu()
+            detection_scores = det_out[:, 4].cpu()
+            detection_classes = det_out[:, 5].cpu().int()
+
+            out = {
+                'detection_boxes': detection_boxes,
+                'detection_scores': detection_scores,
+                'detection_classes': detection_classes,
+            }
+
+            return out
+else:
+    PreProcess = None
+    DetPostProcess = None
+
 
 class End2endModelExportWrapper(torch.nn.Module):
-    """
-    Wrap the model to export an end2end model in a unified way.
-    The prepocess_fn and prostprocess_fn is optional.
-    Each model mush have a 'forward_export' function.
-    The 'export_init' function is optional.
+    """Model export wrapper that supports end-to-end export of pre-processing and post-processing.
+    We support some built-in preprocessing and postprocessing functions.
+    If the requirements are not met, you can customize the preprocessing and postprocessing functions.
+    The custom functions must support satisfy requirements of `torch.jit.script`,
+    please refer to: https://pytorch.org/docs/stable/jit_language_reference_v2.html
+
+    Args:
+        model (torch.nn.Module):  `torch.nn.Module` that will be run with `example_inputs`.
+            `model` arguments and return values must be tensors or (possibly nested) tuples
+            that contain tensors. When a module is passed `torch.jit.trace`, only the
+            ``forward_export`` method is run and traced (see :func:`torch.jit.trace
+            <torch.jit.trace_module>` for details).
+        example_inputs (tuple or torch.Tensor):  A tuple of example inputs that
+            will be passed to the function while tracing. The resulting trace
+            can be run with inputs of different types and shapes assuming the
+            traced operations support those types and shapes. `example_inputs`
+            may also be a single Tensor in which case it is automatically
+            wrapped in a tuple.
+        preprocess_fn (callable or None): A Python function for processing example_input.
+            If there is only one return value, it will be passed to `model.forward_export`.
+            If there are multiple return values, the first return value will be passed to `model.forward_export`,
+            and the remaining return values ​​will be passed to `postprocess_fn`.
+        postprocess_fn (callable or None): A Python function for processing the output value of the model.
+            If `preprocess_fn` has multiple outputs, the output value of `preprocess_fn`
+            will also be passed to `postprocess_fn`. For details, please refer to: `preprocess_fn`.
+        trace_model (bool): If True, before exporting the end-to-end model,
+            `torch.jit.trace` will be used to export the `model` first.
+            Traceing an ``nn.Module`` by default will compile the ``forward_export`` method and recursively.
+
+    Examples:
+        import torch
+
+        batch_size = 1
+        example_inputs = 255 * torch.rand((batch_size, 3, 640, 640), device='cuda')
+        end2end_model = End2endModelExportWrapper(
+            model,
+            example_inputs,
+            preprocess_fn=PreProcess(target_size=(640, 640)),  # `PreProcess` refer to ev_torch.apis.export.PreProcess
+            postprocess_fn=DetPostProcess()  # `DetPostProcess` refer to ev_torch.apis.export.DetPostProcess
+            trace_model=True)
+
+        model_script = torch.jit.script(end2end_model)
+        with io.open('/tmp/model.jit', 'wb') as f:
+            torch.jit.save(model_script, f)
     """
 
     def __init__(self,
                  model,
-                 fake_input,
-                 preprocess_fn=None,
-                 postprocess_fn=None,
+                 example_inputs,
+                 preprocess_fn: Optional[Callable] = None,
+                 postprocess_fn: Optional[Callable] = None,
                  trace_model: bool = True) -> None:
         super().__init__()
 
         self.model = model
-        self.fake_input = fake_input
+        if hasattr(self.model, 'export_init'):
+            self.model.export_init()
+
+        self.example_inputs = example_inputs
         self.preprocess_fn = preprocess_fn
         self.postprocess_fn = postprocess_fn
-        # `export_init` for initialize
-        # self.model.export_init()
         self.trace_model = trace_model
         if self.trace_model:
             self.trace_module()
 
     def trace_module(self, **kwargs):
         trace_model = torch.jit.trace_module(
-            self.model, {'forward_export': self.fake_input}, **kwargs)
+            self.model, {'forward_export': self.example_inputs}, **kwargs)
         self.model = trace_model
 
     def forward(self, image):
@@ -482,3 +643,4 @@ class End2endModelExportWrapper(torch.nn.Module):
                                                *preprocess_outputs)
 
         return model_output
+
