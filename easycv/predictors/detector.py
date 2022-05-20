@@ -181,48 +181,52 @@ class TorchYoloXPredictor(PredictorInterface):
             if type(img) is not np.ndarray:
                 img = np.asarray(img)
 
-            ori_img_shape = img.shape[:2]
-            data_dict = {
-                'ori_img_shape': ori_img_shape,
-                'img': cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-            }
-            data_dict = self.pipeline(data_dict)
-            img = data_dict['img']
-            img = torch.unsqueeze(img._data, 0).to(self.device)
-            data_dict.pop('img')
-
-            if self.traceable:
-                det_out = self.post_assign(
-                    self.model(img), img_metas=[data_dict['img_metas']._data])
+            if self.use_jit:
+                img = torch.from_numpy(img).float().to(self.device)
+                out = self.model(img)
             else:
-                det_out = self.model(
-                    img, mode='test', img_metas=[data_dict['img_metas']._data])
+                ori_img_shape = img.shape[:2]
+                data_dict = {
+                    'ori_img_shape': ori_img_shape,
+                    'img': cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                }
+                data_dict = self.pipeline(data_dict)
+                img = data_dict['img']
+                img = torch.unsqueeze(img._data, 0).to(self.device)
+                data_dict.pop('img')
 
-            # det_out = det_out[:self.max_det]
-            # scale box to original image scale, this logic has some operation
-            # that can not be traced, see
-            # https://discuss.pytorch.org/t/windows-libtorch-c-load-cuda-module-with-std-runtime-error-message-shape-4-is-invalid-for-input-if-size-40/63073/4
-            # det_out = scale_coords(img.shape[2:], det_out, ori_img_shape, (scale_factor, pad))
+                if self.traceable:
+                    det_out = self.post_assign(
+                        self.model(img), img_metas=[data_dict['img_metas']._data])
+                else:
+                    det_out = self.model(
+                        img, mode='test', img_metas=[data_dict['img_metas']._data])
 
-            detection_scores = det_out['detection_scores'][0]
-            sel_ids = detection_scores > self.score_thresh
-            detection_boxes = det_out['detection_boxes'][0][sel_ids]
-            detection_classes = det_out['detection_classes'][0][sel_ids]
-            num_boxes = detection_classes.shape[
-                0] if detection_classes is not None else 0
-            # print(num_boxes)
-            detection_classes_names = [
-                self.CLASSES[detection_classes[idx]]
-                for idx in range(num_boxes)
-            ]
+                # det_out = det_out[:self.max_det]
+                # scale box to original image scale, this logic has some operation
+                # that can not be traced, see
+                # https://discuss.pytorch.org/t/windows-libtorch-c-load-cuda-module-with-std-runtime-error-message-shape-4-is-invalid-for-input-if-size-40/63073/4
+                # det_out = scale_coords(img.shape[2:], det_out, ori_img_shape, (scale_factor, pad))
 
-            out = {
-                'ori_img_shape': list(ori_img_shape),
-                'detection_boxes': detection_boxes,
-                'detection_scores': detection_scores,
-                'detection_classes': detection_classes,
-                'detection_class_names': detection_classes_names,
-            }
+                detection_scores = det_out['detection_scores'][0]
+                sel_ids = detection_scores > self.score_thresh
+                detection_boxes = det_out['detection_boxes'][0][sel_ids]
+                detection_classes = det_out['detection_classes'][0][sel_ids]
+                num_boxes = detection_classes.shape[
+                    0] if detection_classes is not None else 0
+                # print(num_boxes)
+                detection_classes_names = [
+                    self.CLASSES[detection_classes[idx]]
+                    for idx in range(num_boxes)
+                ]
+
+                out = {
+                    'ori_img_shape': list(ori_img_shape),
+                    'detection_boxes': detection_boxes,
+                    'detection_scores': detection_scores,
+                    'detection_classes': detection_classes,
+                    'detection_class_names': detection_classes_names,
+                }
 
             output_list.append(out)
 
