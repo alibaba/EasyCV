@@ -84,9 +84,15 @@ PRETRAINED_MODEL_RESNET50_WITHOUTHEAD = os.path.join(
 PRETRAINED_MODEL_FACEID = os.path.join(BASE_LOCAL_PATH,
                                        'pretrained_models/faceid')
 
-PRETRAINED_MODEL_YOLOXS = os.path.join(
-    BASE_LOCAL_PATH,
-    'pretrained_models/detection/yolox_s/yolox_s_epoch_300.pth')
+# PRETRAINED_MODEL_YOLOXS_EXPORT = os.path.join(
+#     BASE_LOCAL_PATH,
+#     'pretrained_models/detection/yolox_s/yolox_s_epoch_300_export.pt')
+# PRETRAINED_MODEL_YOLOXS_EXPORT_JIT = os.path.join(
+#     BASE_LOCAL_PATH,
+#     'pretrained_models/detection/yolox_s/yolox_s_epoch_300_export.jit')
+# PRETRAINED_MODEL_YOLOXS_EXPORT_BLADE = os.path.join(
+#     BASE_LOCAL_PATH,
+#     'pretrained_models/detection/yolox_s/yolox_s_epoch_300_export.blade')
 
 PRETRAINED_MODEL_POSE_HRNET_EXPORT = os.path.join(
     BASE_LOCAL_PATH,
