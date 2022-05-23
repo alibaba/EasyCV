@@ -211,7 +211,7 @@ def _export_yolox(model, cfg, filename):
                     input = 255 * torch.rand(img_scale + (3, ))
 
                 yolox_blade = blade_optimize(
-                    script_model=model_export,
+                    script_model=model,
                     model=yolox_trace,
                     inputs=(input.to(device), ),
                     blade_config=blade_config)
