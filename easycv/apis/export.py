@@ -189,13 +189,19 @@ def _export_yolox(model, cfg, filename):
         model_export.eval().to(device)
 
         # well trained model will generate reasonable result, otherwise, we should change model.test_conf=0.0 to avoid tensor in inference to be empty
-        try:
-            # yolox_trace = torch.jit.trace(model_export, input.to(device))
-            yolox_trace = torch.jit.script(model_export)
-        except:
-            model_export.test_conf = 0.0
-            yolox_trace = torch.jit.script(model_export)
-            # yolox_trace = torch.jit.trace(model_export, input.to(device))
+        # use trace is a litter bit faster than script. But it is not supported in an end2end model.
+        if end2end:
+            try:
+                yolox_trace = torch.jit.script(model_export)
+            except:
+                model_export.test_conf = 0.0
+                yolox_trace = torch.jit.script(model_export)
+        else:
+            try:
+                yolox_trace = torch.jit.trace(model_export, input.to(device))
+            except:
+                model_export.test_conf = 0.0
+                yolox_trace = torch.jit.trace(model_export, input.to(device))
 
         if getattr(cfg.export, 'export_blade', False):
             blade_config = cfg.export.get('blade_config',
