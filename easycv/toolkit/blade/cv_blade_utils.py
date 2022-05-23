@@ -243,10 +243,9 @@ def blade_optimize(script_model,
     results = []
 
     inputs_t = inputs
-    if (inputs_t[0].shape[2]==3):
+    if (inputs_t[0].shape[2] == 3):
         inputs_t = inputs_t[0].permute(2, 0, 1)
         inputs_t = (torch.unsqueeze(inputs_t, 0), )
-
 
     results.append(benchmark(script_model, inputs_t, backend, batch, 'easycv'))
     results.append(benchmark(model, inputs, backend, batch, 'easycv script'))

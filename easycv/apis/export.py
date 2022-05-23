@@ -175,6 +175,7 @@ def _export_yolox(model, cfg, filename):
         assert (
             len(img_scale) == 2
         ), 'Export YoloX predictor config contains img_scale must be (int, int) tuple!'
+
         input = 255 * torch.rand((batch_size, 3) + img_scale)
 
         model_export = End2endModelExportWrapper(
@@ -194,19 +195,19 @@ def _export_yolox(model, cfg, filename):
             try:
                 yolox_trace = torch.jit.script(model_export)
             except:
-                model_export.test_conf = 0.0
-                yolox_trace = torch.jit.script(model_export)
+                assert 'jit export error may occur when the model is not well trained'
         else:
             try:
                 yolox_trace = torch.jit.trace(model_export, input.to(device))
             except:
-                model_export.test_conf = 0.0
-                yolox_trace = torch.jit.trace(model_export, input.to(device))
+                assert 'jit export error may occur when the model is not well trained'
 
         if getattr(cfg.export, 'export_blade', False):
             blade_config = cfg.export.get('blade_config',
                                           dict(enable_fp16=True))
+
             if blade_env_assert() == True:
+
                 if end2end:
                     input = 255 * torch.rand(img_scale + (3, ))
 
@@ -215,6 +216,7 @@ def _export_yolox(model, cfg, filename):
                     model=yolox_trace,
                     inputs=(input.to(device), ),
                     blade_config=blade_config)
+
                 with io.open(filename + '.blade', 'wb') as ofile:
                     torch.jit.save(yolox_blade, ofile)
                 with io.open(filename + '.blade.classnames.json',

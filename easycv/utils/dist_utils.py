@@ -11,7 +11,11 @@ from mmcv.parallel import data_parallel as mm_data_parallel
 from mmcv.parallel import distributed as mm_distributed
 from mmcv.runner.dist_utils import get_dist_info
 from torch import nn
-from torch.distributed import ReduceOp
+
+try:
+    from torch.distributed import ReduceOp
+except ImportError:
+    raise ImportError('Blade does not support ReduceOp')
 
 
 def is_master():

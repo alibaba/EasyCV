@@ -49,10 +49,6 @@ IO_DATA_TXTX_OSS = os.path.join(BASE_OSS_PATH, 'data/io_test_dir/txts/')
 DET_DATA_SMALL_COCO_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                          'data/detection/small_coco')
 
-PRETRAINED_MODEL_YOLOXS_EXPORT = '/apsarapangu/disk5/zxy/UT_data/yoloxs_epoch_300.pth'
-PRETRAINED_MODEL_YOLOXS_EXPORT_JIT = '/apsarapangu/disk5/zxy/UT_data/yoloxs_epoch_300_export.jit'
-PRETRAINED_MODEL_YOLOXS_EXPORT_BLADE = '/apsarapangu/disk5/zxy/UT_data/yoloxs_epoch_300_export.blade'
-
 CONFIG_PATH = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
 
 DET_DATA_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/detection/raw_data')
@@ -87,10 +83,10 @@ PRETRAINED_MODEL_YOLOXS_EXPORT = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/detection/yolox_s/epoch_300.pth')
 PRETRAINED_MODEL_YOLOXS_EXPORT_JIT = os.path.join(
     BASE_LOCAL_PATH,
-    'pretrained_models/detection/yolox_s/epoch_300_export.jit')
+    'pretrained_models/detection/yolox_s/epoch_300_end2end.jit')
 PRETRAINED_MODEL_YOLOXS_EXPORT_BLADE = os.path.join(
     BASE_LOCAL_PATH,
-    'pretrained_models/detection/yolox_s/epoch_300_export.blade')
+    'pretrained_models/detection/yolox_s/epoch_300_end2end.blade')
 
 PRETRAINED_MODEL_POSE_HRNET_EXPORT = os.path.join(
     BASE_LOCAL_PATH,

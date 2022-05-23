@@ -62,50 +62,17 @@ class TorchYoloXPredictor(PredictorInterface):
         self.score_thresh = model_config[
             'score_thresh'] if 'score_thresh' in model_config else score_thresh
 
+        self.local_config_file = CONFIG_PATH
+        self.cfg = mmcv_config_fromfile(self.local_config_file)
+
         if self.use_jit:
             with io.open(model_path, 'rb') as infile:
                 map_location = 'cpu' if self.device == 'cpu' else 'cuda'
                 self.model = torch.jit.load(infile, map_location)
 
-            img_size = 640
-            img_norm_cfg = dict(
-                mean=[123.675, 116.28, 103.53],
-                std=[58.395, 57.12, 57.375],
-                to_rgb=True)
-            test_pipeline = [
-                dict(
-                    type='MMResize',
-                    img_scale=(img_size, img_size),
-                    keep_ratio=True),
-                dict(
-                    type='MMPad',
-                    pad_to_square=True,
-                    pad_val=(114.0, 114.0, 114.0)),
-                dict(type='MMNormalize', **img_norm_cfg),
-                dict(type='DefaultFormatBundle'),
-                dict(type='Collect', keys=['img'])
-            ]
-
-            with io.open(model_path + '.classnames.json', 'r') as infile:
-                self.CLASSES = json.load(infile)
             self.traceable = True
 
         else:
-            # with io.open(self.model_path, 'rb') as infile:
-            #     checkpoint = torch.load(infile, map_location='cpu')
-
-            # assert 'meta' in checkpoint and 'config' in checkpoint[
-            #     'meta'], 'meta.config is missing from checkpoint'
-            # config_str = checkpoint['meta']['config']
-            # # get config
-            # basename = os.path.basename(self.model_path)
-            # fname, _ = os.path.splitext(basename)
-            # self.local_config_file = os.path.join(CACHE_DIR,
-            #                                       f'{fname}_config.json')
-            # if not os.path.exists(CACHE_DIR):
-            #     os.makedirs(CACHE_DIR)
-            # with open(self.local_config_file, 'w') as ofile:
-            #     ofile.write(config_str)
             self.local_config_file = CONFIG_PATH
 
             self.cfg = mmcv_config_fromfile(self.local_config_file)
@@ -119,11 +86,11 @@ class TorchYoloXPredictor(PredictorInterface):
             self.ckpt = load_checkpoint(
                 self.model, self.model_path, map_location=map_location)
 
-            self.model.to(self.device)
-            self.model.eval()
+        self.model.to(self.device)
+        self.model.eval()
 
-            test_pipeline = self.cfg.test_pipeline
-            self.CLASSES = self.cfg.CLASSES
+        test_pipeline = self.cfg.test_pipeline
+        self.CLASSES = self.cfg.CLASSES
 
         # build pipeline
         pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
