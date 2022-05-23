@@ -1,13 +1,11 @@
 import copy
-import os
 import os.path as osp
 import platform
-import shutil
 import sys
 import tempfile
 from importlib import import_module
 
-from mmcv import Config, check_file_exist, import_modules_from_strings
+from mmcv import Config, import_modules_from_strings
 
 from .user_config_params_utils import check_value_type
 
