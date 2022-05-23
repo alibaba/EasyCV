@@ -14,6 +14,7 @@ from mmcv.utils import to_2tuple
 
 from easycv.utils.logger import get_root_logger
 from easycv.utils.dist_utils import get_dist_info
+from ..utils import build_conv_layer
 from ..registry import BACKBONES
 
 def calc_rel_pos_spatial(
@@ -143,6 +144,61 @@ class DropPath(nn.Module):
 
     def extra_repr(self) -> str:
         return 'p={}'.format(self.drop_prob)
+
+class BasicBlock(nn.Module):
+    expansion = 1
+
+    def __init__(self,
+                 inplanes,
+                 planes,
+                 stride=1,
+                 dilation=1,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN')):
+        super(BasicBlock, self).__init__()
+
+        self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
+
+        self.conv1 = build_conv_layer(
+            conv_cfg,
+            inplanes,
+            planes,
+            3,
+            stride=stride,
+            padding=dilation,
+            dilation=dilation,
+            bias=False)
+        self.add_module(self.norm1_name, norm1)
+        self.conv2 = build_conv_layer(
+            conv_cfg, planes, planes, 3, padding=1, bias=False)
+        self.add_module(self.norm2_name, norm2)
+
+        self.stride = stride
+        self.dilation = dilation
+
+    @property
+    def norm1(self):
+        return getattr(self, self.norm1_name)
+
+    @property
+    def norm2(self):
+        return getattr(self, self.norm2_name)
+
+    def forward(self, x, H, W):
+        B, _, C = x.shape
+        x = x.permute(0, 2, 1).reshape(B, -1, H, W)
+        identity = x
+
+        out = self.conv1(x)
+        out = self.norm1(out)
+
+        out = self.conv2(out)
+        out = self.norm2(out)
+
+        out += identity
+        out = out.flatten(2).transpose(1, 2)
+        return out
 
 class Attention(nn.Module):
     def __init__(
@@ -308,13 +364,16 @@ class WindowAttention(nn.Module):
 class Block(nn.Module):
 
     def __init__(self, dim, num_heads, mlp_ratio=4., qk_scale=None, qkv_bias=False, drop=0., attn_drop=0.,
-                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, attn_head_dim=None, window_size=None, use_rel_pos_bias=False, window=False):
+                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, attn_head_dim=None, window_size=None, use_rel_pos_bias=False, window=False, propagation='attn'):
         super().__init__()
         self.norm1 = norm_layer(dim)
         if not window:
-            self.attn = Attention(
-            dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale,
-            attn_drop=attn_drop, proj_drop=drop, window_size=window_size, attn_head_dim=attn_head_dim, use_rel_pos_bias=use_rel_pos_bias)
+            if propagation=='attn':
+                self.attn = Attention(
+                dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale,
+                attn_drop=attn_drop, proj_drop=drop, window_size=window_size, attn_head_dim=attn_head_dim, use_rel_pos_bias=use_rel_pos_bias)
+            else:
+                self.attn = BasicBlock(inplanes=dim, planes=dim)
         else:
             self.attn = WindowAttention(
             dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale,
@@ -423,6 +482,7 @@ class ViTDet(BaseModule):
                  output_cls_token=True,
                  sincos_pos_embed=False,
                  use_rel_pos_bias=False,
+                 propagation='attn',
                  interpolate_mode='bicubic',
                  patch_cfg=dict(),
                  layer_cfgs=dict(),
@@ -503,7 +563,8 @@ class ViTDet(BaseModule):
                 act_layer=act_layer,
                 window_size=(self.window_size, self.window_size) if ((i + 1) % interval != 0) else tuple(self.grid_size),
                 window=((i + 1) % interval != 0),
-                use_rel_pos_bias=use_rel_pos_bias)
+                use_rel_pos_bias=use_rel_pos_bias,
+                propagation=propagation)
             self.blocks.append(Block(**_layer_cfg))
 
         self.final_norm = final_norm
@@ -624,7 +685,7 @@ class ViTDet(BaseModule):
                         out = self.norm(x)
                         
                 B, _, C = out.shape
-                out = out.reshape(B, self.grid_size[0], self.grid_size[1], C).permute(0, 3, 1, 2).contiguous()
+                out = out.permute(0, 2, 1).reshape(B, -1, self.grid_size[0], self.grid_size[1])
 
                 outs.append(out)
 
