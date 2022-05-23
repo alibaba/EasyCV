@@ -1,47 +1,129 @@
-# Copyright (c) OpenMMLab. All rights reserved.
+# Copyright (c) Alibaba, Inc. and its affiliates.
 from collections import OrderedDict
 
-import mmcv
 import numpy as np
 import torch
+from prettytable import PrettyTable
+
+from easycv.utils.logger import print_log
+from .base_evaluator import Evaluator
+from .builder import EVALUATORS
+from .metric_registry import METRICS
+from .metrics import f_score
+
+_ALLOWED_METRICS = ['mIoU', 'mDice', 'mFscore']
 
 
-def f_score(precision, recall, beta=1):
-    """calculate the f-score value.
+@EVALUATORS.register_module
+class SegmentationEvaluator(Evaluator):
 
-    Args:
-        precision (float | torch.Tensor): The precision value.
-        recall (float | torch.Tensor): The recall value.
-        beta (int): Determines the weight of recall in the combined score.
-            Default: False.
+    def __init__(self, classes, dataset_name=None, metric_names=['mIoU']):
+        """
+        Args:
+            classes (tuple | list): classes name list
+            dataset_name (str): dataset name
+            metric_names (List[str]): metric names this evaluator will return
+        """
+        super().__init__(dataset_name, metric_names)
 
-    Returns:
-        [torch.tensor]: The f-score value.
-    """
-    score = (1 + beta**2) * (precision * recall) / (
-        (beta**2 * precision) + recall)
-    return score
+        self.classes = classes
+        if isinstance(self._metric_names, str):
+            self._metric_names = [self._metric_names]
+        if not set(self._metric_names).issubset(set(_ALLOWED_METRICS)):
+            raise KeyError('metric {} is not supported'.format(
+                self._metric_names))
+
+    def _evaluate_impl(self, prediction_dict, groundtruth_dict):
+        """
+        Args:
+            prediction_dict:  A dict of k-v pair, each v is a list of
+                tensor or numpy array for segmentation result. A dictionary containing
+                seg_pred: List of length number of test images, integer numpy array of shape
+                    [width * height].
+            groundtruth_dict: A dict of k-v pair, each v is a list of
+                tensor or numpy array for groundtruth info. A dictionary containing
+                gt_seg_maps: List of length number of test images, integer numpy array of shape
+                    [width * height].
+        Return:
+            dict,  each key is metric_name, value is metric value
+        """
+        results = prediction_dict['seg_pred']
+        gt_seg_maps = groundtruth_dict['gt_seg_maps']
+
+        ret_metrics = eval_metrics(
+            results,
+            gt_seg_maps,
+            len(self.classes),
+            self._metric_names,
+        )
+        return self._format_results(ret_metrics)
+
+    def _format_results(self, ret_metrics):
+        eval_results = {}
+
+        # summary table
+        ret_metrics_summary = OrderedDict({
+            ret_metric: np.round(np.nanmean(ret_metric_value) * 100, 2)
+            for ret_metric, ret_metric_value in ret_metrics.items()
+        })
+
+        # each class table
+        ret_metrics.pop('aAcc', None)
+        ret_metrics_class = OrderedDict({
+            ret_metric: np.round(ret_metric_value * 100, 2)
+            for ret_metric, ret_metric_value in ret_metrics.items()
+        })
+        ret_metrics_class.update({'Class': self.classes})
+        ret_metrics_class.move_to_end('Class', last=False)
+
+        # for logger
+        class_table_data = PrettyTable()
+        for key, val in ret_metrics_class.items():
+            class_table_data.add_column(key, val)
+
+        summary_table_data = PrettyTable()
+        for key, val in ret_metrics_summary.items():
+            if key == 'aAcc':
+                summary_table_data.add_column(key, [val])
+            else:
+                summary_table_data.add_column('m' + key, [val])
+
+        print_log('per class results:')
+        print_log('\n' + class_table_data.get_string())
+        print_log('Summary:')
+        print_log('\n' + summary_table_data.get_string())
+
+        # each metric dict
+        for key, value in ret_metrics_summary.items():
+            if key == 'aAcc':
+                eval_results[key] = value / 100.0
+            else:
+                eval_results['m' + key] = value / 100.0
+
+        ret_metrics_class.pop('Class', None)
+        for key, value in ret_metrics_class.items():
+            eval_results.update({
+                key + '.' + str(name): value[idx] / 100.0
+                for idx, name in enumerate(self.classes)
+            })
+
+        return eval_results
 
 
-def intersect_and_union(pred_label,
-                        label,
-                        num_classes,
-                        ignore_index,
-                        label_map=dict(),
-                        reduce_zero_label=False):
+METRICS.register_default_best_metric(SegmentationEvaluator, 'mIoU', 'max')
+
+
+def intersect_and_union(
+    pred_label,
+    label,
+    num_classes,
+):
     """Calculate intersection and Union.
 
     Args:
-        pred_label (ndarray | str): Prediction segmentation map
-            or predict result filename.
-        label (ndarray | str): Ground truth segmentation map
-            or label filename.
+        pred_label (ndarray): Prediction segmentation map.
+        label (ndarray): Ground truth segmentation map.
         num_classes (int): Number of categories.
-        ignore_index (int): Index that will be ignored in evaluation.
-        label_map (dict): Mapping old labels to new labels. The parameter will
-            work only when label is str. Default: dict().
-        reduce_zero_label (bool): Whether ignore zero label. The parameter will
-            work only when label is str. Default: False.
 
      Returns:
          torch.Tensor: The intersection of prediction and ground truth
@@ -51,29 +133,8 @@ def intersect_and_union(pred_label,
          torch.Tensor: The prediction histogram on all classes.
          torch.Tensor: The ground truth histogram on all classes.
     """
-
-    if isinstance(pred_label, str):
-        pred_label = torch.from_numpy(np.load(pred_label))
-    else:
-        pred_label = torch.from_numpy((pred_label))
-
-    if isinstance(label, str):
-        label = torch.from_numpy(
-            mmcv.imread(label, flag='unchanged', backend='pillow'))
-    else:
-        label = torch.from_numpy(label)
-
-    if label_map is not None:
-        for old_id, new_id in label_map.items():
-            label[label == old_id] = new_id
-    if reduce_zero_label:
-        label[label == 0] = 255
-        label = label - 1
-        label[label == 254] = 255
-
-    mask = (label != ignore_index)
-    pred_label = pred_label[mask]
-    label = label[mask]
+    pred_label = torch.from_numpy((pred_label))
+    label = torch.from_numpy(label)
 
     intersect = pred_label[pred_label == label]
     area_intersect = torch.histc(
@@ -86,31 +147,24 @@ def intersect_and_union(pred_label,
     return area_intersect, area_union, area_pred_label, area_label
 
 
-def total_intersect_and_union(results,
-                              gt_seg_maps,
-                              num_classes,
-                              ignore_index,
-                              label_map=dict(),
-                              reduce_zero_label=False):
-    """Calculate Total Intersection and Union.
-
+def eval_metrics(results,
+                 gt_seg_maps,
+                 num_classes,
+                 metrics=['mIoU'],
+                 nan_to_num=None,
+                 beta=1):
+    """Calculate evaluation metrics
     Args:
-        results (list[ndarray] | list[str]): List of prediction segmentation
-            maps or list of prediction result filenames.
-        gt_seg_maps (list[ndarray] | list[str] | Iterables): list of ground
-            truth segmentation maps or list of label filenames.
+        results (list[ndarray]): List of prediction segmentation maps.
+        gt_seg_maps (list[ndarray]): list of ground truth segmentation maps.
         num_classes (int): Number of categories.
-        ignore_index (int): Index that will be ignored in evaluation.
-        label_map (dict): Mapping old labels to new labels. Default: dict().
-        reduce_zero_label (bool): Whether ignore zero label. Default: False.
-
+        metrics (list[str] | str): Metrics to be evaluated, 'mIoU' and 'mDice'.
+        nan_to_num (int, optional): If specified, NaN values will be replaced
+            by the numbers defined by the user. Default: None.
      Returns:
-         ndarray: The intersection of prediction and ground truth histogram
-             on all classes.
-         ndarray: The union of prediction and ground truth histogram on all
-             classes.
-         ndarray: The prediction histogram on all classes.
-         ndarray: The ground truth histogram on all classes.
+        float: Overall accuracy on all images.
+        ndarray: Per category accuracy, shape (num_classes, ).
+        ndarray: Per category evaluation metrics, shape (num_classes, ).
     """
     total_area_intersect = torch.zeros((num_classes, ), dtype=torch.float64)
     total_area_union = torch.zeros((num_classes, ), dtype=torch.float64)
@@ -119,208 +173,11 @@ def total_intersect_and_union(results,
     for result, gt_seg_map in zip(results, gt_seg_maps):
         area_intersect, area_union, area_pred_label, area_label = \
             intersect_and_union(
-                result, gt_seg_map, num_classes, ignore_index,
-                label_map, reduce_zero_label)
+                result, gt_seg_map, num_classes)
         total_area_intersect += area_intersect
         total_area_union += area_union
         total_area_pred_label += area_pred_label
         total_area_label += area_label
-    return total_area_intersect, total_area_union, total_area_pred_label, \
-        total_area_label
-
-
-def mean_iou(results,
-             gt_seg_maps,
-             num_classes,
-             ignore_index,
-             nan_to_num=None,
-             label_map=dict(),
-             reduce_zero_label=False):
-    """Calculate Mean Intersection and Union (mIoU)
-
-    Args:
-        results (list[ndarray] | list[str]): List of prediction segmentation
-            maps or list of prediction result filenames.
-        gt_seg_maps (list[ndarray] | list[str]): list of ground truth
-            segmentation maps or list of label filenames.
-        num_classes (int): Number of categories.
-        ignore_index (int): Index that will be ignored in evaluation.
-        nan_to_num (int, optional): If specified, NaN values will be replaced
-            by the numbers defined by the user. Default: None.
-        label_map (dict): Mapping old labels to new labels. Default: dict().
-        reduce_zero_label (bool): Whether ignore zero label. Default: False.
-
-     Returns:
-        dict[str, float | ndarray]:
-            <aAcc> float: Overall accuracy on all images.
-            <Acc> ndarray: Per category accuracy, shape (num_classes, ).
-            <IoU> ndarray: Per category IoU, shape (num_classes, ).
-    """
-    iou_result = eval_metrics(
-        results=results,
-        gt_seg_maps=gt_seg_maps,
-        num_classes=num_classes,
-        ignore_index=ignore_index,
-        metrics=['mIoU'],
-        nan_to_num=nan_to_num,
-        label_map=label_map,
-        reduce_zero_label=reduce_zero_label)
-    return iou_result
-
-
-def mean_dice(results,
-              gt_seg_maps,
-              num_classes,
-              ignore_index,
-              nan_to_num=None,
-              label_map=dict(),
-              reduce_zero_label=False):
-    """Calculate Mean Dice (mDice)
-
-    Args:
-        results (list[ndarray] | list[str]): List of prediction segmentation
-            maps or list of prediction result filenames.
-        gt_seg_maps (list[ndarray] | list[str]): list of ground truth
-            segmentation maps or list of label filenames.
-        num_classes (int): Number of categories.
-        ignore_index (int): Index that will be ignored in evaluation.
-        nan_to_num (int, optional): If specified, NaN values will be replaced
-            by the numbers defined by the user. Default: None.
-        label_map (dict): Mapping old labels to new labels. Default: dict().
-        reduce_zero_label (bool): Whether ignore zero label. Default: False.
-
-     Returns:
-        dict[str, float | ndarray]: Default metrics.
-            <aAcc> float: Overall accuracy on all images.
-            <Acc> ndarray: Per category accuracy, shape (num_classes, ).
-            <Dice> ndarray: Per category dice, shape (num_classes, ).
-    """
-
-    dice_result = eval_metrics(
-        results=results,
-        gt_seg_maps=gt_seg_maps,
-        num_classes=num_classes,
-        ignore_index=ignore_index,
-        metrics=['mDice'],
-        nan_to_num=nan_to_num,
-        label_map=label_map,
-        reduce_zero_label=reduce_zero_label)
-    return dice_result
-
-
-def mean_fscore(results,
-                gt_seg_maps,
-                num_classes,
-                ignore_index,
-                nan_to_num=None,
-                label_map=dict(),
-                reduce_zero_label=False,
-                beta=1):
-    """Calculate Mean Intersection and Union (mIoU)
-
-    Args:
-        results (list[ndarray] | list[str]): List of prediction segmentation
-            maps or list of prediction result filenames.
-        gt_seg_maps (list[ndarray] | list[str]): list of ground truth
-            segmentation maps or list of label filenames.
-        num_classes (int): Number of categories.
-        ignore_index (int): Index that will be ignored in evaluation.
-        nan_to_num (int, optional): If specified, NaN values will be replaced
-            by the numbers defined by the user. Default: None.
-        label_map (dict): Mapping old labels to new labels. Default: dict().
-        reduce_zero_label (bool): Whether ignore zero label. Default: False.
-        beta (int): Determines the weight of recall in the combined score.
-            Default: False.
-
-
-     Returns:
-        dict[str, float | ndarray]: Default metrics.
-            <aAcc> float: Overall accuracy on all images.
-            <Fscore> ndarray: Per category recall, shape (num_classes, ).
-            <Precision> ndarray: Per category precision, shape (num_classes, ).
-            <Recall> ndarray: Per category f-score, shape (num_classes, ).
-    """
-    fscore_result = eval_metrics(
-        results=results,
-        gt_seg_maps=gt_seg_maps,
-        num_classes=num_classes,
-        ignore_index=ignore_index,
-        metrics=['mFscore'],
-        nan_to_num=nan_to_num,
-        label_map=label_map,
-        reduce_zero_label=reduce_zero_label,
-        beta=beta)
-    return fscore_result
-
-
-def eval_metrics(results,
-                 gt_seg_maps,
-                 num_classes,
-                 ignore_index,
-                 metrics=['mIoU'],
-                 nan_to_num=None,
-                 label_map=dict(),
-                 reduce_zero_label=False,
-                 beta=1):
-    """Calculate evaluation metrics
-    Args:
-        results (list[ndarray] | list[str]): List of prediction segmentation
-            maps or list of prediction result filenames.
-        gt_seg_maps (list[ndarray] | list[str] | Iterables): list of ground
-            truth segmentation maps or list of label filenames.
-        num_classes (int): Number of categories.
-        ignore_index (int): Index that will be ignored in evaluation.
-        metrics (list[str] | str): Metrics to be evaluated, 'mIoU' and 'mDice'.
-        nan_to_num (int, optional): If specified, NaN values will be replaced
-            by the numbers defined by the user. Default: None.
-        label_map (dict): Mapping old labels to new labels. Default: dict().
-        reduce_zero_label (bool): Whether ignore zero label. Default: False.
-     Returns:
-        float: Overall accuracy on all images.
-        ndarray: Per category accuracy, shape (num_classes, ).
-        ndarray: Per category evaluation metrics, shape (num_classes, ).
-    """
-
-    total_area_intersect, total_area_union, total_area_pred_label, \
-        total_area_label = total_intersect_and_union(
-            results, gt_seg_maps, num_classes, ignore_index, label_map,
-            reduce_zero_label)
-    ret_metrics = total_area_to_metrics(total_area_intersect, total_area_union,
-                                        total_area_pred_label,
-                                        total_area_label, metrics, nan_to_num,
-                                        beta)
-
-    return ret_metrics
-
-
-def pre_eval_to_metrics(pre_eval_results,
-                        metrics=['mIoU'],
-                        nan_to_num=None,
-                        beta=1):
-    """Convert pre-eval results to metrics.
-
-    Args:
-        pre_eval_results (list[tuple[torch.Tensor]]): per image eval results
-            for computing evaluation metric
-        metrics (list[str] | str): Metrics to be evaluated, 'mIoU' and 'mDice'.
-        nan_to_num (int, optional): If specified, NaN values will be replaced
-            by the numbers defined by the user. Default: None.
-     Returns:
-        float: Overall accuracy on all images.
-        ndarray: Per category accuracy, shape (num_classes, ).
-        ndarray: Per category evaluation metrics, shape (num_classes, ).
-    """
-
-    # convert list of tuples to tuple of lists, e.g.
-    # [(A_1, B_1, C_1, D_1), ...,  (A_n, B_n, C_n, D_n)] to
-    # ([A_1, ..., A_n], ..., [D_1, ..., D_n])
-    pre_eval_results = tuple(zip(*pre_eval_results))
-    assert len(pre_eval_results) == 4
-
-    total_area_intersect = sum(pre_eval_results[0])
-    total_area_union = sum(pre_eval_results[1])
-    total_area_pred_label = sum(pre_eval_results[2])
-    total_area_label = sum(pre_eval_results[3])
 
     ret_metrics = total_area_to_metrics(total_area_intersect, total_area_union,
                                         total_area_pred_label,
@@ -356,8 +213,7 @@ def total_area_to_metrics(total_area_intersect,
     """
     if isinstance(metrics, str):
         metrics = [metrics]
-    allowed_metrics = ['mIoU', 'mDice', 'mFscore']
-    if not set(metrics).issubset(set(allowed_metrics)):
+    if not set(metrics).issubset(set(_ALLOWED_METRICS)):
         raise KeyError('metrics {} is not supported'.format(metrics))
 
     all_acc = total_area_intersect.sum() / total_area_label.sum()
@@ -393,4 +249,3 @@ def total_area_to_metrics(total_area_intersect,
             for metric, metric_value in ret_metrics.items()
         })
     return ret_metrics
-

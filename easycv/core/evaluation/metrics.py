@@ -115,3 +115,29 @@ def compute_ap(recall, precision):
         ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])  # area under curve
 
     return ap
+
+
+def f_score(precision, recall, beta=1):
+    """calculate the f-score value.
+
+    Args:
+        precision (float | torch.Tensor): The precision value.
+        recall (float | torch.Tensor): The recall value.
+        beta (int): Determines the weight of recall in the combined score.
+            Default: False.
+
+    Returns:
+        [torch.tensor]: The f-score value.
+    """
+    beta2 = beta**2
+
+    # if tp == 0 F will be 1 only if all predictions are zero, all labels are
+    # zero, and zero_division=1. In all other case, 0
+    if np.isposinf(beta):
+        f_score = recall
+    else:
+        denom = beta2 * precision + recall
+        denom[denom == 0.] = 1  # avoid division by 0
+        f_score = (1 + beta2) * precision * recall / denom
+
+    return f_score

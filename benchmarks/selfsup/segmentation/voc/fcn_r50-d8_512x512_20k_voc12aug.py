@@ -1,8 +1,12 @@
 _base_ = [
-    '../_base_/models/fcn_r50-d8.py', 
+    '../_base_/models/fcn_r50-d8.py',
     # '../_base_/datasets/pascal_voc12_aug.py',
     '../_base_/datasets/pascal_voc12.py',
-    
+]
+CLASSES = [
+    'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat',
+    'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person',
+    'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'
 ]
 model = dict(
     decode_head=dict(num_classes=21), auxiliary_head=dict(num_classes=21))
@@ -26,9 +30,16 @@ eval_config = dict(interval=1, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',
-        evaluators=[dict(type='CocoDetectionEvaluator', classes=[])],
+        evaluators=[
+            dict(
+                type='SegmentationEvaluator',
+                classes=CLASSES,
+                metric_names=['mIoU'],
+            )
+        ],
     )
 ]
+
 # yapf:disable
 log_config = dict(
     interval=50,

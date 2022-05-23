@@ -1,26 +1,22 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os
 import logging
-
-from easycv.file import io
+import os
 from multiprocessing import cpu_count
 
 from easycv.datasets.registry import DATASOURCES
+from easycv.file import io
 from .base import SegSourceBase
 
 
 def parse_raw(source_item, classes):
-    img_path, xml_path = source_item
-    result = {
-        'filename': img_path,
-        'seg_filename': xml_path
-    }
+    img_path, seg_path = source_item
+    result = {'filename': img_path, 'seg_filename': seg_path}
     return result
 
 
 @DATASOURCES.register_module
 class SegSourceRaw(SegSourceBase):
-    """Data source for semantic segmentation. 
+    """Data source for semantic segmentation.
     data format is as follows:
 
     ├── data_dir
@@ -42,9 +38,8 @@ class SegSourceRaw(SegSourceBase):
         classes (str | list): classes list or file
         img_suffix (str): image file suffix
         label_suffix (str): label file suffix
-        ignore_index (int): label index to be ignored
         reduce_zero_label (bool): whether to mark label zero as ignored
-        palette (Sequence[Sequence[int]]] | np.ndarray | None): 
+        palette (Sequence[Sequence[int]]] | np.ndarray | None):
             palette of segmentation map, if none, random palette will be generated
         cache_at_init (bool): if set True, will cache in memory in __init__ for faster training
         cache_on_the_fly (bool): if set True, will cache in memroy during training
@@ -57,13 +52,12 @@ class SegSourceRaw(SegSourceBase):
                  classes=None,
                  img_suffix='.jpg',
                  label_suffix='.png',
-                 ignore_index=255,
                  reduce_zero_label=False,
                  palette=None,
                  num_processes=int(cpu_count() / 2),
                  cache_at_init=False,
                  cache_on_the_fly=False):
-        
+
         self.img_root = img_root
         self.label_root = label_root
         self.split = split
@@ -71,7 +65,7 @@ class SegSourceRaw(SegSourceBase):
         self.PALETTE = palette
         self.img_suffix = img_suffix
         self.label_suffix = label_suffix
-  
+
         if isinstance(self.img_suffix, str):
             self.img_suffix = [self.img_suffix]
         if isinstance(label_suffix, str):
@@ -81,14 +75,12 @@ class SegSourceRaw(SegSourceBase):
 
         super(SegSourceRaw, self).__init__(
             classes=classes,
-            ignore_index=ignore_index,
             reduce_zero_label=reduce_zero_label,
             palette=palette,
             parse_fn=parse_raw,
             num_processes=num_processes,
             cache_at_init=cache_at_init,
-            cache_on_the_fly=cache_on_the_fly
-        )
+            cache_on_the_fly=cache_on_the_fly)
 
     def get_source_iterator(self):
         if self.split is not None:
@@ -99,19 +91,21 @@ class SegSourceRaw(SegSourceBase):
             for line in lines:
                 find = False
                 for img_suf in self.img_suffix:
-                    filename = os.path.join(self.img_root, line.strip() + img_suf) 
+                    filename = os.path.join(self.img_root,
+                                            line.strip() + img_suf)
                     if os.path.exists(filename):
                         self.img_files.append(filename)
                         find = True
                 if not find:
-                    logging.warning('Not find file: %s with suffix %s' % (line, self.img_suffix))
-        else:        
+                    logging.warning('Not find file: %s with suffix %s' %
+                                    (line, self.img_suffix))
+        else:
             self.img_files = [
-                os.path.join(self.img_root, i) 
+                os.path.join(self.img_root, i)
                 for i in io.listdir(self.img_root, recursive=True)
                 if os.path.splitext(i)[-1].lower() in self.img_suffix
             ]
-        
+
         self.label_files = []
         for img_path in self.img_files:
             img_name = os.path.splitext(os.path.basename(img_path))[0]
@@ -130,11 +124,7 @@ class SegSourceRaw(SegSourceBase):
                 self.img_files.remove(img_path)
 
         assert len(self.img_files) == len(self.label_files)
-        assert len(self.img_files) > 0, 'No samples found in %s' % self.img_root
+        assert len(
+            self.img_files) > 0, 'No samples found in %s' % self.img_root
 
         return list(zip(self.img_files, self.label_files))
-
-    def get_ann_info(self, idx):
-        pass
-
-

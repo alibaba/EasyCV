@@ -1,42 +1,21 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import copy
 import functools
-from abc import abstractmethod
 import logging
-import time
-from PIL import Image
+from abc import abstractmethod
+from multiprocessing import Pool, cpu_count
+
 import cv2
-from tqdm import tqdm
 import mmcv
 import numpy as np
-from multiprocessing import Pool, cpu_count
-from easycv.utils.constant import MAX_READ_IMAGE_TRY_TIMES
+from tqdm import tqdm
 
 from easycv.datasets.registry import DATASOURCES
-
-
-def _load_img(img_path):
-    img = None
-    try_cnt = 0
-    while try_cnt < MAX_READ_IMAGE_TRY_TIMES:
-        try:
-            # cv2.imdecode may corrupt when the img is broken
-            img = Image.open(img_path)
-            assert img is not None, 'Image load error, try %s : %s' % (
-                try_cnt, img_path)
-            break
-        except:
-            time.sleep(2)
-        try_cnt += 1
-
-    if img is None:
-        raise ValueError('Read Image Times Out: ' + img_path)
-    
-    img = np.asarray(img, dtype=np.uint8)
-    return img
+from easycv.file.image import load_image as _load_img
 
 
 def load_image(img_path):
-    img = _load_img(img_path)
+    img = _load_img(img_path, mode='RGB')
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     result = {
         'img': img.astype(np.float32),
@@ -47,14 +26,14 @@ def load_image(img_path):
 
 
 def load_seg_map(seg_path, reduce_zero_label):
-    gt_semantic_seg = _load_img(seg_path)
+    gt_semantic_seg = _load_img(seg_path, mode='RGB')
     # reduce zero_label
     if reduce_zero_label:
         # avoid using underflow conversion
         gt_semantic_seg[gt_semantic_seg == 0] = 255
         gt_semantic_seg = gt_semantic_seg - 1
         gt_semantic_seg[gt_semantic_seg == 254] = 255
-    
+
     return {'gt_semantic_seg': gt_semantic_seg}
 
 
@@ -71,20 +50,17 @@ def build_sample(source_item, classes, parse_fn, load_img, reduce_zero_label):
     if load_img:
         result_dict.update(load_image(result_dict['filename']))
         result_dict.update(
-            load_seg_map(result_dict['seg_filename'], 
-                         reduce_zero_label)
-        )
+            load_seg_map(result_dict['seg_filename'], reduce_zero_label))
 
     return result_dict
 
 
 @DATASOURCES.register_module
 class SegSourceBase(object):
-    """Data source for semantic segmentation. 
+    """Data source for semantic segmentation.
         classes (str | list): classes list or file
-        ignore_index (int): label index to be ignored
         reduce_zero_label (bool): whether to mark label zero as ignored
-        palette (Sequence[Sequence[int]]] | np.ndarray | None): 
+        palette (Sequence[Sequence[int]]] | np.ndarray | None):
             palette of segmentation map, if none, random palette will be generated
         num_processes: number of processes to parse samples
         cache_at_init (bool): if set True, will cache in memory in __init__ for faster training
@@ -93,17 +69,15 @@ class SegSourceBase(object):
 
     def __init__(self,
                  classes=None,
-                 ignore_index=255,
                  reduce_zero_label=False,
                  palette=None,
                  parse_fn=None,
                  num_processes=int(cpu_count() / 2),
                  cache_at_init=False,
                  cache_on_the_fly=False):
-        
+
         self.CLASSES = classes
         self.PALETTE = palette
-        self.ignore_index = ignore_index
         self.reduce_zero_label = reduce_zero_label
         self.cache_at_init = cache_at_init
         self.cache_on_the_fly = cache_on_the_fly
@@ -126,8 +100,7 @@ class SegSourceBase(object):
             parse_fn=parse_fn,
             classes=self.CLASSES,
             load_img=cache_at_init == True,
-            reduce_zero_label=self.reduce_zero_label
-        )
+            reduce_zero_label=self.reduce_zero_label)
         self.samples_list = self.build_samples(
             source_iter, process_fn=process_fn)
         self.num_samples = self.get_length()
@@ -169,15 +142,13 @@ class SegSourceBase(object):
                 if result_dict.get('img', None) is None:
                     result_dict.update(load_image(result_dict['filename']))
                 if result_dict.get('gt_semantic_seg', None) is None:
-                    result_dict.update(load_seg_map(
-                        result_dict['seg_filename'],
-                        reduce_zero_label=self.reduce_zero_label
-                        )
-                    )
+                    result_dict.update(
+                        load_seg_map(
+                            result_dict['seg_filename'],
+                            reduce_zero_label=self.reduce_zero_label))
                 if self.cache_on_the_fly:
                     self.samples_list[idx] = result_dict
-            
-            result_dict = self.post_process_fn(result_dict)
+            result_dict = self.post_process_fn(copy.deepcopy(result_dict))
             self._retry_count = 0
         except Exception as e:
             logging.warning(e)
@@ -190,7 +161,7 @@ class SegSourceBase(object):
             self._retry_count += 1
             if self._retry_count >= self._max_retry_num:
                 raise ValueError('All samples failed to load!')
-            
+
             result_dict = self.get_sample((idx + 1) % self.num_samples)
 
         return result_dict

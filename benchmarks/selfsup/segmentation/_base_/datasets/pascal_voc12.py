@@ -19,11 +19,12 @@ train_pipeline = [
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='MMPad', size=crop_size, pad_val=0, seg_pad_val=255),
     dict(type='DefaultFormatBundle'),
-    dict(type='Collect', 
-         keys=['img', 'gt_semantic_seg'], 
-         meta_keys=('filename', 'ori_filename', 'ori_shape',
-                    'img_shape', 'pad_shape', 'scale_factor', 'flip',
-                    'flip_direction', 'img_norm_cfg')),
+    dict(
+        type='Collect',
+        keys=['img', 'gt_semantic_seg'],
+        meta_keys=('filename', 'ori_filename', 'ori_shape', 'img_shape',
+                   'pad_shape', 'scale_factor', 'flip', 'flip_direction',
+                   'img_norm_cfg')),
 ]
 test_pipeline = [
     # dict(type='LoadImageFromFile'),
@@ -37,11 +38,12 @@ test_pipeline = [
             dict(type='MMRandomFlip'),
             dict(type='MMNormalize', **img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', 
-                 keys=['img'],
-                 meta_keys=('filename', 'ori_filename', 'ori_shape',
-                    'img_shape', 'pad_shape', 'scale_factor', 'flip',
-                    'flip_direction', 'img_norm_cfg')),
+            dict(
+                type='Collect',
+                keys=['img'],
+                meta_keys=('filename', 'ori_filename', 'ori_shape',
+                           'img_shape', 'pad_shape', 'scale_factor', 'flip',
+                           'flip_direction', 'img_norm_cfg')),
         ])
 ]
 data = dict(
@@ -49,6 +51,7 @@ data = dict(
     workers_per_gpu=4,
     train=dict(
         type=dataset_type,
+        ignore_index=255,
         data_source=dict(
             type='SegSourceRaw',
             img_root=data_root + 'JPEGImages',
@@ -59,6 +62,7 @@ data = dict(
         pipeline=train_pipeline),
     val=dict(
         imgs_per_gpu=1,
+        ignore_index=255,
         type=dataset_type,
         data_source=dict(
             type='SegSourceRaw',

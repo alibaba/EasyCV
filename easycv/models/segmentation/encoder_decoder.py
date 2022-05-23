@@ -1,35 +1,19 @@
-# Copyright (c) OpenMMLab. All rights reserved.
+# Copyright (c) Alibaba, Inc. and its affiliates.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from easycv.models.utils.ops import resize_tensor
 from easycv.models import builder
+from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
-from .base import BaseSegmentor
+from easycv.models.utils.ops import resize_tensor
+from easycv.utils.logger import print_log
+from easycv.utils.misc import add_prefix
 
 
-def add_prefix(inputs, prefix):
-    """Add prefix for dict.
-
-    Args:
-        inputs (dict): The input dict with str keys.
-        prefix (str): The prefix to add.
-
-    Returns:
-
-        dict: The dict with keys updated with ``prefix``.
-    """
-
-    outputs = dict()
-    for name, value in inputs.items():
-        outputs[f'{prefix}.{name}'] = value
-
-    return outputs
-
-
+# Modified from https://github.com/open-mmlab/mmsegmentation/blob/master/mmseg/models/segmentors/encoder_decoder.py
 @MODELS.register_module()
-class EncoderDecoder(BaseSegmentor):
+class EncoderDecoder(BaseModel):
     """Encoder Decoder segmentors.
 
     EncoderDecoder typically consists of backbone, decode_head, auxiliary_head.
@@ -37,51 +21,66 @@ class EncoderDecoder(BaseSegmentor):
     which could be dumped during inference.
     """
 
-    def __init__(self,
-                 backbone,
-                 decode_head,
-                 neck=None,
-                 auxiliary_head=None,
-                 train_cfg=None,
-                 test_cfg=None,
-                 pretrained=None,
-                 init_cfg=None):
-        super(EncoderDecoder, self).__init__(init_cfg)
+    def __init__(
+        self,
+        backbone,
+        decode_head,
+        neck=None,
+        auxiliary_head=None,
+        train_cfg=None,
+        test_cfg=None,
+        pretrained=None,
+    ):
+        super(EncoderDecoder, self).__init__()
         if pretrained is not None:
             assert backbone.get('pretrained') is None, \
                 'both backbone and segmentor set pretrained weight'
             backbone.pretrained = pretrained
         self.backbone = builder.build_backbone(backbone)
-        if neck is not None:
-            self.neck = builder.build_neck(neck)
-        self._init_decode_head(decode_head)
-        self._init_auxiliary_head(auxiliary_head)
 
-        self.train_cfg = train_cfg
-        self.test_cfg = test_cfg
+        self.neck = neck
+        self.auxiliary_head = auxiliary_head
 
-        assert self.with_decode_head
+        if self.neck is not None:
+            self.neck = builder.build_neck(self.neck)
 
-    def _init_decode_head(self, decode_head):
-        """Initialize ``decode_head``"""
         self.decode_head = builder.build_head(decode_head)
         self.align_corners = self.decode_head.align_corners
         self.num_classes = self.decode_head.num_classes
 
-    def _init_auxiliary_head(self, auxiliary_head):
-        """Initialize ``auxiliary_head``"""
         if auxiliary_head is not None:
-            if isinstance(auxiliary_head, list):
-                self.auxiliary_head = nn.ModuleList()
-                for head_cfg in auxiliary_head:
-                    self.auxiliary_head.append(builder.build_head(head_cfg))
-            else:
-                self.auxiliary_head = builder.build_head(auxiliary_head)
+            auxiliary_head = [
+                auxiliary_head
+            ] if not isinstance(auxiliary_head, list) else auxiliary_head
+            self.auxiliary_head = nn.ModuleList()
+            for head_cfg in auxiliary_head:
+                self.auxiliary_head.append(builder.build_head(head_cfg))
+
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
+
+        self.init_weights(pretrained=pretrained)
+
+    def init_weights(self, pretrained=None):
+        if pretrained is not None:
+            print_log('load model from: {}'.format(pretrained), logger='root')
+        self.backbone.init_weights(pretrained=pretrained)
+
+        if hasattr(self.decode_head, 'init_weights'):
+            self.decode_head.init_weights()
+
+        if self.auxiliary_head is not None:
+            for idx in range(len(self.auxiliary_head)):
+                if hasattr(self.auxiliary_head[idx], 'init_weights'):
+                    self.auxiliary_head[idx].init_weights()
+
+        if self.neck is not None and hasattr(self.neck, 'init_weights'):
+            self.neck.init_weights()
 
     def extract_feat(self, img):
         """Extract features from images."""
         x = self.backbone(img)
-        if self.with_neck:
+        if self.neck is not None:
             x = self.neck(x)
         return x
 
@@ -118,24 +117,11 @@ class EncoderDecoder(BaseSegmentor):
         """Run forward function and calculate loss for auxiliary head in
         training."""
         losses = dict()
-        if isinstance(self.auxiliary_head, nn.ModuleList):
-            for idx, aux_head in enumerate(self.auxiliary_head):
-                loss_aux = aux_head.forward_train(x, img_metas,
-                                                  gt_semantic_seg,
-                                                  self.train_cfg)
-                losses.update(add_prefix(loss_aux, f'aux_{idx}'))
-        else:
-            loss_aux = self.auxiliary_head.forward_train(
-                x, img_metas, gt_semantic_seg, self.train_cfg)
-            losses.update(add_prefix(loss_aux, 'aux'))
-
+        for idx, aux_head in enumerate(self.auxiliary_head):
+            loss_aux = aux_head.forward_train(x, img_metas, gt_semantic_seg,
+                                              self.train_cfg)
+            losses.update(add_prefix(loss_aux, f'aux_{idx}'))
         return losses
-
-    def forward_dummy(self, img):
-        """Dummy forward function."""
-        seg_logit = self.encode_decode(img, None)
-
-        return seg_logit
 
     def forward_train(self, img, img_metas, gt_semantic_seg):
         """Forward function for training.
@@ -155,21 +141,51 @@ class EncoderDecoder(BaseSegmentor):
         """
 
         x = self.extract_feat(img)
-
         losses = dict()
-
         loss_decode = self._decode_head_forward_train(x, img_metas,
                                                       gt_semantic_seg)
         losses.update(loss_decode)
 
-        if self.with_auxiliary_head:
+        if self.auxiliary_head is not None:
             loss_aux = self._auxiliary_head_forward_train(
                 x, img_metas, gt_semantic_seg)
             losses.update(loss_aux)
 
         return losses
 
-    # TODO refactor
+    def forward_test(self, imgs, img_metas, **kwargs):
+        """
+        Args:
+            imgs (List[Tensor]): the outer list indicates test-time
+                augmentations and inner Tensor should have a shape NxCxHxW,
+                which contains all images in the batch.
+            img_metas (List[List[dict]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch.
+        """
+        for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
+            if not isinstance(var, list):
+                raise TypeError(f'{name} must be a list, but got '
+                                f'{type(var)}')
+
+        num_augs = len(imgs)
+        if num_augs != len(img_metas):
+            raise ValueError(f'num of augmentations ({len(imgs)}) != '
+                             f'num of image meta ({len(img_metas)})')
+        # all images in the same aug batch all of the same ori_shape and pad shape
+        for img_meta in img_metas:
+            ori_shapes = [_['ori_shape'] for _ in img_meta]
+            assert all(shape == ori_shapes[0] for shape in ori_shapes)
+            img_shapes = [_['img_shape'] for _ in img_meta]
+            assert all(shape == img_shapes[0] for shape in img_shapes)
+            pad_shapes = [_['pad_shape'] for _ in img_meta]
+            assert all(shape == pad_shapes[0] for shape in pad_shapes)
+
+        if num_augs == 1:
+            return self.simple_test(imgs[0], img_metas[0], **kwargs)
+        else:
+            return self.aug_test(imgs, img_metas, **kwargs)
+
     def slide_inference(self, img, img_meta, rescale):
         """Inference by sliding-window with overlap.
 
@@ -280,7 +296,7 @@ class EncoderDecoder(BaseSegmentor):
         seg_pred = seg_pred.cpu().numpy()
         # unravel batch dim
         seg_pred = list(seg_pred)
-        return {'seg_pred': seg_pred} 
+        return {'seg_pred': seg_pred}
 
     def aug_test(self, imgs, img_metas, rescale=True):
         """Test with augmentations.
@@ -299,4 +315,4 @@ class EncoderDecoder(BaseSegmentor):
         seg_pred = seg_pred.cpu().numpy()
         # unravel batch dim
         seg_pred = list(seg_pred)
-        return {'seg_pred': seg_pred} 
+        return {'seg_pred': seg_pred}
