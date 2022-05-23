@@ -26,7 +26,6 @@ total_epochs = 100  # tmp epoch, need compute with max_iters
 # evaluation = dict(interval=2000, metric='mIoU', pre_eval=True)
 checkpoint_config = dict(interval=1)
 eval_config = dict(interval=1, gpu_collect=False)
-#==========eval_pipelines is useless in current================
 eval_pipelines = [
     dict(
         mode='test',

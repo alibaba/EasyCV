@@ -217,19 +217,21 @@ class Bottleneck(nn.Module):
         return out
 
 
-def make_res_layer(block,
-                   inplanes,
-                   planes,
-                   blocks,
-                   stride=1,
-                   dilation=1,
-                   style='pytorch',
-                   with_cp=False,
-                   conv_cfg=None,
-                   norm_cfg=dict(type='BN'),
-                   frelu=False,
-                   multi_grid=None,
-                   contract_dilation=False,):
+def make_res_layer(
+    block,
+    inplanes,
+    planes,
+    blocks,
+    stride=1,
+    dilation=1,
+    style='pytorch',
+    with_cp=False,
+    conv_cfg=None,
+    norm_cfg=dict(type='BN'),
+    frelu=False,
+    multi_grid=None,
+    contract_dilation=False,
+):
     downsample = None
     if stride != 1 or inplanes != planes * block.expansion:
         downsample = nn.Sequential(
@@ -403,7 +405,8 @@ class ResNet(nn.Module):
                 norm_cfg=norm_cfg,
                 frelu=self.frelu,
                 multi_grid=stage_multi_grid,
-                contract_dilation=contract_dilation,)
+                contract_dilation=contract_dilation,
+            )
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)

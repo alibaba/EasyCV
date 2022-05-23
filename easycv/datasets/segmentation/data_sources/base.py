@@ -128,12 +128,6 @@ class SegSourceBase(object):
 
         return samples_list
 
-    def __len__(self):
-        return len(self.num_samples)
-
-    def get_ann_info(self, idx):
-        pass
-
     def get_sample(self, idx):
         result_dict = self.samples_list[idx]
         load_success = True

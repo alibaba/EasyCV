@@ -1,4 +1,5 @@
 import numpy as np
+
 from easycv.datasets.registry import PIPELINES
 
 

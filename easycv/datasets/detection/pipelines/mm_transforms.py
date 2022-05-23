@@ -1350,7 +1350,7 @@ class MMPad:
         ``results['pad_shape']``."""
         for key in results.get('seg_fields', []):
             results[key] = mmcv.impad(
-                results[key], 
+                results[key],
                 shape=results['pad_shape'][:2],
                 pad_val=self.seg_pad_val)
 
