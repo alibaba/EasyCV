@@ -89,15 +89,7 @@ class EVRunner(EpochBasedRunner):
         for i, data_batch in enumerate(self.data_loader):
             self._inner_iter = i
             self.call_hook('before_train_iter')
-            # only in amp from pytorch 1.6 or later, we should use amp.autocast
-            # if self.fp16_enable and LooseVersion(
-            #         torch.__version__) >= LooseVersion('1.6.0'):
-            #     with amp.autocast():
-            #         self.run_iter(data_batch, train_mode=True)
-            # else:
-            #print("train_kwargs:{}".format(kwargs))
             self.run_iter(data_batch, train_mode=True, **kwargs)
-
             self.call_hook('after_train_iter')
             self._iter += 1
 
@@ -195,6 +187,9 @@ class EVRunner(EpochBasedRunner):
         Returns:
             dict or OrderedDict: The loaded checkpoint.
         """
+        if torch.cuda.is_available():
+            device_id = torch.cuda.current_device()
+            map_location = lambda storage, loc: storage.cuda(device_id)
         return load_checkpoint(
             self.model,
             filename=filename,

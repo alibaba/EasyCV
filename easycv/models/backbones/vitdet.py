@@ -530,29 +530,60 @@ class ViTDet(BaseModule):
             return
         else:
             # resize pos_embed
-            pos_embed_checkpoint = state_dict[name]
-            embedding_size = pos_embed_checkpoint.shape[-1]
-            H, W = self.patch_embed.grid_size
-            num_patches = self.patch_embed.num_patches
-            num_extra_tokens = 1
-            # height (== width) for the checkpoint position embedding
-            orig_size = int((pos_embed_checkpoint.shape[-2] - num_extra_tokens) ** 0.5)
-            # height (== width) for the new position embedding
-            new_size = int(num_patches ** 0.5)
-            # class_token and dist_token are kept unchanged
-            rank, _ = get_dist_info()
-            if orig_size != new_size:
-                if rank == 0:
-                    print("Position interpolate from %dx%d to %dx%d" % (orig_size, orig_size, H, W))
-                # extra_tokens = pos_embed_checkpoint[:, :num_extra_tokens]
-                # only the position tokens are interpolated
-                pos_tokens = pos_embed_checkpoint[:, num_extra_tokens:]
-                pos_tokens = pos_tokens.reshape(-1, orig_size, orig_size, embedding_size).permute(0, 3, 1, 2)
-                pos_tokens = torch.nn.functional.interpolate(
-                    pos_tokens, size=(H, W), mode='bicubic', align_corners=False)
-                new_pos_embed = pos_tokens.permute(0, 2, 3, 1).flatten(1, 2)
-                # new_pos_embed = torch.cat((extra_tokens, pos_tokens), dim=1)
-                state_dict[name] = new_pos_embed
+            ckpt_pos_embed_shape = state_dict[name].shape
+            if self.pos_embed.shape != ckpt_pos_embed_shape:
+                from mmcv.utils import print_log
+                logger = get_root_logger()
+                print_log(
+                    f'Resize the pos_embed shape from {ckpt_pos_embed_shape} '
+                    f'to {self.pos_embed.shape}.',
+                    logger=logger)
+
+                ckpt_pos_embed_shape = to_2tuple(
+                    int(np.sqrt(ckpt_pos_embed_shape[1] - self.num_extra_tokens)))
+                pos_embed_shape = self.grid_size
+
+                state_dict[name] = self.resize_pos_embed(state_dict[name],
+                                                    ckpt_pos_embed_shape,
+                                                    pos_embed_shape,
+                                                    self.interpolate_mode,
+                                                    self.num_extra_tokens)
+
+    @staticmethod
+    def resize_pos_embed(pos_embed,
+                         src_shape,
+                         dst_shape,
+                         mode='bicubic',
+                         num_extra_tokens=1):
+        """Resize pos_embed weights.
+        Args:
+            pos_embed (torch.Tensor): Position embedding weights with shape
+                [1, L, C].
+            src_shape (tuple): The resolution of downsampled origin training
+                image.
+            dst_shape (tuple): The resolution of downsampled new training
+                image.
+            mode (str): Algorithm used for upsampling:
+                ``'nearest'`` | ``'linear'`` | ``'bilinear'`` | ``'bicubic'`` |
+                ``'trilinear'``. Default: ``'bicubic'``
+        Return:
+            torch.Tensor: The resized pos_embed of shape [1, L_new, C]
+        """
+        assert pos_embed.ndim == 3, 'shape of pos_embed must be [1, L, C]'
+        _, L, C = pos_embed.shape
+        src_h, src_w = src_shape
+        assert L == src_h * src_w + num_extra_tokens
+        extra_tokens = pos_embed[:, :num_extra_tokens]
+
+        src_weight = pos_embed[:, num_extra_tokens:]
+        src_weight = src_weight.reshape(1, src_h, src_w, C).permute(0, 3, 1, 2)
+
+        dst_weight = F.interpolate(
+            src_weight, size=dst_shape, align_corners=False, mode=mode)
+        dst_weight = torch.flatten(dst_weight, 2).transpose(1, 2)
+		
+        return dst_weight
+        #return torch.cat((extra_tokens, dst_weight), dim=1)
 
     def build_2d_sincos_position_embedding(self, temperature=10000.0):
         h, w = self.grid_size
