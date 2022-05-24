@@ -63,5 +63,5 @@ jobs:
           #run test
           export CUDA_VISIBLE_DEVICES=6
           source ~/workspace/anaconda2/etc/profile.d/conda.sh
-          conda activate evtorch_torch1.8.0
+          conda activate torch1.8
           PYTHONPATH=. python tests/run.py

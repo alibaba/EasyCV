@@ -231,7 +231,8 @@ def blade_optimize(script_model,
                    inputs,
                    blade_config=dict(enable_fp16=True),
                    backend='TensorRT',
-                   batch=1):
+                   batch=1,
+                   compute_cost=False):
 
     with opt_trt_config(blade_config):
         opt_model = optimize(
@@ -240,20 +241,21 @@ def blade_optimize(script_model,
             model_inputs=tuple(inputs),
         )
 
-    results = []
+    if compute_cost:
+        results = []
 
-    inputs_t = inputs
-    if (inputs_t[0].shape[2] == 3):
-        inputs_t = inputs_t[0].permute(2, 0, 1)
-        inputs_t = (torch.unsqueeze(inputs_t, 0), )
+        inputs_t = inputs
+        if (inputs_t[0].shape[2] == 3):
+            inputs_t = inputs_t[0].permute(2, 0, 1)
+            inputs_t = (torch.unsqueeze(inputs_t, 0), )
 
-    results.append(benchmark(script_model, inputs_t, backend, batch, 'easycv'))
-    results.append(benchmark(model, inputs, backend, batch, 'easycv script'))
-    results.append(benchmark(opt_model, inputs, backend, batch, 'blade'))
+        results.append(benchmark(script_model, inputs_t, backend, batch, 'easycv'))
+        results.append(benchmark(model, inputs, backend, batch, 'easycv script'))
+        results.append(benchmark(opt_model, inputs, backend, batch, 'blade'))
 
-    logging.info('Model Summary:')
-    summary = pd.DataFrame(results)
-    logging.warning(summary.to_markdown())
+        logging.info('Model Summary:')
+        summary = pd.DataFrame(results)
+        logging.warning(summary.to_markdown())
 
     output = model(*inputs)
     cu_prof_start()
@@ -264,4 +266,5 @@ def blade_optimize(script_model,
         test_result = opt_model(*inputs)
     cu_prof_stop()
     check_results(output, test_result)
+
     return opt_model
