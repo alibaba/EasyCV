@@ -186,4 +186,30 @@ timm_models = {
     'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/timm/volo/d4_224_85.7.pth.tar',
     'volo_d5_224':
     'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/timm/volo/d5_224_86.10.pth.tar',
+
+    # facebook xcit
+    'xcit_small_12_p16':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/xcit/dino_xcit_small_12_p16_pretrain.pth',  # 384
+    'xcit_small_12_p8':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/xcit/dino_xcit_small_12_p8_pretrain.pth',  # 384
+    'xcit_medium_24_p16':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/xcit/dino_xcit_medium_24_p16_pretrain.pth',  # 512
+    'xcit_medium_24_p8':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/xcit/dino_xcit_medium_24_p8_pretrain.pth',  # 512
+
+    # shuffle_trans
+    'shuffletrans_base_p4_w7_224':
+    'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/shuffle_transformer/shuffle_base.pth',
+    'shuffletrans_small_p4_w7_224':
+    'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/shuffle_transformer/shuffle_small.pth',
+    'shuffletrans_tiny_p4_w7_224':
+    'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/shuffle_transformer/shuffle_tiny.pth',
+
+    # dynamic swint:
+    'dynamic_swin_base_p4_w7_224':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_base_patch4_window7_224_22k_statedict.pth',
+    'dynamic_swin_small_p4_w7_224':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_small_patch4_window7_224_statedict.pth',
+    'dynamic_swin_tiny_p4_w7_224':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_tiny_patch4_window7_224_statedict.pth',
 }

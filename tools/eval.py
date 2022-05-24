@@ -169,6 +169,8 @@ def main():
     if args.checkpoint is not None:
         checkpoint = load_checkpoint(
             model, args.checkpoint, map_location=device)
+    else:
+        print(f'use default init_weight')
     model.to(device)
     # if args.fuse_conv_bn:
     #     model = fuse_module(model)

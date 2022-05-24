@@ -17,9 +17,7 @@ from .shuffle_transformer import (shuffletrans_base_p4_w7_224,
 from .swin_transformer_dynamic import (dynamic_swin_base_p4_w7_224,
                                        dynamic_swin_small_p4_w7_224,
                                        dynamic_swin_tiny_p4_w7_224)
-from .vit_transfomer_dynamic import (dynamic_deit_small_p16,
-                                     dynamic_deit_tiny_p16,
-                                     dynamic_vit_base_p16,
+from .vit_transfomer_dynamic import (dynamic_vit_base_p16,
                                      dynamic_vit_huge_p14,
                                      dynamic_vit_large_p16)
 from .xcit_transformer import (xcit_large_24_p8, xcit_medium_24_p8,
@@ -94,20 +92,17 @@ class PytorchImageModelWrapper(nn.Module):
         if 'num_classes' not in kwargs:
             kwargs['num_classes'] = 0
 
+        pretrained_path = checkpoint_path or model_urls[model_name]
+        print('load pretrained from {}'.format(pretrained_path))
         # create model by timm
         if model_name in timm_model_names:
             self.model = timm.create_model(model_name, False, '', scriptable,
                                            exportable, no_jit, **kwargs)
 
             if pretrained:
-                pretrained_path = checkpoint_path or model_urls[model_name]
                 if pretrained_path.endswith('.npz'):
-                    print(
-                        'load timm pretrained from {}'.format(pretrained_path))
                     return self.model.load_pretrained(pretrained_path)
                 else:
-                    print(
-                        'load timm pretrained from {}'.format(pretrained_path))
                     backbone_module = importlib.import_module(
                         self.model.__module__)
                     return load_pretrained(
@@ -137,11 +132,13 @@ class PytorchImageModelWrapper(nn.Module):
                                     'load from url failed ! oh my DLC & OSS, you boys really good! ',
                                     model_urls[model_name])
 
-                    # for some model strict = False still failed when model doesn't exactly match
-                    try:
-                        self.model.load_state_dict(state_dict, strict=False)
-                    except Exception:
-                        print('load for model_name not all right')
+                    if 'model' in state_dict:
+                        state_dict = state_dict['model']
+                    # for key, value in state_dict.items():
+                    #     print(key, ':', value.size())
+                    # for name, parameters in self.model.named_parameters():
+                    #     print(name, ':', parameters.size())
+                    self.model.load_state_dict(state_dict, strict=False)
                 else:
                     print('%s not in evtorch modelzoo!' % model_name)
         else:

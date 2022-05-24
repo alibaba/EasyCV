@@ -22,7 +22,7 @@
 | vit-base-patch16 | [vit-base-patch16](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/vit/imagenet_vit_base_patch16_224_jpg.py) | 76.082    | 92.026    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/vit/vit-base-patch16/epoch_300.pth) |
 | swin-tiny-patch4-window7 | [swin-tiny-patch4-window7](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/swint/imagenet_swin_tiny_patch4_window7_224_jpg.py) | 80.528    | 94.822    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/swint/swin-tiny-patch4-window7/epoch_300.pth) |
 
-## timm (torch.__version__ >= 1.9.0)
+
 | Algorithm | Config                                           | Top-1 (%) | Top-5 (%) | Download                                                     |
 | --------- | ------------------------------------------------------------ | --------- | --------- | ------------------------------------------------------------ |
 | vit_base_patch16_224 | [vit_base_patch16_224](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/timm/vit/vit_base_patch16_224.py) | 78.096    | 94.324   | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/timm/vit/B_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.01-res_224.npz) |
@@ -70,3 +70,4 @@
 | twins_svt_large | [twins_svt_large](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/timm/twins/twins_svt_large.py) | 83.428   | 96.506   | [model](https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/timm/twins/twins_svt_large-90f6aaa9.pth) |
 | swin_base_patch4_window7_224 | [swin_base_patch4_window7_224](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/timm/swint/swin_base_patch4_window7_224.py) | 84.714   | 97.444   | [model](https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/timm/swint/swin_base_patch4_window7_224_22kto1k.pth) |
 | swin_large_patch4_window7_224 | [swin_large_patch4_window7_224](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/timm/swint/swin_large_patch4_window7_224.py) | 85.826   | 97.816   | [model](https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/timm/swint/swin_large_patch4_window7_224_22kto1k.pth) |
+(ps: 通过导入timm模型得到推理结果，需要torch.__version__ >= 1.9.0)
