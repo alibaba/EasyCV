@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from cmath import nan
 from typing import Sequence
 
 from functools import partial
@@ -7,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import build_norm_layer
+from mmcv.cnn import constant_init, build_norm_layer
 from mmcv.cnn.utils.weight_init import trunc_normal_
 from mmcv.runner.base_module import BaseModule, ModuleList
 from mmcv.utils import to_2tuple
@@ -364,16 +363,21 @@ class WindowAttention(nn.Module):
 class Block(nn.Module):
 
     def __init__(self, dim, num_heads, mlp_ratio=4., qk_scale=None, qkv_bias=False, drop=0., attn_drop=0.,
-                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, attn_head_dim=None, window_size=None, use_rel_pos_bias=False, window=False, propagation='attn'):
+                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, attn_head_dim=None, window_size=None, use_rel_pos_bias=False, window=False, aggregation='attn'):
         super().__init__()
         self.norm1 = norm_layer(dim)
+        self.aggregation = aggregation
+        self.window = window
         if not window:
-            if propagation=='attn':
+            if aggregation == 'attn':
                 self.attn = Attention(
                 dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale,
                 attn_drop=attn_drop, proj_drop=drop, window_size=window_size, attn_head_dim=attn_head_dim, use_rel_pos_bias=use_rel_pos_bias)
             else:
-                self.attn = BasicBlock(inplanes=dim, planes=dim)
+                self.attn = WindowAttention(
+                dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale,
+                attn_drop=attn_drop, proj_drop=drop, window_size=window_size, attn_head_dim=attn_head_dim, use_rel_pos_bias=use_rel_pos_bias)
+                self.basicblock = BasicBlock(inplanes=dim, planes=dim)
         else:
             self.attn = WindowAttention(
             dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale,
@@ -387,6 +391,8 @@ class Block(nn.Module):
     def forward(self, x, H, W):
         x = x + self.drop_path(self.attn(self.norm1(x), H, W))
         x = x + self.drop_path(self.mlp(self.norm2(x)))
+        if not self.window and self.aggregation == 'conv':
+            x = self.basicblock(x, H, W)
         return x
 
 @BACKBONES.register_module()
@@ -482,7 +488,7 @@ class ViTDet(BaseModule):
                  output_cls_token=True,
                  sincos_pos_embed=False,
                  use_rel_pos_bias=False,
-                 propagation='attn',
+                 aggregation='attn',
                  interpolate_mode='bicubic',
                  patch_cfg=dict(),
                  layer_cfgs=dict(),
@@ -561,10 +567,10 @@ class ViTDet(BaseModule):
                 drop_path=dpr[i],
                 norm_layer=norm_layer,
                 act_layer=act_layer,
-                window_size=(self.window_size, self.window_size) if ((i + 1) % interval != 0) else tuple(self.grid_size),
+                window_size=(self.window_size, self.window_size) if ((i + 1) % interval != 0 or aggregation=='conv') else tuple(self.grid_size),
                 window=((i + 1) % interval != 0),
                 use_rel_pos_bias=use_rel_pos_bias,
-                propagation=propagation)
+                aggregation=aggregation)
             self.blocks.append(Block(**_layer_cfg))
 
         self.final_norm = final_norm
@@ -574,11 +580,9 @@ class ViTDet(BaseModule):
         self._register_load_state_dict_pre_hook(self._prepare_checkpoint_hook)
 
     def init_weights(self):
-        super(ViTDet, self).init_weights()
-
-        if not (isinstance(self.init_cfg, dict)
-                and self.init_cfg['type'] == 'Pretrained'):
-            trunc_normal_(self.pos_embed, std=0.02)
+        for m in self.modules():
+            if isinstance(m, BasicBlock):
+                constant_init(m.norm2, 0)
 
     def _prepare_checkpoint_hook(self, state_dict, prefix, *args, **kwargs):
         name = prefix + 'pos_embed'

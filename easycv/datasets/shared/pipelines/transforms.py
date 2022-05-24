@@ -39,7 +39,6 @@ class Compose(object):
                 print(f'{t} time {time.time()-start}')
 
             if data is None:
-                print("augname:{}, value:{}\n".format(t.__class__.__name__, data))
                 return None
         return data
 

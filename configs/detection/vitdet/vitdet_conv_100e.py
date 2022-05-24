@@ -18,7 +18,7 @@ CLASSES = [
     'hair drier', 'toothbrush'
 ]
 
-model = dict(backbone=dict(propagation='conv'))
+model = dict(backbone=dict(aggregation='conv'))
 
 log_config = dict(
     interval=50,
