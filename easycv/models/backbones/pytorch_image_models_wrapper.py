@@ -36,8 +36,6 @@ _MODEL_MAP = {
     'dynamic_swin_base_p4_w7_224': dynamic_swin_base_p4_w7_224,
 
     # vit_transfomer_dynamic
-    'dynamic_deit_small_p16': dynamic_deit_small_p16,
-    'dynamic_deit_tiny_p16': dynamic_deit_tiny_p16,
     'dynamic_vit_base_p16': dynamic_vit_base_p16,
     'dynamic_vit_large_p16': dynamic_vit_large_p16,
     'dynamic_vit_huge_p14': dynamic_vit_huge_p14,
