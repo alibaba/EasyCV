@@ -18,19 +18,6 @@ model = dict(
         style='pytorch',
         contract_dilation=True,
     ),
-    # mmseg backbone
-    # backbone=dict(
-    #     type='ResNet',
-    #     depth=50,
-    #     num_stages=4,
-    #     out_indices=(0, 1, 2, 3),
-    #     dilations=(1, 1, 2, 4),
-    #     strides=(1, 2, 1, 1),
-    #     norm_cfg=norm_cfg,
-    #     norm_eval=False,
-    #     style='pytorch',
-    #     contract_dilation=True,
-    #     init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     decode_head=dict(
         type='FCNHead',
         in_channels=2048,
@@ -64,7 +51,6 @@ model = dict(
 # dataset settings
 dataset_type = 'SegDataset'
 data_root = 'data/VOCdevkit/VOC2012'
-data_root = '/apsarapangu/disk3/jiangnana.jnn/data/VOCdevkit/VOC2007/'
 CLASSES = [
     'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat',
     'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person',
