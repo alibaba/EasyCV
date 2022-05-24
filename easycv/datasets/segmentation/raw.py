@@ -1,6 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import warnings
-
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
 from easycv.datasets.shared.data_sources.concat import SourceConcat
@@ -39,19 +37,6 @@ class SegDataset(BaseDataset):
         data_dict = self.data_source.get_sample(idx)
         data_dict = self.pipeline(data_dict)
         return data_dict
-
-    def get_gt_seg_maps(self, efficient_test=None):
-        """Get ground truth segmentation maps for evaluation."""
-        if efficient_test is not None:
-            warnings.warn(
-                'DeprecationWarning: ``efficient_test`` has been deprecated '
-                'since MMSeg v0.16, the ``get_gt_seg_maps()`` is CPU memory '
-                'friendly by default. ')
-
-        for idx in range(len(self)):
-            ann_info = self.data_source.get_ann_info(idx)
-            results = dict(ann_info=ann_info)
-            yield results['gt_semantic_seg']
 
     def evaluate(self, results, evaluators=[], **kwargs):
         """Evaluate the dataset.

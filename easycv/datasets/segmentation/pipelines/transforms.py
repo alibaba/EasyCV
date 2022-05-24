@@ -1,3 +1,4 @@
+# Copyright (c) Alibaba, Inc. and its affiliates.
 import numpy as np
 
 from easycv.datasets.registry import PIPELINES
