@@ -311,7 +311,7 @@ class WindowAttention(nn.Module):
         self.proj_drop = nn.Dropout(proj_drop)
 
         # trunc_normal_(self.relative_position_bias_table, std=.02)
-        self.softmax = nn.Softmax(dim=-1)
+        #self.softmax = nn.Softmax(dim=-1)
 
         self.use_rel_pos_bias = use_rel_pos_bias
 
@@ -343,7 +343,7 @@ class WindowAttention(nn.Module):
         if self.use_rel_pos_bias:
             attn = calc_rel_pos_spatial(attn, q, self.window_size, self.window_size, self.rel_pos_h, self.rel_pos_w)
 
-        attn = self.softmax(attn)
+        attn = attn.softmax(dim=-1)
 
         attn = self.attn_drop(attn)
 

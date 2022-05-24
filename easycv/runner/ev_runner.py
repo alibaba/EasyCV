@@ -14,6 +14,7 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
     from torch.cuda import amp
     from easycv.hooks.optimizer_hook import AMPFP16OptimizerHook
 
+from torch.profiler import profile, record_function, ProfilerActivity
 
 class EVRunner(EpochBasedRunner):
 
@@ -61,8 +62,13 @@ class EVRunner(EpochBasedRunner):
             outputs = self.batch_processor(
                 self.model, data_batch, train_mode=train_mode, **kwargs)
         elif train_mode:
-            outputs = self.model.train_step(data_batch, self.optimizer,
-                                            **kwargs)
+            with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+                    profile_memory=True, record_shapes=True) as prof:
+                with record_function("model_inference"):
+                    outputs = self.model.train_step(data_batch, self.optimizer,
+                                                    **kwargs)
+            print(prof.key_averages().table(sort_by="self_cuda_memory_usage", row_limit=10))
+            print(prof.key_averages().table(sort_by="cuda_memory_usage", row_limit=10))
         else:
             outputs = self.model.val_step(data_batch, self.optimizer, **kwargs)
         if not isinstance(outputs, dict):

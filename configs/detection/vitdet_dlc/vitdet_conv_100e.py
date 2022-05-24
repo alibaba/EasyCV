@@ -18,6 +18,8 @@ CLASSES = [
     'hair drier', 'toothbrush'
 ]
 
+model = dict(backbone=dict(propagation='conv'))
+
 log_config = dict(
     interval=50,
     hooks=[
