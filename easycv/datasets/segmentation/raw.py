@@ -3,6 +3,7 @@ import warnings
 
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
+from easycv.datasets.shared.data_sources.concat import SourceConcat
 
 
 @DATASETS.register_module
@@ -26,7 +27,12 @@ class SegDataset(BaseDataset):
         super(SegDataset, self).__init__(
             data_source, pipeline, profiling=profiling)
         self.num_samples = self.data_source.get_length()
-        self.classes = self.data_source.classes
+
+        if isinstance(self.data_source, SourceConcat):
+            self.classes = self.data_source.data_sources[0].classes
+            assert self.data_source.data_sources[
+                0].classes == self.data_source.data_sources[1].classes
+
         self.ignore_index = ignore_index
 
     def __getitem__(self, idx):

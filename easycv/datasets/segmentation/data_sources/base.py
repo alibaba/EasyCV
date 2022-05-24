@@ -66,6 +66,8 @@ class SegSourceBase(object):
         cache_at_init (bool): if set True, will cache in memory in __init__ for faster training
         cache_on_the_fly (bool): if set True, will cache in memroy during training
     """
+    CLASSES = None
+    PALETTE = None
 
     def __init__(self,
                  classes=None,
@@ -76,8 +78,11 @@ class SegSourceBase(object):
                  cache_at_init=False,
                  cache_on_the_fly=False):
 
-        self.CLASSES = classes
-        self.PALETTE = palette
+        if classes is not None:
+            self.CLASSES = classes
+        if palette is not None:
+            self.PALETTE = palette
+
         self.reduce_zero_label = reduce_zero_label
         self.cache_at_init = cache_at_init
         self.cache_on_the_fly = cache_on_the_fly

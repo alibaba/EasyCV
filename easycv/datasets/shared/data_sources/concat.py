@@ -15,7 +15,7 @@ class SourceConcat(object):
             'data_source_list must be a config list'
         assert len(data_source_list) > 0, \
             'data_source_list should not be an empty list'
-        self.source_type = data_source_list[0]['type']
+
         self.data_sources = [
             build_datasource(data_source_cfg)
             for data_source_cfg in data_source_list
