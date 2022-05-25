@@ -41,7 +41,9 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='EasyCV test (and eval) a model')
     parser.add_argument('config', help='test config file path')
-    parser.add_argument('--checkpoint', default=None, help='checkpoint file')
+    parser.add_argument('checkpoint', help='checkpoint file')
+    parser.add_argument(
+        '--work_dir', help='the directory to save evaluation logs')
     parser.add_argument('--out', help='output result file in pickle format')
     # parser.add_argument(
     #     '--fuse-conv-bn',
@@ -152,6 +154,7 @@ def main():
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
+    cfg.model.pretrained = None
     if cfg.model.get('neck'):
         if type(cfg.model.neck) is list:
             pass
@@ -178,13 +181,10 @@ def main():
 
     # build the model and load checkpoint
     model = build_model(cfg.model)
+    model.init_weights()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f'use device {device}')
-    if args.checkpoint is not None:
-        checkpoint = load_checkpoint(
-            model, args.checkpoint, map_location=device)
-    else:
-        print('use default init_weight')
+    checkpoint = load_checkpoint(model, args.checkpoint, map_location=device)
     model.to(device)
     # if args.fuse_conv_bn:
     #     model = fuse_module(model)

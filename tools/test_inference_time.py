@@ -31,19 +31,19 @@ def main():
 
     dummy_input = torch.rand(1, 3, 224, 224).to(device)
 
-    # 预热, GPU 平时可能为了节能而处于休眠状态, 因此需要预热
+    # Preheat: GPU may be hibernated to save energy at ordinary times, so it needs to be preheated.
     print('warm up ...\n')
     with torch.no_grad():
         for _ in range(100):
             _ = model.forward_test(dummy_input)
 
-    # synchronize 等待所有 GPU 任务处理完才返回 CPU 主线程
+    # Synchronize Waits for all GPU tasks to complete before returning to the CPU main thread.
     torch.cuda.synchronize()
 
-    # 设置用于测量时间的 cuda Event, 这是PyTorch 官方推荐的接口,理论上应该最靠谱
+    # Set up cuda events for measuring time. This is PyTorch's official recommended interface and should theoretically be the most reliable.
     starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(
         enable_timing=True)
-    # 初始化一个时间容器
+    # Initialize a time container.
     timings = np.zeros((repetitions, 1))
 
     print('testing ...\n')
@@ -52,9 +52,9 @@ def main():
             starter.record()
             _ = model.forward_test(dummy_input)
             ender.record()
-            torch.cuda.synchronize()  # 等待GPU任务完成
+            torch.cuda.synchronize()  # Wait for the GPU task to complete.
             curr_time = starter.elapsed_time(
-                ender)  # 从 starter 到 ender 之间用时,单位为毫秒
+                ender)  # The time between starter and ender, in milliseconds.
             timings[rep] = curr_time
 
     avg = timings.sum() / repetitions

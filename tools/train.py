@@ -49,6 +49,9 @@ def parse_args():
         help='the dir to save logs and models')
     parser.add_argument(
         '--resume_from', help='the checkpoint file to resume from')
+    parser.add_argument('--load_from', help='the checkpoint file to load from')
+    parser.add_argument(
+        '--pretrained', default=None, help='pretrained model file')
     parser.add_argument(
         '--gpus',
         type=int,
@@ -143,6 +146,8 @@ def main():
 
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
+    if args.load_from is not None:
+        cfg.load_from = args.load_from
 
     # dynamic adapt mmdet models
     dynamic_adapt_for_mmlab(cfg)
@@ -202,6 +207,9 @@ def main():
     cfg.seed = args.seed
     meta['seed'] = args.seed
 
+    if args.pretrained is not None:
+        assert isinstance(args.pretrained, str)
+        cfg.model.pretrained = args.pretrained
     model = build_model(cfg.model)
 
     if 'stage' in cfg.model and cfg.model['stage'] == 'EDGE':

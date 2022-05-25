@@ -108,4 +108,4 @@ lr_config = dict(
 checkpoint_config = dict(interval=30)
 
 # runtime settings
-total_epochs = 300
+total_epochs = 90

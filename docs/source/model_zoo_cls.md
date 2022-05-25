@@ -2,7 +2,7 @@
 
 ## Benchmarks
 
-| Algorithm | Config                                           | Top-1 (%) | Top-5 (%) | memory (MB) | inference time (ms/img) | Download                                                     |
+| Algorithm | Config                                           | Top-1 (%) | Top-5 (%) | gpu memory (MB) | inference time (ms/img) | Download                                                     |
 | --------- | ------------------------------------------------------------ | --------- | --------- | --------- | --------- | ------------------------------------------------------------ |
 | resnet50(raw) | [resnet50(raw)](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py) | 76.454    | 93.084    | 2412    | 8.59    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/resnet/resnet50/epoch_100.pth) |
 | resnet50(tfrecord) | [resnet50(tfrecord)](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/resnet/imagenet_rn50_tfrecord.py) | 76.266    | 92.972    | 2412    | 8.59    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/resnet/resnet50/epoch_100.pth) |
@@ -21,10 +21,11 @@
 | hrnetw64 | [hrnetw64](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/hrnet/imagenet_hrnetw64_jpg.py) | 79.884    | 95.04    | 5120    | 54.74    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/resnet/hrnetw64/epoch_100.pth) |
 | vit-base-patch16 | [vit-base-patch16](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/vit/imagenet_vit_base_patch16_224_jpg.py) | 76.082    | 92.026    | 346    | 8.03    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/vit/vit-base-patch16/epoch_300.pth) |
 | swin-tiny-patch4-window7 | [swin-tiny-patch4-window7](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/swint/imagenet_swin_tiny_patch4_window7_224_jpg.py) | 80.528    | 94.822    | 132    | 12.94    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/swint/swin-tiny-patch4-window7/epoch_300.pth) |
-(ps: 通过EasyCV训练得到模型结果，推理的输入尺寸默认为224，机器默认为V100 16G)
+
+(ps: 通过EasyCV训练得到模型结果，推理的输入尺寸默认为224，机器默认为V100 16G，其中gpu memory记录的是gpu peak memory)
 
 
-| Algorithm | Config                                           | Top-1 (%) | Top-5 (%) | memory (MB) | inference time (ms/img) | Download                                                     |
+| Algorithm | Config                                           | Top-1 (%) | Top-5 (%) | gpu memory (MB) | inference time (ms/img) | Download                                                     |
 | --------- | ------------------------------------------------------------ | --------- | --------- | --------- | --------- | ------------------------------------------------------------ |
 | vit_base_patch16_224 | [vit_base_patch16_224](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/timm/vit/vit_base_patch16_224.py) | 78.096    | 94.324   | 346    | 8.03    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/timm/vit/B_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.01-res_224.npz) |
 | vit_large_patch16_224 | [vit_large_patch16_224](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/timm/vit/vit_large_patch16_224.py) | 84.404    | 97.276   | 1171    | 16.30    | [model](https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/timm/vit/L_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.1-sd_0.1--imagenet2012-steps_20k-lr_0.01-res_224.npz) |
@@ -74,4 +75,5 @@
 | dynamic_swin_small_p4_w7_224 | [dynamic_swin_small_p4_w7_224](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/timm/swint/dynamic_small_base_p4_w7_224.py) | 82.896   | 96.234   | 220    | 28.55    | [model](https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/timm/swint/swin_small_patch4_window7_224_statedict.pth) |
 | dynamic_swin_tiny_p4_w7_224 | [dynamic_swin_tiny_p4_w7_224](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/timm/swint/dynamic_swin_tiny_p4_w7_224.py) | 80.912   | 95.41   | 136    | 14.58    | [model](https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/timm/swint/swin_tiny_patch4_window7_224_statedict.pth) |
 | shuffletrans_tiny_p4_w7_224 | [shuffletrans_tiny_p4_w7_224](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/timm/shuffle_transformer/shuffletrans_tiny_p4_w7_224.py) | 82.176   | 96.05   | 5311    | 13.90    | [model](https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/timm/shuffle_transformer/shuffle_tiny.pth) |
-(ps: 通过导入官方模型得到推理结果，需要torch.__version__ >= 1.9.0，推理的输入尺寸默认为224，机器默认为V100 16G)
+
+(ps: 通过导入官方模型得到推理结果，需要torch.__version__ >= 1.9.0，推理的输入尺寸默认为224，机器默认为V100 16G，其中gpu memory记录的是gpu peak memory)
