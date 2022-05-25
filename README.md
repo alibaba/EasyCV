@@ -77,7 +77,7 @@ Please refer to the following model zoo for more details.
 
 ## Data Hub
 
-EasyCV summarized various datasets in different fields.
+EasyCV have collected dataset info for different senarios, making it easy for users to fintune or evaluate models in EasyCV modelzoo.
 
 Please refer to [data_hub.md](https://github.com/alibaba/EasyCV/blob/master/docs/source/data_hub.md).
 
