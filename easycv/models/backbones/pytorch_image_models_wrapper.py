@@ -103,7 +103,8 @@ class PytorchImageModelWrapper(nn.Module):
 
             if pretrained:
                 if pretrained_path.endswith('.npz'):
-                    pretrained_loc = download_cached_file(pretrained_path, check_hash=False, progress=False)
+                    pretrained_loc = download_cached_file(
+                        pretrained_path, check_hash=False, progress=False)
                     return self.model.load_pretrained(pretrained_loc)
                 else:
                     backbone_module = importlib.import_module(
