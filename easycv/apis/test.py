@@ -40,7 +40,6 @@ def single_cpu_test(model,
         # use scatter_kwargs to unpack DataContainer data for raw torch.nn.module
         input_args, kwargs = scatter_kwargs(None, data, [-1])
         with torch.no_grad():
-            kwargs[0]['img'] = kwargs[0]['img'].squeeze(dim=0)
             result = model(**kwargs[0], mode=mode)
 
         for k, v in result.items():
@@ -120,9 +119,16 @@ def single_gpu_test(model, data_loader, mode='test', use_fp16=False, **kwargs):
             results[k].append(v)
 
         if 'img_metas' in data:
-            batch_size = len(data['img_metas'].data[0])
+            if isinstance(data['img_metas'], list):
+                batch_size = len(data['img_metas'][0].data[0])
+            else:
+                batch_size = len(data['img_metas'].data[0])
+
         else:
-            batch_size = data['img'].size(0)
+            if isinstance(data['img'], list):
+                batch_size = data['img'][0].size(0)
+            else:
+                batch_size = data['img'].size(0)
 
         for _ in range(batch_size):
             prog_bar.update()

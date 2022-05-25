@@ -29,6 +29,7 @@ from easycv.models import build_model
 from easycv.utils.collect_env import collect_env
 from easycv.utils.flops_counter import get_model_info
 from easycv.utils.logger import get_root_logger
+from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.config_tools import traverse_replace
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
@@ -142,6 +143,9 @@ def main():
 
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
+
+    # dynamic adapt mmdet models
+    dynamic_adapt_for_mmlab(cfg)
 
     cfg.gpus = args.gpus
 

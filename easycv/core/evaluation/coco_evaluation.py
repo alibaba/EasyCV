@@ -274,11 +274,28 @@ class CocoDetectionEvaluator(Evaluator):
     def _evaluate_impl(self, prediction_dict, groundtruth_dict):
         '''
         Args:
-            prediction_dict:  a dict of k-v pair, each v is a list of
-                tensor or numpy array for detection result
-
-            groundtruth_dict: a dict of k-v pair, each v is a list of
-                tensor or numpy array for groundtruth info
+            prediction_dict:  A dict of k-v pair, each v is a list of
+                tensor or numpy array for detection result. A dictionary containing
+                :groundtruth_boxes: float32 numpy array of shape
+                    [num_boxes, 4] containing `num_boxes` groundtruth boxes of the format
+                    [ymin, xmin, ymax, xmax] in absolute image coordinates.
+                :groundtruth_classes: integer numpy array of shape
+                    [num_boxes] containing 1-indexed groundtruth classes for the boxes.
+                    InputDataFields.groundtruth_is_crowd (optional): integer numpy array of
+                    shape [num_boxes] containing iscrowd flag for groundtruth boxes.
+                :img_metas: List of length number of test images,
+                        dict of image meta info, containing filename, ori_img_shape, and so on.
+            groundtruth_dict: A dict of k-v pair, each v is a list of
+                tensor or numpy array for groundtruth info. A dictionary containing
+                :DetectionResultFields.detection_boxes: float32 numpy array of shape
+                    [num_boxes, 4] containing `num_boxes` detection boxes of the format
+                    [ymin, xmin, ymax, xmax] in absolute image coordinates.
+                :DetectionResultFields.detection_scores: float32 numpy array of shape
+                    [num_boxes] containing detection scores for the boxes.
+                :DetectionResultFields.detection_classes: integer numpy array of shape
+                    [num_boxes] containing 1-indexed detection classes for the boxes.
+                :groundtruth_is_crowd: integer numpy array of
+                    shape [num_boxes] containing iscrowd flag for groundtruth boxes.
 
         Return:
             dict,  each key is metric_name, value is metric value
@@ -306,20 +323,13 @@ class CocoDetectionEvaluator(Evaluator):
                 detection_classes = detection_classes.cpu().numpy().astype(
                     np.int32)
 
-            whwh = np.array([width, height, width, height], dtype=np.float32)
-
-            # target boxes
-            if len(gt_boxes) > 0:
-                gt_boxes_absolute = xywh2xyxy(gt_boxes) * whwh
-            else:
-                continue
             if groundtruth_is_crowd_list is None:
                 groundtruth_is_crowd = None
             else:
                 groundtruth_is_crowd = groundtruth_is_crowd_list[idx]
 
             groundtruth_dict = {
-                'groundtruth_boxes': gt_boxes_absolute,
+                'groundtruth_boxes': gt_boxes,
                 'groundtruth_classes': gt_classes,
                 'groundtruth_is_crowd': groundtruth_is_crowd,
             }
@@ -431,7 +441,10 @@ class CocoMaskEvaluator(Evaluator):
                     standard_fields.InputDataFields.groundtruth_boxes],
                 groundtruth_classes=groundtruth_dict[
                     standard_fields.InputDataFields.groundtruth_classes],
-                groundtruth_masks=groundtruth_instance_masks))
+                groundtruth_masks=groundtruth_instance_masks,
+                groundtruth_is_crowd=groundtruth_dict.get(
+                    standard_fields.InputDataFields.groundtruth_is_crowd,
+                    None)))
         self._annotation_id += groundtruth_dict[
             standard_fields.InputDataFields.groundtruth_boxes].shape[0]
         self._image_id_to_mask_shape_map[image_id] = groundtruth_dict[
@@ -473,7 +486,8 @@ class CocoMaskEvaluator(Evaluator):
         groundtruth_masks_shape = self._image_id_to_mask_shape_map[image_id]
         detection_masks = detections_dict[
             standard_fields.DetectionResultFields.detection_masks]
-        if groundtruth_masks_shape[1:] != detection_masks.shape[1:]:
+        if (len(detection_masks) and groundtruth_masks_shape[0] != 0
+                and groundtruth_masks_shape[1:] != detection_masks.shape[1:]):
             raise ValueError(
                 'Spatial shape of groundtruth masks and detection masks '
                 'are incompatible: {} vs {}'.format(groundtruth_masks_shape,
@@ -560,9 +574,29 @@ class CocoMaskEvaluator(Evaluator):
         """Evaluate with prediction and groundtruth dict
 
         Args:
-            image_id: A unique string/integer identifier for the image.
-            info_dict: A dictionary of groundtruth and detection numpy
-                arrays required for evaluations.
+            detections_dict: A dictionary containing -
+                :DetectionResultFields.detection_scores: float32 numpy array of shape
+                    [num_boxes] containing detection scores for the boxes.
+                :DetectionResultFields.detection_classes: integer numpy array of shape
+                    [num_boxes] containing 1-indexed detection classes for the boxes.
+                :DetectionResultFields.detection_masks: mask rle code or optional uint8
+                    numpy array of shape [num_boxes, image_height, image_width] containing
+                    instance masks corresponding to the boxes. The elements of the array
+                    must be in {0, 1}.
+                :img_metas: List of length number of test images,
+                    dict of image meta info, containing filename, ori_img_shape, and so on.
+            groundtruth_dict: A dictionary containing
+                :InputDataFields.groundtruth_boxes: float32 numpy array of shape
+                    [num_boxes, 4] containing `num_boxes` groundtruth boxes of the format
+                    [ymin, xmin, ymax, xmax] in absolute image coordinates.
+                :InputDataFields.groundtruth_classes: integer numpy array of shape
+                    [num_boxes] containing 1-indexed groundtruth classes for the boxes.
+                :InputDataFields.groundtruth_instance_masks: mask rle code or uint8
+                    numpy array of shape [num_boxes, image_height, image_width] containing
+                    groundtruth masks corresponding to the boxes. The elements of the array
+                    must be in {0, 1}.
+                :groundtruth_is_crowd: integer numpy array of
+                    shape [num_boxes] containing iscrowd flag for groundtruth boxes.
         """
         num_images_det = len(
             prediction_dict[DetectionResultFields.detection_boxes])
@@ -588,27 +622,32 @@ class CocoMaskEvaluator(Evaluator):
                 detection_classes = detection_classes.cpu().numpy().astype(
                     np.int32)
 
-            whwh = np.array([width, height, width, height], dtype=np.float32)
-
-            # target boxes
-            if len(gt_boxes) > 0:
-                gt_boxes_absolute = xywh2xyxy(gt_boxes) * whwh
-            else:
-                continue
-
             if groundtruth_is_crowd_list is None:
                 groundtruth_is_crowd = None
             else:
                 groundtruth_is_crowd = groundtruth_is_crowd_list[idx]
 
+            if len(gt_masks) == 0:
+                gt_masks = np.array([], dtype=np.uint8).reshape(
+                    (0, height, width))
+            else:
+                gt_masks = np.array([
+                    self._ann_to_mask(mask, height, width) for mask in gt_masks
+                ],
+                                    dtype=np.uint8)
             groundtruth_dict = {
-                'groundtruth_boxes': gt_boxes_absolute,
+                'groundtruth_boxes': gt_boxes,
                 'groundtruth_instance_masks': gt_masks,
                 'groundtruth_classes': gt_classes,
                 'groundtruth_is_crowd': groundtruth_is_crowd,
             }
             self.add_single_ground_truth_image_info(image_id, groundtruth_dict)
 
+            detection_masks = np.array([
+                self._ann_to_mask(mask, height, width)
+                for mask in detection_masks
+            ],
+                                       dtype=np.uint8)
             # add detection info
             detection_dict = {
                 'detection_masks': detection_masks,
@@ -620,6 +659,27 @@ class CocoMaskEvaluator(Evaluator):
         eval_dict = self._evaluate()
         self.clear()
         return eval_dict
+
+    def _ann_to_mask(self, segmentation, height, width):
+        from xtcocotools import mask as maskUtils
+        segm = segmentation
+        h = height
+        w = width
+
+        if type(segm) == list:
+            # polygon -- a single object might consist of multiple parts
+            # we merge all parts into one mask rle code
+            rles = maskUtils.frPyObjects(segm, h, w)
+            rle = maskUtils.merge(rles)
+        elif type(segm['counts']) == list:
+            # uncompressed RLE
+            rle = maskUtils.frPyObjects(segm, h, w)
+        else:
+            # rle
+            rle = segm
+
+        m = maskUtils.decode(rle)
+        return m
 
 
 @EVALUATORS.register_module

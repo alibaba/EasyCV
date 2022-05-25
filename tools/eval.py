@@ -2,6 +2,8 @@
 """
 isort:skip_file
 """
+import time
+import json
 import argparse
 import os
 import os.path as osp
@@ -28,6 +30,7 @@ from easycv.models import build_model
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
+from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 
 # from tools.fuse_conv_bn import fuse_module
 
@@ -143,6 +146,9 @@ def main():
     if cfg.get('oss_io_config', None) is not None:
         io.access_oss(**cfg.oss_io_config)
 
+    # dynamic adapt mmdet models
+    dynamic_adapt_for_mmlab(cfg)
+
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -162,6 +168,14 @@ def main():
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
 
+    rank, _ = get_dist_info()
+
+    if args.work_dir is not None and rank == 0:
+        if not io.exists(args.work_dir):
+            io.makedirs(args.work_dir)
+        timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+        log_file = osp.join(args.work_dir, 'eval_{}.json'.format(timestamp))
+
     # build the model and load checkpoint
     model = build_model(cfg.model)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -170,7 +184,7 @@ def main():
         checkpoint = load_checkpoint(
             model, args.checkpoint, map_location=device)
     else:
-        print(f'use default init_weight')
+        print('use default init_weight')
     model.to(device)
     # if args.fuse_conv_bn:
     #     model = fuse_module(model)
@@ -224,7 +238,6 @@ def main():
                 gpu_collect=args.gpu_collect,
                 use_fp16=args.fp16)
 
-        rank, _ = get_dist_info()
         if rank == 0:
             if args.out:
                 print(f'\nwriting results to {args.out}')
@@ -243,6 +256,9 @@ def main():
                 evaluators = build_evaluator(eval_pipe.evaluators)
                 eval_result = dataset.evaluate(outputs, evaluators=evaluators)
                 print(f'\n eval_result {eval_result}')
+                if args.work_dir is not None:
+                    with io.open(log_file, 'w') as f:
+                        json.dump(eval_result, f)
 
 
 if __name__ == '__main__':

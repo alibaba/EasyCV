@@ -7,20 +7,18 @@ blade_compression needs torch >= 1.10.0
 conda install pytorch==1.10.0 torchvision==0.11.0 torchaudio==0.10.0 cudatoolkit=10.2 -c pytorch
 ```
 ### install mmcv
-
 with torch >=1.10.0, mmcv >=1.3.16 is required
-
 ```shell
 pip install mmcv-full==1.4.4 -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
 ```
 ### install onnx and pai_nni
 ```shell
 pip install onnx
-pip install https://pai-nni.oss-cn-zhangjiakou.aliyuncs.com/release/2.5/pai_nni-2.5-py3-none-manylinux1_x86_64.whl
+pip install http://pai-nni.oss-cn-zhangjiakou.aliyuncs.com/release/2.6.1/pai_nni-2.6.1-py3-none-manylinux1_x86_64.whl
 ```
 ### install blade_compression
 ```shell
-pip install http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/third_party/blade_compression-0.0.1-py3-none-any.whl
+pip install http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/third_party/blade_compression-0.0.2-py3-none-any.whl
 ```
 
 ## Data preparation
@@ -86,7 +84,7 @@ python tools/quantize.py \
 This is used to prune yolox model; The pruned model will be saved in work_dir.
 
 ```shell
-python tools/quantize.py \
+python tools/prune.py \
 		${CONFIG_PATH} \
 		${MODEL_PATH} \
 		--work_dir ${WORK_DIR} \
@@ -114,7 +112,7 @@ python tools/quantize.py \
 Edit `data_root`path in the `${CONFIG_PATH}` to your own data path.
 
 ```shell
-python tools/quantize.py \
+python tools/prune.py \
 		configs/detection/yolox/yolox_s_8xb16_300e_coco.py \
 		models/yolox_s.pth \
 		--pruning_class AGP \
