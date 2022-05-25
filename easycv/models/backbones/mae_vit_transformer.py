@@ -73,17 +73,16 @@ class MaskedAutoencoderViT(nn.Module):
         ])
         self.norm = norm_layer(embed_dim)
 
-        self.apply(self._init_weights)
-
-    def _init_weights(self, m):
-        if isinstance(m, nn.Linear):
-            # we use xavier_uniform following official JAX ViT:
-            torch.nn.init.xavier_uniform_(m.weight)
-            if isinstance(m, nn.Linear) and m.bias is not None:
+    def init_weights(self, pretrained=None):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                # we use xavier_uniform following official JAX ViT:
+                torch.nn.init.xavier_uniform_(m.weight)
+                if isinstance(m, nn.Linear) and m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.LayerNorm):
                 nn.init.constant_(m.bias, 0)
-        elif isinstance(m, nn.LayerNorm):
-            nn.init.constant_(m.bias, 0)
-            nn.init.constant_(m.weight, 1.0)
+                nn.init.constant_(m.weight, 1.0)
 
     def random_masking(self, x, mask_ratio):
         """

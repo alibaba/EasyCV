@@ -477,19 +477,13 @@ class ResNeSt(nn.Module):
             self.fc = nn.Linear(512 * block.expansion, num_classes)
 
     def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str) or isinstance(pretrained, dict):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                    m.weight.data.normal_(0, math.sqrt(2. / n))
-                elif isinstance(m, self.norm_layer):
-                    m.weight.data.fill_(1)
-                    m.bias.data.zero_()
-        else:
-            raise TypeError('pretrained must be a str or None')
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+            elif isinstance(m, self.norm_layer):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
 
     def _make_layer(self,
                     block,

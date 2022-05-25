@@ -770,30 +770,15 @@ class SwinTransformer(nn.Module):
         if self.use_dense_prediction:
             self.head_dense = None
 
-        self.apply(self._init_weights)
-
-    def _init_weights(self, m):
-        if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=.02)
-            if isinstance(m, nn.Linear) and m.bias is not None:
+    def init_weights(self, pretrained=None):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                trunc_normal_(m.weight, std=.02)
+                if isinstance(m, nn.Linear) and m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.LayerNorm):
                 nn.init.constant_(m.bias, 0)
-        elif isinstance(m, nn.LayerNorm):
-            nn.init.constant_(m.bias, 0)
-            nn.init.constant_(m.weight, 1.0)
-
-    def init_weights_unused(self, pretrained=None):
-        if isinstance(pretrained, str) or isinstance(pretrained, dict):
-            logger = get_root_logger()
-            load_checkpoint(
-                self,
-                pretrained,
-                map_location='cpu',
-                strict=False,
-                logger=logger)
-        elif pretrained is None:
-            self.apply(self._init_weights)
-        else:
-            raise TypeError('pretrained must be a str or None')
+                nn.init.constant_(m.weight, 1.0)
 
     @torch.jit.ignore
     def no_weight_decay(self):
@@ -982,80 +967,6 @@ class SwinTransformer(nn.Module):
         flops += self.num_features * self.num_classes
         return flops
 
-    def init_weights(self, pretrained='', pretrained_layers=[], verbose=True):
-        if os.path.isfile(pretrained):
-            pretrained_dict = torch.load(pretrained, map_location='cpu')
-            logging.info(f'=> loading pretrained model {pretrained}')
-            model_dict = self.state_dict()
-            pretrained_dict = {
-                k: v
-                for k, v in pretrained_dict.items() if k in model_dict.keys()
-            }
-            need_init_state_dict = {}
-            for k, v in pretrained_dict.items():
-                need_init = (
-                    k.split('.')[0] in pretrained_layers
-                    or pretrained_layers[0] == '*'
-                    or 'relative_position_index' not in k
-                    or 'attn_mask' not in k)
-
-                if need_init:
-                    if verbose:
-                        logging.info(f'=> init {k} from {pretrained}')
-
-                    if 'relative_position_bias_table' in k and v.size(
-                    ) != model_dict[k].size():
-                        relative_position_bias_table_pretrained = v
-                        relative_position_bias_table_current = model_dict[k]
-                        L1, nH1 = relative_position_bias_table_pretrained.size(
-                        )
-                        L2, nH2 = relative_position_bias_table_current.size()
-                        if nH1 != nH2:
-                            logging.info(f'Error in loading {k}, passing')
-                        else:
-                            if L1 != L2:
-                                logging.info(
-                                    '=> load_pretrained: resized variant: {} to {}'
-                                    .format((L1, nH1), (L2, nH2)))
-                                S1 = int(L1**0.5)
-                                S2 = int(L2**0.5)
-                                relative_position_bias_table_pretrained_resized = torch.nn.functional.interpolate(
-                                    relative_position_bias_table_pretrained.
-                                    permute(1, 0).view(1, nH1, S1, S1),
-                                    size=(S2, S2),
-                                    mode='bicubic')
-                                v = relative_position_bias_table_pretrained_resized.view(
-                                    nH2, L2).permute(1, 0)
-
-                    if 'absolute_pos_embed' in k and v.size(
-                    ) != model_dict[k].size():
-                        absolute_pos_embed_pretrained = v
-                        absolute_pos_embed_current = model_dict[k]
-                        _, L1, C1 = absolute_pos_embed_pretrained.size()
-                        _, L2, C2 = absolute_pos_embed_current.size()
-                        if C1 != C1:
-                            logging.info(f'Error in loading {k}, passing')
-                        else:
-                            if L1 != L2:
-                                logging.info(
-                                    '=> load_pretrained: resized variant: {} to {}'
-                                    .format((1, L1, C1), (1, L2, C2)))
-                                S1 = int(L1**0.5)
-                                S2 = int(L2**0.5)
-                                absolute_pos_embed_pretrained = absolute_pos_embed_pretrained.reshape(
-                                    -1, S1, S1, C1)
-                                absolute_pos_embed_pretrained = absolute_pos_embed_pretrained.permute(
-                                    0, 3, 1, 2)
-                                absolute_pos_embed_pretrained_resized = torch.nn.functional.interpolate(
-                                    absolute_pos_embed_pretrained,
-                                    size=(S2, S2),
-                                    mode='bicubic')
-                                v = absolute_pos_embed_pretrained_resized.permute(
-                                    0, 2, 3, 1).flatten(1, 2)
-
-                    need_init_state_dict[k] = v
-            self.load_state_dict(need_init_state_dict, strict=False)
-
     def freeze_pretrained_layers(self, frozen_layers=[]):
         for name, module in self.named_modules():
             if (name.split('.')[0] in frozen_layers
@@ -1073,43 +984,6 @@ class SwinTransformer(nn.Module):
                 logging.info(
                     '=> set param {} requires grad to False'.format(name))
         return self
-
-
-# @register_model
-# def get_cls_model(config, is_teacher=False, use_dense_prediction=False, **kwargs):
-#     swin_spec = config.MODEL.SPEC
-#     swin = SwinTransformer(
-#         img_size=config.TRAIN.IMAGE_SIZE[0],
-#         in_chans=3,
-#         num_classes=config.MODEL.NUM_CLASSES,
-#         patch_size=swin_spec['PATCH_SIZE'],
-#         embed_dim=swin_spec['DIM_EMBED'],
-#         depths=swin_spec['DEPTHS'],
-#         num_heads=swin_spec['NUM_HEADS'],
-#         window_size=swin_spec['WINDOW_SIZE'],
-#         mlp_ratio=swin_spec['MLP_RATIO'],
-#         qkv_bias=swin_spec['QKV_BIAS'],
-#         drop_rate=swin_spec['DROP_RATE'],
-#         attn_drop_rate=swin_spec['ATTN_DROP_RATE'],
-#         drop_path_rate= 0.0 if is_teacher else swin_spec['DROP_PATH_RATE'],
-#         norm_layer=partial(nn.LayerNorm, eps=1e-6),
-#         ape=swin_spec['USE_APE'],
-#         patch_norm=swin_spec['PATCH_NORM'],
-#         use_dense_prediction=use_dense_prediction,
-#     )
-
-#     if config.MODEL.INIT_WEIGHTS:
-#         swin.init_weights(
-#             config.MODEL.PRETRAINED,
-#             config.MODEL.PRETRAINED_LAYERS,
-#             config.VERBOSE
-#         )
-
-#     # freeze the specified pre-trained layers (if any)
-#     if config.FINETUNE.FINETUNE:
-#         swin.freeze_pretrained_layers(config.FINETUNE.FROZEN_LAYERS)
-
-#     return swin
 
 
 def dynamic_swin_tiny_p4_w7_224(pretrained=False, **kwargs):

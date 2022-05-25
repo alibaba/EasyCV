@@ -14,6 +14,8 @@ load_from = None
 model = dict(
     type='Classification',
     train_preprocess=['randomErasing'],
+    pretrained=
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_base_patch4_window7_224_22k_statedict.pth',
     backbone=dict(
         type='PytorchImageModelWrapper',
         model_name='swin_base_patch4_window7_224_in22k'
@@ -148,5 +150,3 @@ lr_config = dict(
 checkpoint_config = dict(interval=5)
 # runtime settings
 total_epochs = 100
-
-load_from = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_base_patch4_window7_224_22k_statedict.pth'

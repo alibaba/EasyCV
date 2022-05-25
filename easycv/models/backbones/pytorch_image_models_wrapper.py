@@ -2,7 +2,6 @@
 import importlib
 from distutils.version import LooseVersion
 
-import mmcv
 import timm
 import torch
 import torch.nn as nn
@@ -10,7 +9,7 @@ from timm.models.helpers import load_pretrained
 from timm.models.hub import download_cached_file
 
 from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
+from easycv.utils.logger import get_root_logger, print_log
 from ..modelzoo import timm_models as model_urls
 from ..registry import BACKBONES
 from .shuffle_transformer import (shuffletrans_base_p4_w7_224,
@@ -70,8 +69,6 @@ class PytorchImageModelWrapper(nn.Module):
 
     def __init__(self,
                  model_name='resnet50',
-                 pretrained=False,
-                 checkpoint_path=None,
                  scriptable=None,
                  exportable=None,
                  no_jit=None,
@@ -88,13 +85,7 @@ class PytorchImageModelWrapper(nn.Module):
         """
         super(PytorchImageModelWrapper, self).__init__()
 
-        self.pretrained = pretrained
         self.model_name = model_name
-        self.checkpoint_path = checkpoint_path
-        if model_name in model_urls:
-            self.pretrained_path = checkpoint_path or model_urls[model_name]
-        else:
-            self.pretrained_path = checkpoint_path
 
         timm_model_names = timm.list_models(pretrained=False)
         self.timm_model_names = timm_model_names
@@ -113,64 +104,61 @@ class PytorchImageModelWrapper(nn.Module):
             self.model = _MODEL_MAP[model_name](**kwargs)
 
     def init_weights(self, pretrained=None):
-        # pretrained is the path of pretrained model offered by easycv
         logger = get_root_logger()
-        if pretrained is not None:
-            load_checkpoint(
-                self.model,
-                pretrained,
-                map_location=torch.device('cpu'),
-                strict=False,
-                logger=logger)
-        else:
+        if pretrained:
             if self.model_name in self.timm_model_names:
-                if self.pretrained:
-                    if self.pretrained_path.endswith('.npz'):
-                        pretrained_loc = download_cached_file(
-                            self.pretrained_path,
-                            check_hash=False,
-                            progress=False)
-                        return self.model.load_pretrained(pretrained_loc)
-                    else:
-                        backbone_module = importlib.import_module(
-                            self.model.__module__)
-                        return load_pretrained(
-                            self.model,
-                            default_cfg={'url': self.pretrained_path},
-                            filter_fn=backbone_module.checkpoint_filter_fn
-                            if hasattr(backbone_module, 'checkpoint_filter_fn')
-                            else None)
-            elif self.model_name in _MODEL_MAP:
-                if self.pretrained:
-                    if self.model_name in model_urls.keys():
-                        try_max = 3
-                        try_idx = 0
-                        while try_idx < try_max:
-                            try:
-                                state_dict = torch.hub.load_state_dict_from_url(
-                                    url=model_urls[self.model_name],
-                                    map_location='cpu',
-                                )
-                                try_idx += try_max
-                            except Exception:
-                                try_idx += 1
-                                state_dict = {}
-                                if try_idx == try_max:
-                                    mmcv.print_log(
-                                        f'load from url failed ! oh my DLC & OSS, you boys really good! {model_urls[self.model_name]}',
-                                        logger)
-
-                        if 'model' in state_dict:
-                            state_dict = state_dict['model']
-                        self.model.load_state_dict(state_dict, strict=False)
-                    else:
-                        mmcv.print_log(
-                            f'{self.model_name} not in evtorch modelzoo!',
-                            logger)
-            else:
-                mmcv.print_log(
-                    f'Error: Fail to create {self.model_name} with (pretrained={pretrained}, checkpoint_path={self.checkpoint_path} ...)',
+                pretrained_path = model_urls[self.model_name]
+                print_log(
+                    'load model from default path: {}'.format(pretrained_path),
                     logger)
+                if pretrained_path.endswith('.npz'):
+                    pretrained_loc = download_cached_file(
+                        pretrained_path, check_hash=False, progress=False)
+                    return self.model.load_pretrained(pretrained_loc)
+                else:
+                    backbone_module = importlib.import_module(
+                        self.model.__module__)
+                    return load_pretrained(
+                        self.model,
+                        default_cfg={'url': pretrained_path},
+                        filter_fn=backbone_module.checkpoint_filter_fn
+                        if hasattr(backbone_module, 'checkpoint_filter_fn')
+                        else None)
+            elif self.model_name in _MODEL_MAP:
+                if self.model_name in model_urls.keys():
+                    pretrained_path = model_urls[self.model_name]
+                    print_log(
+                        'load model from default path: {}'.format(
+                            pretrained_path), logger)
+                    try_max = 3
+                    try_idx = 0
+                    while try_idx < try_max:
+                        try:
+                            state_dict = torch.hub.load_state_dict_from_url(
+                                url=pretrained_path,
+                                map_location='cpu',
+                            )
+                            try_idx += try_max
+                        except Exception:
+                            try_idx += 1
+                            state_dict = {}
+                            if try_idx == try_max:
+                                print_log(
+                                    f'load from url failed ! oh my DLC & OSS, you boys really good! {model_urls[self.model_name]}',
+                                    logger)
+
+                    if 'model' in state_dict:
+                        state_dict = state_dict['model']
+                    self.model.load_state_dict(state_dict, strict=False)
+                else:
+                    print_log(f'{self.model_name} not in evtorch modelzoo!',
+                              logger)
+            else:
+                print_log(
+                    f'Error: Fail to create {self.model_name} with (pretrained={self.pretrained}, checkpoint_path={self.checkpoint_path} ...)',
+                    logger)
+        else:
+            self.model.init_weights()
 
     def forward(self, x):
 

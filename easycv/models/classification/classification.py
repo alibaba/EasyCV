@@ -4,14 +4,17 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import torch
 import torch.nn as nn
+from codebase.EasyCV import easycv
 from mmcv.runner import get_dist_info
 from timm.data.mixup import Mixup
 
+from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import print_log
 from easycv.utils.preprocess_function import (bninceptionPre, gaussianBlur,
                                               mixUpCls, randomErasing)
 from .. import builder
 from ..base import BaseModel
+from ..modelzoo import easycv_models, timm_models
 from ..registry import MODELS
 from ..utils import Sobel
 
@@ -25,9 +28,11 @@ class Classification(BaseModel):
                  with_sobel=False,
                  head=None,
                  neck=None,
+                 pretrained=None,
                  mixup_cfg=None):
         super(Classification, self).__init__()
         self.with_sobel = with_sobel
+        self.pretrained = pretrained
         if with_sobel:
             self.sobel_layer = Sobel()
         else:
@@ -63,6 +68,7 @@ class Classification(BaseModel):
         self.train_preprocess = [
             self.preprocess_key_map[i] for i in train_preprocess
         ]
+
         self.backbone = builder.build_backbone(backbone)
 
         assert head is not None, 'Classification head should be configed'
@@ -96,18 +102,24 @@ class Classification(BaseModel):
         self.activate_fn = nn.Softmax(dim=1)
         self.extract_list = ['neck']
 
-    def init_weights(self, pretrained=None):
-        if pretrained is not None:
-            print_log('load model from: {}'.format(pretrained), logger='root')
-        self.backbone.init_weights(pretrained=pretrained)
+    def init_weights(self):
+        if isinstance(self.pretrained, str):
+            print_log(
+                'load model from specified path: {}'.format(self.pretrained),
+                logger='root')
+            load_checkpoint(
+                self.backbone, self.pretrained, strict=False, logger='root')
+        else:
+            print_log('load model from init weights')
+            self.backbone.init_weights(pretrained=self.pretrained)
 
-        for idx in range(self.head_num):
-            h = getattr(self, 'head_%d' % idx)
-            h.init_weights()
+            for idx in range(self.head_num):
+                h = getattr(self, 'head_%d' % idx)
+                h.init_weights()
 
-        for idx in range(self.neck_num):
-            n = getattr(self, 'neck_%d' % idx)
-            n.init_weights()
+            for idx in range(self.neck_num):
+                n = getattr(self, 'neck_%d' % idx)
+                n.init_weights()
 
     def forward_backbone(self, img: torch.Tensor) -> List[torch.Tensor]:
         """Forward backbone

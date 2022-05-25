@@ -965,17 +965,11 @@ class LiteHRNet(nn.Module):
             pretrained (str, optional): Path to pre-trained weights.
                 Defaults to None.
         """
-        if isinstance(pretrained, str):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    normal_init(m, std=0.001)
-                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
-                    constant_init(m, 1)
-        else:
-            raise TypeError('pretrained must be a str or None')
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                normal_init(m, std=0.001)
+            elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
+                constant_init(m, 1)
 
     def forward(self, x):
         """Forward function."""
