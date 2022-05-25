@@ -103,8 +103,7 @@ class PytorchImageModelWrapper(nn.Module):
 
             if pretrained:
                 if pretrained_path.endswith('.npz'):
-                    pretrained_loc = download_cached_file(
-                        pretrained_path, check_hash=False, progress=False)
+                    pretrained_loc = download_cached_file(pretrained_path, check_hash=False, progress=False)
                     return self.model.load_pretrained(pretrained_loc)
                 else:
                     backbone_module = importlib.import_module(
@@ -139,10 +138,10 @@ class PytorchImageModelWrapper(nn.Module):
 
                     if 'model' in state_dict:
                         state_dict = state_dict['model']
-                    for key, value in state_dict.items():
-                        print(key, ':', value.size())
-                    for name, parameters in self.model.named_parameters():
-                        print(name, ':', parameters.size())
+                    # for key, value in state_dict.items():
+                    #     print(key, ':', value.size())
+                    # for name, parameters in self.model.named_parameters():
+                    #     print(name, ':', parameters.size())
                     self.model.load_state_dict(state_dict, strict=False)
                 else:
                     print('%s not in evtorch modelzoo!' % model_name)
