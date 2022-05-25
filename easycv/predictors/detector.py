@@ -7,7 +7,6 @@ import cv2
 import numpy as np
 import torch
 import torch_blade
-from tests.ut_config import CONFIG_PATH
 from torchvision.transforms import Compose
 
 from easycv.datasets.registry import PIPELINES
@@ -39,7 +38,7 @@ class TorchYoloXPredictor(PredictorInterface):
                  model_path,
                  max_det=100,
                  score_thresh=0.5,
-                 model_config=None):
+                 model_config='configs/detection/yolox/yolox_s_8xb16_300e_coco.py'):
         """
         init model
 
@@ -55,14 +54,12 @@ class TorchYoloXPredictor(PredictorInterface):
         self.use_jit = model_path.endswith('jit') or model_path.endswith(
             'blade')
 
-        if model_config:
-            model_config = json.loads(model_config)
-        else:
-            model_config = {}
+        self.end2end = 'end2end' in model_path
+
         self.score_thresh = model_config[
             'score_thresh'] if 'score_thresh' in model_config else score_thresh
 
-        self.local_config_file = CONFIG_PATH
+        self.local_config_file = model_config
         self.cfg = mmcv_config_fromfile(self.local_config_file)
 
         if self.use_jit:
@@ -73,10 +70,6 @@ class TorchYoloXPredictor(PredictorInterface):
             self.traceable = True
 
         else:
-            self.local_config_file = CONFIG_PATH
-
-            self.cfg = mmcv_config_fromfile(self.local_config_file)
-
             # build model
             self.model = build_model(self.cfg.model)
             self.traceable = getattr(self.model, 'trace_able', False)
@@ -148,14 +141,15 @@ class TorchYoloXPredictor(PredictorInterface):
             if type(img) is not np.ndarray:
                 img = np.asarray(img)
 
-            if self.use_jit:
+            if self.end2end:
                 img = torch.from_numpy(img).float().to(self.device)
                 out = self.model(img)
             else:
                 ori_img_shape = img.shape[:2]
                 data_dict = {
                     'ori_img_shape': ori_img_shape,
-                    'img': cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                    # 'img': cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                    'img': img
                 }
                 data_dict = self.pipeline(data_dict)
                 img = data_dict['img']
@@ -163,14 +157,16 @@ class TorchYoloXPredictor(PredictorInterface):
                 data_dict.pop('img')
 
                 if self.traceable:
-                    det_out = self.post_assign(
-                        self.model(img),
-                        img_metas=[data_dict['img_metas']._data])
+                    with torch.no_grad():
+                        det_out = self.post_assign(
+                            self.model(img),
+                            img_metas=[data_dict['img_metas']._data])
                 else:
-                    det_out = self.model(
-                        img,
-                        mode='test',
-                        img_metas=[data_dict['img_metas']._data])
+                    with torch.no_grad():
+                        det_out = self.model(
+                            img,
+                            mode='test',
+                            img_metas=[data_dict['img_metas']._data])
 
                 # det_out = det_out[:self.max_det]
                 # scale box to original image scale, this logic has some operation

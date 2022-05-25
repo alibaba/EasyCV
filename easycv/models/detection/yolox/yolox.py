@@ -112,7 +112,6 @@ class YOLOX(BaseModel):
             target (List[Tensor]): list of target tensor, NTx5 [class,x_c,y_c,w,h]
         """
         with torch.no_grad():
-
             fpn_outs = self.backbone(img)
             outputs = self.head(fpn_outs)
 

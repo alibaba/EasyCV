@@ -232,7 +232,7 @@ def blade_optimize(script_model,
                    blade_config=dict(enable_fp16=True),
                    backend='TensorRT',
                    batch=1,
-                   compute_cost=False):
+                   compute_cost=True):
 
     with opt_trt_config(blade_config):
         opt_model = optimize(

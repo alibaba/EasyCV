@@ -183,7 +183,7 @@ def _export_yolox(model, cfg, filename):
             input.to(device),
             preprocess_fn=PreProcess(target_size=(640,
                                                   640)) if end2end else None,
-            postprocess_fn=DetPostProcess(max_det=100) if end2end else None,
+            postprocess_fn=DetPostProcess(max_det=100, score_thresh=0.5) if end2end else None,
             trace_model=True,
         )
 
@@ -484,8 +484,12 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
             image = torch.unsqueeze(image, 0)
             ori_h, ori_w = image.shape[-2:]
 
+            mean = [123.675, 116.28, 103.53]
+            std = [58.395, 57.12, 57.375]
+
             if not self.keep_ratio:
                 out_image = t_f.resize(image, [input_h, input_w])
+                out_image = t_f.normalize(out_image, mean, std)
                 pad_l, pad_t, scale = 0, 0, 1.0
             else:
                 scale = min(input_h / ori_h, input_w / ori_w, 1.0)
@@ -496,6 +500,7 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
                 out_image = t_f.resize(image, [resize_h, resize_w])
                 out_image = t_f.pad(
                     out_image, [pad_l, pad_t, pad_r, pad_b], fill=114)
+                out_image = t_f.normalize(out_image, mean, std)
 
             h, w = out_image.shape[-2:]
             output_info = {
@@ -514,8 +519,9 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
             max_det: max number of detections to keep.
         """
 
-        def __init__(self, max_det: int = 100):
+        def __init__(self, max_det: int = 100, score_thresh: float = 0.5):
             self.max_det = max_det
+            self.score_thresh = score_thresh
 
         def __call__(
             self, output: List[torch.Tensor], sample_info: Dict[str,
@@ -545,6 +551,10 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
             detection_boxes = det_out[:, :4].cpu()
             detection_scores = det_out[:, 4].cpu()
             detection_classes = det_out[:, 5].cpu().int()
+
+            sel_ids = detection_scores > self.score_thresh
+            detection_boxes = detection_boxes[sel_ids]
+            detection_classes = detection_classes[sel_ids]
 
             out = {
                 'detection_boxes': detection_boxes,
@@ -632,20 +642,21 @@ class End2endModelExportWrapper(torch.nn.Module):
     def forward(self, image):
         preprocess_outputs = ()
 
-        if self.preprocess_fn is not None:
-            output = self.preprocess_fn(image)
-            # if multi values ​​are returned, the first one must be image, others ​​are optional,
-            # and others will all be passed into postprocess_fn
-            if isinstance(output, tuple):
-                image = output[0]
-                preprocess_outputs = output[1:]
-            else:
-                image = output
+        with torch.no_grad():
+            if self.preprocess_fn is not None:
+                output = self.preprocess_fn(image)
+                # if multi values ​​are returned, the first one must be image, others ​​are optional,
+                # and others will all be passed into postprocess_fn
+                if isinstance(output, tuple):
+                    image = output[0]
+                    preprocess_outputs = output[1:]
+                else:
+                    image = output
 
-        model_output = self.model.forward_export(image)
+            model_output = self.model.forward_export(image)
 
-        if self.postprocess_fn is not None:
-            model_output = self.postprocess_fn(model_output,
-                                               *preprocess_outputs)
+            if self.postprocess_fn is not None:
+                model_output = self.postprocess_fn(model_output,
+                                                   *preprocess_outputs)
 
         return model_output
