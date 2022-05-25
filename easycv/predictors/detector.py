@@ -143,12 +143,15 @@ class TorchYoloXPredictor(PredictorInterface):
 
             if self.end2end:
                 img = torch.from_numpy(img).float().to(self.device)
-                out = self.model(img)
+                det_out = self.model(img)
+
+                detection_scores = det_out['detection_scores']
+                sel_ids = detection_scores > self.score_thresh
+                detection_boxes = det_out['detection_boxes'][sel_ids]
+                detection_classes = det_out['detection_classes'][sel_ids]
+
             else:
-                ori_img_shape = img.shape[:2]
                 data_dict = {
-                    'ori_img_shape': ori_img_shape,
-                    # 'img': cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
                     'img': img
                 }
                 data_dict = self.pipeline(data_dict)
@@ -178,21 +181,21 @@ class TorchYoloXPredictor(PredictorInterface):
                 sel_ids = detection_scores > self.score_thresh
                 detection_boxes = det_out['detection_boxes'][0][sel_ids]
                 detection_classes = det_out['detection_classes'][0][sel_ids]
-                num_boxes = detection_classes.shape[
-                    0] if detection_classes is not None else 0
-                # print(num_boxes)
-                detection_classes_names = [
-                    self.CLASSES[detection_classes[idx]]
-                    for idx in range(num_boxes)
-                ]
 
-                out = {
-                    'ori_img_shape': list(ori_img_shape),
-                    'detection_boxes': detection_boxes,
-                    'detection_scores': detection_scores,
-                    'detection_classes': detection_classes,
-                    'detection_class_names': detection_classes_names,
-                }
+            num_boxes = detection_classes.shape[
+                0] if detection_classes is not None else 0
+
+            detection_classes_names = [
+                self.CLASSES[detection_classes[idx]]
+                for idx in range(num_boxes)
+            ]
+
+            out = {
+                'detection_boxes': detection_boxes,
+                'detection_scores': detection_scores,
+                'detection_classes': detection_classes,
+                'detection_class_names': detection_classes_names,
+            }
 
             output_list.append(out)
 

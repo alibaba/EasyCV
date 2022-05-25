@@ -16,6 +16,8 @@ from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
 from easycv.toolkit.blade import blade_env_assert, blade_optimize
 from easycv.utils.bbox_util import scale_coords
 from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.config_tools import mmcv_config_fromfile
+
 
 __all__ = [
     'export', 'PreProcess', 'DetPostProcess', 'End2endModelExportWrapper'
@@ -525,8 +527,8 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
 
         def __call__(
             self, output: List[torch.Tensor], sample_info: Dict[str,
-                                                                Tuple[float,
-                                                                      float]]
+                                                                                Tuple[float,
+                                                                                      float]]
         ) -> Dict[str, torch.Tensor]:
             """
             Args:
@@ -543,18 +545,16 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
             h, w = sample_info['img_shape']
 
             output = output[0]
+
             det_out = output[:self.max_det]
 
             det_out = scale_coords((int(h), int(w)), det_out,
                                    (int(ori_h), int(ori_w)),
                                    (scale_factor, pad))
-            detection_boxes = det_out[:, :4].cpu()
-            detection_scores = det_out[:, 4].cpu()
-            detection_classes = det_out[:, 5].cpu().int()
 
-            sel_ids = detection_scores > self.score_thresh
-            detection_boxes = detection_boxes[sel_ids]
-            detection_classes = detection_classes[sel_ids]
+            detection_boxes = det_out[:, :4].cpu()
+            detection_scores = (det_out[:, 4] * det_out[:, 5]).cpu()
+            detection_classes = det_out[:, 6].cpu().int()
 
             out = {
                 'detection_boxes': detection_boxes,
