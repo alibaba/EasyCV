@@ -5,6 +5,7 @@ model = dict(
     type='Classification',
     train_preprocess=['randomErasing'],
     # train_preprocess=['mixUp'],
+    pretrained=None,
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -18,22 +19,22 @@ model = dict(
         type='MpMetrixHead',
         with_avg_pool=True,
         in_channels=2048,
-        loss_config=
-        [{
-            'type': 'ModelParallelSoftmaxLoss',
-            'embedding_size': 2048,
-            'num_classes': 1000000,
-            'norm': False,
-            'ddp': True,
-        }
-         # {
-         #     "type": "ModelParallelAMSoftmaxLoss",
-         #     "embedding_size": 2048,
-         #     "num_classes" : 1250000,
-         #     "norm" : False,
-         #     'ddp': True,
-         # }
-         ],
+        loss_config=[
+            {
+                'type': 'ModelParallelSoftmaxLoss',
+                'embedding_size': 2048,
+                'num_classes': 1000000,
+                'norm': False,
+                'ddp': True,
+            }
+            # {
+            #     "type": "ModelParallelAMSoftmaxLoss",
+            #     "embedding_size": 2048,
+            #     "num_classes" : 1250000,
+            #     "norm" : False,
+            #     'ddp': True,
+            # }
+        ],
         input_feature_index=[0]))
 
 # dataset settings
