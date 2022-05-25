@@ -27,6 +27,7 @@ def main():
 
     device = 'cuda:7'
     model = build_model(cfg.model).to(device)
+    model.init_weights()
     repetitions = 300
 
     dummy_input = torch.rand(1, 3, 224, 224).to(device)

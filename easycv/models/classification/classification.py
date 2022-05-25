@@ -4,17 +4,15 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import torch
 import torch.nn as nn
-from codebase.EasyCV import easycv
 from mmcv.runner import get_dist_info
 from timm.data.mixup import Mixup
 
 from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import print_log
+from easycv.utils.logger import get_root_logger, print_log
 from easycv.utils.preprocess_function import (bninceptionPre, gaussianBlur,
                                               mixUpCls, randomErasing)
 from .. import builder
 from ..base import BaseModel
-from ..modelzoo import easycv_models, timm_models
 from ..registry import MODELS
 from ..utils import Sobel
 
@@ -111,11 +109,9 @@ class Classification(BaseModel):
 
     def init_weights(self):
         if isinstance(self.pretrained, str):
-            print_log(
-                'load model from specified path: {}'.format(self.pretrained),
-                logger='root')
+            logger = get_root_logger()
             load_checkpoint(
-                self.backbone, self.pretrained, strict=False, logger='root')
+                self.backbone, self.pretrained, strict=False, logger=logger)
         else:
             print_log('load model from init weights')
             self.backbone.init_weights(pretrained=self.pretrained)
