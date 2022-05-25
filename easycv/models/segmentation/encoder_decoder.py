@@ -32,10 +32,6 @@ class EncoderDecoder(BaseModel):
         pretrained=None,
     ):
         super(EncoderDecoder, self).__init__()
-        if pretrained is not None:
-            assert backbone.get('pretrained') is None, \
-                'both backbone and segmentor set pretrained weight'
-            backbone.pretrained = pretrained
         self.backbone = builder.build_backbone(backbone)
 
         self.neck = neck

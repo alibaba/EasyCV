@@ -1,12 +1,19 @@
 _base_ = ['configs/base.py']
 
-# model settings
-norm_cfg = dict(type='SyncBN', requires_grad=True)
+CLASSES = [
+    'background', 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
+    'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike',
+    'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'
+]
 
+# model settings
+num_classes = 21
+norm_cfg = dict(type='SyncBN', requires_grad=True)
 model = dict(
     type='EncoderDecoder',
+    pretrained='open-mmlab://resnet50_v1c',
     backbone=dict(
-        type='ResNet',
+        type='ResNetV1c',
         depth=50,
         num_stages=4,
         out_indices=(1, 2, 3, 4),
@@ -25,7 +32,7 @@ model = dict(
         num_convs=2,
         concat_input=True,
         dropout_ratio=0.1,
-        num_classes=21,
+        num_classes=num_classes,
         norm_cfg=norm_cfg,
         align_corners=False,
         loss_decode=dict(
@@ -38,7 +45,7 @@ model = dict(
         num_convs=1,
         concat_input=False,
         dropout_ratio=0.1,
-        num_classes=21,
+        num_classes=num_classes,
         norm_cfg=norm_cfg,
         align_corners=False,
         loss_decode=dict(
@@ -50,17 +57,10 @@ model = dict(
 # dataset settings
 dataset_type = 'SegDataset'
 data_root = 'data/VOCdevkit/VOC2012'
-CLASSES = [
-    'background', 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
-    'car', 'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike',
-    'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'
-]
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 crop_size = (512, 512)
 train_pipeline = [
-    # dict(type='LoadImageFromFile'),
-    # dict(type='LoadAnnotations'),
     dict(type='MMResize', img_scale=(2048, 512), ratio_range=(0.5, 2.0)),
     dict(type='SegRandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
     dict(type='MMRandomFlip', flip_ratio=0.5),
@@ -76,7 +76,6 @@ train_pipeline = [
                    'img_norm_cfg')),
 ]
 test_pipeline = [
-    # dict(type='LoadImageFromFile'),
     dict(
         type='MMMultiScaleFlipAug',
         img_scale=(2048, 512),
@@ -95,7 +94,6 @@ test_pipeline = [
                            'flip_direction', 'img_norm_cfg')),
         ])
 ]
-
 data = dict(
     imgs_per_gpu=4,
     workers_per_gpu=4,
@@ -144,13 +142,13 @@ data = dict(
 
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0005)
+optimizer_config = dict()
 
 # learning policy
 lr_config = dict(policy='poly', power=0.9, min_lr=1e-4, by_epoch=True)
 
 # runtime settings
 total_epochs = 60
-
 checkpoint_config = dict(interval=1)
 eval_config = dict(interval=1, gpu_collect=False)
 eval_pipelines = [
@@ -160,12 +158,7 @@ eval_pipelines = [
             dict(
                 type='SegmentationEvaluator',
                 classes=CLASSES,
-                metric_names=['mIoU'],
-            )
+                metric_names=['mIoU'])
         ],
     )
 ]
-log_config = dict(
-    interval=50,
-    hooks=[dict(type='TextLoggerHook'),
-           dict(type='TensorboardLoggerHook')])
