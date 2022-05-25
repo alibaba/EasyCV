@@ -241,7 +241,7 @@ class Classification(BaseModel):
     def forward(
         self,
         img: torch.Tensor,
-        mode: str = 'train',
+        mode: str = 'test',
         gt_labels: Optional[torch.Tensor] = None,
         img_metas: Optional[torch.Tensor] = None,
     ) -> Dict[str, torch.Tensor]:

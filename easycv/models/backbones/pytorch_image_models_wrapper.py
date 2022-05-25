@@ -6,6 +6,7 @@ import timm
 import torch
 import torch.nn as nn
 from timm.models.helpers import load_pretrained
+from timm.models.hub import download_cached_file
 
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
@@ -90,7 +91,10 @@ class PytorchImageModelWrapper(nn.Module):
         if 'num_classes' not in kwargs:
             kwargs['num_classes'] = 0
 
-        pretrained_path = checkpoint_path or model_urls[model_name]
+        if model_name in model_urls:
+            pretrained_path = checkpoint_path or model_urls[model_name]
+        else:
+            pretrained_path = checkpoint_path
         print('load pretrained from {}'.format(pretrained_path))
         # create model by timm
         if model_name in timm_model_names:
@@ -99,12 +103,14 @@ class PytorchImageModelWrapper(nn.Module):
 
             if pretrained:
                 if pretrained_path.endswith('.npz'):
-                    return self.model.load_pretrained(pretrained_path)
+                    pretrained_loc = download_cached_file(pretrained_path, check_hash=False, progress=False)
+                    return self.model.load_pretrained(pretrained_loc)
                 else:
                     backbone_module = importlib.import_module(
                         self.model.__module__)
                     return load_pretrained(
                         self.model,
+                        default_cfg={'url': pretrained_path},
                         filter_fn=backbone_module.checkpoint_filter_fn
                         if hasattr(backbone_module, 'checkpoint_filter_fn')
                         else None)
