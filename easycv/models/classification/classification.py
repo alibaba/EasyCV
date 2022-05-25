@@ -23,7 +23,10 @@ from ..utils import Sobel
 class Classification(BaseModel):
     """
     Args:
-        pretrained: Select one {str or True or False/None}. if pretrained == 'str', load model from specified path; if pretrained == True, load model from default path(currently only supports timm); if pretrained == False or None, load from init weights.
+        pretrained: Select one {str or True or False/None}.
+        if pretrained == str, load model from specified path;
+        if pretrained == True, load model from default path(currently only supports timm);
+        if pretrained == False or None, load from init weights.
     """
 
     def __init__(self,
