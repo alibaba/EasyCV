@@ -38,7 +38,7 @@ class TorchYoloXPredictor(PredictorInterface):
                  model_path,
                  max_det=100,
                  score_thresh=0.5,
-                 model_config='configs/detection/yolox/yolox_s_8xb16_300e_coco.py'):
+                 model_config=None):
         """
         init model
 
@@ -54,22 +54,49 @@ class TorchYoloXPredictor(PredictorInterface):
         self.use_jit = model_path.endswith('jit') or model_path.endswith(
             'blade')
 
-        self.end2end = 'end2end' in model_path
+        if model_config:
+            model_config = json.loads(model_config)
+        else:
+            model_config = {}
 
         self.score_thresh = model_config[
             'score_thresh'] if 'score_thresh' in model_config else score_thresh
-
-        self.local_config_file = model_config
-        self.cfg = mmcv_config_fromfile(self.local_config_file)
 
         if self.use_jit:
             with io.open(model_path, 'rb') as infile:
                 map_location = 'cpu' if self.device == 'cpu' else 'cuda'
                 self.model = torch.jit.load(infile, map_location)
 
+            with io.open(model_path + '.config.json', 'r') as infile:
+                self.cfg = json.load(infile)
+                test_pipeline = self.cfg['test_pipeline']
+                self.CLASSES = self.cfg['classes']
+                self.end2end = self.cfg['export']['end2end']
+
             self.traceable = True
 
         else:
+            self.end2end = False
+            with io.open(self.model_path, 'rb') as infile:
+                checkpoint = torch.load(infile, map_location='cpu')
+
+            assert 'meta' in checkpoint and 'config' in checkpoint[
+                'meta'], 'meta.config is missing from checkpoint'
+
+            config_str = checkpoint['meta']['config']
+            config_str = config_str[config_str.find('_base_'):]
+            # get config
+            basename = os.path.basename(self.model_path)
+            fname, _ = os.path.splitext(basename)
+            self.local_config_file = os.path.join(CACHE_DIR,
+                                                  f'{fname}_config.py')
+            if not os.path.exists(CACHE_DIR):
+                os.makedirs(CACHE_DIR)
+            with open(self.local_config_file, 'w') as ofile:
+                ofile.write(config_str)
+
+            self.cfg = mmcv_config_fromfile(self.local_config_file)
+
             # build model
             self.model = build_model(self.cfg.model)
             self.traceable = getattr(self.model, 'trace_able', False)
@@ -79,11 +106,11 @@ class TorchYoloXPredictor(PredictorInterface):
             self.ckpt = load_checkpoint(
                 self.model, self.model_path, map_location=map_location)
 
-        self.model.to(self.device)
-        self.model.eval()
+            self.model.to(self.device)
+            self.model.eval()
 
-        test_pipeline = self.cfg.test_pipeline
-        self.CLASSES = self.cfg.CLASSES
+            test_pipeline = self.cfg.test_pipeline
+            self.CLASSES = self.cfg.CLASSES
 
         # build pipeline
         pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
@@ -146,14 +173,17 @@ class TorchYoloXPredictor(PredictorInterface):
                 det_out = self.model(img)
 
                 detection_scores = det_out['detection_scores']
-                sel_ids = detection_scores > self.score_thresh
-                detection_boxes = det_out['detection_boxes'][sel_ids]
-                detection_classes = det_out['detection_classes'][sel_ids]
+
+                if detection_scores is not None:
+                    sel_ids = detection_scores > self.score_thresh
+                    detection_boxes = det_out['detection_boxes'][sel_ids]
+                    detection_classes = det_out['detection_classes'][sel_ids]
+                else:
+                    detection_boxes = []
+                    detection_classes = []
 
             else:
-                data_dict = {
-                    'img': img
-                }
+                data_dict = {'img': img}
                 data_dict = self.pipeline(data_dict)
                 img = data_dict['img']
                 img = torch.unsqueeze(img._data, 0).to(self.device)
@@ -178,9 +208,15 @@ class TorchYoloXPredictor(PredictorInterface):
                 # det_out = scale_coords(img.shape[2:], det_out, ori_img_shape, (scale_factor, pad))
 
                 detection_scores = det_out['detection_scores'][0]
-                sel_ids = detection_scores > self.score_thresh
-                detection_boxes = det_out['detection_boxes'][0][sel_ids]
-                detection_classes = det_out['detection_classes'][0][sel_ids]
+
+                if detection_scores is not None:
+                    sel_ids = detection_scores > self.score_thresh
+                    detection_boxes = det_out['detection_boxes'][0][sel_ids]
+                    detection_classes = det_out['detection_classes'][0][
+                        sel_ids]
+                else:
+                    detection_boxes = None
+                    detection_classes = None
 
             num_boxes = detection_classes.shape[
                 0] if detection_classes is not None else 0

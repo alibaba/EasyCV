@@ -18,7 +18,6 @@ from easycv.utils.bbox_util import scale_coords
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 
-
 __all__ = [
     'export', 'PreProcess', 'DetPostProcess', 'End2endModelExportWrapper'
 ]
@@ -185,7 +184,8 @@ def _export_yolox(model, cfg, filename):
             input.to(device),
             preprocess_fn=PreProcess(target_size=(640,
                                                   640)) if end2end else None,
-            postprocess_fn=DetPostProcess(max_det=100, score_thresh=0.5) if end2end else None,
+            postprocess_fn=DetPostProcess(max_det=100, score_thresh=0.5)
+            if end2end else None,
             trace_model=True,
         )
 
@@ -221,17 +221,28 @@ def _export_yolox(model, cfg, filename):
 
                 with io.open(filename + '.blade', 'wb') as ofile:
                     torch.jit.save(yolox_blade, ofile)
-                with io.open(filename + '.blade.classnames.json',
-                             'w') as ofile:
-                    json.dump(cfg.CLASSES, ofile)
+                with io.open(filename + '.blade.config.json', 'w') as ofile:
+                    config = dict(
+                        export=cfg.export,
+                        test_pipeline=cfg.test_pipeline,
+                        classes=cfg.CLASSES)
+
+                    # meta = dict(config=json.dumps(config))
+                    json.dump(config, ofile)
             else:
                 logging.warning('Export YoloX predictor with blade failed!')
 
         with io.open(filename + '.jit', 'wb') as ofile:
             torch.jit.save(yolox_trace, ofile)
 
-        with io.open(filename + '.jit.classnames.json', 'w') as ofile:
-            json.dump(cfg.CLASSES, ofile)
+        with io.open(filename + '.jit.config.json', 'w') as ofile:
+            config = dict(
+                export=cfg.export,
+                test_pipeline=cfg.test_pipeline,
+                classes=cfg.CLASSES)
+
+            # meta = dict(config=json.dumps(config))
+            json.dump(config, ofile)
 
     else:
         if hasattr(cfg, 'test_pipeline'):
@@ -527,8 +538,8 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
 
         def __call__(
             self, output: List[torch.Tensor], sample_info: Dict[str,
-                                                                                Tuple[float,
-                                                                                      float]]
+                                                                Tuple[float,
+                                                                      float]]
         ) -> Dict[str, torch.Tensor]:
             """
             Args:
