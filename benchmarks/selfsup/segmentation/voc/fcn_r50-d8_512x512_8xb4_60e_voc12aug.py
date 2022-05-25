@@ -150,7 +150,7 @@ optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0005)
 lr_config = dict(policy='poly', power=0.9, min_lr=1e-4, by_epoch=True)
 
 # runtime settings
-total_epochs = 100
+total_epochs = 60
 
 checkpoint_config = dict(interval=1)
 eval_config = dict(interval=1, gpu_collect=False)
