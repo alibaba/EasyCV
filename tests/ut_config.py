@@ -81,12 +81,18 @@ PRETRAINED_MODEL_FACEID = os.path.join(BASE_LOCAL_PATH,
 
 PRETRAINED_MODEL_YOLOXS_EXPORT = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/detection/yolox_s/epoch_300.pth')
-PRETRAINED_MODEL_YOLOXS_EXPORT_JIT = os.path.join(
+PRETRAINED_MODEL_YOLOXS_END2END_JIT = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/detection/yolox_s/epoch_300_end2end.jit')
-PRETRAINED_MODEL_YOLOXS_EXPORT_BLADE = os.path.join(
+PRETRAINED_MODEL_YOLOXS_END2END_BLADE = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/detection/yolox_s/epoch_300_end2end.blade')
+PRETRAINED_MODEL_YOLOXS_EXPORT_JIT = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/detection/yolox_s/epoch_300_export.jit')
+PRETRAINED_MODEL_YOLOXS_EXPORT_BLADE = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/detection/yolox_s/epoch_300_export.blade')
 
 PRETRAINED_MODEL_YOLOXS = os.path.join(
     BASE_LOCAL_PATH,

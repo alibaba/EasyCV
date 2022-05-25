@@ -6,7 +6,6 @@ from glob import glob
 import cv2
 import numpy as np
 import torch
-import torch_blade
 from torchvision.transforms import Compose
 
 from easycv.datasets.registry import PIPELINES
@@ -19,6 +18,13 @@ from easycv.utils.constant import CACHE_DIR
 from easycv.utils.registry import build_from_cfg
 from .builder import PREDICTORS
 from .classifier import TorchClassifier
+
+try:
+    import torch_blade
+except:
+    os.environ[
+        'LD_LIBRARY_PATH'] = '/apsarapangu/disk6/xinyi.zxy/cuda-10.2/lib64'
+    import torch_blade
 
 try:
     from easy_vision.python.inference.predictor import PredictorInterface
@@ -149,7 +155,7 @@ class TorchYoloXPredictor(PredictorInterface):
         }
         return test_outputs
 
-    def predict(self, input_data_list, batch_size=-1):
+    def predict(self, input_data_list, batch_size=-1, to_numpy=True):
         """
     using session run predict a number of samples using batch_size
 
@@ -181,6 +187,11 @@ class TorchYoloXPredictor(PredictorInterface):
                 else:
                     detection_boxes = []
                     detection_classes = []
+
+                if to_numpy:
+                    detection_scores = detection_scores.detach().numpy()
+                    detection_boxes = detection_boxes.detach().numpy()
+                    detection_classes = detection_classes.detach().numpy()
 
             else:
                 data_dict = {'img': img}

@@ -24,7 +24,14 @@ try:
     import ctypes
     _cudart = ctypes.CDLL('libcudart.so')
 except:
-    pass
+    os.environ[
+        'LD_LIBRARY_PATH'] = '/apsarapangu/disk6/xinyi.zxy/cuda-10.2/lib64'
+    import torch_blade
+    import torch_blade.tensorrt
+    from torch_blade import optimize
+    import ctypes
+
+    _cudart = ctypes.CDLL('libcudart.so')
 
 
 def blade_env_assert():
