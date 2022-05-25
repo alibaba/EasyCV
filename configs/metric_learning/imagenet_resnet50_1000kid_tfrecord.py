@@ -5,7 +5,6 @@ model = dict(
     type='Classification',
     train_preprocess=['randomErasing'],
     # train_preprocess=['mixUp'],
-    pretrained=None,
     backbone=dict(
         type='ResNet',
         depth=50,

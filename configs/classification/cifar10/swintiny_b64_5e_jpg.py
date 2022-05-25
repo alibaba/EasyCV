@@ -2,7 +2,6 @@ _base_ = '../../base.py'
 # model settings
 model = dict(
     type='Classification',
-    pretrained=None,
     backbone=dict(
         type='PytorchImageModelWrapper',
         model_name='swin_tiny_patch4_window7_224',
