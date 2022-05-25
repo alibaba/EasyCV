@@ -1,13 +1,16 @@
 import argparse
+
 import numpy as np
-from torchvision.models import resnet50
 import torch
-from torch.backends import cudnn
 import tqdm
+from torch.backends import cudnn
+from torchvision.models import resnet50
 
 from easycv.models import build_model
 from easycv.utils.config_tools import mmcv_config_fromfile
+
 cudnn.benchmark = True
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -37,9 +40,9 @@ def main():
     # synchronize 等待所有 GPU 任务处理完才返回 CPU 主线程
     torch.cuda.synchronize()
 
-
     # 设置用于测量时间的 cuda Event, 这是PyTorch 官方推荐的接口,理论上应该最靠谱
-    starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+    starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(
+        enable_timing=True)
     # 初始化一个时间容器
     timings = np.zeros((repetitions, 1))
 
@@ -49,13 +52,15 @@ def main():
             starter.record()
             _ = model.forward_test(dummy_input)
             ender.record()
-            torch.cuda.synchronize() # 等待GPU任务完成
-            curr_time = starter.elapsed_time(ender) # 从 starter 到 ender 之间用时,单位为毫秒
+            torch.cuda.synchronize()  # 等待GPU任务完成
+            curr_time = starter.elapsed_time(
+                ender)  # 从 starter 到 ender 之间用时,单位为毫秒
             timings[rep] = curr_time
 
-    avg = timings.sum()/repetitions
+    avg = timings.sum() / repetitions
     print(torch.cuda.memory_summary(device))
     print('\navg={}\n'.format(avg))
+
 
 if __name__ == '__main__':
     main()

@@ -6,5 +6,4 @@ model = dict(
         type='ResNet',
         depth=101,
         out_indices=[4],  # 0: conv-1, x: stage-x
-        norm_cfg=dict(type='BN'))
-    )
+        norm_cfg=dict(type='BN')))

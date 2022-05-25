@@ -149,5 +149,4 @@ checkpoint_config = dict(interval=5)
 # runtime settings
 total_epochs = 100
 
-
 load_from = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_base_patch4_window7_224_22k_statedict.pth'
