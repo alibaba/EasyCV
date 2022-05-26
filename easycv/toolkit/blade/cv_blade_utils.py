@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import argparse
+import ctypes
 import itertools
 import logging
 import os
@@ -11,27 +12,16 @@ from contextlib import contextmanager
 import numpy as np
 import pandas as pd
 import torch
+import torch_blade
+import torch_blade.tensorrt
 import torchvision
+from torch_blade import optimize
 
 os.environ['DISC_ENABLE_STITCH'] = os.environ.get('DISC_ENABLE_STITCH', 'true')
 os.environ['DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE'] = os.environ.get(
     'DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE', 'true')
 
-try:
-    import torch_blade
-    import torch_blade.tensorrt
-    from torch_blade import optimize
-    import ctypes
-    _cudart = ctypes.CDLL('libcudart.so')
-except:
-    os.environ[
-        'LD_LIBRARY_PATH'] = '/apsarapangu/disk6/xinyi.zxy/cuda-10.2/lib64'
-    import torch_blade
-    import torch_blade.tensorrt
-    from torch_blade import optimize
-    import ctypes
-
-    _cudart = ctypes.CDLL('libcudart.so')
+_cudart = ctypes.CDLL('libcudart.so')
 
 
 def blade_env_assert():

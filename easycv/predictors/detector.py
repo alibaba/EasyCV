@@ -56,12 +56,7 @@ class TorchYoloXPredictor(PredictorInterface):
         self.use_blade = model_path.endswith('blade')
 
         if self.use_blade:
-            try:
-                import torch_blade
-            except:
-                os.environ[
-                    'LD_LIBRARY_PATH'] = '/apsarapangu/disk6/xinyi.zxy/cuda-10.2/lib64'
-                import torch_blade
+            import torch_blade
 
         if model_config:
             model_config = json.loads(model_config)
@@ -177,6 +172,8 @@ class TorchYoloXPredictor(PredictorInterface):
             if type(img) is not np.ndarray:
                 img = np.asarray(img)
 
+            ori_img_shape = img.shape[:2]
+
             if self.end2end:
                 img = torch.from_numpy(img).float().to(self.device)
                 det_out = self.model(img)
@@ -241,6 +238,7 @@ class TorchYoloXPredictor(PredictorInterface):
             ]
 
             out = {
+                'ori_img_shape': list(ori_img_shape),
                 'detection_boxes': detection_boxes,
                 'detection_scores': detection_scores,
                 'detection_classes': detection_classes,

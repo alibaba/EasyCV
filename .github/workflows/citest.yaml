@@ -86,6 +86,9 @@ jobs:
           export OSS_CONFIG_FILE=$UNITTEST_OSS_CONFIG
 
           export PYTHONPATH=.
+          export CUDA_HOME=/apsarapangu/disk6/xinyi.zxy/cuda-10.2
+          export LD_LIBRARY_PATH=${CUDA_HOME}/lib64
+          export PATH=${CUDA_HOME}/bin:${PATH}
           export TEST_DIR="/tmp/easycv_test_${USER}_`date +%s`"
 
           # do not uncomments, casue faild in Online UT, install requirements by yourself on UT machine
