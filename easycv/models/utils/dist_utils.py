@@ -4,12 +4,8 @@ import os
 import torch
 from mmcv.runner import get_dist_info
 from pytorch_metric_learning.utils import common_functions as c_f
+from torch.distributed import ReduceOp
 from torch.nn.parallel import DistributedDataParallel as DDP
-
-try:
-    from torch.distributed import ReduceOp
-except ImportError:
-    raise ImportError('Blade does not support ReduceOp')
 
 
 # modified from https://github.com/allenai/allennlp

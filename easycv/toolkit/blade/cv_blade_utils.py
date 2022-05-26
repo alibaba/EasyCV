@@ -134,6 +134,12 @@ def opt_disc_config(enable_fp16=True):
 def computeStats(backend, timings, batch_size=1, model_name='default'):
     """
     compute the statistical metric of time and speed
+
+    Args:
+        backend (str):  backend name
+        timings (List): time list
+        batch_size (int)： image batch
+        model_name (str): tested model name
     """
     times = np.array(timings)
     steps = len(times)
@@ -176,15 +182,22 @@ def computeStats(backend, timings, batch_size=1, model_name='default'):
 
 
 @torch.no_grad()
-def benchmark(model, inp, backend, batch_size, model_name='default'):
+def benchmark(model, inp, backend, batch_size, model_name='default', num=200):
     """
-    evaluate the time and speed for 200 forward of different models
+    evaluate the time and speed of different models
+
+    Args:
+        model: input model
+        inp: input of the model
+        backend (str):  backend name
+        batch_size (int)： image batch
+        model_name (str): tested model name
+        num: test forward times
     """
-    for i in range(100):
-        model(*inp)
+
     torch.cuda.synchronize()
     timings = []
-    for i in range(200):
+    for i in range(num):
         start_time = timeit.default_timer()
         model(*inp)
         torch.cuda.synchronize()

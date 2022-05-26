@@ -32,9 +32,9 @@ class ModelExportTest(unittest.TestCase):
         ckpt_path = f'{self.tmp_dir}/moco_export.pth'
         stat, output = subprocess.getstatusoutput(
             f'python tools/export.py {config_file} {ori_ckpt} {ckpt_path}')
-        self.assertTrue(stat == 0, 'export model failed')
         if stat != 0:
             print(output)
+        self.assertTrue(stat == 0, 'export model failed')
 
     def test_export_yolox(self):
         config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
@@ -42,9 +42,9 @@ class ModelExportTest(unittest.TestCase):
         ckpt_path = f'{self.tmp_dir}/export_yolox_s_epoch300.pt'
         stat, output = subprocess.getstatusoutput(
             f'python tools/export.py {config_file} {ori_ckpt} {ckpt_path}')
-        self.assertTrue(stat == 0, 'export model failed')
         if stat != 0:
             print(output)
+        self.assertTrue(stat == 0, 'export model failed')
 
     def test_export_classification_jit(self):
         config_file = 'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py'

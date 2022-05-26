@@ -196,13 +196,13 @@ def _export_yolox(model, cfg, filename):
         if end2end:
             try:
                 yolox_trace = torch.jit.script(model_export)
-            except:
-                assert 'jit export error may occur when the model is not well trained'
+            except Exception as e:
+                raise e
         else:
             try:
                 yolox_trace = torch.jit.trace(model_export, input.to(device))
-            except:
-                assert 'jit export error may occur when the model is not well trained'
+            except Exception as e:
+                raise e
 
         if getattr(cfg.export, 'export_blade', False):
             blade_config = cfg.export.get('blade_config',
@@ -210,29 +210,26 @@ def _export_yolox(model, cfg, filename):
 
             from easycv.toolkit.blade import blade_env_assert, blade_optimize
 
-            if blade_env_assert() == True:
+            assert blade_env_assert()
 
-                if end2end:
-                    input = 255 * torch.rand(img_scale + (3, ))
+            if end2end:
+                input = 255 * torch.rand(img_scale + (3, ))
 
-                yolox_blade = blade_optimize(
-                    script_model=model,
-                    model=yolox_trace,
-                    inputs=(input.to(device), ),
-                    blade_config=blade_config)
+            yolox_blade = blade_optimize(
+                script_model=model,
+                model=yolox_trace,
+                inputs=(input.to(device), ),
+                blade_config=blade_config)
 
-                with io.open(filename + '.blade', 'wb') as ofile:
-                    torch.jit.save(yolox_blade, ofile)
-                with io.open(filename + '.blade.config.json', 'w') as ofile:
-                    config = dict(
-                        export=cfg.export,
-                        test_pipeline=cfg.test_pipeline,
-                        classes=cfg.CLASSES)
+            with io.open(filename + '.blade', 'wb') as ofile:
+                torch.jit.save(yolox_blade, ofile)
+            with io.open(filename + '.blade.config.json', 'w') as ofile:
+                config = dict(
+                    export=cfg.export,
+                    test_pipeline=cfg.test_pipeline,
+                    classes=cfg.CLASSES)
 
-                    # meta = dict(config=json.dumps(config))
-                    json.dump(config, ofile)
-            else:
-                logging.warning('Export YoloX predictor with blade failed!')
+                json.dump(config, ofile)
 
         with io.open(filename + '.jit', 'wb') as ofile:
             torch.jit.save(yolox_trace, ofile)

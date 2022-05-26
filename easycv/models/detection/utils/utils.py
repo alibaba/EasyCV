@@ -1,8 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from typing import List
-
 import numpy as np
-import torch
 
 
 def output_postprocess(outputs, img_metas=None):

@@ -16,7 +16,7 @@ from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_EXPORT,
                              PRETRAINED_MODEL_YOLOXS_END2END_BLADE,
                              DET_DATA_SMALL_COCO_LOCAL)
 
-from tests.toolkit.time_cost import benchmark
+from easycv.utils.test_util import benchmark
 import logging
 import pandas as pd
 import torch
@@ -106,6 +106,25 @@ class DetectorTest(unittest.TestCase):
         assert_array_almost_equal(
             output_jit['detection_scores'],
             output_blade['detection_scores'],
+            decimal=3)
+
+        self.assertListEqual(
+            output_jit['detection_classes'].tolist(),
+            np.array([72, 69, 60, 56, 49, 49, 72, 46, 49],
+                     dtype=np.int32).tolist())
+
+        self.assertListEqual(output_jit['detection_class_names'], [
+            'refrigerator', 'oven', 'dining table', 'chair', 'orange',
+            'orange', 'refrigerator', 'banana', 'orange'
+        ])
+
+        assert_array_almost_equal(
+            output_jit['detection_scores'],
+            np.array([
+                0.93252, 0.88439, 0.75048, 0.74093, 0.67255, 0.65550, 0.63942,
+                0.60507, 0.56973
+            ],
+                     dtype=np.float32),
             decimal=3)
 
     def test_time(self):

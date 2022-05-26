@@ -182,6 +182,7 @@ class TorchYoloXPredictor(PredictorInterface):
 
                 if detection_scores is not None:
                     sel_ids = detection_scores > self.score_thresh
+                    detection_scores = detection_scores[sel_ids]
                     detection_boxes = det_out['detection_boxes'][sel_ids]
                     detection_classes = det_out['detection_classes'][sel_ids]
                 else:
@@ -222,6 +223,7 @@ class TorchYoloXPredictor(PredictorInterface):
 
                 if detection_scores is not None:
                     sel_ids = detection_scores > self.score_thresh
+                    detection_scores = detection_scores[sel_ids]
                     detection_boxes = det_out['detection_boxes'][0][sel_ids]
                     detection_classes = det_out['detection_classes'][0][
                         sel_ids]

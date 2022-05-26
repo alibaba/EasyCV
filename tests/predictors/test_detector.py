@@ -12,8 +12,6 @@ from PIL import Image
 
 from easycv.predictors.detector import TorchYoloXPredictor
 from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_EXPORT,
-                             PRETRAINED_MODEL_YOLOXS_EXPORT_JIT,
-                             PRETRAINED_MODEL_YOLOXS_EXPORT_BLADE,
                              DET_DATA_SMALL_COCO_LOCAL)
 
 
