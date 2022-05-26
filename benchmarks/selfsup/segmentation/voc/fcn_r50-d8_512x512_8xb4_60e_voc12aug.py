@@ -59,8 +59,6 @@ img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 crop_size = (512, 512)
 train_pipeline = [
-    # dict(type='LoadImageFromFile'),
-    # dict(type='LoadAnnotations'),
     dict(type='MMResize', img_scale=(2048, 512), ratio_range=(0.5, 2.0)),
     dict(type='SegRandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
     dict(type='MMRandomFlip', flip_ratio=0.5),
@@ -76,7 +74,6 @@ train_pipeline = [
                    'img_norm_cfg')),
 ]
 test_pipeline = [
-    # dict(type='LoadImageFromFile'),
     dict(
         type='MMMultiScaleFlipAug',
         img_scale=(2048, 512),
