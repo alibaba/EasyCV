@@ -6,9 +6,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.ops import batched_nms
+from mmdet.models import AnchorHead
 
 from easycv.models.registry import HEADS
-from mmdet.models import AnchorHead
 
 
 @HEADS.register_module()
@@ -64,7 +64,7 @@ class RPNHead_Norm(AnchorHead):
     def forward_single(self, x):
         """Forward feature map of a single scale level."""
         x = self.rpn_conv(x)
-        x = F.relu(x, inplace=False)
+        x = F.relu(x.clone(), inplace=True)
         rpn_cls_score = self.rpn_cls(x)
         rpn_bbox_pred = self.rpn_reg(x)
         return rpn_cls_score, rpn_bbox_pred

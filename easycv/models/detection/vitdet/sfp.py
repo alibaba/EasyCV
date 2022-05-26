@@ -3,16 +3,29 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, build_norm_layer
-
 from mmcv.runner import BaseModule, auto_fp16
+
 from easycv.models.builder import NECKS
+
+
+class Norm2d(nn.Module):
+
+    def __init__(self, embed_dim):
+        super().__init__()
+        self.ln = nn.LayerNorm(embed_dim, eps=1e-6)
+
+    def forward(self, x):
+        x = x.permute(0, 2, 3, 1)
+        x = self.ln(x)
+        x = x.permute(0, 3, 1, 2).contiguous()
+        return x
 
 
 @NECKS.register_module()
 class SFP(BaseModule):
     r"""Simple Feature Pyramid.
 
-    This is an implementation of paper `Exploring Plain Vision Transformer Backbonesfor Object 
+    This is an implementation of paper `Exploring Plain Vision Transformer Backbonesfor Object
     Detection <https://arxiv.org/abs/2203.16527>`_.
 
     Args:
@@ -44,9 +57,12 @@ class SFP(BaseModule):
                  norm_cfg=dict(type='GN', num_groups=1, requires_grad=True),
                  num_outs=-1,
                  init_cfg=[
-                     dict(type='Xavier', layer=['Conv2d', 'ConvTranspose2d'], distribution='uniform'), 
-                     dict(type='Constant', layer=['GroupNorm'], val=1)
-                ]):
+                     dict(
+                         type='Xavier',
+                         layer=['Conv2d'],
+                         distribution='uniform'),
+                     dict(type='Constant', layer=['LayerNorm'], val=1, bias=0)
+                 ]):
         super(SFP, self).__init__(init_cfg)
         assert isinstance(in_channels, int)
         self.in_channels = in_channels
@@ -61,13 +77,14 @@ class SFP(BaseModule):
         for i in range(self.num_level):
             if i == 0:
                 top_down = nn.Sequential(
-                    nn.ConvTranspose2d(in_channels, in_channels, 2, stride=2, padding=0),
-                    build_norm_layer(norm_cfg, in_channels)[1],
-                    nn.GELU(),
-                    nn.ConvTranspose2d(in_channels, in_channels, 2, stride=2, padding=0)
-                )
+                    nn.ConvTranspose2d(
+                        in_channels, in_channels, 2, stride=2, padding=0),
+                    Norm2d(in_channels), nn.GELU(),
+                    nn.ConvTranspose2d(
+                        in_channels, in_channels, 2, stride=2, padding=0))
             elif i == 1:
-                top_down = nn.ConvTranspose2d(in_channels, in_channels, 2, stride=2, padding=0)
+                top_down = nn.ConvTranspose2d(
+                    in_channels, in_channels, 2, stride=2, padding=0)
             elif i == 2:
                 top_down = nn.Identity()
             elif i == 3:
@@ -76,10 +93,9 @@ class SFP(BaseModule):
             sfp_out = nn.Sequential(
                 nn.Conv2d(in_channels, out_channels, 1, bias=False),
                 build_norm_layer(norm_cfg, out_channels)[1],
-                #nn.ReLU(inplace=False),
-                nn.Conv2d(out_channels, out_channels, 3, padding=1, bias=False),
+                nn.Conv2d(
+                    out_channels, out_channels, 3, padding=1, bias=False),
                 build_norm_layer(norm_cfg, out_channels)[1],
-                #nn.ReLU(inplace=False),
             )
 
             self.top_downs.append(top_down)

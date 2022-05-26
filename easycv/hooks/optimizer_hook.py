@@ -115,8 +115,6 @@ class AMPFP16OptimizerHook(OptimizerHook):
             scaler_state_dict = runner.meta['fp16']['scaler']
             self.scaler.load_state_dict(scaler_state_dict)
         print('open fp16')
-        runner.model.zero_grad()
-        runner.optimizer.zero_grad()
 
     def after_train_iter(self, runner):
         loss = runner.outputs['loss'] / self.update_interval

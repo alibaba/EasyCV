@@ -1,5 +1,6 @@
 _base_ = [
-    './_base_/models/vitdet.py', './_base_/datasets/coco.py', 'configs/base.py'
+    './_base_/models/vitdet2.py', './_base_/datasets/coco.py',
+    'configs/base.py'
 ]
 
 CLASSES = [
@@ -17,8 +18,6 @@ CLASSES = [
     'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear',
     'hair drier', 'toothbrush'
 ]
-
-model = dict(backbone=dict(aggregation='conv'))
 
 log_config = dict(
     interval=50,
@@ -63,6 +62,6 @@ eval_pipelines = [
     )
 ]
 
-load_from = '/home/yunji.cjy/pretrain/mae_pretrain_vit_base_1600e.pth'
+# load_from = '/home/yunji.cjy/pretrain/mae_pretrain_vit_base_1600e.pth'
 
 find_unused_parameters = False
