@@ -13,7 +13,7 @@ from mmcv.utils import Config
 from easycv.file import io
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
                            build_model)
-from easycv.toolkit.blade import blade_env_assert, blade_optimize
+# from easycv.toolkit.blade import blade_env_assert, blade_optimize
 from easycv.utils.bbox_util import scale_coords
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
@@ -207,6 +207,8 @@ def _export_yolox(model, cfg, filename):
         if getattr(cfg.export, 'export_blade', False):
             blade_config = cfg.export.get('blade_config',
                                           dict(enable_fp16=True))
+
+            from easycv.toolkit.blade import blade_env_assert, blade_optimize
 
             if blade_env_assert() == True:
 

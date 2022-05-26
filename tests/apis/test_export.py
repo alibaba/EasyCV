@@ -46,26 +46,6 @@ class ModelExportTest(unittest.TestCase):
         if stat != 0:
             print(output)
 
-    def test_export_yolox_jit(self):
-        config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
-        ori_ckpt = PRETRAINED_MODEL_YOLOXS_EXPORT
-        ckpt_path = f'{self.tmp_dir}/export_yolox_s_epoch300'
-        stat, output = subprocess.getstatusoutput(
-            f'python tools/export.py {config_file} {ori_ckpt} {ckpt_path}')
-        self.assertTrue(stat == 0, 'export model failed')
-        if stat != 0:
-            print(output)
-
-    def test_export_yolox_blade(self):
-        config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_voc_jit.py'
-        ori_ckpt = PRETRAINED_MODEL_YOLOXS_EXPORT
-        ckpt_path = f'{self.tmp_dir}/export_yolox_s_epoch300'
-        stat, output = subprocess.getstatusoutput(
-            f'python tools/export.py {config_file} {ori_ckpt} {ckpt_path}')
-        self.assertTrue(stat == 0, 'export model failed')
-        if stat != 0:
-            print(output)
-
     def test_export_classification_jit(self):
         config_file = 'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py'
         cfg = mmcv_config_fromfile(config_file)

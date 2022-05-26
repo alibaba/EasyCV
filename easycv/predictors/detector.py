@@ -20,13 +20,6 @@ from .builder import PREDICTORS
 from .classifier import TorchClassifier
 
 try:
-    import torch_blade
-except:
-    os.environ[
-        'LD_LIBRARY_PATH'] = '/apsarapangu/disk6/xinyi.zxy/cuda-10.2/lib64'
-    import torch_blade
-
-try:
     from easy_vision.python.inference.predictor import PredictorInterface
 except Exception:
     from .interface import PredictorInterface
@@ -59,6 +52,16 @@ class TorchYoloXPredictor(PredictorInterface):
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.use_jit = model_path.endswith('jit') or model_path.endswith(
             'blade')
+
+        self.use_blade = model_path.endswith('blade')
+
+        if self.use_blade:
+            try:
+                import torch_blade
+            except:
+                os.environ[
+                    'LD_LIBRARY_PATH'] = '/apsarapangu/disk6/xinyi.zxy/cuda-10.2/lib64'
+                import torch_blade
 
         if model_config:
             model_config = json.loads(model_config)

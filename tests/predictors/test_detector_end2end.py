@@ -19,10 +19,12 @@ from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_EXPORT,
 from tests.toolkit.time_cost import benchmark
 import logging
 import pandas as pd
-
+import torch
 from numpy.testing import assert_array_almost_equal
 
 
+@unittest.skipIf(torch.__version__ == '1.8.0',
+                 'Blade need another environment')
 class DetectorTest(unittest.TestCase):
 
     def setUp(self):
