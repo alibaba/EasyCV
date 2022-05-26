@@ -6,19 +6,24 @@
 
 norm_cfg = dict(type='GN', num_groups=1, requires_grad=True)
 
+pretrained = '/home/yunji.cjy/pretrain/warpper_mae_vit-base-p16-1600e.pth'
 model = dict(
     type='MaskRCNN',
+    pretrained=pretrained,
     backbone=dict(
         type='ViTDet',
-        arch='b',
         img_size=1024,
-        patch_size=16,
-        window_size=14,
+        embed_dim=768,
+        depth=12,
+        num_heads=12,
+        mlp_ratio=4,
+        qkv_bias=True,
+        qk_scale=None,
+        drop_rate=0.,
+        attn_drop_rate=0.,
         drop_path_rate=0.1,
-        out_indices=[11],
-        final_norm=True,
-        sincos_pos_embed=False,
-        use_rel_pos_bias=True),
+        use_abs_pos_emb=True,
+    ),
     neck=dict(
         type='SFP',
         in_channels=[768, 768, 768, 768],
