@@ -17,7 +17,6 @@ _base_model_cfg = dict(
         type='PytorchImageModelWrapper',
         model_name='resnet50',  # 2048
         num_classes=0,
-        pretrained=True,
     ),
     neck=dict(
         type='MoBYMLP',
