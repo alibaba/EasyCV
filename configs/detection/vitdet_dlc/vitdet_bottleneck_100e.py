@@ -18,7 +18,7 @@ CLASSES = [
     'hair drier', 'toothbrush'
 ]
 
-model = dict(backbone=dict(aggregation='conv'))
+model = dict(backbone=dict(aggregation='bottleneck'))
 
 log_config = dict(
     interval=50,

@@ -1,20 +1,20 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from functools import partial
 from typing import Sequence
 
-from functools import partial
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import constant_init, build_norm_layer
-from mmcv.cnn.utils.weight_init import trunc_normal_
+from mmcv.cnn import build_norm_layer, constant_init, kaiming_init
 from mmcv.runner.base_module import BaseModule, ModuleList
 from mmcv.utils import to_2tuple
+from torch.nn.modules.batchnorm import _BatchNorm
 
 from easycv.utils.logger import get_root_logger
-from easycv.utils.dist_utils import get_dist_info
-from ..utils import build_conv_layer
 from ..registry import BACKBONES
+from ..utils import build_conv_layer
+
 
 def calc_rel_pos_spatial(
     attn,
@@ -23,7 +23,7 @@ def calc_rel_pos_spatial(
     k_shape,
     rel_pos_h,
     rel_pos_w,
-    ):
+):
     """
     Spatial Relative Positional Embeddings.
     """
@@ -35,14 +35,14 @@ def calc_rel_pos_spatial(
     q_h_ratio = max(k_h / q_h, 1.0)
     k_h_ratio = max(q_h / k_h, 1.0)
     dist_h = (
-        torch.arange(q_h)[:, None] * q_h_ratio - torch.arange(k_h)[None, :] * k_h_ratio
-    )
+        torch.arange(q_h)[:, None] * q_h_ratio -
+        torch.arange(k_h)[None, :] * k_h_ratio)
     dist_h += (k_h - 1) * k_h_ratio
     q_w_ratio = max(k_w / q_w, 1.0)
     k_w_ratio = max(q_w / k_w, 1.0)
     dist_w = (
-        torch.arange(q_w)[:, None] * q_w_ratio - torch.arange(k_w)[None, :] * k_w_ratio
-    )
+        torch.arange(q_w)[:, None] * q_w_ratio -
+        torch.arange(k_w)[None, :] * k_w_ratio)
     dist_w += (k_w - 1) * k_w_ratio
 
     Rh = rel_pos_h[dist_h.long()]
@@ -51,33 +51,45 @@ def calc_rel_pos_spatial(
     B, n_head, q_N, dim = q.shape
 
     r_q = q[:, :, sp_idx:].reshape(B, n_head, q_h, q_w, dim)
-    rel_h = torch.einsum("byhwc,hkc->byhwk", r_q, Rh)
-    rel_w = torch.einsum("byhwc,wkc->byhwk", r_q, Rw)
+    rel_h = torch.einsum('byhwc,hkc->byhwk', r_q, Rh)
+    rel_w = torch.einsum('byhwc,wkc->byhwk', r_q, Rw)
 
     attn[:, :, sp_idx:, sp_idx:] = (
-        attn[:, :, sp_idx:, sp_idx:].view(B, -1, q_h, q_w, k_h, k_w)
-        + rel_h[:, :, :, :, :, None]
-        + rel_w[:, :, :, :, None, :]
-    ).view(B, -1, q_h * q_w, k_h * k_w)
+        attn[:, :, sp_idx:, sp_idx:].view(B, -1, q_h, q_w, k_h, k_w) +
+        rel_h[:, :, :, :, :, None] + rel_w[:, :, :, :, None, :]).view(
+            B, -1, q_h * q_w, k_h * k_w)
 
     return attn
+
 
 class PatchEmbed(nn.Module):
     """ 2D Image to Patch Embedding
     """
-    def __init__(self, img_size=224, patch_size=16, window_size=16, in_chans=3, embed_dim=768, norm_layer=None, flatten=True, interpolate_mode='bicubic'):
+
+    def __init__(self,
+                 img_size=224,
+                 patch_size=16,
+                 window_size=16,
+                 in_chans=3,
+                 embed_dim=768,
+                 norm_layer=None,
+                 flatten=True,
+                 interpolate_mode='bicubic'):
         super().__init__()
         img_size = to_2tuple(img_size)
         patch_size = to_2tuple(patch_size)
         self.img_size = img_size
         self.patch_size = patch_size
-        self.grid_size = [img_size[0] // patch_size[0], img_size[1] // patch_size[1]]
+        self.grid_size = [
+            img_size[0] // patch_size[0], img_size[1] // patch_size[1]
+        ]
         self.interpolate_mode = interpolate_mode
 
         self.num_patches = self.grid_size[0] * self.grid_size[1]
         self.flatten = flatten
 
-        self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size)
+        self.proj = nn.Conv2d(
+            in_chans, embed_dim, kernel_size=patch_size, stride=patch_size)
 
     def forward(self, x):
         B, C, H, W = x.shape
@@ -89,10 +101,17 @@ class PatchEmbed(nn.Module):
             x = x.flatten(2).transpose(1, 2)  # BCHW -> BNC
         return x
 
+
 class Mlp(nn.Module):
     """ MLP as used in Vision Transformer, MLP-Mixer and related networks
     """
-    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
+
+    def __init__(self,
+                 in_features,
+                 hidden_features=None,
+                 out_features=None,
+                 act_layer=nn.GELU,
+                 drop=0.):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
@@ -110,7 +129,11 @@ class Mlp(nn.Module):
         x = self.drop(x)
         return x
 
-def drop_path(x, drop_prob: float = 0., training: bool = False, scale_by_keep: bool = True):
+
+def drop_path(x,
+              drop_prob: float = 0.,
+              training: bool = False,
+              scale_by_keep: bool = True):
     """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks).
 
     This is the same as the DropConnect impl I created for EfficientNet, etc networks, however,
@@ -123,7 +146,8 @@ def drop_path(x, drop_prob: float = 0., training: bool = False, scale_by_keep: b
     if drop_prob == 0. or not training:
         return x
     keep_prob = 1 - drop_prob
-    shape = (x.shape[0],) + (1,) * (x.ndim - 1)  # work with diff dim tensors, not just 2D ConvNets
+    shape = (x.shape[0], ) + (1, ) * (
+        x.ndim - 1)  # work with diff dim tensors, not just 2D ConvNets
     random_tensor = x.new_empty(shape).bernoulli_(keep_prob)
     if keep_prob > 0.0 and scale_by_keep:
         random_tensor.div_(keep_prob)
@@ -133,6 +157,7 @@ def drop_path(x, drop_prob: float = 0., training: bool = False, scale_by_keep: b
 class DropPath(nn.Module):
     """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
     """
+
     def __init__(self, drop_prob=None, scale_by_keep=True):
         super(DropPath, self).__init__()
         self.drop_prob = drop_prob
@@ -143,6 +168,7 @@ class DropPath(nn.Module):
 
     def extra_repr(self) -> str:
         return 'p={}'.format(self.drop_prob)
+
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -173,6 +199,7 @@ class BasicBlock(nn.Module):
             conv_cfg, planes, planes, 3, padding=1, bias=False)
         self.add_module(self.norm2_name, norm2)
 
+        self.relu = nn.ReLU(inplace=True)
         self.stride = stride
         self.dilation = dilation
 
@@ -191,18 +218,122 @@ class BasicBlock(nn.Module):
 
         out = self.conv1(x)
         out = self.norm1(out)
+        out = self.relu(out)
 
         out = self.conv2(out)
         out = self.norm2(out)
 
         out += identity
+        out = self.relu(out)
         out = out.flatten(2).transpose(1, 2)
         return out
 
+
+class Bottleneck(nn.Module):
+    expansion = 4
+
+    def __init__(self,
+                 inplanes,
+                 planes,
+                 stride=1,
+                 dilation=1,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN')):
+        """Bottleneck block for ResNet.
+        If style is "pytorch", the stride-two layer is the 3x3 conv layer,
+        if it is "caffe", the stride-two layer is the first 1x1 conv layer.
+        """
+        super(Bottleneck, self).__init__()
+
+        self.inplanes = inplanes
+        self.planes = planes
+        self.stride = stride
+        self.dilation = dilation
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
+
+        self.conv1_stride = 1
+        self.conv2_stride = stride
+
+        self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
+        self.norm3_name, norm3 = build_norm_layer(
+            norm_cfg, planes * self.expansion, postfix=3)
+
+        self.conv1 = build_conv_layer(
+            conv_cfg,
+            inplanes,
+            planes,
+            kernel_size=1,
+            stride=self.conv1_stride,
+            bias=False)
+        self.add_module(self.norm1_name, norm1)
+        self.conv2 = build_conv_layer(
+            conv_cfg,
+            planes,
+            planes,
+            kernel_size=3,
+            stride=self.conv2_stride,
+            padding=dilation,
+            dilation=dilation,
+            bias=False)
+        self.add_module(self.norm2_name, norm2)
+        self.conv3 = build_conv_layer(
+            conv_cfg,
+            planes,
+            planes * self.expansion,
+            kernel_size=1,
+            bias=False)
+        self.add_module(self.norm3_name, norm3)
+
+        self.relu = nn.ReLU(inplace=True)
+
+    @property
+    def norm1(self):
+        return getattr(self, self.norm1_name)
+
+    @property
+    def norm2(self):
+        return getattr(self, self.norm2_name)
+
+    @property
+    def norm3(self):
+        return getattr(self, self.norm3_name)
+
+    def forward(self, x, H, W):
+        B, _, C = x.shape
+        x = x.permute(0, 2, 1).reshape(B, -1, H, W)
+        identity = x
+
+        out = self.conv1(x)
+        out = self.norm1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.norm2(out)
+        out = self.relu(out)
+
+        out = self.conv3(out)
+        out = self.norm3(out)
+
+        out += identity
+        out = self.relu(out)
+        out = out.flatten(2).transpose(1, 2)
+        return out
+
+
 class Attention(nn.Module):
-    def __init__(
-            self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0.,
-            proj_drop=0., window_size=None, attn_head_dim=None, use_rel_pos_bias=False):
+
+    def __init__(self,
+                 dim,
+                 num_heads=8,
+                 qkv_bias=False,
+                 qk_scale=None,
+                 attn_drop=0.,
+                 proj_drop=0.,
+                 window_size=None,
+                 attn_head_dim=None,
+                 use_rel_pos_bias=False):
         super().__init__()
         self.num_heads = num_heads
         head_dim = dim // num_heads
@@ -210,7 +341,7 @@ class Attention(nn.Module):
             head_dim = attn_head_dim
         all_head_dim = head_dim * self.num_heads
         # NOTE scale factor was wrong in my original version, can set manually to be compat with prev weights
-        self.scale = qk_scale or head_dim ** -0.5
+        self.scale = qk_scale or head_dim**-0.5
 
         self.qkv = nn.Linear(dim, all_head_dim * 3, bias=qkv_bias)
         self.window_size = window_size
@@ -231,14 +362,17 @@ class Attention(nn.Module):
 
         qkv = self.qkv(x)
         qkv = qkv.reshape(B, N, 3, self.num_heads, -1).permute(2, 0, 3, 1, 4)
-        q, k, v = qkv[0], qkv[1], qkv[2]   # make torchscript happy (cannot use tensor as tuple)
+        q, k, v = qkv[0], qkv[1], qkv[
+            2]  # make torchscript happy (cannot use tensor as tuple)
 
         q = q * self.scale
         attn = (q @ k.transpose(-2, -1))
 
         if self.use_rel_pos_bias:
-            attn = calc_rel_pos_spatial(attn, q, self.window_size, self.window_size, self.rel_pos_h, self.rel_pos_w)
-        
+            attn = calc_rel_pos_spatial(attn, q, self.window_size,
+                                        self.window_size, self.rel_pos_h,
+                                        self.rel_pos_w)
+
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
 
@@ -246,6 +380,7 @@ class Attention(nn.Module):
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
+
 
 def window_partition(x, window_size):
     """
@@ -256,8 +391,10 @@ def window_partition(x, window_size):
         windows: (num_windows*B, window_size, window_size, C)
     """
     B, H, W, C = x.shape
-    x = x.view(B, H // window_size, window_size, W // window_size, window_size, C)
-    windows = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(-1, window_size, window_size, C)
+    x = x.view(B, H // window_size, window_size, W // window_size, window_size,
+               C)
+    windows = x.permute(0, 1, 3, 2, 4,
+                        5).contiguous().view(-1, window_size, window_size, C)
     return windows
 
 
@@ -272,9 +409,11 @@ def window_reverse(windows, window_size, H, W):
         x: (B, H, W, C)
     """
     B = int(windows.shape[0] / (H * W / window_size / window_size))
-    x = windows.view(B, H // window_size, W // window_size, window_size, window_size, -1)
+    x = windows.view(B, H // window_size, W // window_size, window_size,
+                     window_size, -1)
     x = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(B, H, W, -1)
     return x
+
 
 class WindowAttention(nn.Module):
     """ Window based multi-head self attention (W-MSA) module with relative position bias.
@@ -289,14 +428,23 @@ class WindowAttention(nn.Module):
         proj_drop (float, optional): Dropout ratio of output. Default: 0.0
     """
 
-    def __init__(self, dim, window_size, num_heads, qkv_bias=True, qk_scale=None, attn_drop=0., proj_drop=0., attn_head_dim=None, use_rel_pos_bias=False):
+    def __init__(self,
+                 dim,
+                 window_size,
+                 num_heads,
+                 qkv_bias=True,
+                 qk_scale=None,
+                 attn_drop=0.,
+                 proj_drop=0.,
+                 attn_head_dim=None,
+                 use_rel_pos_bias=False):
 
         super().__init__()
         self.dim = dim
         self.window_size = window_size  # Wh, Ww
         self.num_heads = num_heads
         head_dim = dim // num_heads
-        self.scale = qk_scale or head_dim ** -0.5
+        self.scale = qk_scale or head_dim**-0.5
 
         q_size = window_size[0]
         kv_size = window_size[1]
@@ -309,9 +457,6 @@ class WindowAttention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
-        # trunc_normal_(self.relative_position_bias_table, std=.02)
-        #self.softmax = nn.Softmax(dim=-1)
-
         self.use_rel_pos_bias = use_rel_pos_bias
 
     def forward(self, x, H, W):
@@ -323,24 +468,32 @@ class WindowAttention(nn.Module):
         B_, N, C = x.shape
         x = x.reshape(B_, H, W, C)
         pad_l = pad_t = 0
-        pad_r = (self.window_size[1] - W % self.window_size[1]) % self.window_size[1]
-        pad_b = (self.window_size[0] - H % self.window_size[0]) % self.window_size[0]
+        pad_r = (self.window_size[1] -
+                 W % self.window_size[1]) % self.window_size[1]
+        pad_b = (self.window_size[0] -
+                 H % self.window_size[0]) % self.window_size[0]
 
         x = F.pad(x, (0, 0, pad_l, pad_r, pad_t, pad_b))
         _, Hp, Wp, _ = x.shape
 
-        x = window_partition(x, self.window_size[0])  # nW*B, window_size, window_size, C
-        x = x.view(-1, self.window_size[1] * self.window_size[0], C)  # nW*B, window_size*window_size, C
+        x = window_partition(
+            x, self.window_size[0])  # nW*B, window_size, window_size, C
+        x = x.view(-1, self.window_size[1] * self.window_size[0],
+                   C)  # nW*B, window_size*window_size, C
         B_w = x.shape[0]
         N_w = x.shape[1]
-        qkv = self.qkv(x).reshape(B_w, N_w, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
-        q, k, v = qkv[0], qkv[1], qkv[2]  # make torchscript happy (cannot use tensor as tuple)
+        qkv = self.qkv(x).reshape(B_w, N_w, 3, self.num_heads,
+                                  C // self.num_heads).permute(2, 0, 3, 1, 4)
+        q, k, v = qkv[0], qkv[1], qkv[
+            2]  # make torchscript happy (cannot use tensor as tuple)
 
         q = q * self.scale
         attn = (q @ k.transpose(-2, -1))
 
         if self.use_rel_pos_bias:
-            attn = calc_rel_pos_spatial(attn, q, self.window_size, self.window_size, self.rel_pos_h, self.rel_pos_w)
+            attn = calc_rel_pos_spatial(attn, q, self.window_size,
+                                        self.window_size, self.rel_pos_h,
+                                        self.rel_pos_w)
 
         attn = attn.softmax(dim=-1)
 
@@ -360,10 +513,25 @@ class WindowAttention(nn.Module):
 
         return x
 
+
 class Block(nn.Module):
 
-    def __init__(self, dim, num_heads, mlp_ratio=4., qk_scale=None, qkv_bias=False, drop=0., attn_drop=0.,
-                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, attn_head_dim=None, window_size=None, use_rel_pos_bias=False, window=False, aggregation='attn'):
+    def __init__(self,
+                 dim,
+                 num_heads,
+                 mlp_ratio=4.,
+                 qk_scale=None,
+                 qkv_bias=False,
+                 drop=0.,
+                 attn_drop=0.,
+                 drop_path=0.,
+                 act_layer=nn.GELU,
+                 norm_layer=nn.LayerNorm,
+                 attn_head_dim=None,
+                 window_size=None,
+                 use_rel_pos_bias=False,
+                 window=False,
+                 aggregation='attn'):
         super().__init__()
         self.norm1 = norm_layer(dim)
         self.aggregation = aggregation
@@ -371,29 +539,61 @@ class Block(nn.Module):
         if not window:
             if aggregation == 'attn':
                 self.attn = Attention(
-                dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale,
-                attn_drop=attn_drop, proj_drop=drop, window_size=window_size, attn_head_dim=attn_head_dim, use_rel_pos_bias=use_rel_pos_bias)
+                    dim,
+                    num_heads=num_heads,
+                    qkv_bias=qkv_bias,
+                    qk_scale=qk_scale,
+                    attn_drop=attn_drop,
+                    proj_drop=drop,
+                    window_size=window_size,
+                    attn_head_dim=attn_head_dim,
+                    use_rel_pos_bias=use_rel_pos_bias)
             else:
                 self.attn = WindowAttention(
-                dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale,
-                attn_drop=attn_drop, proj_drop=drop, window_size=window_size, attn_head_dim=attn_head_dim, use_rel_pos_bias=use_rel_pos_bias)
-                self.basicblock = BasicBlock(inplanes=dim, planes=dim)
+                    dim,
+                    num_heads=num_heads,
+                    qkv_bias=qkv_bias,
+                    qk_scale=qk_scale,
+                    attn_drop=attn_drop,
+                    proj_drop=drop,
+                    window_size=window_size,
+                    attn_head_dim=attn_head_dim,
+                    use_rel_pos_bias=use_rel_pos_bias)
+                if aggregation == 'basicblock':
+                    self.conv_aggregation = BasicBlock(
+                        inplanes=dim, planes=dim)
+                elif aggregation == 'bottleneck':
+                    self.conv_aggregation = Bottleneck(
+                        inplanes=dim, planes=dim // 4)
         else:
             self.attn = WindowAttention(
-            dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale,
-            attn_drop=attn_drop, proj_drop=drop, window_size=window_size, attn_head_dim=attn_head_dim, use_rel_pos_bias=use_rel_pos_bias)
+                dim,
+                num_heads=num_heads,
+                qkv_bias=qkv_bias,
+                qk_scale=qk_scale,
+                attn_drop=attn_drop,
+                proj_drop=drop,
+                window_size=window_size,
+                attn_head_dim=attn_head_dim,
+                use_rel_pos_bias=use_rel_pos_bias)
         # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
-        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+        self.drop_path = DropPath(
+            drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
-        self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+        self.mlp = Mlp(
+            in_features=dim,
+            hidden_features=mlp_hidden_dim,
+            act_layer=act_layer,
+            drop=drop)
 
     def forward(self, x, H, W):
         x = x + self.drop_path(self.attn(self.norm1(x), H, W))
         x = x + self.drop_path(self.mlp(self.norm2(x)))
-        if not self.window and self.aggregation == 'conv':
-            x = self.basicblock(x, H, W)
+        if not self.window and self.aggregation != 'attn':
+            x = self.conv_aggregation(x, H, W)
         return x
+
 
 @BACKBONES.register_module()
 class ViTDet(BaseModule):
@@ -517,7 +717,11 @@ class ViTDet(BaseModule):
 
         # Set patch embedding
         self.patch_embed = PatchEmbed(
-            img_size=img_size, patch_size=patch_size, window_size=window_size, in_chans=3, embed_dim=self.embed_dims)
+            img_size=img_size,
+            patch_size=patch_size,
+            window_size=window_size,
+            in_chans=3,
+            embed_dim=self.embed_dims)
         num_patches = self.patch_embed.num_patches
 
         self.grid_size = self.patch_embed.grid_size
@@ -534,8 +738,7 @@ class ViTDet(BaseModule):
             self.build_2d_sincos_position_embedding()
         else:
             self.pos_embed = nn.Parameter(
-                torch.zeros(1, num_patches,
-                            self.embed_dims))
+                torch.zeros(1, num_patches, self.embed_dims))
 
         self.drop_after_pos = nn.Dropout(p=drop_rate)
 
@@ -567,7 +770,9 @@ class ViTDet(BaseModule):
                 drop_path=dpr[i],
                 norm_layer=norm_layer,
                 act_layer=act_layer,
-                window_size=(self.window_size, self.window_size) if ((i + 1) % interval != 0 or aggregation=='conv') else tuple(self.grid_size),
+                window_size=(self.window_size, self.window_size) if
+                ((i + 1) % interval != 0 or aggregation != 'attn') else tuple(
+                    self.grid_size),
                 window=((i + 1) % interval != 0),
                 use_rel_pos_bias=use_rel_pos_bias,
                 aggregation=aggregation)
@@ -581,7 +786,14 @@ class ViTDet(BaseModule):
 
     def init_weights(self):
         for m in self.modules():
-            if isinstance(m, BasicBlock):
+            if isinstance(m, nn.Conv2d):
+                kaiming_init(m, mode='fan_in', nonlinearity='relu')
+            elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
+                constant_init(m, 1)
+
+            if isinstance(m, Bottleneck):
+                constant_init(m.norm3, 0)
+            elif isinstance(m, BasicBlock):
                 constant_init(m.norm2, 0)
 
     def _prepare_checkpoint_hook(self, state_dict, prefix, *args, **kwargs):
@@ -605,14 +817,14 @@ class ViTDet(BaseModule):
                     logger=logger)
 
                 ckpt_pos_embed_shape = to_2tuple(
-                    int(np.sqrt(ckpt_pos_embed_shape[1] - self.num_extra_tokens)))
+                    int(
+                        np.sqrt(ckpt_pos_embed_shape[1] -
+                                self.num_extra_tokens)))
                 pos_embed_shape = self.grid_size
 
-                state_dict[name] = self.resize_pos_embed(state_dict[name],
-                                                    ckpt_pos_embed_shape,
-                                                    pos_embed_shape,
-                                                    self.interpolate_mode,
-                                                    self.num_extra_tokens)
+                state_dict[name] = self.resize_pos_embed(
+                    state_dict[name], ckpt_pos_embed_shape, pos_embed_shape,
+                    self.interpolate_mode, self.num_extra_tokens)
 
     @staticmethod
     def resize_pos_embed(pos_embed,
@@ -646,9 +858,8 @@ class ViTDet(BaseModule):
         dst_weight = F.interpolate(
             src_weight, size=dst_shape, align_corners=False, mode=mode)
         dst_weight = torch.flatten(dst_weight, 2).transpose(1, 2)
-		
+
         return dst_weight
-        #return torch.cat((extra_tokens, dst_weight), dim=1)
 
     def build_2d_sincos_position_embedding(self, temperature=10000.0):
         h, w = self.grid_size
@@ -657,14 +868,19 @@ class ViTDet(BaseModule):
         grid_w, grid_h = torch.meshgrid(grid_w, grid_h)
         assert (
             self.embed_dims % 4 == 0
-        ), "Embed dimension must be divisible by 4 for 2D sin-cos position embedding"
+        ), 'Embed dimension must be divisible by 4 for 2D sin-cos position embedding'
         pos_dim = self.embed_dims // 4
         omega = torch.arange(pos_dim, dtype=torch.float32) / pos_dim
-        omega = 1.0 / (temperature ** omega)
-        out_w = torch.einsum("m,d->md", [grid_w.flatten(), omega])
-        out_h = torch.einsum("m,d->md", [grid_h.flatten(), omega])
+        omega = 1.0 / (temperature**omega)
+        out_w = torch.einsum('m,d->md', [grid_w.flatten(), omega])
+        out_h = torch.einsum('m,d->md', [grid_h.flatten(), omega])
         pos_emb = torch.cat(
-            [torch.sin(out_w), torch.cos(out_w), torch.sin(out_h), torch.cos(out_h)],
+            [
+                torch.sin(out_w),
+                torch.cos(out_w),
+                torch.sin(out_h),
+                torch.cos(out_h)
+            ],
             dim=1,
         )[None, :, :]
 
@@ -687,9 +903,10 @@ class ViTDet(BaseModule):
                 if i == len(self.blocks) - 1:
                     if self.final_norm:
                         out = self.norm(x)
-                        
+
                 B, _, C = out.shape
-                out = out.permute(0, 2, 1).reshape(B, -1, self.grid_size[0], self.grid_size[1])
+                out = out.permute(0, 2, 1).reshape(B, -1, self.grid_size[0],
+                                                   self.grid_size[1])
 
                 outs.append(out)
 
