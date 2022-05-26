@@ -20,7 +20,6 @@ class PytorchImageModelWrapperTest(unittest.TestCase):
 
         net = PytorchImageModelWrapper(
             model_name='swin_tiny_patch4_window7_224',
-            pretrained=False,
             num_classes=0,
             global_pool='').to('cuda')
         net.eval()
@@ -39,9 +38,7 @@ class PytorchImageModelWrapperTest(unittest.TestCase):
         a = torch.rand(batch_size, 3, 224, 224).to('cuda')
 
         net = PytorchImageModelWrapper(
-            model_name='efficientnet_b0',
-            pretrained=False,
-            num_classes=0,
+            model_name='efficientnet_b0', num_classes=0,
             global_pool='').to('cuda')
         net.eval()
 
@@ -66,7 +63,6 @@ class PytorchImageModelWrapperTest(unittest.TestCase):
         # swin_tiny_patch4_window7_224
         net = PytorchImageModelWrapper(
             model_name='swin_tiny_patch4_window7_224',
-            pretrained=True,
             num_classes=0,
             global_pool='').to('cuda')
         net.eval()
@@ -74,7 +70,6 @@ class PytorchImageModelWrapperTest(unittest.TestCase):
 
         net_random_init = PytorchImageModelWrapper(
             model_name='swin_tiny_patch4_window7_224',
-            pretrained=False,
             num_classes=0,
             global_pool='').to('cuda')
         net_random_init.eval()
