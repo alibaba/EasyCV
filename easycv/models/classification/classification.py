@@ -116,13 +116,13 @@ class Classification(BaseModel):
             print_log('load model from init weights')
             self.backbone.init_weights(pretrained=self.pretrained)
 
-            for idx in range(self.head_num):
-                h = getattr(self, 'head_%d' % idx)
-                h.init_weights()
+        for idx in range(self.head_num):
+            h = getattr(self, 'head_%d' % idx)
+            h.init_weights()
 
-            for idx in range(self.neck_num):
-                n = getattr(self, 'neck_%d' % idx)
-                n.init_weights()
+        for idx in range(self.neck_num):
+            n = getattr(self, 'neck_%d' % idx)
+            n.init_weights()
 
     def forward_backbone(self, img: torch.Tensor) -> List[torch.Tensor]:
         """Forward backbone
