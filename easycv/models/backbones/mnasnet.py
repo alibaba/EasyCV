@@ -143,7 +143,6 @@ class MNASNet(torch.nn.Module):
             self.classifier = nn.Sequential(
                 nn.Dropout(p=dropout, inplace=True),
                 nn.Linear(1280, num_classes))
-        self.pretrained = model_urls[self.__class__.__name__ + str(alpha)]
 
     def forward(self, x):
         x = self.layers(x)
@@ -154,7 +153,7 @@ class MNASNet(torch.nn.Module):
         else:
             return [x]
 
-    def init_weights(self, pretrained=None):
+    def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(

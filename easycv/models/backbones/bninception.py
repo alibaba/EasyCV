@@ -349,9 +349,7 @@ class BNInception(nn.Module):
         if num_classes > 0:
             self.last_linear = nn.Linear(1024, num_classes)
 
-        self.pretrained = model_urls[self.__class__.__name__]
-
-    def init_weights(self, pretrained=None):
+    def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 kaiming_init(m, mode='fan_in', nonlinearity='relu')

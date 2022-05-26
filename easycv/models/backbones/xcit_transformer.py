@@ -477,7 +477,7 @@ class XCiT(nn.Module):
         # Classifier head
         trunc_normal_(self.cls_token, std=.02)
 
-    def init_weights(self, pretrained=None):
+    def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 trunc_normal_(m.weight, std=.02)

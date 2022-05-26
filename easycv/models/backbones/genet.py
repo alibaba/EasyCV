@@ -1663,10 +1663,8 @@ class PlainNet(nn.Module):
 
         self.plainnet_struct = str(self) + str(self.adptive_avg_pool)
         self.zero_init_residual = False
-        self.pretrained = model_urls[self.__class__.__name__ +
-                                     plainnet_struct_idx]
 
-    def init_weights(self, pretrained=None):
+    def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 kaiming_init(m, mode='fan_in', nonlinearity='relu')

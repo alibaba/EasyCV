@@ -60,9 +60,7 @@ class Inception3(nn.Module):
         if num_classes > 0:
             self.fc = nn.Linear(2048, num_classes)
 
-        self.pretrained = model_urls[self.__class__.__name__]
-
-    def init_weights(self, pretrained=None):
+    def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
                 for m in self.modules():

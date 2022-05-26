@@ -22,7 +22,7 @@ class BenchMarkMLP(nn.Module):
         # self.relu2 = nn.ReLU()
         # self._initialize_weights()
 
-    def init_weights(self, pretrained=None):
+    def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 nn.init.kaiming_normal_(

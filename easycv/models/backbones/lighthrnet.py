@@ -958,7 +958,7 @@ class LiteHRNet(nn.Module):
 
         return nn.Sequential(*modules), in_channels
 
-    def init_weights(self, pretrained=None):
+    def init_weights(self):
         """Initialize the weights in backbone.
 
         Args:

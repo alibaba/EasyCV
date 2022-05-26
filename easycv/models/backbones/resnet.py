@@ -361,8 +361,6 @@ class ResNet(nn.Module):
         self.original_inplanes = original_inplanes
         self.inplanes = original_inplanes
         self.frelu = frelu
-        self.pretrained = model_urls.get(self.__class__.__name__ + str(depth),
-                                         None)
 
         self._make_stem_layer(in_channels)
 
@@ -431,7 +429,7 @@ class ResNet(nn.Module):
             for param in m.parameters():
                 param.requires_grad = False
 
-    def init_weights(self, pretrained=None):
+    def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 kaiming_init(m, mode='fan_in', nonlinearity='relu')

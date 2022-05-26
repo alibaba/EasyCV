@@ -429,7 +429,7 @@ class ShuffleTransformer(nn.Module):
         self.head = nn.Linear(
             dims[3], num_classes) if num_classes > 0 else nn.Identity()
 
-    def init_weights(self, pretrained=None):
+    def init_weights(self):
         for m in self.modules():
             if isinstance(m, (nn.BatchNorm2d, nn.GroupNorm, nn.LayerNorm)):
                 nn.init.constant_(m.weight, 1.0)

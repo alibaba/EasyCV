@@ -77,8 +77,6 @@ class PytorchImageModelWrapper(nn.Module):
         Inits PytorchImageModelWrapper by timm.create_models
         Args:
             model_name (str): name of model to instantiate
-            pretrained (bool): load pretrained ImageNet-1k weights if true
-            checkpoint_path (str): path of checkpoint to load after model is initialized
             scriptable (bool): set layer config so that model is jit scriptable (not working for all models yet)
             exportable (bool): set layer config so that model is traceable / ONNX exportable (not fully impl/obeyed yet)
             no_jit (bool): set layer config so that model doesn't utilize jit scripted layers (so far activations only)
@@ -104,6 +102,14 @@ class PytorchImageModelWrapper(nn.Module):
             self.model = _MODEL_MAP[model_name](**kwargs)
 
     def init_weights(self, pretrained=None):
+        """
+        Args:
+            if pretrained == True, load model from default path;
+            if pretrained == False or None, load from init weights.
+
+            if model_name in timm_model_names, load model from timm default path;
+            if model_name in _MODEL_MAP, load model from easycv default path
+        """
         logger = get_root_logger()
         if pretrained:
             if self.model_name in self.timm_model_names:
@@ -151,12 +157,12 @@ class PytorchImageModelWrapper(nn.Module):
                         state_dict = state_dict['model']
                     self.model.load_state_dict(state_dict, strict=False)
                 else:
-                    print_log(f'{self.model_name} not in evtorch modelzoo!',
-                              logger)
+                    raise ValueError('{} not in evtorch modelzoo!'.format(
+                        self.model_name))
             else:
-                print_log(
-                    f'Error: Fail to create {self.model_name} with (pretrained={self.pretrained}, checkpoint_path={self.checkpoint_path} ...)',
-                    logger)
+                raise ValueError(
+                    'Error: Fail to create {} with (pretrained={}...)'.format(
+                        self.model_name, pretrained))
         else:
             self.model.init_weights()
 

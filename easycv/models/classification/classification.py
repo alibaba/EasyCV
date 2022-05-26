@@ -107,6 +107,8 @@ class Classification(BaseModel):
         self.activate_fn = nn.Softmax(dim=1)
         self.extract_list = ['neck']
 
+        self.init_weights()
+
     def init_weights(self):
         if isinstance(self.pretrained, str):
             logger = get_root_logger()
@@ -114,7 +116,10 @@ class Classification(BaseModel):
                 self.backbone, self.pretrained, strict=False, logger=logger)
         else:
             print_log('load model from init weights')
-            self.backbone.init_weights(pretrained=self.pretrained)
+            if self.backbone.__class__.__name__ == 'PytorchImageModelWrapper':
+                self.backbone.init_weights(pretrained=self.pretrained)
+            else:
+                self.backbone.init_weights()
 
         for idx in range(self.head_num):
             h = getattr(self, 'head_%d' % idx)

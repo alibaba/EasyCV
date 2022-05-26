@@ -156,7 +156,7 @@ class MobileNetV2(nn.Module):
         self.pretrained = model_urls[self.__class__.__name__ + '_' +
                                      str(width_multi)]
 
-    def init_weights(self, pretrained=None):
+    def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out')

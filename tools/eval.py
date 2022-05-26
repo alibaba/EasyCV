@@ -181,7 +181,6 @@ def main():
 
     # build the model and load checkpoint
     model = build_model(cfg.model)
-    model.init_weights()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f'use device {device}')
     checkpoint = load_checkpoint(model, args.checkpoint, map_location=device)
@@ -191,8 +190,7 @@ def main():
 
     # old versions did not save class info in checkpoints, this walkaround is
     # for backward compatibility
-    if args.checkpoint is not None and 'meta' in checkpoint and 'CLASSES' in checkpoint[
-            'meta']:
+    if 'meta' in checkpoint and 'CLASSES' in checkpoint['meta']:
         model.CLASSES = checkpoint['meta']['CLASSES']
     elif hasattr(cfg, 'CLASSES'):
         model.CLASSES = cfg.CLASSES

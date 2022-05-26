@@ -770,7 +770,7 @@ class SwinTransformer(nn.Module):
         if self.use_dense_prediction:
             self.head_dense = None
 
-    def init_weights(self, pretrained=None):
+    def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 trunc_normal_(m.weight, std=.02)

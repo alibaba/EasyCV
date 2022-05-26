@@ -73,7 +73,7 @@ class MaskedAutoencoderViT(nn.Module):
         ])
         self.norm = norm_layer(embed_dim)
 
-    def init_weights(self, pretrained=None):
+    def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 # we use xavier_uniform following official JAX ViT:

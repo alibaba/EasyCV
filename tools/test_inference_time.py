@@ -1,10 +1,10 @@
+# Copyright (c) Alibaba, Inc. and its affiliates.
 import argparse
 
 import numpy as np
 import torch
 import tqdm
 from torch.backends import cudnn
-from torchvision.models import resnet50
 
 from easycv.models import build_model
 from easycv.utils.config_tools import mmcv_config_fromfile
@@ -16,6 +16,8 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='EasyCV model memory and inference_time test')
     parser.add_argument('config', help='test config file path')
+    parser.add_argument(
+        'gpu', type=str, choices=['0', '1', '2', '3', '4', '5', '6', '7'])
 
     args = parser.parse_args()
     return args
@@ -25,9 +27,8 @@ def main():
     args = parse_args()
     cfg = mmcv_config_fromfile(args.config)
 
-    device = 'cuda:7'
+    device = torch.device('cuda:{}'.format(args.gpu))
     model = build_model(cfg.model).to(device)
-    model.init_weights()
     repetitions = 300
 
     dummy_input = torch.rand(1, 3, 224, 224).to(device)
