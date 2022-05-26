@@ -23,6 +23,7 @@ model = dict(
         attn_drop_rate=0.,
         drop_path_rate=0.1,
         use_abs_pos_emb=True,
+        aggregation='attn',
     ),
     neck=dict(
         type='SFP',

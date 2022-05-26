@@ -17,10 +17,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
+from mmcv.cnn import build_norm_layer, constant_init, kaiming_init
 from mmdet.utils import get_root_logger
 from timm.models.layers import drop_path, to_2tuple, trunc_normal_
+from torch.nn.modules.batchnorm import _BatchNorm
 
 from ..registry import BACKBONES
+from ..utils import build_conv_layer
 from .mmcv_custom import load_checkpoint
 
 
@@ -63,6 +66,158 @@ class Mlp(nn.Module):
         x = self.fc2(x)
         x = self.drop(x)
         return x
+
+
+class BasicBlock(nn.Module):
+    expansion = 1
+
+    def __init__(self,
+                 inplanes,
+                 planes,
+                 stride=1,
+                 dilation=1,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN')):
+        super(BasicBlock, self).__init__()
+
+        self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
+
+        self.conv1 = build_conv_layer(
+            conv_cfg,
+            inplanes,
+            planes,
+            3,
+            stride=stride,
+            padding=dilation,
+            dilation=dilation,
+            bias=False)
+        self.add_module(self.norm1_name, norm1)
+        self.conv2 = build_conv_layer(
+            conv_cfg, planes, planes, 3, padding=1, bias=False)
+        self.add_module(self.norm2_name, norm2)
+
+        self.relu = nn.ReLU(inplace=True)
+        self.stride = stride
+        self.dilation = dilation
+
+    @property
+    def norm1(self):
+        return getattr(self, self.norm1_name)
+
+    @property
+    def norm2(self):
+        return getattr(self, self.norm2_name)
+
+    def forward(self, x, H, W):
+        B, _, C = x.shape
+        x = x.permute(0, 2, 1).reshape(B, -1, H, W)
+        identity = x
+
+        out = self.conv1(x)
+        out = self.norm1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.norm2(out)
+
+        out += identity
+        out = self.relu(out)
+        out = out.flatten(2).transpose(1, 2)
+        return out
+
+
+class Bottleneck(nn.Module):
+    expansion = 4
+
+    def __init__(self,
+                 inplanes,
+                 planes,
+                 stride=1,
+                 dilation=1,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN')):
+        """Bottleneck block for ResNet.
+        If style is "pytorch", the stride-two layer is the 3x3 conv layer,
+        if it is "caffe", the stride-two layer is the first 1x1 conv layer.
+        """
+        super(Bottleneck, self).__init__()
+
+        self.inplanes = inplanes
+        self.planes = planes
+        self.stride = stride
+        self.dilation = dilation
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
+
+        self.conv1_stride = 1
+        self.conv2_stride = stride
+
+        self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
+        self.norm3_name, norm3 = build_norm_layer(
+            norm_cfg, planes * self.expansion, postfix=3)
+
+        self.conv1 = build_conv_layer(
+            conv_cfg,
+            inplanes,
+            planes,
+            kernel_size=1,
+            stride=self.conv1_stride,
+            bias=False)
+        self.add_module(self.norm1_name, norm1)
+        self.conv2 = build_conv_layer(
+            conv_cfg,
+            planes,
+            planes,
+            kernel_size=3,
+            stride=self.conv2_stride,
+            padding=dilation,
+            dilation=dilation,
+            bias=False)
+        self.add_module(self.norm2_name, norm2)
+        self.conv3 = build_conv_layer(
+            conv_cfg,
+            planes,
+            planes * self.expansion,
+            kernel_size=1,
+            bias=False)
+        self.add_module(self.norm3_name, norm3)
+
+        self.relu = nn.ReLU(inplace=True)
+
+    @property
+    def norm1(self):
+        return getattr(self, self.norm1_name)
+
+    @property
+    def norm2(self):
+        return getattr(self, self.norm2_name)
+
+    @property
+    def norm3(self):
+        return getattr(self, self.norm3_name)
+
+    def forward(self, x, H, W):
+        B, _, C = x.shape
+        x = x.permute(0, 2, 1).reshape(B, -1, H, W)
+        identity = x
+
+        out = self.conv1(x)
+        out = self.norm1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.norm2(out)
+        out = self.relu(out)
+
+        out = self.conv3(out)
+        out = self.norm3(out)
+
+        out += identity
+        out = self.relu(out)
+        out = out.flatten(2).transpose(1, 2)
+        return out
 
 
 class Attention(nn.Module):
@@ -326,19 +481,39 @@ class Block(nn.Module):
                  norm_layer=nn.LayerNorm,
                  window_size=None,
                  attn_head_dim=None,
-                 window=False):
+                 window=False,
+                 aggregation='attn'):
         super().__init__()
         self.norm1 = norm_layer(dim)
+        self.aggregation = aggregation
+        self.window = window
         if not window:
-            self.attn = Attention(
-                dim,
-                num_heads=num_heads,
-                qkv_bias=qkv_bias,
-                qk_scale=qk_scale,
-                attn_drop=attn_drop,
-                proj_drop=drop,
-                window_size=window_size,
-                attn_head_dim=attn_head_dim)
+            if aggregation == 'attn':
+                self.attn = Attention(
+                    dim,
+                    num_heads=num_heads,
+                    qkv_bias=qkv_bias,
+                    qk_scale=qk_scale,
+                    attn_drop=attn_drop,
+                    proj_drop=drop,
+                    window_size=window_size,
+                    attn_head_dim=attn_head_dim)
+            else:
+                self.attn = WindowAttention(
+                    dim,
+                    num_heads=num_heads,
+                    qkv_bias=qkv_bias,
+                    qk_scale=qk_scale,
+                    attn_drop=attn_drop,
+                    proj_drop=drop,
+                    window_size=window_size,
+                    attn_head_dim=attn_head_dim)
+                if aggregation == 'basicblock':
+                    self.conv_aggregation = BasicBlock(
+                        inplanes=dim, planes=dim)
+                elif aggregation == 'bottleneck':
+                    self.conv_aggregation = Bottleneck(
+                        inplanes=dim, planes=dim // 4)
         else:
             self.attn = WindowAttention(
                 dim,
@@ -376,6 +551,8 @@ class Block(nn.Module):
             x = x + self.drop_path(
                 self.gamma_1 * self.attn(self.norm1(x), H, W))
             x = x + self.drop_path(self.gamma_2 * self.mlp(self.norm2(x)))
+        if not self.window and self.aggregation != 'attn':
+            x = self.conv_aggregation(x, H, W)
         return x
 
 
@@ -493,7 +670,8 @@ class ViTDet(nn.Module):
                  use_shared_rel_pos_bias=False,
                  out_indices=[11],
                  interval=3,
-                 pretrained=None):
+                 pretrained=None,
+                 aggregation='attn'):
         super().__init__()
         norm_layer = norm_layer or partial(nn.LayerNorm, eps=1e-6)
         self.num_classes = num_classes
@@ -541,8 +719,10 @@ class ViTDet(nn.Module):
                 norm_layer=norm_layer,
                 init_values=init_values,
                 window_size=(14, 14) if
-                ((i + 1) % interval != 0) else self.patch_embed.patch_shape,
-                window=((i + 1) % interval != 0)) for i in range(depth)
+                ((i + 1) % interval != 0
+                 or aggregation != 'attn') else self.patch_embed.patch_shape,
+                window=((i + 1) % interval != 0),
+                aggregation=aggregation) for i in range(depth)
         ])
 
         if self.pos_embed is not None:
@@ -550,7 +730,6 @@ class ViTDet(nn.Module):
 
         self.norm = norm_layer(embed_dim)
 
-        self.apply(self._init_weights)
         self.fix_init_weight()
         self.pretrained = pretrained
 
@@ -562,15 +741,6 @@ class ViTDet(nn.Module):
         for layer_id, layer in enumerate(self.blocks):
             rescale(layer.attn.proj.weight.data, layer_id + 1)
             rescale(layer.mlp.fc2.weight.data, layer_id + 1)
-
-    def _init_weights(self, m):
-        if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=.02)
-            if isinstance(m, nn.Linear) and m.bias is not None:
-                nn.init.constant_(m.bias, 0)
-        elif isinstance(m, nn.LayerNorm):
-            nn.init.constant_(m.bias, 0)
-            nn.init.constant_(m.weight, 1.0)
 
     def init_weights(self, pretrained=None):
         """Initialize the weights in backbone.
@@ -588,6 +758,16 @@ class ViTDet(nn.Module):
             elif isinstance(m, nn.LayerNorm):
                 nn.init.constant_(m.bias, 0)
                 nn.init.constant_(m.weight, 1.0)
+
+            if isinstance(m, nn.Conv2d):
+                kaiming_init(m, mode='fan_in', nonlinearity='relu')
+            elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
+                constant_init(m, 1)
+
+            if isinstance(m, Bottleneck):
+                constant_init(m.norm3, 0)
+            elif isinstance(m, BasicBlock):
+                constant_init(m.norm2, 0)
 
         if isinstance(pretrained, str):
             self.apply(_init_weights)
