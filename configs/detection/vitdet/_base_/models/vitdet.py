@@ -21,10 +21,11 @@ model = dict(
         use_rel_pos_bias=True),
     neck=dict(
         type='SFP',
-        in_channels=768,
+        in_channels=[768, 768, 768, 768],
         out_channels=256,
-        num_outs=5,
-        norm_cfg=norm_cfg),
+        norm_cfg=norm_cfg,
+        use_residual=False,
+        num_outs=5),
     rpn_head=dict(
         type='RPNHead_Norm',
         in_channels=256,
@@ -133,11 +134,10 @@ model = dict(
             max_per_img=100,
             mask_thr_binary=0.5)))
 
-
 mmlab_modules = [
     dict(type='mmdet', name='MaskRCNN', module='model'),
     # dict(type=MMDET, name='ResNet', module='backbone'), # comment out, use EasyCV ResNet
-    #dict(type='mmdet', name='FPN', module='neck'),
-    #dict(type='mmdet', name='RPNHead', module='head'),
+    # ict(type='mmdet', name='FPN', module='neck'),
+    # dict(type='mmdet', name='RPNHead', module='head'),
     dict(type='mmdet', name='StandardRoIHead', module='head'),
 ]

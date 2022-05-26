@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import build_norm_layer, constant_init, kaiming_init
-from mmcv.runner.base_module import BaseModule, ModuleList
+from mmcv.runner.base_module import ModuleList
 from mmcv.utils import to_2tuple
 from torch.nn.modules.batchnorm import _BatchNorm
 
@@ -115,7 +115,6 @@ class Mlp(nn.Module):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
-        drop_probs = to_2tuple(drop)
 
         self.fc1 = nn.Linear(in_features, hidden_features)
         self.act = act_layer()
@@ -596,7 +595,7 @@ class Block(nn.Module):
 
 
 @BACKBONES.register_module()
-class ViTDet(BaseModule):
+class ViTDet(nn.Module):
     """Vision Transformer.
 
     A PyTorch implement of : `An Image is Worth 16x16 Words: Transformers
@@ -691,9 +690,8 @@ class ViTDet(BaseModule):
                  aggregation='attn',
                  interpolate_mode='bicubic',
                  patch_cfg=dict(),
-                 layer_cfgs=dict(),
-                 init_cfg=None):
-        super(ViTDet, self).__init__(init_cfg)
+                 layer_cfgs=dict()):
+        super().__init__()
 
         if isinstance(arch, str):
             arch = arch.lower()
