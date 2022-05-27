@@ -166,7 +166,6 @@ class MMDetWrapper:
 
         def _new_forward(self, img, mode='train', **kwargs):
             img_metas = kwargs.pop('img_metas', None)
-            #print("kwargs:{}".format(kwargs))
 
             if mode == 'train':
                 return origin_forward(
