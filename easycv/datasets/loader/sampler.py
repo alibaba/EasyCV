@@ -20,7 +20,6 @@ class DistributedMPSampler(_DistributedSampler):
                  shuffle=True,
                  split_huge_listfile_byrank=False):
         """ A Distribute sampler which support sample m instance from one class once for classification dataset
-
             dataset: pytorch dataset object
             num_replicas (optional): Number of processes participating in
                 distributed training.
@@ -165,7 +164,6 @@ class DistributedSampler(_DistributedSampler):
         split_huge_listfile_byrank=False,
     ):
         """ A Distribute sampler which support sample m instance from one class once for classification dataset
-
         Args:
             dataset: pytorch dataset object
             num_replicas (optional): Number of processes participating in
@@ -292,14 +290,12 @@ class GroupSampler(Sampler):
 
 class DistributedGroupSampler(Sampler):
     """Sampler that restricts data loading to a subset of the dataset.
-
     It is especially useful in conjunction with
     :class:`torch.nn.parallel.DistributedDataParallel`. In such case, each
     process can pass a DistributedSampler instance as a DataLoader sampler,
     and load a subset of the original dataset that is exclusive to it.
     .. note::
         Dataset is assumed to be of constant size.
-
     Args:
         dataset: Dataset used for sampling.
         num_replicas (optional): Number of processes participating in
@@ -311,8 +307,7 @@ class DistributedGroupSampler(Sampler):
                  dataset,
                  samples_per_gpu=1,
                  num_replicas=None,
-                 rank=None,
-                 seed=0):
+                 rank=None):
         _rank, _num_replicas = get_dist_info()
         if num_replicas is None:
             num_replicas = _num_replicas
@@ -323,11 +318,9 @@ class DistributedGroupSampler(Sampler):
         self.num_replicas = num_replicas
         self.rank = rank
         self.epoch = 0
-        self.seed = seed if seed is not None else 0
 
-        print("debug:{}".format(self.dataset))
-        assert hasattr(self.dataset.data_source, 'flag')
-        self.flag = self.dataset.data_source.flag
+        assert hasattr(self.dataset, 'flag')
+        self.flag = self.dataset.flag
         self.group_sizes = np.bincount(self.flag)
 
         self.num_samples = 0
@@ -340,7 +333,7 @@ class DistributedGroupSampler(Sampler):
     def __iter__(self):
         # deterministically shuffle based on epoch
         g = torch.Generator()
-        g.manual_seed(self.epoch + self.seed)
+        g.manual_seed(self.epoch)
 
         indices = []
         for i, size in enumerate(self.group_sizes):

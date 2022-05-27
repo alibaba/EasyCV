@@ -1,6 +1,5 @@
 _base_ = [
-    './_base_/models/mask_rcnn_r50_fpn.py',
-    './_base_/datasets/coco.py',
+    './_base_/models/mask_rcnn_r50_fpn.py', './_base_/datasets/coco.py',
     'configs/base.py'
 ]
 
@@ -29,8 +28,8 @@ checkpoint = '/apsarapangu/disk3/jiangnana.jnn/pretrained_models/selfsup/mmself_
 model = dict(
     backbone=dict(frozen_stages=-1, norm_cfg=norm_cfg, norm_eval=False),
     # backbone=dict(
-    #     frozen_stages=-1, 
-    #     norm_cfg=norm_cfg, 
+    #     frozen_stages=-1,
+    #     norm_cfg=norm_cfg,
     #     norm_eval=False,
     #     init_cfg=dict(type='Pretrained', checkpoint=checkpoint)),
     neck=dict(norm_cfg=norm_cfg),
@@ -61,7 +60,7 @@ eval_pipelines = [
         evaluators=[
             dict(type='CocoDetectionEvaluator', classes=CLASSES),
             dict(type='CocoMaskEvaluator', classes=CLASSES)
-            ],
+        ],
     )
 ]
 load_from = '/home/jiangnana.jnn/workspace/EasyCV-ssh/EasyCV/work_dir/epoch_2.pth'

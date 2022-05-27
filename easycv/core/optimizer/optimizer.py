@@ -1,11 +1,13 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import math
-import torch
-from torch import Tensor
 from typing import List
+
+import torch
 from mmcv.runner.optimizer.builder import OPTIMIZERS
+from torch import Tensor
 from torch.optim import *  # noqa: F401,F403
 from torch.optim.optimizer import Optimizer, required
+
 
 class LARS(Optimizer):
     r"""Implements layer-wise adaptive rate scaling for SGD.
@@ -125,18 +127,10 @@ class LARS(Optimizer):
         return loss
 
 
-def adamw(params: List[Tensor],
-          grads: List[Tensor],
-          exp_avgs: List[Tensor],
-          exp_avg_sqs: List[Tensor],
-          max_exp_avg_sqs: List[Tensor],
-          state_steps: List[int],
-          amsgrad: bool,
-          beta1: float,
-          beta2: float,
-          lr: float,
-          weight_decay: float,
-          eps: float):
+def adamw(params: List[Tensor], grads: List[Tensor], exp_avgs: List[Tensor],
+          exp_avg_sqs: List[Tensor], max_exp_avg_sqs: List[Tensor],
+          state_steps: List[int], amsgrad: bool, beta1: float, beta2: float,
+          lr: float, weight_decay: float, eps: float):
     r"""Functional API that performs AdamW algorithm computation.
     See :class:`~torch.optim.AdamW` for details.
     """
@@ -149,23 +143,26 @@ def adamw(params: List[Tensor],
         # Perform stepweight decay
         param.mul_(1 - lr * weight_decay)
 
-        bias_correction1 = 1 - beta1 ** step
-        bias_correction2 = 1 - beta2 ** step
+        bias_correction1 = 1 - beta1**step
+        bias_correction2 = 1 - beta2**step
 
         # Decay the first and second moment running average coefficient
         exp_avg.mul_(beta1).add_(grad, alpha=1 - beta1)
         exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=1 - beta2)
         if amsgrad:
             # Maintains the maximum of all 2nd moment running avg. till now
-            torch.maximum(max_exp_avg_sqs[i], exp_avg_sq, out=max_exp_avg_sqs[i])
+            torch.maximum(
+                max_exp_avg_sqs[i], exp_avg_sq, out=max_exp_avg_sqs[i])
             # Use the max. for normalizing running avg. of gradient
-            denom = (max_exp_avg_sqs[i].sqrt() / math.sqrt(bias_correction2)).add_(eps)
+            denom = (max_exp_avg_sqs[i].sqrt() /
+                     math.sqrt(bias_correction2)).add_(eps)
         else:
             denom = (exp_avg_sq.sqrt() / math.sqrt(bias_correction2)).add_(eps)
 
         step_size = lr / bias_correction1
 
         param.addcdiv_(exp_avg, denom, value=-step_size)
+
 
 @OPTIMIZERS.register_module()
 class _AdamW(Optimizer):
@@ -192,20 +189,32 @@ class _AdamW(Optimizer):
         https://openreview.net/forum?id=ryQu7f-RZ
     """
 
-    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
-                 weight_decay=1e-2, amsgrad=False):
+    def __init__(self,
+                 params,
+                 lr=1e-3,
+                 betas=(0.9, 0.999),
+                 eps=1e-8,
+                 weight_decay=1e-2,
+                 amsgrad=False):
         if not 0.0 <= lr:
-            raise ValueError("Invalid learning rate: {}".format(lr))
+            raise ValueError('Invalid learning rate: {}'.format(lr))
         if not 0.0 <= eps:
-            raise ValueError("Invalid epsilon value: {}".format(eps))
+            raise ValueError('Invalid epsilon value: {}'.format(eps))
         if not 0.0 <= betas[0] < 1.0:
-            raise ValueError("Invalid beta parameter at index 0: {}".format(betas[0]))
+            raise ValueError('Invalid beta parameter at index 0: {}'.format(
+                betas[0]))
         if not 0.0 <= betas[1] < 1.0:
-            raise ValueError("Invalid beta parameter at index 1: {}".format(betas[1]))
+            raise ValueError('Invalid beta parameter at index 1: {}'.format(
+                betas[1]))
         if not 0.0 <= weight_decay:
-            raise ValueError("Invalid weight_decay value: {}".format(weight_decay))
-        defaults = dict(lr=lr, betas=betas, eps=eps,
-                        weight_decay=weight_decay, amsgrad=amsgrad)
+            raise ValueError(
+                'Invalid weight_decay value: {}'.format(weight_decay))
+        defaults = dict(
+            lr=lr,
+            betas=betas,
+            eps=eps,
+            weight_decay=weight_decay,
+            amsgrad=amsgrad)
         super(_AdamW, self).__init__(params, defaults)
 
     def __setstate__(self, state):
@@ -241,7 +250,8 @@ class _AdamW(Optimizer):
                     continue
                 params_with_grad.append(p)
                 if p.grad.is_sparse:
-                    raise RuntimeError('AdamW does not support sparse gradients')
+                    raise RuntimeError(
+                        'AdamW does not support sparse gradients')
                 grads.append(p.grad)
 
                 state = self.state[p]
@@ -250,12 +260,15 @@ class _AdamW(Optimizer):
                 if len(state) == 0:
                     state['step'] = 0
                     # Exponential moving average of gradient values
-                    state['exp_avg'] = torch.zeros_like(p, memory_format=torch.preserve_format)
+                    state['exp_avg'] = torch.zeros_like(
+                        p, memory_format=torch.preserve_format)
                     # Exponential moving average of squared gradient values
-                    state['exp_avg_sq'] = torch.zeros_like(p, memory_format=torch.preserve_format)
+                    state['exp_avg_sq'] = torch.zeros_like(
+                        p, memory_format=torch.preserve_format)
                     if amsgrad:
                         # Maintains max of all exp. moving avg. of sq. grad. values
-                        state['max_exp_avg_sq'] = torch.zeros_like(p, memory_format=torch.preserve_format)
+                        state['max_exp_avg_sq'] = torch.zeros_like(
+                            p, memory_format=torch.preserve_format)
 
                 exp_avgs.append(state['exp_avg'])
                 exp_avg_sqs.append(state['exp_avg_sq'])
@@ -268,17 +281,8 @@ class _AdamW(Optimizer):
                 # record the step after step update
                 state_steps.append(state['step'])
 
-            adamw(params_with_grad,
-                    grads,
-                    exp_avgs,
-                    exp_avg_sqs,
-                    max_exp_avg_sqs,
-                    state_steps,
-                    amsgrad,
-                    beta1,
-                    beta2,
-                    group['lr'],
-                    group['weight_decay'],
-                    group['eps'])
+            adamw(params_with_grad, grads, exp_avgs, exp_avg_sqs,
+                  max_exp_avg_sqs, state_steps, amsgrad, beta1, beta2,
+                  group['lr'], group['weight_decay'], group['eps'])
 
         return loss

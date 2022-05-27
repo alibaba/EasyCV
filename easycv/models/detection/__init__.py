@@ -1,6 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import logging
 
+from .vitdet import SFP, RPNHead_Norm
+
 try:
     from .yolox.yolox import YOLOX
 except Exception as e:
@@ -14,5 +16,3 @@ except Exception as e:
     logging.info(f'Exception: {e}')
     logging.info(
         'Import YOLOX_EDGE failed! please check your CUDA & Pytorch Version')
-
-from .vitdet import RPNHead_Norm, SFP

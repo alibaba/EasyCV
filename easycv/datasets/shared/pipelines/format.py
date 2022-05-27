@@ -162,6 +162,7 @@ class DefaultFormatBundle(object):
     - gt_semantic_seg: (1)unsqueeze dim-0 (2)to tensor, \
                        (3)to DataContainer (stack=True)
     """
+
     def __init__(self,
                  img_to_float=True,
                  pad_val=dict(img=0, masks=0, seg=255)):

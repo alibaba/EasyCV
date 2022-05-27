@@ -1,6 +1,10 @@
+from collections import abc
+
+import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.utils import TORCH_VERSION, digit_version
+
 
 def cast_tensor_type(inputs, src_type, dst_type):
     """Recursively convert Tensor in inputs from src_type to dst_type.
@@ -43,6 +47,7 @@ def cast_tensor_type(inputs, src_type, dst_type):
     else:
         return inputs
 
+
 def wrap_fp16_model(model):
     """Wrap the FP32 model to FP16.
 
@@ -71,6 +76,7 @@ def wrap_fp16_model(model):
         if hasattr(m, 'fp16_enabled'):
             m.fp16_enabled = True
 
+
 def patch_norm_fp32(module):
     """Recursively convert normalization layers from FP16 to FP32.
 
@@ -89,6 +95,7 @@ def patch_norm_fp32(module):
     for child in module.children():
         patch_norm_fp32(child)
     return module
+
 
 def patch_forward_method(func, src_type, dst_type, convert_output=True):
     """Patch the forward method of a module.

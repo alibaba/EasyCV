@@ -10,6 +10,7 @@ from mmcv.runner.log_buffer import LogBuffer
 from easycv.file import io
 from easycv.utils.checkpoint import load_checkpoint, save_checkpoint
 
+
 class EVRunner(EpochBasedRunner):
 
     def __init__(self,

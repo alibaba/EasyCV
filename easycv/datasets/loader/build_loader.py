@@ -11,7 +11,7 @@ from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader, RandomSampler
 
 from easycv.datasets.shared.odps_reader import set_dataloader_workid
-from .sampler import DistributedMPSampler, DistributedSampler, DistributedGroupSampler
+from .sampler import DistributedMPSampler, DistributedSampler
 
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
@@ -33,10 +33,8 @@ def build_dataloader(dataset,
                      persistent_workers=False,
                      **kwargs):
     """Build PyTorch DataLoader.
-
     In distributed training, each GPU/process has a dataloader.
     In non-distributed training, there is only one dataloader for all GPUs.
-
     Args:
         dataset (Dataset): A PyTorch dataset.
         imgs_per_gpu (int): Number of images on each GPU, i.e., batch size of
@@ -54,11 +52,10 @@ def build_dataloader(dataset,
         persistent_workers (bool) : After pytorch1.7, could use persistent_workers=True to
             avoid reconstruct dataworker before each epoch, speed up before epoch
         kwargs: any keyword argument to be used to initialize DataLoader
-
     Returns:
         DataLoader: A PyTorch dataloader.
     """
-    batch_sampler = None    
+
     if dist:
         rank, world_size = get_dist_info()
         split_huge_listfile_byrank = getattr(dataset,
@@ -73,17 +70,12 @@ def build_dataloader(dataset,
                 shuffle=shuffle,
                 split_huge_listfile_byrank=split_huge_listfile_byrank)
         else:
-            if shuffle:
-                #print("!!!!!!!!!!!!!!!")
-                sampler = DistributedGroupSampler(
-                    dataset, imgs_per_gpu, world_size, rank, seed=seed)
-            else:
-                sampler = DistributedSampler(
-                    dataset,
-                    world_size,
-                    rank,
-                    shuffle=shuffle,
-                    split_huge_listfile_byrank=split_huge_listfile_byrank)
+            sampler = DistributedSampler(
+                dataset,
+                world_size,
+                rank,
+                shuffle=shuffle,
+                split_huge_listfile_byrank=split_huge_listfile_byrank)
         batch_size = imgs_per_gpu
         num_workers = workers_per_gpu
     else:
@@ -118,13 +110,11 @@ def build_dataloader(dataset,
                 worker_init_fn=init_fn,
                 **kwargs)
         else:
-            #print("@@@@@@@@@@@@@@@@@@@@@@@@")
             data_loader = DataLoader(
                 dataset,
                 batch_size=batch_size,
                 sampler=sampler,
                 num_workers=num_workers,
-                batch_sampler=batch_sampler,
                 collate_fn=collate_fn,
                 pin_memory=False,
                 worker_init_fn=init_fn,
@@ -160,7 +150,6 @@ def worker_init_fn(worker_id, seed=None, odps_config=None):
 
 class InfiniteDataLoader(torch.utils.data.dataloader.DataLoader):
     """ Dataloader that reuses workers. https://github.com/pytorch/pytorch/issues/15849
-
     Uses same syntax as vanilla DataLoader.
     """
 
@@ -180,7 +169,6 @@ class InfiniteDataLoader(torch.utils.data.dataloader.DataLoader):
 
 class _RepeatSampler(object):
     """ Sampler that repeats forever.
-
     Args:
         sampler (Sampler)
     """

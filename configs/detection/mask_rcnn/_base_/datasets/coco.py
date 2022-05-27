@@ -32,10 +32,12 @@ train_pipeline = [
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='MMPad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks'],
-            meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
-                        'img_shape', 'pad_shape', 'scale_factor', 'flip',
-                        'flip_direction', 'img_norm_cfg'))
+    dict(
+        type='Collect',
+        keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks'],
+        meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
+                   'img_shape', 'pad_shape', 'scale_factor', 'flip',
+                   'flip_direction', 'img_norm_cfg'))
 ]
 test_pipeline = [
     dict(
@@ -48,10 +50,13 @@ test_pipeline = [
             dict(type='MMNormalize', **img_norm_cfg),
             dict(type='MMPad', size_divisor=32),
             dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img'],
-                    meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
-                        'img_shape', 'pad_shape', 'scale_factor', 'flip',
-                        'flip_direction', 'img_norm_cfg')),
+            dict(
+                type='Collect',
+                keys=['img'],
+                meta_keys=('filename', 'ori_filename', 'ori_shape',
+                           'ori_img_shape', 'img_shape', 'pad_shape',
+                           'scale_factor', 'flip', 'flip_direction',
+                           'img_norm_cfg')),
         ])
 ]
 
@@ -70,8 +75,7 @@ train_dataset = dict(
         classes=CLASSES,
         filter_empty_gt=False,
         iscrowd=False),
-    pipeline=train_pipeline
-)
+    pipeline=train_pipeline)
 
 val_dataset = dict(
     type='DetDataset',
@@ -90,8 +94,7 @@ val_dataset = dict(
         classes=CLASSES,
         filter_empty_gt=False,
         iscrowd=True),
-    pipeline=test_pipeline
-)
+    pipeline=test_pipeline)
 
 data = dict(
     imgs_per_gpu=2, workers_per_gpu=2, train=train_dataset, val=val_dataset)
