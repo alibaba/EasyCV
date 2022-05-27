@@ -53,8 +53,8 @@ import os
 
 os.environ['OSS_ACCESS_KEY_ID'] = 'your_accesskey_id'
 os.environ['OSS_ACCESS_KEY_SECRET'] = 'your_accesskey_secret'
-os.environ['OSS_ENDPOINTS'] = 'your endpoint1,your endpoint2'
-os.environ['OSS_BUCKETS'] = 'your bucket1,your bucket2'
+os.environ['OSS_ENDPOINTS'] = 'your endpoint1,your endpoint2'  # split with ","
+os.environ['OSS_BUCKETS'] = 'your bucket1,your bucket2'  # split with ","
 ```
 
 ### open
