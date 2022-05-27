@@ -175,6 +175,7 @@ class TorchYoloXPredictor(PredictorInterface):
             ori_img_shape = img.shape[:2]
 
             if self.end2end:
+                # the input should also be as the type of uint8 as mmcv
                 img = torch.from_numpy(img).to(self.device)
                 det_out = self.model(img)
 
