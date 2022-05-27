@@ -97,4 +97,5 @@ jobs:
           export CUDA_VISIBLE_DEVICES=6
           source ~/workspace/anaconda2/etc/profile.d/conda.sh
           conda activate torch1.8.1_blade
-          PYTHONPATH=. python tests/predictors/test_detector_end2end.py
+          PYTHONPATH=. python tests/predictors/test_detector_blade.py
+          PYTHONPATH=. python tests/apis/test_export_blade.py

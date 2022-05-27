@@ -159,7 +159,7 @@ def _export_yolox(model, cfg, filename):
         filename (str): filename to save exported models
     """
 
-    if hasattr(cfg, 'export') and getattr(cfg.export, 'use_jit', False):
+    if hasattr(cfg, 'export') and (getattr(cfg.export, 'use_jit', False) or getattr(cfg.export, 'export_blade', False)):
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         model = copy.deepcopy(model)
@@ -209,15 +209,11 @@ def _export_yolox(model, cfg, filename):
         # well trained model will generate reasonable result, otherwise, we should change model.test_conf=0.0 to avoid tensor in inference to be empty
         # use trace is a litter bit faster than script. But it is not supported in an end2end model.
         if end2end:
-            try:
-                yolox_trace = torch.jit.script(model_export)
-            except Exception as e:
-                raise e
+            yolox_trace = torch.jit.script(model_export)
+
         else:
-            try:
-                yolox_trace = torch.jit.trace(model_export, input.to(device))
-            except Exception as e:
-                raise e
+            yolox_trace = torch.jit.trace(model_export, input.to(device))
+
 
         if getattr(cfg.export, 'export_blade', False):
             blade_config = cfg.export.get('blade_config',
@@ -246,16 +242,17 @@ def _export_yolox(model, cfg, filename):
 
                 json.dump(config, ofile)
 
-        with io.open(filename + '.jit', 'wb') as ofile:
-            torch.jit.save(yolox_trace, ofile)
+        if getattr(cfg.export, 'use_jit', False):
+            with io.open(filename + '.jit', 'wb') as ofile:
+                torch.jit.save(yolox_trace, ofile)
 
-        with io.open(filename + '.jit.config.json', 'w') as ofile:
-            config = dict(
-                export=cfg.export,
-                test_pipeline=cfg.test_pipeline,
-                classes=cfg.CLASSES)
+            with io.open(filename + '.jit.config.json', 'w') as ofile:
+                config = dict(
+                    export=cfg.export,
+                    test_pipeline=cfg.test_pipeline,
+                    classes=cfg.CLASSES)
 
-            json.dump(config, ofile)
+                json.dump(config, ofile)
 
     else:
         if hasattr(cfg, 'test_pipeline'):
