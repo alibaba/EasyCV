@@ -159,7 +159,8 @@ def _export_yolox(model, cfg, filename):
         filename (str): filename to save exported models
     """
 
-    if hasattr(cfg, 'export') and (getattr(cfg.export, 'use_jit', False) or getattr(cfg.export, 'export_blade', False)):
+    if hasattr(cfg, 'export') and (getattr(cfg.export, 'use_jit', False) or
+                                   getattr(cfg.export, 'export_blade', False)):
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         model = copy.deepcopy(model)
@@ -213,7 +214,6 @@ def _export_yolox(model, cfg, filename):
 
         else:
             yolox_trace = torch.jit.trace(model_export, input.to(device))
-
 
         if getattr(cfg.export, 'export_blade', False):
             blade_config = cfg.export.get('blade_config',

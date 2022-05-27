@@ -15,7 +15,7 @@ from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.test_util import clean_up, get_tmp_dir
 
 
-@unittest.skipIf(torch.__version__!='1.8.1+cu102',
+@unittest.skipIf(torch.__version__ != '1.8.1+cu102',
                  'Blade need another environment')
 class ModelExportTest(unittest.TestCase):
 
@@ -36,7 +36,7 @@ class ModelExportTest(unittest.TestCase):
         target_path = f'{self.tmp_dir}/export_yolox_s_epoch300_export'
 
         export(cfg, ori_ckpt, target_path)
-        self.assertTrue(os.path.exists(target_path+'.jit'))
+        self.assertTrue(os.path.exists(target_path + '.jit'))
         self.assertTrue(os.path.exists(target_path + '.jit.config.json'))
 
     def test_export_yolox_blade(self):
@@ -48,7 +48,7 @@ class ModelExportTest(unittest.TestCase):
         target_path = f'{self.tmp_dir}/export_yolox_s_epoch300_export'
 
         export(cfg, ori_ckpt, target_path)
-        self.assertTrue(os.path.exists(target_path+'.jit'))
+        self.assertTrue(os.path.exists(target_path + '.jit'))
         self.assertTrue(os.path.exists(target_path + '.jit.config.json'))
         self.assertTrue(os.path.exists(target_path + '.blade'))
         self.assertTrue(os.path.exists(target_path + '.blade.config.json'))
@@ -62,11 +62,10 @@ class ModelExportTest(unittest.TestCase):
         target_path = f'{self.tmp_dir}/export_yolox_s_epoch300_export'
 
         export(cfg, ori_ckpt, target_path)
-        self.assertFalse(os.path.exists(target_path+'.jit'))
+        self.assertFalse(os.path.exists(target_path + '.jit'))
         self.assertFalse(os.path.exists(target_path + '.jit.config.json'))
         self.assertTrue(os.path.exists(target_path + '.blade'))
         self.assertTrue(os.path.exists(target_path + '.blade.config.json'))
-
 
     def test_export_yolox_jit_end2end(self):
         config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
@@ -77,9 +76,8 @@ class ModelExportTest(unittest.TestCase):
         target_path = f'{self.tmp_dir}/export_yolox_s_epoch300_end2end'
 
         export(cfg, ori_ckpt, target_path)
-        self.assertTrue(os.path.exists(target_path+'.jit'))
+        self.assertTrue(os.path.exists(target_path + '.jit'))
         self.assertTrue(os.path.exists(target_path + '.jit.config.json'))
-
 
     def test_export_yolox_blade_end2end(self):
         config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
@@ -90,7 +88,7 @@ class ModelExportTest(unittest.TestCase):
         target_path = f'{self.tmp_dir}/export_yolox_s_epoch300_end2end'
 
         export(cfg, ori_ckpt, target_path)
-        self.assertTrue(os.path.exists(target_path+'.jit'))
+        self.assertTrue(os.path.exists(target_path + '.jit'))
         self.assertTrue(os.path.exists(target_path + '.jit.config.json'))
         self.assertTrue(os.path.exists(target_path + '.blade'))
         self.assertTrue(os.path.exists(target_path + '.blade.config.json'))

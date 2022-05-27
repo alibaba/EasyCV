@@ -23,7 +23,7 @@ import torch
 from numpy.testing import assert_array_almost_equal
 
 
-@unittest.skipIf(torch.__version__!='1.8.1+cu102',
+@unittest.skipIf(torch.__version__ != '1.8.1+cu102',
                  'Blade need another environment')
 class DetectorTest(unittest.TestCase):
 
