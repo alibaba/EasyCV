@@ -13,10 +13,8 @@ from mmcv.utils import Config
 from easycv.file import io
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
                            build_model)
-# from easycv.toolkit.blade import blade_env_assert, blade_optimize
 from easycv.utils.bbox_util import scale_coords
 from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.config_tools import mmcv_config_fromfile
 
 __all__ = [
     'export', 'PreProcess', 'DetPostProcess', 'End2endModelExportWrapper'
@@ -240,7 +238,6 @@ def _export_yolox(model, cfg, filename):
                 test_pipeline=cfg.test_pipeline,
                 classes=cfg.CLASSES)
 
-            # meta = dict(config=json.dumps(config))
             json.dump(config, ofile)
 
     else:
@@ -493,6 +490,10 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
             """
             input_h, input_w = self.target_size
             image = image.permute(2, 0, 1)
+
+            # rgb2bgr
+            image = image[[2, 1, 0], :, :]
+
             image = torch.unsqueeze(image, 0)
             ori_h, ori_w = image.shape[-2:]
 
@@ -504,14 +505,15 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
                 out_image = t_f.normalize(out_image, mean, std)
                 pad_l, pad_t, scale = 0, 0, 1.0
             else:
-                scale = min(input_h / ori_h, input_w / ori_w, 1.0)
+                scale = min(input_h / ori_h, input_w / ori_w)
                 resize_h, resize_w = int(ori_h * scale), int(ori_w * scale)
                 pad_h, pad_w = input_h - resize_h, input_w - resize_w
-                pad_l, pad_t = pad_w // 2, pad_h // 2
+                pad_l, pad_t = 0, 0
                 pad_r, pad_b = pad_w - pad_l, pad_h - pad_t
                 out_image = t_f.resize(image, [resize_h, resize_w])
                 out_image = t_f.pad(
                     out_image, [pad_l, pad_t, pad_r, pad_b], fill=114)
+                out_image = out_image.float()
                 out_image = t_f.normalize(out_image, mean, std)
 
             h, w = out_image.shape[-2:]

@@ -69,6 +69,25 @@ class DetectorTest(unittest.TestCase):
             output_blade['detection_scores'],
             decimal=3)
 
+        self.assertListEqual(
+            output_jit['detection_classes'].tolist(),
+            np.array([72, 69, 60, 56, 49, 49, 72, 46, 49],
+                     dtype=np.int32).tolist())
+
+        self.assertListEqual(output_jit['detection_class_names'], [
+            'refrigerator', 'oven', 'dining table', 'chair', 'orange',
+            'orange', 'refrigerator', 'banana', 'orange'
+        ])
+
+        assert_array_almost_equal(
+            output_jit['detection_scores'],
+            np.array([
+                0.93252, 0.88439, 0.75048, 0.74093, 0.67255, 0.65550, 0.63942,
+                0.60507, 0.56973
+            ],
+                     dtype=np.float32),
+            decimal=2)
+
     def test_export(self):
         img = os.path.join(DET_DATA_SMALL_COCO_LOCAL,
                            'val2017/000000037777.jpg')
@@ -125,7 +144,7 @@ class DetectorTest(unittest.TestCase):
                 0.60507, 0.56973
             ],
                      dtype=np.float32),
-            decimal=3)
+            decimal=2)
 
     def test_time(self):
         img = os.path.join(DET_DATA_SMALL_COCO_LOCAL,

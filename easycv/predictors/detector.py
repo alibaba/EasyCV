@@ -175,7 +175,7 @@ class TorchYoloXPredictor(PredictorInterface):
             ori_img_shape = img.shape[:2]
 
             if self.end2end:
-                img = torch.from_numpy(img).float().to(self.device)
+                img = torch.from_numpy(img).to(self.device)
                 det_out = self.model(img)
 
                 detection_scores = det_out['detection_scores']
