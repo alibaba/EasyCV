@@ -5,6 +5,7 @@ import os
 import sys
 import tempfile
 import unittest
+from distutils.version import LooseVersion
 
 import torch
 from mmcv import Config
@@ -103,8 +104,9 @@ class ModelQuantizeTest(unittest.TestCase):
         io.remove(work_dir)
         io.remove(tmp_cfg_file)
 
-    @unittest.skipIf(torch.__version__ < '1.10.0',
-                     'model compression need pytorch version >= 1.10.0')
+    @unittest.skipIf(
+        LooseVersion(torch.__version__) < LooseVersion('1.10.0'),
+        'model compression need pytorch version >= 1.10.0')
     def test_model_quantize(self):
         train_cfgs = copy.deepcopy(TRAIN_CONFIGS[0])
 
