@@ -37,7 +37,7 @@ def main(args):
         os.path.abspath(args.test_dir), args.pattern, args.list_tests)
     if not args.list_tests:
         result = runner.run(test_suite)
-        if len(result.failures) > 0:
+        if len(result.failures) > 0 or len(result.errors) > 0:
             sys.exit(1)
 
 
