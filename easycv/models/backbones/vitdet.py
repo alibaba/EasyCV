@@ -18,13 +18,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 from mmcv.cnn import build_norm_layer, constant_init, kaiming_init
+from mmcv.runner import get_dist_info
 from mmdet.utils import get_root_logger
 from timm.models.layers import drop_path, to_2tuple, trunc_normal_
 from torch.nn.modules.batchnorm import _BatchNorm
 
+from easycv.utils.checkpoint import load_checkpoint
 from ..registry import BACKBONES
 from ..utils import build_conv_layer
-from .mmcv_custom import load_checkpoint
 
 
 class DropPath(nn.Module):
@@ -730,8 +731,8 @@ class ViTDet(nn.Module):
 
         self.norm = norm_layer(embed_dim)
 
-        self.fix_init_weight()
         self.pretrained = pretrained
+        self._register_load_state_dict_pre_hook(self._prepare_checkpoint_hook)
 
     def fix_init_weight(self):
 
@@ -748,6 +749,7 @@ class ViTDet(nn.Module):
             pretrained (str, optional): Path to pre-trained weights.
                 Defaults to None.
         """
+        self.fix_init_weight()
         pretrained = pretrained or self.pretrained
 
         def _init_weights(m):
@@ -772,12 +774,44 @@ class ViTDet(nn.Module):
         if isinstance(pretrained, str):
             self.apply(_init_weights)
             logger = get_root_logger()
-            print(f'load from {pretrained}')
             load_checkpoint(self, pretrained, strict=False, logger=logger)
         elif pretrained is None:
             self.apply(_init_weights)
         else:
             raise TypeError('pretrained must be a str or None')
+
+    def _prepare_checkpoint_hook(self, state_dict, prefix, *args, **kwargs):
+        rank, _ = get_dist_info()
+        if 'pos_embed' in state_dict:
+            pos_embed_checkpoint = state_dict['pos_embed']
+            embedding_size = pos_embed_checkpoint.shape[-1]
+            H, W = self.patch_embed.patch_shape
+            num_patches = self.patch_embed.num_patches
+            num_extra_tokens = 1
+            # height (== width) for the checkpoint position embedding
+            orig_size = int(
+                (pos_embed_checkpoint.shape[-2] - num_extra_tokens)**0.5)
+            # height (== width) for the new position embedding
+            new_size = int(num_patches**0.5)
+            # class_token and dist_token are kept unchanged
+            if orig_size != new_size:
+                if rank == 0:
+                    print('Position interpolate from %dx%d to %dx%d' %
+                          (orig_size, orig_size, H, W))
+                # extra_tokens = pos_embed_checkpoint[:, :num_extra_tokens]
+                # only the position tokens are interpolated
+                pos_tokens = pos_embed_checkpoint[:, num_extra_tokens:]
+                pos_tokens = pos_tokens.reshape(-1, orig_size, orig_size,
+                                                embedding_size).permute(
+                                                    0, 3, 1, 2)
+                pos_tokens = torch.nn.functional.interpolate(
+                    pos_tokens,
+                    size=(H, W),
+                    mode='bicubic',
+                    align_corners=False)
+                new_pos_embed = pos_tokens.permute(0, 2, 3, 1).flatten(1, 2)
+                # new_pos_embed = torch.cat((extra_tokens, pos_tokens), dim=1)
+                state_dict['pos_embed'] = new_pos_embed
 
     def get_num_layers(self):
         return len(self.blocks)
