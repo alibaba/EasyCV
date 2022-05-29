@@ -75,8 +75,18 @@ Please refer to the following model zoo for more details.
 - [classification model zoo](docs/source/model_zoo_cls.md)
 - [detection model zoo](docs/source/model_zoo_detection.md)
 
+## Data Hub
+
+EasyCV have collected dataset info for different senarios, making it easy for users to fintune or evaluate models in EasyCV modelzoo.
+
+Please refer to [data_hub.md](https://github.com/alibaba/EasyCV/blob/master/docs/source/data_hub.md).
 
 ## ChangeLog
+
+* 31/04/2022 EasyCV v0.3.0 was released.
+    * Update moby pretrained model to deit small
+    * Add mae vit-large benchmark and pretrained models
+    * Support image visualization for tensorboard and wandb
 
 * 07/04/2022 EasyCV v0.2.2 was released.
 

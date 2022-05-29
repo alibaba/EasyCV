@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import sys
 import unittest
 from fnmatch import fnmatch
 
@@ -35,7 +36,9 @@ def main(args):
     test_suite = gather_test_cases(
         os.path.abspath(args.test_dir), args.pattern, args.list_tests)
     if not args.list_tests:
-        runner.run(test_suite)
+        result = runner.run(test_suite)
+        if len(result.failures) > 0 or len(result.errors) > 0:
+            sys.exit(1)
 
 
 if __name__ == '__main__':
