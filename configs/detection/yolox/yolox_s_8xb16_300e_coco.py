@@ -179,4 +179,4 @@ log_config = dict(
         # dict(type='WandbLoggerHookV2'),
     ])
 
-export = dict(use_jit=True, export_blade=True, end2end=False)
+export = dict(use_jit=False, export_blade=False, end2end=False)
