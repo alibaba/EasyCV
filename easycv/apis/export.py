@@ -15,7 +15,6 @@ from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
                            build_model)
 from easycv.utils.bbox_util import scale_coords
 from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.parse_pipeline import parse_pipleline
 
 __all__ = [
     'export', 'PreProcess', 'DetPostProcess', 'End2endModelExportWrapper'
@@ -187,19 +186,11 @@ def _export_yolox(model, cfg, filename):
             print('test_pipeline not found, using default preprocessing!')
             raise ValueError('export model config without test_pipeline')
 
-        target_size, keep_ratio, pad_val, mean, std, to_rgb = parse_pipleline(
-            test_pipeline)
-
         model_export = End2endModelExportWrapper(
             model,
             input.to(device),
-            preprocess_fn=PreProcess(
-                target_size=target_size,
-                keep_ratio=keep_ratio,
-                pad_val=pad_val,
-                mean=mean,
-                std=std,
-                to_rgb=to_rgb) if end2end else None,
+            preprocess_fn=PreProcess(target_size=img_scale, keep_ratio=True)
+            if end2end else None,
             postprocess_fn=DetPostProcess(max_det=100, score_thresh=0.5)
             if end2end else None,
             trace_model=True,
@@ -489,16 +480,12 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
             keep_ratio (bool): Whether to keep the aspect ratio when resizing the image.
         """
 
-        def __init__(self, target_size: Tuple[int, int], keep_ratio: bool,
-                     pad_val: int, mean: List[float], std: List[float],
-                     to_rgb: bool):
+        def __init__(self,
+                     target_size: Tuple[int, int] = (640, 640),
+                     keep_ratio: bool = True):
 
             self.target_size = target_size
             self.keep_ratio = keep_ratio
-            self.pad_val = pad_val
-            self.mean = mean
-            self.std = std
-            self.to_rgb = to_rgb
 
         def __call__(
             self, image: torch.Tensor
@@ -511,15 +498,17 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
             image = image.permute(2, 0, 1)
 
             # rgb2bgr
-            if self.to_rgb:
-                image = image[[2, 1, 0], :, :]
+            image = image[[2, 1, 0], :, :]
 
             image = torch.unsqueeze(image, 0)
             ori_h, ori_w = image.shape[-2:]
 
+            mean = [123.675, 116.28, 103.53]
+            std = [58.395, 57.12, 57.375]
+
             if not self.keep_ratio:
                 out_image = t_f.resize(image, [input_h, input_w])
-                out_image = t_f.normalize(out_image, self.mean, self.std)
+                out_image = t_f.normalize(out_image, mean, std)
                 pad_l, pad_t, scale = 0, 0, 1.0
             else:
                 scale = min(input_h / ori_h, input_w / ori_w)
@@ -531,12 +520,12 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
                 pad_r, pad_b = pad_w - pad_l, pad_h - pad_t
                 out_image = t_f.resize(image, [resize_h, resize_w])
                 out_image = t_f.pad(
-                    out_image, [pad_l, pad_t, pad_r, pad_b], fill=self.pad_val)
+                    out_image, [pad_l, pad_t, pad_r, pad_b], fill=114)
 
                 # float is necessary to match the preprocess result with mmcv
                 out_image = out_image.float()
 
-                out_image = t_f.normalize(out_image, self.mean, self.std)
+                out_image = t_f.normalize(out_image, mean, std)
 
             h, w = out_image.shape[-2:]
             output_info = {

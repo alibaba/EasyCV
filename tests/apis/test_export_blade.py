@@ -67,18 +67,6 @@ class ModelExportTest(unittest.TestCase):
         self.assertTrue(os.path.exists(target_path + '.blade'))
         self.assertTrue(os.path.exists(target_path + '.blade.config.json'))
 
-    def test_export_yolox_jit_end2end(self):
-        config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
-        cfg = mmcv_config_fromfile(config_file)
-        cfg.export = dict(use_jit=True, export_blade=False, end2end=True)
-        ori_ckpt = PRETRAINED_MODEL_YOLOXS_EXPORT
-
-        target_path = f'{self.tmp_dir}/export_yolox_s_epoch300_end2end'
-
-        export(cfg, ori_ckpt, target_path)
-        self.assertTrue(os.path.exists(target_path + '.jit'))
-        self.assertTrue(os.path.exists(target_path + '.jit.config.json'))
-
     def test_export_yolox_blade_end2end(self):
         config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
         cfg = mmcv_config_fromfile(config_file)

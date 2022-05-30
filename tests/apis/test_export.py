@@ -46,6 +46,30 @@ class ModelExportTest(unittest.TestCase):
             print(output)
         self.assertTrue(stat == 0, 'export model failed')
 
+    def test_export_yolox_jit(self):
+        config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
+        cfg = mmcv_config_fromfile(config_file)
+        cfg.export = dict(use_jit=True, export_blade=False, end2end=False)
+        ori_ckpt = PRETRAINED_MODEL_YOLOXS_EXPORT
+
+        target_path = f'{self.tmp_dir}/export_yolox_s_epoch300_export'
+
+        export(cfg, ori_ckpt, target_path)
+        self.assertTrue(os.path.exists(target_path + '.jit'))
+        self.assertTrue(os.path.exists(target_path + '.jit.config.json'))
+
+    def test_export_yolox_jit_end2end(self):
+        config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
+        cfg = mmcv_config_fromfile(config_file)
+        cfg.export = dict(use_jit=True, export_blade=False, end2end=True)
+        ori_ckpt = PRETRAINED_MODEL_YOLOXS_EXPORT
+
+        target_path = f'{self.tmp_dir}/export_yolox_s_epoch300_end2end'
+
+        export(cfg, ori_ckpt, target_path)
+        self.assertTrue(os.path.exists(target_path + '.jit'))
+        self.assertTrue(os.path.exists(target_path + '.jit.config.json'))
+
     def test_export_classification_jit(self):
         config_file = 'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py'
         cfg = mmcv_config_fromfile(config_file)
