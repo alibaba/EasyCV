@@ -37,6 +37,12 @@ bucket1 = endpoint1
 bucket2 = endpoint2
 ```
 
+If you want to modify the path of the default oss config file (`~/.ossutilconfig`),  you can do as follows:
+
+```shell
+$ export OSS_CONFIG_FILE='your oss config file path'
+```
+
 Then run the following command, the config file will be read by default to authorize oss.
 
 ```python
