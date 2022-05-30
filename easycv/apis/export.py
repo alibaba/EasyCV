@@ -178,14 +178,6 @@ def _export_yolox(model, cfg, filename):
 
         input = 255 * torch.rand((batch_size, 3) + img_scale)
 
-        if hasattr(cfg, 'test_pipeline'):
-            # with last pipeline Collect
-            test_pipeline = cfg.test_pipeline
-            print(test_pipeline)
-        else:
-            print('test_pipeline not found, using default preprocessing!')
-            raise ValueError('export model config without test_pipeline')
-
         model_export = End2endModelExportWrapper(
             model,
             input.to(device),
