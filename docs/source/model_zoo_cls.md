@@ -24,7 +24,6 @@
 
 (ps: 通过EasyCV训练得到模型结果，推理的输入尺寸默认为224，机器默认为V100 16G，其中gpu memory记录的是gpu peak memory)
 
-
 | Algorithm | Config                                           | Top-1 (%) | Top-5 (%) | gpu memory (MB) | inference time (ms/img) | Download                                                     |
 | --------- | ------------------------------------------------------------ | --------- | --------- | --------- | --------- | ------------------------------------------------------------ |
 | vit_base_patch16_224 | [vit_base_patch16_224](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/timm/vit/vit_base_patch16_224.py) | 78.096    | 94.324   | 346    | 8.03    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/timm/vit/B_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.01-res_224.npz) |
