@@ -829,10 +829,9 @@ class MMPhotoMetricDistortion:
         return repr_str
 
 
-@PIPELINES.register_module()
+@PIPELINES.register_module
 class MMResize:
     """Resize images & bbox & mask.
-
     This transform resizes the input image to some scale. Bboxes and masks are
     then resized with the same scale factor. If the input dict contains the key
     "scale", then the scale in the input dict is used, otherwise the specified
@@ -840,27 +839,22 @@ class MMResize:
     "scale_factor" (if MultiScaleFlipAug does not give img_scale but
     scale_factor), the actual scale will be computed by image shape and
     scale_factor.
-
     `img_scale` can either be a tuple (single-scale) or a list of tuple
     (multi-scale). There are 3 multiscale modes:
-
     - ``ratio_range is not None``: randomly sample a ratio from the ratio \
       range and multiply it with the image scale.
     - ``ratio_range is None`` and ``multiscale_mode == "range"``: randomly \
       sample a scale from the multiscale range.
     - ``ratio_range is None`` and ``multiscale_mode == "value"``: randomly \
       sample a scale from multiple scales.
-
     Args:
         img_scale (tuple or list[tuple]): Images scales for resizing.
         multiscale_mode (str): Either "range" or "value".
         ratio_range (tuple[float]): (min_ratio, max_ratio)
         keep_ratio (bool): Whether to keep the aspect ratio when resizing the
             image.
-        bbox_clip_border (bool, optional): Whether to clip the objects outside
-            the border of the image. In some dataset like MOT17, the gt bboxes
-            are allowed to cross the border of images. Therefore, we don't
-            need to clip the gt bboxes in these cases. Defaults to True.
+        bbox_clip_border (bool, optional): Whether clip the objects outside
+            the border of the image. Defaults to True.
         backend (str): Image resize backend, choices are 'cv2' and 'pillow'.
             These two backends generates slightly different results. Defaults
             to 'cv2'.
@@ -880,6 +874,7 @@ class MMResize:
                  bbox_clip_border=True,
                  backend='cv2',
                  override=False):
+
         if img_scale is None:
             self.img_scale = None
         else:
@@ -909,10 +904,8 @@ class MMResize:
     @staticmethod
     def random_select(img_scales):
         """Randomly select an img_scale from given candidates.
-
         Args:
             img_scales (list[tuple]): Images scales for selection.
-
         Returns:
             (tuple, int): Returns a tuple ``(img_scale, scale_dix)``, \
                 where ``img_scale`` is the selected image scale and \
@@ -927,12 +920,10 @@ class MMResize:
     @staticmethod
     def random_sample(img_scales):
         """Randomly sample an img_scale when ``multiscale_mode=='range'``.
-
         Args:
             img_scales (list[tuple]): Images scale range for sampling.
                 There must be two tuples in img_scales, which specify the lower
                 and upper bound of image scales.
-
         Returns:
             (tuple, None): Returns a tuple ``(img_scale, None)``, where \
                 ``img_scale`` is sampled scale and None is just a placeholder \
@@ -954,16 +945,13 @@ class MMResize:
     @staticmethod
     def random_sample_ratio(img_scale, ratio_range):
         """Randomly sample an img_scale when ``ratio_range`` is specified.
-
         A ratio will be randomly sampled from the range specified by
         ``ratio_range``. Then it would be multiplied with ``img_scale`` to
         generate sampled scale.
-
         Args:
             img_scale (tuple): Images scale base to multiply with ratio.
             ratio_range (tuple[float]): The minimum and maximum ratio to scale
                 the ``img_scale``.
-
         Returns:
             (tuple, None): Returns a tuple ``(scale, None)``, where \
                 ``scale`` is sampled ratio multiplied with ``img_scale`` and \
@@ -975,23 +963,19 @@ class MMResize:
         min_ratio, max_ratio = ratio_range
         assert min_ratio <= max_ratio
         ratio = np.random.random_sample() * (max_ratio - min_ratio) + min_ratio
-
         scale = int(img_scale[0] * ratio), int(img_scale[1] * ratio)
         return scale, None
 
     def _random_scale(self, results):
         """Randomly sample an img_scale according to ``ratio_range`` and
         ``multiscale_mode``.
-
         If ``ratio_range`` is specified, a ratio will be sampled and be
         multiplied with ``img_scale``.
         If multiple scales are specified by ``img_scale``, a scale will be
         sampled according to ``multiscale_mode``.
         Otherwise, single scale will be used.
-
         Args:
             results (dict): Result dict from :obj:`dataset`.
-
         Returns:
             dict: Two new keys 'scale` and 'scale_idx` are added into \
                 ``results``, which would be used by subsequent pipelines.
@@ -1078,15 +1062,13 @@ class MMResize:
                     results['scale'],
                     interpolation='nearest',
                     backend=self.backend)
-            results[key] = gt_seg
+            results['gt_semantic_seg'] = gt_seg
 
     def __call__(self, results):
         """Call function to resize images, bounding boxes, masks, semantic
         segmentation map.
-
         Args:
             results (dict): Result dict from loading pipeline.
-
         Returns:
             dict: Resized results, 'img_shape', 'pad_shape', 'scale_factor', \
                 'keep_ratio' keys are added into result dict.
@@ -1130,14 +1112,11 @@ class MMResize:
 @PIPELINES.register_module()
 class MMRandomFlip:
     """Flip the image & bbox & mask.
-
     If the input dict contains the key "flip", then the flag will be used,
     otherwise it will be randomly decided by a ratio specified in the init
     method.
-
     When random flip is enabled, ``flip_ratio``/``direction`` can either be a
     float/string or tuple of float/string. There are 3 flip modes:
-
     - ``flip_ratio`` is float, ``direction`` is string: the image will be
         ``direction``ly flipped with probability of ``flip_ratio`` .
         E.g., ``flip_ratio=0.5``, ``direction='horizontal'``,
@@ -1154,7 +1133,6 @@ class MMRandomFlip:
         E.g., ``flip_ratio=[0.3, 0.5]``, ``direction=['horizontal',
         'vertical']``, then image will be horizontally flipped with probability
         of 0.3, vertically with probability of 0.5.
-
     Args:
         flip_ratio (float | list[float], optional): The flipping probability.
             Default: None.
@@ -1193,13 +1171,11 @@ class MMRandomFlip:
 
     def bbox_flip(self, bboxes, img_shape, direction):
         """Flip bboxes horizontally.
-
         Args:
             bboxes (numpy.ndarray): Bounding boxes, shape (..., 4*k)
             img_shape (tuple[int]): Image shape (height, width)
             direction (str): Flip direction. Options are 'horizontal',
                 'vertical'.
-
         Returns:
             numpy.ndarray: Flipped bounding boxes.
         """
@@ -1228,10 +1204,8 @@ class MMRandomFlip:
     def __call__(self, results):
         """Call function to flip bounding boxes, masks, semantic segmentation
         maps.
-
         Args:
             results (dict): Result dict from loading pipeline.
-
         Returns:
             dict: Flipped results, 'flip', 'flip_direction' keys are added \
                 into result dict.
