@@ -1576,12 +1576,10 @@ class MMNormalize:
 @PIPELINES.register_module()
 class LoadImageFromFile:
     """Load an image from file.
-
     Required keys are "img_prefix" and "img_info" (a dict that must contain the
     key "filename"). Added or updated keys are "filename", "img", "img_shape",
     "ori_shape" (same as `img_shape`), "pad_shape" (same as `img_shape`),
     "scale_factor" (1.0) and "img_norm_cfg" (means=0 and stds=1).
-
     Args:
         to_float32 (bool): Whether to convert the loaded image to a float32
             numpy array. If set to False, the loaded image is an uint8 array.
@@ -1604,10 +1602,8 @@ class LoadImageFromFile:
 
     def __call__(self, results):
         """Call functions to load image and get image meta information.
-
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
         Returns:
             dict: The dict contains loaded image and meta information.
         """
@@ -1729,7 +1725,6 @@ class LoadMultiChannelImageFromFiles:
 @PIPELINES.register_module()
 class LoadAnnotations:
     """Load multiple types of annotations.
-
     Args:
         with_bbox (bool): Whether to parse and load the bbox annotation.
              Default: True.
@@ -1763,10 +1758,8 @@ class LoadAnnotations:
 
     def _load_bboxes(self, results):
         """Private function to load bounding box annotations.
-
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
         Returns:
             dict: The dict contains loaded bounding box annotations.
         """
@@ -1783,10 +1776,8 @@ class LoadAnnotations:
 
     def _load_labels(self, results):
         """Private function to load label annotations.
-
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
         Returns:
             dict: The dict contains loaded label annotations.
         """
@@ -1797,12 +1788,10 @@ class LoadAnnotations:
     def _poly2mask(self, mask_ann, img_h, img_w):
         """Private function to convert masks represented with polygon to
         bitmaps.
-
         Args:
             mask_ann (list | dict): Polygon mask annotation input.
             img_h (int): The height of output mask.
             img_w (int): The width of output mask.
-
         Returns:
             numpy.ndarray: The decode bitmap mask of shape (img_h, img_w).
         """
@@ -1824,10 +1813,8 @@ class LoadAnnotations:
 
     def process_polygons(self, polygons):
         """Convert polygons to list of ndarray and filter invalid polygons.
-
         Args:
             polygons (list[list]): Polygons of one instance.
-
         Returns:
             list[numpy.ndarray]: Processed polygons.
         """
@@ -1841,10 +1828,8 @@ class LoadAnnotations:
 
     def _load_masks(self, results):
         """Private function to load mask annotations.
-
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
         Returns:
             dict: The dict contains loaded mask annotations.
                 If ``self.poly2mask`` is set ``True``, `gt_mask` will contain
@@ -1867,10 +1852,8 @@ class LoadAnnotations:
 
     def _load_semantic_seg(self, results):
         """Private function to load semantic segmentation annotations.
-
         Args:
             results (dict): Result dict from :obj:`dataset`.
-
         Returns:
             dict: The dict contains loaded semantic segmentation annotations.
         """
@@ -1888,10 +1871,8 @@ class LoadAnnotations:
 
     def __call__(self, results):
         """Call function to load multiple types annotations.
-
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
         Returns:
             dict: The dict contains loaded bounding box, label, mask and
                 semantic segmentation annotations.
@@ -1917,7 +1898,7 @@ class LoadAnnotations:
         repr_str += f'with_seg={self.with_seg}, '
         repr_str += f'poly2mask={self.poly2mask}, '
         repr_str += f'poly2mask={self.file_client_args})'
-        return repr_str
+        return
 
 
 @PIPELINES.register_module()
