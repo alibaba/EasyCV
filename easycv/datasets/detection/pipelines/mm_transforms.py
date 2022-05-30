@@ -883,8 +883,10 @@ class MMResize:
         if img_scale is None:
             self.img_scale = None
         else:
-            if isinstance(img_scale, list):
+            if isinstance(img_scale, list) and isinstance(img_scale[0], tuple):
                 self.img_scale = img_scale
+            elif isinstance(img_scale, list):
+                self.img_scale = [tuple(img_scale)]
             else:
                 self.img_scale = [img_scale]
             assert mmcv.is_list_of(self.img_scale, tuple)
