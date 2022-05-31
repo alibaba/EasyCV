@@ -6,8 +6,8 @@ import torch
 import torch.nn as nn
 from mmcv.cnn.utils import initialize
 
+from easycv.core.evaluation.metrics import accuracy
 from easycv.models.builder import build_loss
-from easycv.models.utils.accuracy import accuracy
 from easycv.models.utils.ops import resize_tensor
 from easycv.utils.logger import print_log
 

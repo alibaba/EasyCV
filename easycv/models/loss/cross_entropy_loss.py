@@ -92,6 +92,7 @@ def cross_entropy(pred,
                   ignore_index=-100,
                   avg_non_ignore=False):
     """cross_entropy. The wrapper function for :func:`F.cross_entropy`
+    support sample-wise loss weight and the reduction average loss over non-ignored elements.
 
     Args:
         pred (torch.Tensor): The prediction with shape (N, 1).

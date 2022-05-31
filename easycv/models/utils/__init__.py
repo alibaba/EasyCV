@@ -1,5 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from .accuracy import accuracy
 from .activation import FReLU
 from .conv_module import ConvModule, build_conv_layer
 from .conv_ws import ConvWS2d, conv_ws_2d
