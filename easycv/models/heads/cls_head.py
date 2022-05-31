@@ -3,15 +3,12 @@ from typing import Dict, List
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from mmcv.cnn import kaiming_init, normal_init
-from torch.autograd import Variable
 
-from easycv.utils.checkpoint import load_checkpoint
+from easycv.core.evaluation.metrics import accuracy
 from easycv.utils.logger import get_root_logger
 from easycv.utils.registry import build_from_cfg
 from ..registry import HEADS, LOSSES
-from ..utils import accuracy
 
 
 @HEADS.register_module
