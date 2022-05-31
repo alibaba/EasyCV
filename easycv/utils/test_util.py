@@ -11,6 +11,7 @@ from multiprocessing import Process
 import numpy as np
 import torch
 
+
 TEST_DIR = '/tmp/ev_pytorch_test'
 
 
@@ -156,3 +157,4 @@ def pseudo_dist_init():
     torch.cuda.set_device(0)
     from torch import distributed as dist
     dist.init_process_group(backend='nccl')
+

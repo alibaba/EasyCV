@@ -34,6 +34,32 @@ class IOUloss(nn.Module):
 
         if self.loss_type == 'iou':
             loss = 1 - iou**2
+
+        elif self.loss_type == "siou":
+            # angle cost
+            c_h = torch.max(pred[:, 1], target[:, 1]) - torch.min(pred[:, 1], target[:, 1])
+            c_w = torch.max(pred[:, 0], target[:, 0]) - torch.min(pred[:, 0], target[:, 0])
+            sigma = torch.sqrt(((pred[:, :2] - target[:, :2]) ** 2).sum(dim=1))
+            # angle_cost = 1 - 2 * torch.pow(torch.sin(torch.arctan(c_h / c_w) - torch.tensor(math.pi / 4)),2)
+            angle_cost = 2*(c_h*c_w)/(sigma**2)
+
+            # distance cost
+            gamma = 2 - angle_cost
+            # gamma = 1
+            c_dw = torch.max(pred[:, 0], target[:, 0]) - torch.min(pred[:, 0], target[:, 0]) + (pred[:, 2] + target[:, 2])/2
+            c_dh = torch.max(pred[:, 1], target[:, 1]) - torch.min(pred[:, 1], target[:, 1]) + (pred[:, 3] + target[:, 3])/2
+            p_x = ((target[:, 0] - pred[:, 0]) / c_dw) ** 2
+            p_y = ((target[:, 1] - pred[:, 1]) / c_dh) ** 2
+            dist_cost = 2 - torch.exp(-gamma * p_x) - torch.exp(-gamma * p_y)
+
+            # shape cost
+            theta = 4
+            w_w = torch.abs(pred[:, 2] - target[:, 2]) / torch.max(pred[:, 2], target[:, 2])
+            w_h = torch.abs(pred[:, 3] - target[:, 3]) / torch.max(pred[:, 3], target[:, 3])
+            shape_cost = torch.pow((1 - torch.exp(-w_w)), theta) + torch.pow((1 - torch.exp(-w_h)), theta)
+
+            loss = 1 - iou + (dist_cost + shape_cost) / 2
+
         elif self.loss_type == 'giou':
             c_tl = torch.min((pred[:, :2] - pred[:, 2:] / 2),
                              (target[:, :2] - target[:, 2:] / 2))

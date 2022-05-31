@@ -150,7 +150,7 @@ class YOLOPAFPN(nn.Module):
 
         outputs = (pan_out2, pan_out1, pan_out0)
 
-        if self.use_att=='ASFF':
+        if self.use_att == 'ASFF':
             pan_out0 = self.asff_1(outputs)
             pan_out1 = self.asff_2(outputs)
             pan_out2 = self.asff_3(outputs)

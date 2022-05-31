@@ -8,7 +8,7 @@ model = dict(
     test_conf=0.01,
     nms_thre=0.65,
     use_att=None,
-    obj_loss_type='BCE',
+    obj_loss_type='v_focal',
     reg_loss_type='iou'
 )
 
@@ -39,9 +39,9 @@ CLASSES = [
 ]
 
 # dataset settings
-data_root = '/apsarapangu/disk5/zxy/data/coco/'
-# data_root = '/mnt/data/nas/data/detection/coco/'
-
+# data_root = '/apsarapangu/disk5/zxy/data/coco/'
+data_root = '/mnt/data/nas/data/detection/coco/'
+# data_root = '/data/coco'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 

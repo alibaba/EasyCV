@@ -7,7 +7,7 @@ model = dict(
     model_type='s',  # s m l x tiny nano
     test_conf=0.01,
     nms_thre=0.65,
-    use_att=None,
+    use_att='ASFF',
     obj_loss_type='BCE',
     reg_loss_type='iou'
 )
@@ -39,8 +39,8 @@ CLASSES = [
 ]
 
 # dataset settings
-data_root = '/apsarapangu/disk5/zxy/data/coco/'
-# data_root = '/mnt/data/nas/data/detection/coco/'
+# data_root = '/apsarapangu/disk5/zxy/data/coco/'
+data_root = '/mnt/data/nas/data/detection/coco/'
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)

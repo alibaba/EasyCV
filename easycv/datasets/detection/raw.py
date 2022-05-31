@@ -101,6 +101,9 @@ class DetDataset(BaseDataset):
                     dict of image meta info, containing filename, img_shape,
                     origin_img_shape, scale_factor and so on.
         """
+        import copy
+        results = copy.deepcopy(results)
+
         class_names = None
         if hasattr(self.data_source, 'CLASSES'):
             class_names = self.data_source.CLASSES

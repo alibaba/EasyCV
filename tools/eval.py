@@ -211,10 +211,8 @@ def main():
                 workers_per_gpu=cfg.data.workers_per_gpu,
                 dist=distributed,
                 shuffle=False)
-<<<<<<< HEAD
                 # oss_config=cfg.get('oss_io_config', None))
-=======
->>>>>>> upstream/master
+
 
         if not distributed:
             outputs = single_gpu_test(

@@ -123,19 +123,19 @@ class YOLOXHead(nn.Module):
 
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction='none')
 
-        if reg_loss_type=='l1':
-            self.use_l1 = True
-            self.l1_loss = nn.L1Loss(reduction='none')
-        else:
-            self.use_l1 = False
+        # if reg_loss_type=='l1':
+        self.use_l1 = False
+        self.l1_loss = nn.L1Loss(reduction='none')
+        # else:
+        #     self.use_l1 = False
 
         self.iou_loss = IOUloss(reduction='none',loss_type=reg_loss_type)
 
-        if obj_loss_type=='BCE':
+        if obj_loss_type == 'BCE':
             self.obj_loss = nn.BCEWithLogitsLoss(reduction='none')
-        elif obj_loss_type=='focal':
+        elif obj_loss_type == 'focal':
             self.obj_loss = FocalLoss(reduction='none')
-        elif obj_loss_type=='v_focal':
+        elif obj_loss_type == 'v_focal':
             self.obj_loss = VarifocalLoss(reduction='none')
         else:
             assert "Undefined loss type: {}".format(obj_loss_type)
@@ -209,6 +209,7 @@ class YOLOXHead(nn.Module):
             outputs.append(output)
 
         if self.training:
+
             return self.get_losses(
                 imgs,
                 x_shifts,
@@ -219,6 +220,7 @@ class YOLOXHead(nn.Module):
                 origin_preds,
                 dtype=xin[0].dtype,
             )
+
         else:
             self.hw = [x.shape[-2:] for x in outputs]
             # [batch, n_anchors_all, 85]
@@ -303,6 +305,7 @@ class YOLOXHead(nn.Module):
 
         for batch_idx in range(outputs.shape[0]):
             num_gt = int(nlabel[batch_idx])
+
             num_gts += num_gt
             if num_gt == 0:
                 cls_target = outputs.new_zeros((0, self.num_classes))
@@ -338,6 +341,7 @@ class YOLOXHead(nn.Module):
                         labels,
                         imgs,
                     )
+
                 except RuntimeError:
                     logging.error(
                         'OOM RuntimeError is raised due to the huge memory cost during label assignment. \
@@ -420,6 +424,8 @@ class YOLOXHead(nn.Module):
         reg_weight = 5.0
         loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1
 
+        print(loss_iou)
+
         return (
             loss,
             reg_weight * loss_iou,
@@ -482,6 +488,7 @@ class YOLOXHead(nn.Module):
         # reference to: https://github.com/Megvii-BaseDetection/YOLOX/pull/811
         # NOTE: Fix `selected index k out of range`
         npa: int = fg_mask.sum().item()  # number of positive anchors
+
         if npa == 0:
             gt_matched_classes = torch.zeros(0, device=fg_mask.device).long()
             pred_ious_this_matching = torch.rand(0, device=fg_mask.device)
@@ -514,6 +521,11 @@ class YOLOXHead(nn.Module):
 
         pair_wise_ious = bboxes_iou(gt_bboxes_per_image,
                                     bboxes_preds_per_image, False)
+
+
+        if (torch.isnan(pair_wise_ious.max())):
+            pair_wise_ious = bboxes_iou(gt_bboxes_per_image,
+                                        bboxes_preds_per_image, False)
 
         gt_cls_per_image = (
             F.one_hot(gt_classes.to(torch.int64),
@@ -556,6 +568,7 @@ class YOLOXHead(nn.Module):
             matched_gt_inds,
         ) = self.dynamic_k_matching(cost, pair_wise_ious, gt_classes, num_gt,
                                     fg_mask)
+
         del pair_wise_cls_loss, cost, pair_wise_ious, pair_wise_ious_loss
 
         if mode == 'cpu':
@@ -656,15 +669,18 @@ class YOLOXHead(nn.Module):
 
     def dynamic_k_matching(self, cost, pair_wise_ious, gt_classes, num_gt,
                            fg_mask):
+
         # Dynamic K
         # ---------------------------------------------------------------
         matching_matrix = torch.zeros_like(cost, dtype=torch.uint8)
 
         ious_in_boxes_matrix = pair_wise_ious
         n_candidate_k = min(10, ious_in_boxes_matrix.size(1))
+
         topk_ious, _ = torch.topk(ious_in_boxes_matrix, n_candidate_k, dim=1)
         dynamic_ks = torch.clamp(topk_ious.sum(1).int(), min=1)
         dynamic_ks = dynamic_ks.tolist()
+
         for gt_idx in range(num_gt):
             _, pos_idx = torch.topk(
                 cost[gt_idx], k=dynamic_ks[gt_idx], largest=False)
@@ -687,4 +703,5 @@ class YOLOXHead(nn.Module):
 
         pred_ious_this_matching = (matching_matrix *
                                    pair_wise_ious).sum(0)[fg_mask_inboxes]
+
         return num_fg, gt_matched_classes, pred_ious_this_matching, matched_gt_inds

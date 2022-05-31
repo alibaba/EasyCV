@@ -9,7 +9,7 @@ model = dict(
     nms_thre=0.65,
     use_att=None,
     obj_loss_type='BCE',
-    reg_loss_type='iou'
+    reg_loss_type='siou'
 )
 
 # s m l x
