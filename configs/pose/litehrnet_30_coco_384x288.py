@@ -75,7 +75,7 @@ model = dict(
         shift_heatmap=True,
         modulate_kernel=11))
 
-data_root = '/apsarapangu/disk2/yunji.cjy/coco/'
+data_root = 'data/coco'
 
 data_cfg = dict(
     image_size=[288, 384],
