@@ -15,14 +15,6 @@ else:
     import re
 
 
-def pre_check_config(cfg):
-    mmlab_modules_cfg = cfg.get('mmlab_modules', [])
-    if len(mmlab_modules_cfg) > 1:
-        from .mmlab_utils import MMAdapter
-        adapter = MMAdapter(mmlab_modules_cfg)
-        adapter.adapt_mmlab_modules()
-
-
 def traverse_replace(d, key, value):
     if isinstance(d, (dict, Config)):
         for k, v in d.items():

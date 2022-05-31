@@ -1,3 +1,5 @@
+# Reference from https://github.com/ViTAE-Transformer/ViTDet/blob/main/mmcv_custom/layer_decay_optimizer_constructor.py
+
 import json
 
 from mmcv.runner import DefaultOptimizerConstructor, get_dist_info

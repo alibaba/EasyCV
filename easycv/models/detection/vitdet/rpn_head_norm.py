@@ -12,7 +12,7 @@ from easycv.models.registry import HEADS
 
 
 @HEADS.register_module()
-class RPNHead_Norm(AnchorHead):
+class RPNHeadNorm(AnchorHead):
     """RPN head with norm.
     Args:
         in_channels (int): Number of channels in the input feature map.
@@ -28,7 +28,7 @@ class RPNHead_Norm(AnchorHead):
                  **kwargs):
         self.num_convs = num_convs
         self.norm_cfg = norm_cfg
-        super(RPNHead_Norm, self).__init__(
+        super(RPNHeadNorm, self).__init__(
             1, in_channels, init_cfg=init_cfg, **kwargs)
 
     def _init_layers(self):
@@ -90,7 +90,7 @@ class RPNHead_Norm(AnchorHead):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        losses = super(RPNHead_Norm, self).loss(
+        losses = super(RPNHeadNorm, self).loss(
             cls_scores,
             bbox_preds,
             gt_bboxes,
@@ -243,7 +243,7 @@ class RPNHead_Norm(AnchorHead):
 
         assert len(cls_scores) == len(bbox_preds)
 
-        batch_bboxes, batch_scores = super(RPNHead_Norm, self).onnx_export(
+        batch_bboxes, batch_scores = super(RPNHeadNorm, self).onnx_export(
             cls_scores, bbox_preds, img_metas=img_metas, with_nms=False)
         # Use ONNX::NonMaxSuppression in deployment
         from mmdet.core.export import add_dummy_nms_for_onnx

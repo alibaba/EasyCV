@@ -213,7 +213,7 @@ def multi_gpu_test(model,
 
         if rank == 0:
             if 'img_metas' in data:
-                batch_size = len(data['img_metas'])
+                batch_size = len(data['img_metas'].data[0])
             else:
                 batch_size = data['img'].size(0)
             # on DLC test bar while print too much log

@@ -1,12 +1,8 @@
 # model settings
-# # Use MMSyncBN that handles empty tensor in head. It can be changed to
-# # SyncBN after https://github.com/pytorch/pytorch/issues/36530 is fixed
-# # Requires MMCV-full after  https://github.com/open-mmlab/mmcv/pull/1205.
-# norm_cfg = dict(type='MMSyncBN', requires_grad=True)
 
 norm_cfg = dict(type='GN', num_groups=1, requires_grad=True)
 
-pretrained = '/home/yunji.cjy/pretrain/warpper_mae_vit-base-p16-1600e.pth'
+pretrained = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mae/vit-b-1600/warpper_mae_vit-base-p16-1600e.pth'
 model = dict(
     type='MaskRCNN',
     pretrained=pretrained,
@@ -33,7 +29,7 @@ model = dict(
         use_residual=False,
         num_outs=5),
     rpn_head=dict(
-        type='RPNHead_Norm',
+        type='RPNHeadNorm',
         in_channels=256,
         feat_channels=256,
         num_convs=2,
@@ -142,8 +138,5 @@ model = dict(
 
 mmlab_modules = [
     dict(type='mmdet', name='MaskRCNN', module='model'),
-    # dict(type=MMDET, name='ResNet', module='backbone'), # comment out, use EasyCV ResNet
-    # ict(type='mmdet', name='FPN', module='neck'),
-    # dict(type='mmdet', name='RPNHead', module='head'),
     dict(type='mmdet', name='StandardRoIHead', module='head'),
 ]

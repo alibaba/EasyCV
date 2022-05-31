@@ -9,6 +9,7 @@
 # https://github.com/fudan-zvg/SETR
 # https://github.com/facebookresearch/xcit/
 # https://github.com/microsoft/Swin-Transformer
+# https://github.com/ViTAE-Transformer/ViTDet
 # --------------------------------------------------------'
 import math
 from functools import partial
