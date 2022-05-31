@@ -6,6 +6,7 @@ import warnings
 import mmcv
 import numpy as np
 from mmcv.image import imwrite
+from mmcv.runner import auto_fp16
 from mmcv.utils.misc import deprecated_api_warning
 from mmcv.visualization.image import imshow
 

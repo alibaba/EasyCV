@@ -4,6 +4,7 @@ from typing import Dict
 import numpy as np
 import torch
 import torch.nn as nn
+from mmcv.runner import auto_fp16
 from torch import Tensor
 
 from easycv.models.base import BaseModel
@@ -48,6 +49,7 @@ class YOLOX(BaseModel):
         super(YOLOX, self).__init__()
         assert model_type in self.param_map, f'invalid model_type for yolox {model_type}, valid ones are {list(self.param_map.keys())}'
 
+        self.fp16_enabled = False
         in_channels = [256, 512, 1024]
         depth = self.param_map[model_type][0]
         width = self.param_map[model_type][1]
@@ -151,6 +153,7 @@ class YOLOX(BaseModel):
 
         return test_outputs
 
+    @auto_fp16(apply_to=('img', ))
     def forward(self, img, mode='compression', **kwargs):
         if mode == 'train':
             return self.forward_train(img, **kwargs)
