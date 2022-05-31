@@ -1,9 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import math
-from typing import List
-
 import torch
-from torch import Tensor
 from torch.optim import *  # noqa: F401,F403
 from torch.optim.optimizer import Optimizer, required
 

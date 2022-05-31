@@ -35,7 +35,7 @@ paramwise_options = {
     'cls_token': dict(weight_decay=0.)
 }
 optimizer = dict(
-    type='_AdamW',
+    type='AdamW',
     lr=1e-4,
     betas=(0.9, 0.999),
     weight_decay=0.1,

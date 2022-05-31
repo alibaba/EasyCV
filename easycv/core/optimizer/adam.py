@@ -5,8 +5,7 @@ from typing import List
 import torch
 from mmcv.runner.optimizer.builder import OPTIMIZERS
 from torch import Tensor
-from torch.optim import *  # noqa: F401,F403
-from torch.optim.optimizer import Optimizer
+from torch.optim import AdamW as _AdamW
 
 
 def adamw(params: List[Tensor], grads: List[Tensor], exp_avgs: List[Tensor],
@@ -46,63 +45,12 @@ def adamw(params: List[Tensor], grads: List[Tensor], exp_avgs: List[Tensor],
         param.addcdiv_(exp_avg, denom, value=-step_size)
 
 
-@OPTIMIZERS.register_module()
-class _AdamW(Optimizer):
-    r"""Implements AdamW algorithm.
-    The original Adam algorithm was proposed in `Adam: A Method for Stochastic Optimization`_.
-    The AdamW variant was proposed in `Decoupled Weight Decay Regularization`_.
-    Args:
-        params (iterable): iterable of parameters to optimize or dicts defining
-            parameter groups
-        lr (float, optional): learning rate (default: 1e-3)
-        betas (Tuple[float, float], optional): coefficients used for computing
-            running averages of gradient and its square (default: (0.9, 0.999))
-        eps (float, optional): term added to the denominator to improve
-            numerical stability (default: 1e-8)
-        weight_decay (float, optional): weight decay coefficient (default: 1e-2)
-        amsgrad (boolean, optional): whether to use the AMSGrad variant of this
-            algorithm from the paper `On the Convergence of Adam and Beyond`_
-            (default: False)
-    .. _Adam\: A Method for Stochastic Optimization:
-        https://arxiv.org/abs/1412.6980
-    .. _Decoupled Weight Decay Regularization:
-        https://arxiv.org/abs/1711.05101
-    .. _On the Convergence of Adam and Beyond:
-        https://openreview.net/forum?id=ryQu7f-RZ
+@OPTIMIZERS.register_module(force=True)
+class AdamW(_AdamW):
     """
-
-    def __init__(self,
-                 params,
-                 lr=1e-3,
-                 betas=(0.9, 0.999),
-                 eps=1e-8,
-                 weight_decay=1e-2,
-                 amsgrad=False):
-        if not 0.0 <= lr:
-            raise ValueError('Invalid learning rate: {}'.format(lr))
-        if not 0.0 <= eps:
-            raise ValueError('Invalid epsilon value: {}'.format(eps))
-        if not 0.0 <= betas[0] < 1.0:
-            raise ValueError('Invalid beta parameter at index 0: {}'.format(
-                betas[0]))
-        if not 0.0 <= betas[1] < 1.0:
-            raise ValueError('Invalid beta parameter at index 1: {}'.format(
-                betas[1]))
-        if not 0.0 <= weight_decay:
-            raise ValueError(
-                'Invalid weight_decay value: {}'.format(weight_decay))
-        defaults = dict(
-            lr=lr,
-            betas=betas,
-            eps=eps,
-            weight_decay=weight_decay,
-            amsgrad=amsgrad)
-        super(_AdamW, self).__init__(params, defaults)
-
-    def __setstate__(self, state):
-        super(_AdamW, self).__setstate__(state)
-        for group in self.param_groups:
-            group.setdefault('amsgrad', False)
+    torch1.8 bug UnboundLocalError: local variable 'beta1' referenced before assignment
+    bugfix reference: https://github.com/pytorch/pytorch/issues/55740
+    """
 
     @torch.no_grad()
     def step(self, closure=None):
