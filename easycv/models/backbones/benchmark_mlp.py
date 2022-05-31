@@ -18,9 +18,6 @@ class BenchMarkMLP(nn.Module):
         self.dropout = nn.Dropout(p=0.5)
         self.pool = nn.AdaptiveAvgPool2d((1, 1))
         self.avg_pool = avg_pool
-        # self.fc2 = nn.Linear(feature_num, num_classes)
-        # self.relu2 = nn.ReLU()
-        # self._initialize_weights()
 
     def init_weights(self):
         for m in self.modules():
@@ -33,7 +30,4 @@ class BenchMarkMLP(nn.Module):
             x = self.pool(x)
         x = self.fc1(x)
         x = self.relu1(x)
-        # x = self.dropout(x)
-        # x = self.fc2(x)
-        # x = self.relu2(x)
         return tuple([x])

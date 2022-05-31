@@ -470,7 +470,6 @@ class ResNeSt(nn.Module):
         self.avgpool = GlobalAvgPool2d()
         self.drop = nn.Dropout(final_drop) if final_drop > 0.0 else None
         self.norm_layer = norm_layer
-        # self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         if num_classes > 0:
             self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
@@ -607,7 +606,6 @@ class ResNeSt(nn.Module):
 
         if hasattr(self, 'fc'):
             x = self.avgpool(x)
-            # x = x.view(x.size(0), -1)
             x = torch.flatten(x, 1)
             if self.drop:
                 x = self.drop(x)

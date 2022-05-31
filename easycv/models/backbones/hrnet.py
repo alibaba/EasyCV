@@ -184,7 +184,6 @@ class Bottleneck(nn.Module):
 
         if self.with_cp and x.requires_grad:
             raise NotImplementedError
-            # out = cp.checkpoint(_inner_forward, x)
         else:
             out = _inner_forward(x)
 
