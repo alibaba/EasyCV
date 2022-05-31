@@ -6,7 +6,7 @@ To download the dataset, please refer to [prepare_data.md](../prepare_data.md).
 Image classification support cifar and imagenet(raw and tfrecord) format data.
 
 ### Cifar
-To use Cifar data to train classification, you can refer to [configs/classification/cifar10/r50.py](../../configs/classification/cifar10/r50.py) for more configuration details.
+To use Cifar data to train classification, you can refer to [configs/classification/cifar10/swintiny_b64_5e_jpg.py](https://github.com/alibaba/EasyCV/tree/master/configs/classification/cifar10/swintiny_b64_5e_jpg.py) for more configuration details.
 
 ### Imagenet format
 You can also use your self-defined data which follows `imagenet format`, you should provide a root directory which condatains images for classification training and a filelist which contains image path to the root directory.  For example, the image root directory is as follows
@@ -27,7 +27,7 @@ each line of the filelist consists of two parts, subpath to the image files star
 ...
 9999.jpg label9999
 ```
-To use Imagenet format data to train classification, you can refer to [configs/classification/imagenet/imagenet_rn50_jpg.py](../../configs/classification/imagenet/imagenet_rn50_jpg.py) for more configuration details.
+To use Imagenet format data to train classification, you can refer to [configs/classification/imagenet/imagenet_rn50_jpg.py](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/imagenet_rn50_jpg.py) for more configuration details.
 
 ## Local & PAI-DSW
 
@@ -67,13 +67,13 @@ Edit `data_root`path in the `${CONFIG_PATH}` to your own data path.
 
     single gpu training:
     ```shell
-    python tools/train.py  configs/classification/cifar10/r50.py --work_dir work_dirs/classification/cifar10/r50  --fp16
+    python tools/train.py  configs/classification/cifar10/swintiny_b64_5e_jpg.py --work_dir work_dirs/classification/cifar10/swintiny  --fp16
     ```
 
     multi gpu training
     ```shell
     GPUS=8
-    bash tools/dist_train.sh configs/classification/cifar10/r50.py $GPUS --fp16
+    bash tools/dist_train.sh configs/classification/cifar10/swintiny_b64_5e_jpg.py $GPUS --fp16
     ```
 
     training using python api
@@ -82,7 +82,7 @@ Edit `data_root`path in the `${CONFIG_PATH}` to your own data path.
 
     import os
     # config_path can be a local file or http url
-    config_path = 'configs/classification/cifar10/r50.py'
+    config_path = 'configs/classification/cifar10/swintiny_b64_5e_jpg.py'
     easycv.tools.train(config_path, gpus=8, fp16=False, master_port=29527)
     ```
 
@@ -122,14 +122,14 @@ bash tools/dist_test.sh \
 
     single gpu evaluation
     ```shell
-    python tools/eval.py configs/classification/cifar10/r50.py work_dirs/classification/cifar10/r50/epoch_350.pth --eval --fp16
+    python tools/eval.py configs/classification/cifar10/swintiny_b64_5e_jpg.py work_dirs/classification/cifar10/swintiny/epoch_350.pth --eval --fp16
     ```
 
     multi-gpu evaluation
 
     ```shell
     GPUS=8
-    bash tools/dist_test.sh configs/classification/cifar10/r50.py $GPUS work_dirs/classification/cifar10/r50/epoch_350.pth --eval --fp16
+    bash tools/dist_test.sh configs/classification/cifar10/swintiny_b64_5e_jpg.py $GPUS work_dirs/classification/cifar10/swintiny/epoch_350.pth --eval --fp16
     ```
 
     evaluation using python api
@@ -138,8 +138,8 @@ bash tools/dist_test.sh \
 
     import os
     os.environ['CUDA_VISIBLE_DEVICES']='3,4,5,6'
-    config_path = 'configs/classification/cifar10/r50.py'
-    checkpoint_path = 'work_dirs/classification/cifar10/r50/epoch_350.pth'
+    config_path = 'configs/classification/cifar10/swintiny_b64_5e_jpg.py'
+    checkpoint_path = 'work_dirs/classification/cifar10/swintiny/epoch_350.pth'
     easycv.tools.eval(config_path, checkpoint_path, gpus=8)
     ```
 
@@ -156,9 +156,9 @@ bash tools/dist_test.sh \
     ```
 
     ```shell
-    python tools/export.py configs/classification/cifar10/r50.py \
-        work_dirs/classification/cifar10/r50/epoch_350.pth \
-        work_dirs/classification/cifar10/r50/epoch_350_export.pth
+    python tools/export.py configs/classification/cifar10/swintiny_b64_5e_jpg.py \
+        work_dirs/classification/cifar10/swintiny/epoch_350.pth \
+        work_dirs/classification/cifar10/swintiny/epoch_350_export.pth
     ```
 
     or using python api
@@ -179,7 +179,7 @@ bash tools/dist_test.sh \
     import cv2
     from easycv.predictors.classifier import TorchClassifier
 
-    output_ckpt = 'work_dirs/classification/cifar10/r50/epoch_350_export.pth'
+    output_ckpt = 'work_dirs/classification/cifar10/swintiny/epoch_350_export.pth'
     tcls = TorchClassifier(output_ckpt)
 
     img = cv2.imread('aeroplane_s_000004.png')

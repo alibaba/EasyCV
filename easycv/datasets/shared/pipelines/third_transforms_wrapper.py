@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import copy
 import inspect
+from enum import EnumMeta
 
 import torch
 from torchvision import transforms as _transforms
@@ -71,11 +72,14 @@ def wrap_torchvision_transforms(transform_obj):
 
 
 skip_list = ['Compose', 'RandomApply']
+_transforms_names = locals()
 # register all existing transforms in torchvision
 for member in inspect.getmembers(_transforms, inspect.isclass):
     obj_name, obj = member[0], member[1]
     if obj_name in skip_list:
         continue
-    obj_copy = type(obj_name,(obj,),dict())
-    wrap_torchvision_transforms(obj_copy)
-    PIPELINES.register_module(obj_copy)
+    if isinstance(obj, EnumMeta):
+        continue
+    _transforms_names[obj_name] = type(obj_name, (obj, ), dict())
+    wrap_torchvision_transforms(_transforms_names[obj_name])
+    PIPELINES.register_module(_transforms_names[obj_name])

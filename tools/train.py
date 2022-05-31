@@ -15,7 +15,7 @@ sys.path.append(
         osp.join(os.path.dirname(os.path.dirname(__file__)), '../')))
 
 import time
-
+import cv2
 import requests
 import torch
 from mmcv.runner import init_dist
@@ -29,9 +29,13 @@ from easycv.models import build_model
 from easycv.utils.collect_env import collect_env
 from easycv.utils.flops_counter import get_model_info
 from easycv.utils.logger import get_root_logger
+from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.config_tools import traverse_replace
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
+
+# refer to: https://github.com/open-mmlab/mmdetection/pull/6867
+cv2.setNumThreads(0)
 
 
 def parse_args():
@@ -145,6 +149,9 @@ def main():
         cfg.resume_from = args.resume_from
     if args.load_from is not None:
         cfg.load_from = args.load_from
+
+    # dynamic adapt mmdet models
+    dynamic_adapt_for_mmlab(cfg)
 
     cfg.gpus = args.gpus
 

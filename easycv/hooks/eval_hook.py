@@ -6,6 +6,9 @@ import torch
 from mmcv.runner import Hook
 from torch.utils.data import DataLoader
 
+from easycv.hooks.tensorboard import TensorboardLoggerHookV2
+from easycv.hooks.wandb import WandbLoggerHookV2
+
 if torch.cuda.is_available():
     from easycv.datasets.shared.dali_tfrecord_imagenet import DaliLoaderWrapper
 
@@ -48,7 +51,6 @@ class EvalHook(Hook):
         self.eval_kwargs = eval_kwargs
         # hook.evaluate runs every interval epoch or iter, popped at init
         self.vis_config = self.eval_kwargs.pop('visualization_config', {})
-        self.gpu_collect = self.eval_kwargs.pop('gpu_collect', None)
         self.flush_buffer = flush_buffer
 
     def before_run(self, runner):
@@ -87,7 +89,11 @@ class EvalHook(Hook):
                 dataset_obj.visualize(results, **self.vis_config))
 
     def evaluate(self, runner, results):
-        self.add_visualization_info(runner, results)
+        for _hook in runner.hooks:
+            # Only apply `add_visualization_info` when visualization hook is specified
+            if isinstance(_hook, (TensorboardLoggerHookV2, WandbLoggerHookV2)):
+                self.add_visualization_info(runner, results)
+                break
 
         if isinstance(self.dataloader, DataLoader):
             eval_res = self.dataloader.dataset.evaluate(
@@ -143,11 +149,13 @@ class DistEvalHook(EvalHook):
                             f' {type(dataloader)}')
         self.dataloader = dataloader
         self.interval = interval
-        self.gpu_collect = gpu_collect
         self.mode = mode
         self.eval_kwargs = eval_kwargs
         self.initial = initial
         self.flush_buffer = flush_buffer
+        # hook.evaluate runs every interval epoch or iter, popped at init
+        self.vis_config = self.eval_kwargs.pop('visualization_config', {})
+        self.gpu_collect = self.eval_kwargs.pop('gpu_collect', gpu_collect)
 
     def before_run(self, runner):
         if self.initial:

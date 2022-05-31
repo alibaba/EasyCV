@@ -7,10 +7,11 @@ on:
       - "release/**"
     paths-ignore:
       - "setup.*"
+      - "requirements.txt"
       - "requirements/**"
       - "docs/**"
       - "tools/**"
-      - "scripts/**"
+      - ".scripts/**"
       - "README.md"
       - "README_zh-CN.md"
       - "NOTICE"
@@ -20,10 +21,11 @@ on:
   pull_request:
     paths-ignore:
       - "setup.*"
+      - "requirements.txt"
       - "requirements/**"
       - "docs/**"
       - "tools/**"
-      - "scripts/**"
+      - ".scripts/**"
       - "README.md"
       - "README_zh-CN.md"
       - "NOTICE"

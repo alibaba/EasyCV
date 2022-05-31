@@ -1,13 +1,13 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import json
 import logging
+from multiprocessing import cpu_count
 
 import numpy as np
-from mmcv.runner.dist_utils import get_dist_info
 
+from easycv.datasets.detection.data_sources.base import DetSourceBase
 from easycv.datasets.registry import DATASOURCES
 from easycv.file import io
-from .voc import DetSourceVOC
 
 
 def get_prior_task_id(keys):
@@ -44,7 +44,7 @@ def is_itag_v2(row):
     return False
 
 
-def parser_manifest_row_str(row_str):
+def parser_manifest_row_str(row_str, classes):
     row = json.loads(row_str.strip())
     _is_itag_v2 = is_itag_v2(row)
 
@@ -77,7 +77,7 @@ def parser_manifest_row_str(row_str):
     if not ann_json:
         return parse_results
 
-    bboxes, class_names = [], []
+    bboxes, gt_labels = [], []
     for result in ann_json['results']:
         if result['type'] != 'image':
             continue
@@ -100,7 +100,7 @@ def parser_manifest_row_str(row_str):
                     raise ValueError(
                         'Not support multi label, get class name  %s!' %
                         class_name)
-                class_names.append(class_name[0])
+                gt_labels.append(classes.index(class_name[0]))
             else:
                 if obj['type'] != 'image/rectangleLabel':
                     logging.warning(
@@ -113,18 +113,18 @@ def parser_manifest_row_str(row_str):
                 bnd = [x, y, x + w, y + h]
                 class_name = obj['labels'][0]
                 bboxes.append(bnd)
-                class_names.append(class_name)
+                gt_labels.append(classes.index(class_name))
         break
 
-    parse_results['gt_bboxes'] = bboxes
-    parse_results['class_names'] = class_names
     parse_results['filename'] = img_url
+    parse_results['gt_bboxes'] = np.array(bboxes, dtype=np.float32)
+    parse_results['gt_labels'] = np.array(gt_labels, dtype=np.int64)
 
     return parse_results
 
 
 @DATASOURCES.register_module
-class DetSourcePAI(DetSourceVOC):
+class DetSourcePAI(DetSourceBase):
     """
     data format please refer to: https://help.aliyun.com/document_detail/311173.html
     """
@@ -134,6 +134,8 @@ class DetSourcePAI(DetSourceVOC):
                  classes=[],
                  cache_at_init=False,
                  cache_on_the_fly=False,
+                 parse_fn=parser_manifest_row_str,
+                 num_processes=int(cpu_count() / 2),
                  **kwargs):
         """
         Args:
@@ -141,30 +143,19 @@ class DetSourcePAI(DetSourceVOC):
             classes: classes list
             cache_at_init: if set True, will cache in memory in __init__ for faster training
             cache_on_the_fly: if set True, will cache in memroy during training
+            parse_fn: parse function to parse item of source iterator
+            num_processes: number of processes to parse samples
         """
-        self.CLASSES = classes
-        self.rank, self.world_size = get_dist_info()
-        self.manifest_path = path
-        self.cache_at_init = cache_at_init
-        self.cache_on_the_fly = cache_on_the_fly
-        if self.cache_at_init and self.cache_on_the_fly:
-            raise ValueError(
-                'Only one of `cache_on_the_fly` and `cache_at_init` can be True!'
-            )
 
+        self.manifest_path = path
+        super(DetSourcePAI, self).__init__(
+            classes=classes,
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly,
+            parse_fn=parse_fn,
+            num_processes=num_processes)
+
+    def get_source_iterator(self):
         with io.open(self.manifest_path, 'r') as f:
             rows = f.read().splitlines()
-
-        self.samples_list = self.build_samples(rows)
-
-    def get_source_info(self, row_str):
-        source_info = parser_manifest_row_str(row_str)
-        source_info['gt_bboxes'] = np.array(
-            source_info['gt_bboxes'], dtype=np.float32)
-        source_info['gt_labels'] = np.array([
-            self.CLASSES.index(class_name)
-            for class_name in source_info['class_names']
-        ],
-                                            dtype=np.int64)
-
-        return source_info
+        return rows
