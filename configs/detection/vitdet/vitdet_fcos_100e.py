@@ -55,10 +55,7 @@ eval_config = dict(interval=1, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',
-        evaluators=[
-            dict(type='CocoDetectionEvaluator', classes=CLASSES),
-            dict(type='CocoMaskEvaluator', classes=CLASSES)
-        ],
+        evaluators=[dict(type='CocoDetectionEvaluator', classes=CLASSES)],
     )
 ]
 
