@@ -4,11 +4,11 @@ from .mm_transforms import (LoadAnnotations, LoadImageFromFile,
                             MMMultiScaleFlipAug, MMNormalize, MMPad,
                             MMPhotoMetricDistortion, MMRandomAffine,
                             MMRandomFlip, MMResize, MMToTensor,
-                            NormalizeTensor)
+                            MMYOLOXHSVRandomAug, NormalizeTensor)
 
 __all__ = [
     'MMToTensor', 'NormalizeTensor', 'MMMosaic', 'MMMixUp', 'MMRandomAffine',
     'MMPhotoMetricDistortion', 'MMResize', 'MMRandomFlip', 'MMPad',
     'MMNormalize', 'LoadImageFromFile', 'LoadMultiChannelImageFromFiles',
-    'LoadAnnotations', 'MMMultiScaleFlipAug'
+    'LoadAnnotations', 'MMMultiScaleFlipAug', 'MMYOLOXHSVRandomAug'
 ]

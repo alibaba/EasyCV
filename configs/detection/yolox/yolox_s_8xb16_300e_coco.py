@@ -50,24 +50,24 @@ train_pipeline = [
         img_scale=img_scale,
         ratio_range=(0.8, 1.6),
         pad_val=114.0),
-    dict(
-        type='MMPhotoMetricDistortion',
-        brightness_delta=32,
-        contrast_range=(0.5, 1.5),
-        saturation_range=(0.5, 1.5),
-        hue_delta=18),
+    # dict(type='MMPhotoMetricDistortion',
+    #      brightness_delta=32,
+    #      contrast_range=(0.5, 1.5),
+    #      saturation_range=(0.5, 1.5),
+    #      hue_delta=18),  # only support float32
+    dict(type='MMYOLOXHSVRandomAug'),
     dict(type='MMRandomFlip', flip_ratio=0.5),
     dict(type='MMResize', keep_ratio=True),
     dict(type='MMPad', pad_to_square=True, pad_val=(114.0, 114.0, 114.0)),
-    dict(type='MMNormalize', **img_norm_cfg),
-    dict(type='DefaultFormatBundle'),
+    # dict(type='MMNormalize', **img_norm_cfg),
+    dict(type='DefaultFormatBundle', img_to_float=True),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
 ]
 test_pipeline = [
     dict(type='MMResize', img_scale=img_scale, keep_ratio=True),
     dict(type='MMPad', pad_to_square=True, pad_val=(114.0, 114.0, 114.0)),
-    dict(type='MMNormalize', **img_norm_cfg),
-    dict(type='DefaultFormatBundle'),
+    # dict(type='MMNormalize', **img_norm_cfg),
+    dict(type='DefaultFormatBundle', img_to_float=True),
     dict(type='Collect', keys=['img'])
 ]
 
@@ -78,35 +78,36 @@ train_dataset = dict(
         ann_file=data_root + 'annotations/instances_train2017.json',
         img_prefix=data_root + 'train2017/',
         pipeline=[
-            dict(type='LoadImageFromFile', to_float32=True),
+            dict(type='LoadImageFromFile', to_float32=False),
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         classes=CLASSES,
-        filter_empty_gt=False,
+        filter_empty_gt=True,
         iscrowd=False),
     pipeline=train_pipeline,
     dynamic_scale=img_scale)
 
 val_dataset = dict(
     type='DetImagesMixDataset',
-    imgs_per_gpu=2,
+    imgs_per_gpu=32,
     data_source=dict(
         type='DetSourceCoco',
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
-        pipeline=[
-            dict(type='LoadImageFromFile', to_float32=True),
-            dict(type='LoadAnnotations', with_bbox=True)
-        ],
+        pipeline=[dict(type='LoadImageFromFile', to_float32=False)],
         classes=CLASSES,
-        filter_empty_gt=False,
+        test_mode=True,
         iscrowd=True),
     pipeline=test_pipeline,
     dynamic_scale=None,
     label_padding=False)
 
 data = dict(
-    imgs_per_gpu=16, workers_per_gpu=4, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=16,
+    workers_per_gpu=4,
+    persistent_workers=True,
+    train=train_dataset,
+    val=val_dataset)
 
 # additional hooks
 interval = 10
@@ -132,7 +133,7 @@ custom_hooks = [
 # evaluation
 eval_config = dict(
     interval=10,
-    gpu_collect=False,
+    gpu_collect=True,
     visualization_config=dict(
         vis_num=10,
         score_thr=0.5,
@@ -142,6 +143,7 @@ eval_pipelines = [
     dict(
         mode='test',
         data=data['val'],
+        dist_eval=True,
         evaluators=[dict(type='CocoDetectionEvaluator', classes=CLASSES)],
     )
 ]
@@ -175,8 +177,9 @@ log_config = dict(
     interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHookV2'),
+        # dict(type='TensorboardLoggerHookV2'),
         # dict(type='WandbLoggerHookV2'),
     ])
 
 export = dict(use_jit=False)
+mp_start_method = 'fork'
