@@ -1,11 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import unittest
 
-import numpy as np
 import torch
 
-# from easycv.models.utils import accuracy
-from easycv.models.utils.accuracy import accuracy
+from easycv.core.evaluation.metrics import accuracy
 
 
 class AccuracyTest(unittest.TestCase):
