@@ -66,6 +66,9 @@ TEST_IMAGES_DIR = os.path.join(BASE_LOCAL_PATH, 'data/test_images')
 COMPRESSION_TEST_DATA = os.path.join(BASE_LOCAL_PATH,
                                      'data/compression/test_data')
 
+SEG_DATA_SMALL_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH,
+                                        'data/segmentation/small_voc_200')
+
 PRETRAINED_MODEL_MOCO = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/selfsup/moco/moco_epoch_200.pth')
 PRETRAINED_MODEL_RESNET50 = os.path.join(
