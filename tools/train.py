@@ -39,7 +39,6 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a model')
     parser.add_argument(
         'config', help='train config file path', type=str, default=None)
-    # parser.add_argument('--config', help='train config file path', default="configs/classification/imagenet/r50.py")
     parser.add_argument(
         '--work_dir',
         type=str,

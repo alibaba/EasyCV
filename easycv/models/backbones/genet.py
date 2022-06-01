@@ -62,7 +62,6 @@ def _fuse_convkx_and_bn_(convkx, bn):
     bn.bias[:] = bn.bias - the_bias_shift
     bn.running_var[:] = 1.0 - bn.eps
     bn.running_mean[:] = 0.0
-    # convkx.register_parameter('bias', bn.bias)
     convkx.bias = nn.Parameter(bn.bias)
 
 
@@ -76,7 +75,6 @@ def remove_bn_in_superblock(super_block):
         for block in the_seq_list:
             if isinstance(block, nn.BatchNorm2d):
                 _fuse_convkx_and_bn_(last_block, block)
-                # print('--debug fuse shortcut bn')
             else:
                 new_seq_list.append(block)
             last_block = block
@@ -92,7 +90,6 @@ def remove_bn_in_superblock(super_block):
         for block in the_seq_list:
             if isinstance(block, nn.BatchNorm2d):
                 _fuse_convkx_and_bn_(last_block, block)
-                # print('--debug fuse conv bn')
             else:
                 new_seq_list.append(block)
             last_block = block
@@ -1647,7 +1644,6 @@ class PlainNet(nn.Module):
             block_list.pop(-1)
         else:
             self.adptive_avg_pool = nn.AdaptiveAvgPool2d((1, 1))
-            # AdaptiveAvgPool(out_channels=block_list[-1].out_channels, output_size=1)
 
         self.block_list = block_list
         if not no_create:
@@ -1663,29 +1659,13 @@ class PlainNet(nn.Module):
 
         self.plainnet_struct = str(self) + str(self.adptive_avg_pool)
         self.zero_init_residual = False
-        self.pretrained = model_urls[self.__class__.__name__ +
-                                     plainnet_struct_idx]
 
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str) or isinstance(pretrained, dict):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    kaiming_init(m, mode='fan_in', nonlinearity='relu')
-                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
-                    constant_init(m, 1)
-
-            # if self.zero_init_residual:
-            #     for m in self.modules():
-            #         if isinstance(m, Bottleneck):
-            #             constant_init(m.norm3, 0)
-            #         elif isinstance(m, BasicBlock):
-            #             constant_init(m.norm2, 0)
-        else:
-            raise TypeError('pretrained must be a str or None')
-        return
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                kaiming_init(m, mode='fan_in', nonlinearity='relu')
+            elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
+                constant_init(m, 1)
 
     def forward(self, x):
         output = x
@@ -1699,13 +1679,3 @@ class PlainNet(nn.Module):
             output = self.fc_linear(output)
 
         return [output]
-
-
-if __name__ == '__main__':
-    from torch import nn
-
-    input_image_size = 192
-
-    # model = genet_normal(pretrained=True, root='data/models/GENet_params/')
-    # print(type(model))
-    # print(model.block_list)

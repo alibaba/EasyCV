@@ -13,9 +13,9 @@ load_from = None
 # model settings
 model = dict(
     type='Classification',
+    train_preprocess=['randomErasing'],
     pretrained=
     'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_base_patch4_window7_224_22k_statedict.pth',
-    train_preprocess=['randomErasing'],
     backbone=dict(
         type='PytorchImageModelWrapper',
         model_name='swin_base_patch4_window7_224_in22k'

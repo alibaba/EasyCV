@@ -60,23 +60,17 @@ class Inception3(nn.Module):
         if num_classes > 0:
             self.fc = nn.Linear(2048, num_classes)
 
-        self.pretrained = model_urls[self.__class__.__name__]
-
-    def init_weights(self, pretrained=None):
-        if pretrained is not None:
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        else:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
-                    for m in self.modules():
-                        if isinstance(m, nn.Conv2d):
-                            kaiming_init(m, mode='fan_in', nonlinearity='relu')
-                        elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
-                            constant_init(m, 1)
-                elif isinstance(m, nn.BatchNorm2d):
-                    nn.init.constant_(m.weight, 1)
-                    nn.init.constant_(m.bias, 0)
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
+                for m in self.modules():
+                    if isinstance(m, nn.Conv2d):
+                        kaiming_init(m, mode='fan_in', nonlinearity='relu')
+                    elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
+                        constant_init(m, 1)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
         if self.transform_input:

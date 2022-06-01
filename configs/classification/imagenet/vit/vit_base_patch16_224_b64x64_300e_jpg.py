@@ -15,7 +15,6 @@ model = dict(
         mode='batch',
         label_smoothing=0.1,
         num_classes=1000),
-    pretrained=None,
     backbone=dict(
         type='PytorchImageModelWrapper',
         model_name='vit_base_patch16_224',

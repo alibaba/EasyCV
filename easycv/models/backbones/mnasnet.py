@@ -143,8 +143,6 @@ class MNASNet(torch.nn.Module):
             self.classifier = nn.Sequential(
                 nn.Dropout(p=dropout, inplace=True),
                 nn.Linear(1280, num_classes))
-        self.init_weights()
-        self.pretrained = model_urls[self.__class__.__name__ + str(alpha)]
 
     def forward(self, x):
         x = self.layers(x)
@@ -155,22 +153,16 @@ class MNASNet(torch.nn.Module):
         else:
             return [x]
 
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str) or isinstance(pretrained, dict):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    nn.init.kaiming_normal_(
-                        m.weight, mode='fan_out', nonlinearity='relu')
-                    if m.bias is not None:
-                        nn.init.zeros_(m.bias)
-                elif isinstance(m, nn.BatchNorm2d):
-                    nn.init.ones_(m.weight)
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(
+                    m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
                     nn.init.zeros_(m.bias)
-                elif isinstance(m, nn.Linear):
-                    nn.init.normal_(m.weight, 0.01)
-                    nn.init.zeros_(m.bias)
-        else:
-            raise TypeError('pretrained must be a str or None')
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.ones_(m.weight)
+                nn.init.zeros_(m.bias)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0.01)
+                nn.init.zeros_(m.bias)

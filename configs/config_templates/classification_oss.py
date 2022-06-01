@@ -19,7 +19,6 @@ export = dict(export_neck=True)
 # model settings
 model = dict(
     type='Classification',
-    pretrained=None,
     backbone=dict(
         type='PytorchImageModelWrapper',
         # model_name='pit_xs_distilled_224',
