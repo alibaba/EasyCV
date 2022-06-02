@@ -117,12 +117,15 @@ class Classification(BaseModel):
         elif self.pretrained:
             if self.backbone.__class__.__name__ == 'PytorchImageModelWrapper':
                 self.backbone.init_weights(pretrained=self.pretrained)
-            elif self.backbone.pretrained_path:
+            elif hasattr(self.backbone, 'pretrained_path'):
                 print_log(
                     'load model from default path: {}'.format(
-                        self.pretrained_path), logger)
+                        self.backbone.pretrained_path), logger)
                 load_checkpoint(
-                    self, self.pretrained_path, strict=False, logger=logger)
+                    self.backbone,
+                    self.backbone.pretrained_path,
+                    strict=False,
+                    logger=logger)
             else:
                 print_log('load model from init weights')
                 self.backbone.init_weights()
