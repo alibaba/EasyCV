@@ -14,11 +14,11 @@ _base_model_cfg = dict(
     momentum=0.99,
     pretrained=None,
     backbone=dict(
-        type='PytorchImageModelWrapper',
-        model_name='resnet50',  # 2048
-        num_classes=0,
-        pretrained=True,
-    ),
+        type='ResNet',
+        depth=50,
+        in_channels=3,
+        out_indices=[4],  # 0: conv-1, x: stage-x
+        norm_cfg=dict(type='BN')),
     neck=dict(
         type='MoBYMLP',
         in_channels=2048,

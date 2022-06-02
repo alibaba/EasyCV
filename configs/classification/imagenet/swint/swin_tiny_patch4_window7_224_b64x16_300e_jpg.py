@@ -16,7 +16,6 @@ model = dict(
         mode='batch',
         label_smoothing=0.1,
         num_classes=1000),
-    pretrained=None,
     backbone=dict(
         type='PytorchImageModelWrapper',
         model_name='swin_tiny_patch4_window7_224',

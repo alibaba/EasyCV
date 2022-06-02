@@ -217,37 +217,60 @@ class Bottleneck(nn.Module):
         return out
 
 
-def make_res_layer(block,
-                   inplanes,
-                   planes,
-                   blocks,
-                   stride=1,
-                   dilation=1,
-                   style='pytorch',
-                   with_cp=False,
-                   conv_cfg=None,
-                   norm_cfg=dict(type='BN'),
-                   frelu=False):
+def make_res_layer(
+    block,
+    inplanes,
+    planes,
+    blocks,
+    stride=1,
+    dilation=1,
+    style='pytorch',
+    avg_down=False,
+    with_cp=False,
+    conv_cfg=None,
+    norm_cfg=dict(type='BN'),
+    frelu=False,
+    multi_grid=None,
+    contract_dilation=False,
+):
     downsample = None
     if stride != 1 or inplanes != planes * block.expansion:
-        downsample = nn.Sequential(
+        downsample = []
+        conv_stride = stride
+        if avg_down:
+            conv_stride = 1
+            downsample.append(
+                nn.AvgPool2d(
+                    kernel_size=stride,
+                    stride=stride,
+                    ceil_mode=True,
+                    count_include_pad=False))
+        downsample.extend([
             build_conv_layer(
                 conv_cfg,
                 inplanes,
                 planes * block.expansion,
                 kernel_size=1,
-                stride=stride,
+                stride=conv_stride,
                 bias=False),
-            build_norm_layer(norm_cfg, planes * block.expansion)[1],
-        )
+            build_norm_layer(norm_cfg, planes * block.expansion)[1]
+        ])
+        downsample = nn.Sequential(*downsample)
 
+    if multi_grid is None:
+        if dilation > 1 and contract_dilation:
+            first_dilation = dilation // 2
+        else:
+            first_dilation = dilation
+    else:
+        first_dilation = multi_grid[0]
     layers = []
     layers.append(
         block(
             inplanes=inplanes,
             planes=planes,
             stride=stride,
-            dilation=dilation,
+            dilation=first_dilation,
             downsample=downsample,
             style=style,
             with_cp=with_cp,
@@ -261,7 +284,7 @@ def make_res_layer(block,
                 inplanes=inplanes,
                 planes=planes,
                 stride=1,
-                dilation=dilation,
+                dilation=dilation if multi_grid is None else multi_grid[i],
                 style=style,
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
@@ -285,6 +308,10 @@ class ResNet(nn.Module):
         style (str): `pytorch` or `caffe`. If set to "pytorch", the stride-two
             layer is the 3x3 conv layer, otherwise the stride-two layer is
             the first 1x1 conv layer.
+        deep_stem (bool): Replace 7x7 conv in input stem with 3 3x3 conv.
+            Default: False.
+        avg_down (bool): Use AvgPool instead of stride conv when
+            downsampling in the bottleneck. Default: False.
         frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
             -1 means not freezing any parameters.
         norm_cfg (dict): dictionary to construct and config norm layer.
@@ -294,8 +321,13 @@ class ResNet(nn.Module):
         with_cp (bool): Use checkpoint or not. Using checkpoint will save some
             memory while slowing down the training speed.
         original_inplanes: start channel for first block, default=64
+        stem_channels (int): Number of stem channels. Default: 64.
         zero_init_residual (bool): whether to use zero init for last norm layer
             in resblocks to let them behave as identity.
+        multi_grid (Sequence[int]|None): Multi grid dilation rates of last
+            stage. Default: None.
+        contract_dilation (bool): Whether contract first dilation of each layer
+            Default: False.
 
     Example:
         >>> from easycv.models import ResNet
@@ -329,6 +361,8 @@ class ResNet(nn.Module):
                  dilations=(1, 1, 1, 1),
                  out_indices=(0, 1, 2, 3, 4),
                  style='pytorch',
+                 deep_stem=False,
+                 avg_down=False,
                  num_classes=0,
                  frozen_stages=-1,
                  conv_cfg=None,
@@ -337,7 +371,10 @@ class ResNet(nn.Module):
                  with_cp=False,
                  frelu=False,
                  original_inplanes=64,
-                 zero_init_residual=False):
+                 stem_channels=64,
+                 zero_init_residual=False,
+                 multi_grid=None,
+                 contract_dilation=False):
         super(ResNet, self).__init__()
         if depth not in self.arch_settings:
             raise KeyError('invalid depth {} for resnet'.format(depth))
@@ -350,6 +387,8 @@ class ResNet(nn.Module):
         self.out_indices = out_indices
         assert max(out_indices) < num_stages + 1
         self.style = style
+        self.deep_stem = deep_stem
+        self.avg_down = avg_down
         self.frozen_stages = frozen_stages
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
@@ -359,17 +398,21 @@ class ResNet(nn.Module):
         self.block, stage_blocks = self.arch_settings[depth]
         self.stage_blocks = stage_blocks[:num_stages]
         self.original_inplanes = original_inplanes
-        self.inplanes = original_inplanes
+        self.stem_channels = stem_channels
+        self.inplanes = stem_channels
         self.frelu = frelu
-        self.pretrained = model_urls.get(self.__class__.__name__ + str(depth),
-                                         None)
+        self.multi_grid = multi_grid
+        self.contract_dilation = contract_dilation
 
-        self._make_stem_layer(in_channels)
+        self._make_stem_layer(in_channels, stem_channels)
 
         self.res_layers = []
         for i, num_blocks in enumerate(self.stage_blocks):
             stride = strides[i]
             dilation = dilations[i]
+            # multi grid is applied to last layer only
+            stage_multi_grid = multi_grid if i == len(
+                self.stage_blocks) - 1 else None
             planes = self.original_inplanes * 2**i
             res_layer = make_res_layer(
                 self.block,
@@ -379,10 +422,14 @@ class ResNet(nn.Module):
                 stride=stride,
                 dilation=dilation,
                 style=self.style,
+                avg_down=self.avg_down,
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
-                frelu=self.frelu)
+                frelu=self.frelu,
+                multi_grid=stage_multi_grid,
+                contract_dilation=contract_dilation,
+            )
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
             self.add_module(layer_name, res_layer)
@@ -400,30 +447,68 @@ class ResNet(nn.Module):
     def norm1(self):
         return getattr(self, self.norm1_name)
 
-    def _make_stem_layer(self, in_channels):
-        self.conv1 = build_conv_layer(
-            self.conv_cfg,
-            in_channels,
-            self.original_inplanes,
-            kernel_size=7,
-            stride=2,
-            padding=3,
-            bias=False)
-        self.norm1_name, norm1 = build_norm_layer(
-            self.norm_cfg, self.original_inplanes, postfix=1)
-        self.add_module(self.norm1_name, norm1)
+    def _make_stem_layer(self, in_channels, stem_channels):
         if self.frelu:
-            self.relu = FReLU(self.original_inplanes)
+            relu = FReLU(stem_channels)
         else:
-            self.relu = nn.ReLU(inplace=True)
+            relu = nn.ReLU(inplace=True)
+
+        if self.deep_stem:
+            self.stem = nn.Sequential(
+                build_conv_layer(
+                    self.conv_cfg,
+                    in_channels,
+                    stem_channels // 2,
+                    kernel_size=3,
+                    stride=2,
+                    padding=1,
+                    bias=False),
+                build_norm_layer(self.norm_cfg, stem_channels // 2)[1], relu,
+                build_conv_layer(
+                    self.conv_cfg,
+                    stem_channels // 2,
+                    stem_channels // 2,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    bias=False),
+                build_norm_layer(self.norm_cfg, stem_channels // 2)[1], relu,
+                build_conv_layer(
+                    self.conv_cfg,
+                    stem_channels // 2,
+                    stem_channels,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    bias=False),
+                build_norm_layer(self.norm_cfg, stem_channels)[1], relu)
+        else:
+            self.conv1 = build_conv_layer(
+                self.conv_cfg,
+                in_channels,
+                stem_channels,
+                kernel_size=7,
+                stride=2,
+                padding=3,
+                bias=False)
+            self.norm1_name, norm1 = build_norm_layer(
+                self.norm_cfg, stem_channels, postfix=1)
+            self.add_module(self.norm1_name, norm1)
+            self.relu = relu
+
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
-            self.norm1.eval()
-            for m in [self.conv1, self.norm1]:
-                for param in m.parameters():
+            if self.deep_stem:
+                self.stem.eval()
+                for param in self.stem.parameters():
                     param.requires_grad = False
+            else:
+                self.norm1.eval()
+                for m in [self.conv1, self.norm1]:
+                    for param in m.parameters():
+                        param.requires_grad = False
 
         for i in range(1, self.frozen_stages + 1):
             m = getattr(self, 'layer{}'.format(i))
@@ -431,31 +516,28 @@ class ResNet(nn.Module):
             for param in m.parameters():
                 param.requires_grad = False
 
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str) or isinstance(pretrained, dict):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    kaiming_init(m, mode='fan_in', nonlinearity='relu')
-                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
-                    constant_init(m, 1)
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                kaiming_init(m, mode='fan_in', nonlinearity='relu')
+            elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
+                constant_init(m, 1)
 
-            if self.zero_init_residual:
-                for m in self.modules():
-                    if isinstance(m, Bottleneck):
-                        constant_init(m.norm3, 0)
-                    elif isinstance(m, BasicBlock):
-                        constant_init(m.norm2, 0)
-        else:
-            raise TypeError('pretrained must be a str or None')
+        if self.zero_init_residual:
+            for m in self.modules():
+                if isinstance(m, Bottleneck):
+                    constant_init(m.norm3, 0)
+                elif isinstance(m, BasicBlock):
+                    constant_init(m.norm2, 0)
 
     def forward(self, x):
         outs = []
-        x = self.conv1(x)
-        x = self.norm1(x)
-        x = self.relu(x)  # r50: 64x128x128
+        if self.deep_stem:
+            x = self.stem(x)
+        else:
+            x = self.conv1(x)
+            x = self.norm1(x)
+            x = self.relu(x)  # r50: 64x128x128
         if 0 in self.out_indices:
             outs.append(x)
         x = self.maxpool(x)  # r50: 64x56x56
@@ -483,3 +565,25 @@ class ResNet(nn.Module):
                 # trick: eval have effect on BatchNorm only
                 if isinstance(m, _BatchNorm):
                     m.eval()
+
+
+@BACKBONES.register_module()
+class ResNetV1c(ResNet):
+    """Compared to ResNet, ResNetV1c replaces the 7x7 conv in the input stem with three 3x3 convs.
+    For more details please refer to <https://arxiv.org/abs/1812.01187>.
+    """
+
+    def __init__(self, **kwargs):
+        super(ResNetV1c, self).__init__(
+            deep_stem=True, avg_down=False, **kwargs)
+
+
+@BACKBONES.register_module()
+class ResNetV1d(ResNet):
+    """Compared to ResNet, ResNetV1d replaces the 7x7 conv in the input stem with three 3x3 convs.
+    And in the downsampling block, a 2x2 avg_pool with stride 2 is added before conv, whose stride is changed to 1.
+    """
+
+    def __init__(self, **kwargs):
+        super(ResNetV1d, self).__init__(
+            deep_stem=True, avg_down=True, **kwargs)

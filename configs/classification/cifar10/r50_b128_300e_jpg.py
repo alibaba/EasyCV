@@ -2,7 +2,6 @@ _base_ = '../../base.py'
 # model settings
 model = dict(
     type='Classification',
-    pretrained=None,
     backbone=dict(
         type='ResNet',
         depth=50,

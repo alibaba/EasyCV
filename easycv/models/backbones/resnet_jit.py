@@ -4,7 +4,6 @@ from typing import List
 import torch
 import torch.nn as nn
 from mmcv.cnn import constant_init, kaiming_init
-# from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from easycv.utils.checkpoint import load_checkpoint
@@ -183,13 +182,6 @@ class Bottleneck(nn.Module):
 
     def forward(self, x):
 
-        # if self.with_cp and x.requires_grad:
-        #     out = cp.checkpoint(self._inner_forward, x)
-        # else:
-        #     out = self._inner_forward(x)
-
-        # out = self.relu(out)
-
         out = self._inner_forward(x)
         out = self.relu(out)
         return out
@@ -350,8 +342,6 @@ class ResNetJIT(nn.Module):
                 norm_cfg=norm_cfg)
             self.inplanes = planes * self.block.expansion
             layer_name = 'layer{}'.format(i + 1)
-            # self.add_module(layer_name, res_layer)
-            # self.res_layers.append(layer_name)
             self.res_layers.add_module(layer_name, res_layer)
 
         self._freeze_stages()
@@ -361,7 +351,6 @@ class ResNetJIT(nn.Module):
 
     @property
     def norm1(self):
-        # return getattr(self, self.norm1_name)
         return getattr(self, 'bn1')
 
     def _make_stem_layer(self, in_channels):
@@ -375,7 +364,6 @@ class ResNetJIT(nn.Module):
             bias=False)
         self.norm1_name, norm1 = build_norm_layer(self.norm_cfg, 64, postfix=1)
         self.bn1 = norm1
-        # self.add_module(self.norm1_name, norm1)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
@@ -392,30 +380,23 @@ class ResNetJIT(nn.Module):
             for param in m.parameters():
                 param.requires_grad = False
 
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str) or isinstance(pretrained, dict):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    kaiming_init(m, mode='fan_in', nonlinearity='relu')
-                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
-                    constant_init(m, 1)
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                kaiming_init(m, mode='fan_in', nonlinearity='relu')
+            elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
+                constant_init(m, 1)
 
-            if self.zero_init_residual:
-                for m in self.modules():
-                    if isinstance(m, Bottleneck):
-                        constant_init(m.norm3, 0)
-                    elif isinstance(m, BasicBlock):
-                        constant_init(m.norm2, 0)
-        else:
-            raise TypeError('pretrained must be a str or None')
+        if self.zero_init_residual:
+            for m in self.modules():
+                if isinstance(m, Bottleneck):
+                    constant_init(m.norm3, 0)
+                elif isinstance(m, BasicBlock):
+                    constant_init(m.norm2, 0)
 
     def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
         outs = []
         x = self.conv1(x)
-        # x = self.norm1(x)
         x = self.bn1(x)
         x = self.relu(x)  # r50: 64x128x128
         if 0 in self.out_indices:

@@ -15,7 +15,6 @@ sys.path.append(
         osp.join(os.path.dirname(os.path.dirname(__file__)), '../')))
 
 import time
-import cv2
 import requests
 import torch
 from mmcv.runner import init_dist
@@ -33,16 +32,13 @@ from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.config_tools import traverse_replace
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
-
-# refer to: https://github.com/open-mmlab/mmdetection/pull/6867
-cv2.setNumThreads(0)
+from easycv.utils.setup_env import setup_multi_processes
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a model')
     parser.add_argument(
         'config', help='train config file path', type=str, default=None)
-    # parser.add_argument('--config', help='train config file path', default="configs/classification/imagenet/r50.py")
     parser.add_argument(
         '--work_dir',
         type=str,
@@ -126,6 +122,9 @@ def main():
         assert args.model_type is not None, 'model_type must be setted'
         # rebuild config by user config params
         cfg = rebuild_config(cfg, args.user_config_params)
+
+    # set multi-process settings
+    setup_multi_processes(cfg)
 
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):

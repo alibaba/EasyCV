@@ -428,30 +428,17 @@ class ShuffleTransformer(nn.Module):
         # Classifier head
         self.head = nn.Linear(
             dims[3], num_classes) if num_classes > 0 else nn.Identity()
-        self.apply(self._init_weights)
 
-    def _init_weights(self, m):
-        if isinstance(m, (nn.BatchNorm2d, nn.GroupNorm, nn.LayerNorm)):
-            nn.init.constant_(m.weight, 1.0)
-            nn.init.constant_(m.bias, 0)
-        elif isinstance(m, (nn.Linear, nn.Conv2d)):
-            trunc_normal_(m.weight, std=.02)
-            if isinstance(m, (nn.Linear, nn.Conv2d)) and m.bias is not None:
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, (nn.BatchNorm2d, nn.GroupNorm, nn.LayerNorm)):
+                nn.init.constant_(m.weight, 1.0)
                 nn.init.constant_(m.bias, 0)
-
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str) or isinstance(pretrained, dict):
-            logger = get_root_logger()
-            load_checkpoint(
-                self,
-                pretrained,
-                map_location='cpu',
-                strict=False,
-                logger=logger)
-        elif pretrained is None:
-            self.apply(self._init_weights)
-        else:
-            raise TypeError('pretrained must be a str or None')
+            elif isinstance(m, (nn.Linear, nn.Conv2d)):
+                trunc_normal_(m.weight, std=.02)
+                if isinstance(m,
+                              (nn.Linear, nn.Conv2d)) and m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
 
     @torch.jit.ignore
     def no_weight_decay(self):
