@@ -110,8 +110,8 @@ class Classification(BaseModel):
         self.init_weights()
 
     def init_weights(self):
+        logger = get_root_logger()
         if isinstance(self.pretrained, str):
-            logger = get_root_logger()
             load_checkpoint(
                 self.backbone, self.pretrained, strict=False, logger=logger)
         elif self.pretrained:
