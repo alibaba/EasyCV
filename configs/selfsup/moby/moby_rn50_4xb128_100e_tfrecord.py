@@ -6,7 +6,7 @@ model = dict(
     train_preprocess=['randomGrayScale', 'gaussianBlur'],
     queue_len=4096,
     momentum=0.99,
-    pretrained=None,
+    pretrained=True,
     # backbone=dict(
     #     type='ResNet',
     #     depth=50,
@@ -31,7 +31,6 @@ model = dict(
         # model_name='shuffletrans_tiny_p4_w7_224', #768
         model_name='resnet50',  # 2048
         num_classes=0,
-        pretrained=True,
     ),
     neck=dict(
         type='MoBYMLP',

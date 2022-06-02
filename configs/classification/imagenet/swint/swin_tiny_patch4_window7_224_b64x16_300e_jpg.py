@@ -9,6 +9,7 @@ log_config = dict(
 model = dict(
     type='Classification',
     train_preprocess=['mixUp'],
+    pretrained=False,
     mixup_cfg=dict(
         mixup_alpha=0.8,
         cutmix_alpha=1.0,
@@ -20,7 +21,6 @@ model = dict(
         type='PytorchImageModelWrapper',
         model_name='swin_tiny_patch4_window7_224',
         num_classes=1000,
-        pretrained=False,
     ),
     head=dict(
         type='ClsHead',

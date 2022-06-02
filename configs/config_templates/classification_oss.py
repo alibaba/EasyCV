@@ -19,6 +19,7 @@ export = dict(export_neck=True)
 # model settings
 model = dict(
     type='Classification',
+    pretrained=True,
     backbone=dict(
         type='PytorchImageModelWrapper',
         # model_name='pit_xs_distilled_224',
@@ -29,7 +30,6 @@ model = dict(
         # model_name = 'vit_deit_small_distilled_patch16_224', # good 384,
         model_name='resnet50',
         num_classes=0,
-        pretrained=True,
     ),
     head=dict(
         type='ClsHead', with_avg_pool=True, in_channels=2048,
