@@ -8,7 +8,6 @@ import torch.nn as nn
 from timm.models.helpers import load_pretrained
 from timm.models.hub import download_cached_file
 
-from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger, print_log
 from ..modelzoo import timm_models as model_urls
 from ..registry import BACKBONES

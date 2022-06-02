@@ -8,8 +8,6 @@ from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from easycv.models.registry import BACKBONES
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger, print_log
 from ..modelzoo import resnet as model_urls
 from .resnet import BasicBlock
 

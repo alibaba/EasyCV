@@ -7,8 +7,6 @@ from einops import rearrange
 from timm.models.layers import DropPath, trunc_normal_
 from torch import nn
 
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
 from ..registry import BACKBONES
 
 

@@ -19,8 +19,6 @@ import torch.nn as nn
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 from timm.models.vision_transformer import Mlp, _cfg
 
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
 from ..registry import BACKBONES
 
 

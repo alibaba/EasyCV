@@ -4,8 +4,6 @@ import torch.utils.checkpoint as cp
 from mmcv.cnn import constant_init, kaiming_init
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger, print_log
 from ..modelzoo import resnet as model_urls
 from ..registry import BACKBONES
 from ..utils import FReLU, build_conv_layer, build_norm_layer

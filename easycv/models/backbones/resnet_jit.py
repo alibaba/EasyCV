@@ -6,8 +6,6 @@ import torch.nn as nn
 from mmcv.cnn import constant_init, kaiming_init
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
 from ..registry import BACKBONES
 from ..utils import build_conv_layer, build_norm_layer
 

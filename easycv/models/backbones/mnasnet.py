@@ -6,8 +6,6 @@ r""" This model is taken from the official PyTorch model zoo.
 import torch
 from torch import nn
 
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
 from ..modelzoo import mnasnet as model_urls
 from ..registry import BACKBONES
 
