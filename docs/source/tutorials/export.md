@@ -100,7 +100,8 @@ End2endModelExportWrapper(
 #### Non-End2end model
 
 ```python
-input_data_list = [np.asarray(Image.open(img))]
+image_path = 'data/demo.jpg'
+input_data_list =[np.asarray(Image.open(image_path))]
 
 # define the preprocess function
 test_pipeline = [
@@ -134,7 +135,8 @@ with io.open(jit_model_path, 'rb') as infile:
 
 
 ```python
-input_data_list = [np.asarray(Image.open(img))]
+image_path = 'data/demo.jpg'
+input_data_list =[np.asarray(Image.open(image_path))]
 
 with io.open(jit_model_path, 'rb') as infile:
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
