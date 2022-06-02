@@ -144,6 +144,8 @@ class MNASNet(torch.nn.Module):
                 nn.Dropout(p=dropout, inplace=True),
                 nn.Linear(1280, num_classes))
 
+        self.pretrained_path = model_urls[self.__class__.__name__ + str(alpha)]
+
     def forward(self, x):
         x = self.layers(x)
         # Equivalent to global avgpool and removing H and W dimensions.
