@@ -13,7 +13,6 @@ work_dir = 'oss://path/to/work_dirs/moco_timm_oss/'
 
 model = dict(
     type='MOCO',
-    pretrained=True,
     train_preprocess=['randomGrayScale', 'gaussianBlur'],
     queue_len=65536,
     feat_dim=128,

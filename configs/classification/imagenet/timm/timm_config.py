@@ -9,7 +9,6 @@ log_config = dict(
 model = dict(
     type='Classification',
     train_preprocess=['mixUp'],
-    pretrained=True,
     mixup_cfg=dict(
         mixup_alpha=0.2,
         prob=1.0,

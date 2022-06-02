@@ -58,7 +58,8 @@ class Inception3(nn.Module):
         if num_classes > 0:
             self.fc = nn.Linear(2048, num_classes)
 
-        self.pretrained_path = model_urls[self.__class__.__name__]
+        self.default_pretrained_model_path = model_urls[
+            self.__class__.__name__]
 
     def init_weights(self):
         for m in self.modules():

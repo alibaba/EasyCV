@@ -346,7 +346,8 @@ class BNInception(nn.Module):
         if num_classes > 0:
             self.last_linear = nn.Linear(1024, num_classes)
 
-        self.pretrained_path = model_urls[self.__class__.__name__]
+        self.default_pretrained_model_path = model_urls[
+            self.__class__.__name__]
 
     def init_weights(self):
         for m in self.modules():

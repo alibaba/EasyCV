@@ -199,6 +199,6 @@ class ResNeXt(ResNet):
 
         self._freeze_stages()
 
-        self.pretrained_path = model_urls.get(
+        self.default_pretrained_model_path = model_urls.get(
             self.__class__.__name__ + str(self.depth) + '-' +
             str(self.groups) + 'x' + str(self.base_width) + 'd', None)

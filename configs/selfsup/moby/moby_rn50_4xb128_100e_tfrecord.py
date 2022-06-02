@@ -6,7 +6,6 @@ model = dict(
     train_preprocess=['randomGrayScale', 'gaussianBlur'],
     queue_len=4096,
     momentum=0.99,
-    pretrained=True,
     # backbone=dict(
     #     type='ResNet',
     #     depth=50,

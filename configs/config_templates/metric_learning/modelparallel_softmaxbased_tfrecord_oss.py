@@ -44,7 +44,6 @@ work_dir = 'oss://path/to/work_dirs/classification/'
 # model settings
 model = dict(
     type='Classification',
-    pretrained=True,
     backbone=dict(
         type='PytorchImageModelWrapper',
 

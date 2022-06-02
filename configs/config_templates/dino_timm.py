@@ -15,7 +15,6 @@ model_output_dim = 65536
 
 model = dict(
     type='DINO',
-    pretrained=True,
     train_preprocess=[
         'randomGrayScale', 'gaussianBlur', 'solarize'
     ],  # 2+6 view, has different augment pipeline, dino is complex

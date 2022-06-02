@@ -591,8 +591,8 @@ class HRNet(nn.Module):
             multiscale_output=self.stage4_cfg.get('multiscale_output',
                                                   multi_scale_output))
 
-        self.pretrained_path = model_urls.get(self.__class__.__name__ + arch,
-                                              None)
+        self.default_pretrained_model_path = model_urls.get(
+            self.__class__.__name__ + arch, None)
 
     @property
     def norm1(self):

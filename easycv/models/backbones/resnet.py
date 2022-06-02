@@ -441,7 +441,7 @@ class ResNet(nn.Module):
         if num_classes > 0:
             self.fc = nn.Linear(self.feat_dim, num_classes)
 
-        self.pretrained_path = model_urls.get(
+        self.default_pretrained_model_path = model_urls.get(
             self.__class__.__name__ + str(depth), None)
 
     @property

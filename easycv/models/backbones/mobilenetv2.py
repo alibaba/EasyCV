@@ -151,8 +151,9 @@ class MobileNetV2(nn.Module):
                 nn.Dropout(0.2),
                 nn.Linear(self.last_channel, num_classes),
             )
-        self.pretrained_path = model_urls[self.__class__.__name__ + '_' +
-                                          str(width_multi)]
+        self.default_pretrained_model_path = model_urls[self.__class__.__name__
+                                                        + '_' +
+                                                        str(width_multi)]
 
     def init_weights(self):
         for m in self.modules():
