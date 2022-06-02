@@ -3,6 +3,7 @@ import math
 
 import torch.nn as nn
 
+from ..modelzoo import resnext as model_urls
 from ..registry import BACKBONES
 from ..utils import build_conv_layer, build_norm_layer
 from .resnet import Bottleneck as _Bottleneck
@@ -172,6 +173,7 @@ class ResNeXt(ResNet):
 
         self.inplanes = 64
         self.res_layers = []
+
         for i, num_blocks in enumerate(self.stage_blocks):
             stride = self.strides[i]
             dilation = self.dilations[i]
@@ -196,3 +198,7 @@ class ResNeXt(ResNet):
             self.res_layers.append(layer_name)
 
         self._freeze_stages()
+
+        self.pretrained_path = model_urls.get(
+            self.__class__.__name__ + str(self.depth) + '-' +
+            str(self.groups) + 'x' + str(self.base_width) + 'd', None)

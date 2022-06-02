@@ -164,6 +164,7 @@ class PytorchImageModelWrapper(nn.Module):
                     'Error: Fail to create {} with (pretrained={}...)'.format(
                         self.model_name, pretrained))
         else:
+            print_log('load model from init weights')
             self.model.init_weights()
 
     def forward(self, x):
