@@ -6,7 +6,7 @@ work_dir = 'work_dir/simclr/'
 # model settings
 model = dict(
     type='SimCLR',
-    pretrained=None,
+    pretrained=False,
     train_preprocess=['randomGrayScale', 'gaussianBlur'],
     backbone=dict(
         type='ResNet',

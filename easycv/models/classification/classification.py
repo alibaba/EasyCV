@@ -33,7 +33,7 @@ class Classification(BaseModel):
                  with_sobel=False,
                  head=None,
                  neck=None,
-                 pretrained=None,
+                 pretrained=True,
                  mixup_cfg=None):
         super(Classification, self).__init__()
         self.with_sobel = with_sobel
@@ -110,16 +110,29 @@ class Classification(BaseModel):
         self.init_weights()
 
     def init_weights(self):
+        logger = get_root_logger()
         if isinstance(self.pretrained, str):
-            logger = get_root_logger()
             load_checkpoint(
                 self.backbone, self.pretrained, strict=False, logger=logger)
-        else:
-            print_log('load model from init weights')
+        elif self.pretrained:
             if self.backbone.__class__.__name__ == 'PytorchImageModelWrapper':
                 self.backbone.init_weights(pretrained=self.pretrained)
+            elif hasattr(self.backbone, 'default_pretrained_model_path'
+                         ) and self.backbone.default_pretrained_model_path:
+                print_log(
+                    'load model from default path: {}'.format(
+                        self.backbone.default_pretrained_model_path), logger)
+                load_checkpoint(
+                    self.backbone,
+                    self.backbone.default_pretrained_model_path,
+                    strict=False,
+                    logger=logger)
             else:
+                print_log('load model from init weights')
                 self.backbone.init_weights()
+        else:
+            print_log('load model from init weights')
+            self.backbone.init_weights()
 
         for idx in range(self.head_num):
             h = getattr(self, 'head_%d' % idx)

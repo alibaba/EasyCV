@@ -11,8 +11,6 @@ import torch.nn.functional as F
 from mmcv.cnn import constant_init, kaiming_init
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
 from ..modelzoo import inceptionv3 as model_urls
 from ..registry import BACKBONES
 
@@ -59,6 +57,9 @@ class Inception3(nn.Module):
         self.Mixed_7c = InceptionE(2048)
         if num_classes > 0:
             self.fc = nn.Linear(2048, num_classes)
+
+        self.default_pretrained_model_path = model_urls[
+            self.__class__.__name__]
 
     def init_weights(self):
         for m in self.modules():

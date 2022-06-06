@@ -8,7 +8,6 @@ import torch.nn as nn
 from timm.models.helpers import load_pretrained
 from timm.models.hub import download_cached_file
 
-from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger, print_log
 from ..modelzoo import timm_models as model_urls
 from ..registry import BACKBONES
@@ -113,35 +112,37 @@ class PytorchImageModelWrapper(nn.Module):
         logger = get_root_logger()
         if pretrained:
             if self.model_name in self.timm_model_names:
-                pretrained_path = model_urls[self.model_name]
+                default_pretrained_model_path = model_urls[self.model_name]
                 print_log(
-                    'load model from default path: {}'.format(pretrained_path),
-                    logger)
-                if pretrained_path.endswith('.npz'):
+                    'load model from default path: {}'.format(
+                        default_pretrained_model_path), logger)
+                if default_pretrained_model_path.endswith('.npz'):
                     pretrained_loc = download_cached_file(
-                        pretrained_path, check_hash=False, progress=False)
+                        default_pretrained_model_path,
+                        check_hash=False,
+                        progress=False)
                     return self.model.load_pretrained(pretrained_loc)
                 else:
                     backbone_module = importlib.import_module(
                         self.model.__module__)
                     return load_pretrained(
                         self.model,
-                        default_cfg={'url': pretrained_path},
+                        default_cfg={'url': default_pretrained_model_path},
                         filter_fn=backbone_module.checkpoint_filter_fn
                         if hasattr(backbone_module, 'checkpoint_filter_fn')
                         else None)
             elif self.model_name in _MODEL_MAP:
                 if self.model_name in model_urls.keys():
-                    pretrained_path = model_urls[self.model_name]
+                    default_pretrained_model_path = model_urls[self.model_name]
                     print_log(
                         'load model from default path: {}'.format(
-                            pretrained_path), logger)
+                            default_pretrained_model_path), logger)
                     try_max = 3
                     try_idx = 0
                     while try_idx < try_max:
                         try:
                             state_dict = torch.hub.load_state_dict_from_url(
-                                url=pretrained_path,
+                                url=default_pretrained_model_path,
                                 map_location='cpu',
                             )
                             try_idx += try_max
@@ -164,6 +165,7 @@ class PytorchImageModelWrapper(nn.Module):
                     'Error: Fail to create {} with (pretrained={}...)'.format(
                         self.model_name, pretrained))
         else:
+            print_log('load model from init weights')
             self.model.init_weights()
 
     def forward(self, x):

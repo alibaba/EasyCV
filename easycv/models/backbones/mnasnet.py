@@ -6,8 +6,6 @@ r""" This model is taken from the official PyTorch model zoo.
 import torch
 from torch import nn
 
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
 from ..modelzoo import mnasnet as model_urls
 from ..registry import BACKBONES
 
@@ -143,6 +141,9 @@ class MNASNet(torch.nn.Module):
             self.classifier = nn.Sequential(
                 nn.Dropout(p=dropout, inplace=True),
                 nn.Linear(1280, num_classes))
+
+        self.default_pretrained_model_path = model_urls[self.__class__.__name__
+                                                        + str(alpha)]
 
     def forward(self, x):
         x = self.layers(x)

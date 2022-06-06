@@ -67,7 +67,6 @@ model = dict(
         # model_name = 'resnet34',
         # model_name = 'resnet101',
         num_classes='${backbone_channel}',
-        pretrained=True,
     ),
     neck=dict(
         type='RetrivalNeck',

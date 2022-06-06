@@ -6,7 +6,7 @@ num_crops = [2, 6]
 # model settings
 model = dict(
     type='SWAV',
-    pretrained=None,
+    pretrained=False,
     train_preprocess=['randomGrayScale', 'gaussianBlur'],
     backbone=dict(type='PlainNet', plainnet_struct_idx='normal'),
     neck=dict(

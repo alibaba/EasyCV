@@ -3,7 +3,7 @@ _base_ = 'configs/base.py'
 
 model = dict(
     type='MOCO',
-    pretrained=None,
+    pretrained=False,
     train_preprocess=['randomGrayScale', 'gaussianBlur'],
     queue_len=65536,
     feat_dim=128,
@@ -24,7 +24,6 @@ model = dict(
     #     #model_name = 'vit_deit_small_distilled_patch16_224', # good 384,
     #     #model_name = 'resnet50',
     #     #num_classes=1000,
-    #     pretrained=True,
     # ),
     neck=dict(
         type='NonLinearNeckV1',

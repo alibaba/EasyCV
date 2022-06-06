@@ -9,8 +9,6 @@ from mmcv.cnn import constant_init, kaiming_init
 from torch import nn
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
 from ..modelzoo import bninception as model_urls
 from ..registry import BACKBONES
 
@@ -347,6 +345,9 @@ class BNInception(nn.Module):
         self.num_classes = num_classes
         if num_classes > 0:
             self.last_linear = nn.Linear(1024, num_classes)
+
+        self.default_pretrained_model_path = model_urls[
+            self.__class__.__name__]
 
     def init_weights(self):
         for m in self.modules():
