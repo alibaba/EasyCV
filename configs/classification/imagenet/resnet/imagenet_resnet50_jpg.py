@@ -3,6 +3,6 @@ _base_ = './resnet50_b32x8_100e_jpg.py'
 model = dict(
     backbone=dict(
         type='ResNet',
-        depth=51,
+        depth=50,
         out_indices=[4],  # 0: conv-1, x: stage-x
         norm_cfg=dict(type='BN')))
