@@ -102,7 +102,7 @@ def postprocess_fn(output):
 End2endModelExportWrapper(
     model,
     preprocess_fn=preprocess_fn,
-		preprocess_fn=preprocess_fn)
+    postprocess_fn=postprocess_fn)
 ```
 
 
