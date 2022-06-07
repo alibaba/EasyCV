@@ -12,7 +12,6 @@ from easycv.utils.checkpoint import load_checkpoint, save_checkpoint
 
 if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
     from torch.cuda import amp
-    from easycv.hooks.optimizer_hook import AMPFP16OptimizerHook
 
 
 class EVRunner(EpochBasedRunner):

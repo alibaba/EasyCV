@@ -12,12 +12,6 @@ from PIL import Image, ImageFile
 from easycv.datasets.registry import DATASOURCES
 from easycv.file import io
 
-try:
-    import common_io
-except:
-    print("Import common_io fault, can't use odps reader")
-    pass
-
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 data_cache = {}
@@ -133,6 +127,8 @@ class OdpsReader(object):
         self.random_start = random_start
 
         # init for reader
+        import common_io
+
         self.reader = common_io.table.TableReader(
             self.table_name,
             slice_id=self.rank,
@@ -178,6 +174,8 @@ class OdpsReader(object):
         return self.length * self.world_size
 
     def reset_reader(self, dataloader_workid, dataloader_worknum):
+        import common_io
+
         self.reader = common_io.table.TableReader(
             self.table_name,
             slice_id=self.rank * dataloader_worknum + dataloader_workid,
@@ -200,6 +198,8 @@ class OdpsReader(object):
 
         # we must del reader before init to support pytorch dataloader multi-process
         if not hasattr(self, 'reader'):
+            import common_io
+
             self.reader = common_io.table.TableReader(
                 self.table_name,
                 slice_id=self.rank,

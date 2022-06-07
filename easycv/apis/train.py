@@ -45,18 +45,6 @@ def set_random_seed(seed, deterministic=False):
         torch.backends.cudnn.benchmark = False
 
 
-def _is_selfsup_model(model_name):
-    from easycv.models import selfsup
-    models = []
-    for m in dir(selfsup):
-        if m.startswith('__'):
-            continue
-        if model_name == m:
-            return True
-
-    return False
-
-
 def train_model(model,
                 data_loaders,
                 cfg,

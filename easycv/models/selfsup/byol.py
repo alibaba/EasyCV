@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger, print_log
+from easycv.utils.logger import get_root_logger
 from .. import builder
 from ..base import BaseModel
 from ..registry import MODELS

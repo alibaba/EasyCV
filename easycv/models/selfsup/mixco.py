@@ -4,8 +4,6 @@ import torch
 import torch.nn as nn
 from mmcv.runner import get_dist_info
 
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
 from easycv.utils.preprocess_function import mixUp
 from .. import builder
 from ..registry import MODELS

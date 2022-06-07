@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import importlib
-from distutils.version import LooseVersion
 
 import timm
 import torch

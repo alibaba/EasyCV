@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger, print_log
+from easycv.utils.logger import get_root_logger
 from easycv.utils.preprocess_function import gaussianBlur, randomGrayScale
 from .. import builder
 from ..base import BaseModel

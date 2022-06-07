@@ -1,11 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import math
 
-import nvidia.dali.ops as ops
-import nvidia.dali.tfrecord as tfrec
 from mmcv.runner import get_dist_info
-from nvidia.dali.pipeline import Pipeline
-from nvidia.dali.plugin.pytorch import DALIGenericIterator
 
 from easycv.datasets.builder import build_datasource
 from easycv.datasets.loader.sampler import DistributedSampler
@@ -13,12 +9,6 @@ from easycv.datasets.registry import DATASETS, PIPELINES
 from easycv.datasets.shared.pipelines.transforms import Compose
 from easycv.utils import dist_utils
 from easycv.utils.registry import build_from_cfg
-
-imagenet_feature = {
-    'image/encoded': tfrec.FixedLenFeature((), tfrec.string, ''),
-    'image/format': tfrec.FixedLenFeature((), tfrec.string, 'jpeg'),
-    'image/class/label': tfrec.FixedLenFeature([], tfrec.int64, -1),
-}
 
 
 class DaliLoaderWrapper(object):
@@ -55,52 +45,67 @@ class DaliLoaderWrapper(object):
         return dict(img=img)
 
 
-class DaliTFRecordMultiViewPipe(Pipeline):
+def _load_DaliTFRecordMultiViewPipe():
+    """Avoid import nvidia errors when not use.
+    """
 
-    def __init__(self,
-                 data_source,
-                 transforms_list,
-                 batch_size,
-                 distributed,
-                 random_shuffle=True,
-                 workers_per_gpu=2,
-                 device='gpu'):
+    import nvidia.dali.ops as ops
+    from nvidia.dali.pipeline import Pipeline
+    from easycv.datasets.utils.tfrecord_util import get_imagenet_dali_tfrecord_feature
 
-        self.device = device
+    class DaliTFRecordMultiViewPipe(Pipeline):
 
-        if distributed:
-            self.rank, self.world_size = get_dist_info()
-            self.local_rank = dist_utils.local_rank()
-            self.local_size = dist_utils.get_num_gpu_per_node()
-        else:
-            self.rank, self.local_rank, self.world_size = 0, 0, 1
+        def __init__(self,
+                     data_source,
+                     transforms_list,
+                     batch_size,
+                     distributed,
+                     random_shuffle=True,
+                     workers_per_gpu=2,
+                     device='gpu'):
 
-        super(DaliTFRecordMultiViewPipe, self).__init__(
-            batch_size, workers_per_gpu, self.local_rank, seed=12 + self.rank)
+            self.device = device
 
-        self.input = ops.TFRecordReader(
-            path=data_source.data_list,
-            index_path=data_source.index_list,
-            shard_id=self.rank,
-            num_shards=self.world_size,
-            random_shuffle=random_shuffle,
-            features=imagenet_feature)
+            if distributed:
+                self.rank, self.world_size = get_dist_info()
+                self.local_rank = dist_utils.local_rank()
+                self.local_size = dist_utils.get_num_gpu_per_node()
+            else:
+                self.rank, self.local_rank, self.world_size = 0, 0, 1
 
-        self.transforms_list = transforms_list
+            super(DaliTFRecordMultiViewPipe, self).__init__(
+                batch_size,
+                workers_per_gpu,
+                self.local_rank,
+                seed=12 + self.rank)
 
-    def define_graph(self):
-        inputs = self.input(name='Reader')
-        jpegs, labels = inputs['image/encoded'], inputs['image/class/label']
+            imagenet_feature = get_imagenet_dali_tfrecord_feature()
+            self.input = ops.TFRecordReader(
+                path=data_source.data_list,
+                index_path=data_source.index_list,
+                shard_id=self.rank,
+                num_shards=self.world_size,
+                random_shuffle=random_shuffle,
+                features=imagenet_feature)
 
-        output_list = []
-        for t_i in self.transforms_list:
-            output_list.append(t_i(jpegs))
+            self.transforms_list = transforms_list
 
-        if self.device == 'gpu':
-            labels = labels.gpu()
-        output_list.append(labels)
+        def define_graph(self):
+            inputs = self.input(name='Reader')
+            jpegs, labels = inputs['image/encoded'], inputs[
+                'image/class/label']
 
-        return output_list
+            output_list = []
+            for t_i in self.transforms_list:
+                output_list.append(t_i(jpegs))
+
+            if self.device == 'gpu':
+                labels = labels.gpu()
+            output_list.append(labels)
+
+            return output_list
+
+    return DaliTFRecordMultiViewPipe
 
 
 @DATASETS.register_module
@@ -143,6 +148,7 @@ class DaliTFRecordMultiViewDataset(object):
         for i in range(len(num_views)):
             self.transforms_list.extend([transforms[i]] * num_views[i])
 
+        DaliTFRecordMultiViewPipe = _load_DaliTFRecordMultiViewPipe()
         self.pipeline = DaliTFRecordMultiViewPipe(
             data_source=data_source,
             transforms_list=self.transforms_list,
@@ -152,6 +158,8 @@ class DaliTFRecordMultiViewDataset(object):
             workers_per_gpu=workers_per_gpu)
 
     def get_dataloader(self):
+        from nvidia.dali.plugin.pytorch import DALIGenericIterator
+
         batch_size = self.batch_size
 
         self.pipeline.build()

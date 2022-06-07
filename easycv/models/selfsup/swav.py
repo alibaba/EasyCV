@@ -6,7 +6,7 @@ import torch.nn as nn
 from mmcv.runner import get_dist_info
 
 from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger, print_log
+from easycv.utils.logger import get_root_logger
 from easycv.utils.preprocess_function import gaussianBlur, randomGrayScale
 from .. import builder
 from ..base import BaseModel
