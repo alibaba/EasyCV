@@ -16,7 +16,7 @@ Blade Model is used to greatly accelerate the inference process. It combines the
 
 **End2end**
 
-End2end model wraps the preprocess and postprocess process along with the model. Therefore, given an input image, the model can be directly used for inference. 
+End2end model wraps the preprocess and postprocess process along with the model. Therefore, given an input image, the model can be directly used for inference.
 
 
 
