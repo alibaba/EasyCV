@@ -1,10 +1,12 @@
 # Export tutorial
 
-We support three kinds of the export model, the original model, the script model, and the blade model. We also support the end2end export mode to wrapper the preprocess and postprocess  to the model.
+- Original model saves the state dict of model. One should build model in savance and then load the model state dict.
 
 - Script (Jit) Model can be used independently from Python. It is convenient to be deployed in various environments and has litte dependency on hardware. It can also reduce the inference time. For more details, you can refer to the official tutorial: https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html
 
-- Blade Model is used to greatly accelerate the inference process. It combines the technology of computational graph optimization, TensorRT/oneDNN,  AI compiler optimization*, etc*. For more details, you can refer to the official tutorial: https://help.aliyun.com/document_detail/205129.html
+- Blade Model is used to greatly accelerate the inference process. It combines the technology of computational graph optimization, TensorRT/oneDNN,  AI compiler optimization, etc. For more details, you can refer to the official tutorial: https://help.aliyun.com/document_detail/205129.html
+
+- We also support the end2end export mode to wrapper the preprocess and postprocess  to the model.
 
 
 
