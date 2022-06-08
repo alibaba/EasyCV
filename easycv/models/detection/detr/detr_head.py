@@ -133,7 +133,7 @@ class DETRHead(nn.Module):
             # the box format should be converted from defaultly x1y1x2y2 to cxcywh.
             factor = outputs['pred_boxes'].new_tensor(
                 [img_w, img_h, img_w, img_h]).unsqueeze(0)
-            gt_bboxes[i] = gt_bboxes[i] / factor
+            gt_bboxes[i] = box_xyxy_to_cxcywh(gt_bboxes[i]) / factor
 
         targets = {
             'boxes': gt_bboxes,
@@ -146,8 +146,13 @@ class DETRHead(nn.Module):
 
     def forward_test(self, x, img_metas):
         outputs = self.forward(x, img_metas)
-        orig_target_sizes = torch.stack([t['ori_shape'] for t in img_metas],
-                                        dim=0)
+
+        ori_shape_list = []
+        for i in range(len(img_metas)):
+            ori_h, ori_w, _ = img_metas[i]['ori_shape']
+            ori_shape_list.append(torch.as_tensor([ori_h, ori_w]))
+        orig_target_sizes = torch.stack(ori_shape_list, dim=0)
+
         results = self.postprocess(outputs, orig_target_sizes)
         return results
 
@@ -176,7 +181,8 @@ class PostProcess(nn.Module):
         boxes = box_cxcywh_to_xyxy(out_bbox)
         # and from relative [0, 1] to absolute [0, height] coordinates
         img_h, img_w = target_sizes.unbind(1)
-        scale_fct = torch.stack([img_w, img_h, img_w, img_h], dim=1)
+        scale_fct = torch.stack([img_w, img_h, img_w, img_h],
+                                dim=1).to(boxes.device)
         boxes = boxes * scale_fct[:, None, :]
 
         results = [{

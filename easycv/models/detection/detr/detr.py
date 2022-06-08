@@ -55,7 +55,7 @@ class DETR(BaseModel):
             x = self.neck(x, img_metas)
         return x
 
-    def forward_train(self, img, img_metas, gt_bboxes, gt_labels):
+    def forward_train(self, imgs, img_metas, gt_bboxes, gt_labels):
         """
         Args:
             img (Tensor): Input images of shape (N, C, H, W).
@@ -76,15 +76,15 @@ class DETR(BaseModel):
         # NOTE the batched image size information may be useful, e.g.
         # in DETR, this is needed for the construction of masks, which is
         # then used for the transformer_head.
-        batch_input_shape = tuple(img[0].size()[-2:])
+        batch_input_shape = tuple(imgs[0].size()[-2:])
         for i in range(len(img_metas)):
             img_metas[i]['batch_input_shape'] = batch_input_shape
 
-        x = self.extract_feat(img, img_metas)
+        x = self.extract_feat(imgs, img_metas)
         losses = self.head.forward_train(x, gt_bboxes, gt_labels, img_metas)
         return losses
 
-    def forward_test(self, img, img_metas):
+    def forward_test(self, imgs, img_metas):
         """
         Args:
             imgs (List[Tensor]): the outer list indicates test-time
@@ -94,14 +94,22 @@ class DETR(BaseModel):
                 augs (multiscale, flip, etc.) and the inner list indicates
                 images in a batch.
         """
-        x = self.extract_feat(img, img_metas)
-        results = self.head.forward_test(x, img_metas)
+        # NOTE the batched image size information may be useful, e.g.
+        # in DETR, this is needed for the construction of masks, which is
+        # then used for the transformer_head.
+        for img, img_meta in zip(imgs, img_metas):
+            batch_size = len(img_meta)
+            for img_id in range(batch_size):
+                img_meta[img_id]['batch_input_shape'] = tuple(img.size()[-2:])
+        x = self.extract_feat(imgs[0], img_metas[0])
+        results = self.head.forward_test(x, img_metas[0])[0]
 
         test_outputs = {
-            'detection_boxes': results['boxes'],
-            'detection_scores': results['scores'],
-            'detection_classes': results['labels'],
-            'img_metas': img_metas
+            'detection_boxes': [results['boxes'].cpu().numpy()],
+            'detection_scores': [results['scores'].cpu().numpy()],
+            'detection_classes':
+            [results['labels'].cpu().numpy().astype(np.int32)],
+            'img_metas': img_metas[0]
         }
 
         return test_outputs

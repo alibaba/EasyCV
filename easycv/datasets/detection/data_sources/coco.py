@@ -20,8 +20,7 @@ class DetSourceCoco(object):
                  test_mode=False,
                  filter_empty_gt=False,
                  classes=None,
-                 iscrowd=False,
-                 bbox_type='xyxy'):
+                 iscrowd=False):
         """
         Args:
             ann_file: Path of annotation file.
@@ -37,7 +36,6 @@ class DetSourceCoco(object):
         self.img_prefix = img_prefix
         self.filter_empty_gt = filter_empty_gt
         self.CLASSES = classes
-        self.bbox_type = bbox_type
         # load annotations (and proposals)
         self.data_infos = self.load_annotations(self.ann_file)
         self.test_mode = test_mode
@@ -188,10 +186,7 @@ class DetSourceCoco(object):
             if ann['category_id'] not in self.cat_ids:
                 continue
 
-            if self.bbox_type == 'xyxy':
-                bbox = [x1, y1, x1 + w, y1 + h]
-            elif self.bbox_type == 'cxcywh':
-                bbox = [x1 + w / 2, y1 + h / 2, w, h]
+            bbox = [x1, y1, x1 + w, y1 + h]
 
             if ann.get('iscrowd', False):
                 gt_bboxes.append(
