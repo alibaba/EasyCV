@@ -14,7 +14,6 @@ from easycv.apis.train_misc import build_yolo_optimizer
 from easycv.core import optimizer
 from easycv.core.evaluation.builder import build_evaluator
 from easycv.core.evaluation.metric_registry import METRICS
-from easycv.core.optimizer import build_optimizer_constructor
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.datasets.utils import is_dali_dataset_type
 from easycv.hooks import (BestCkptSaverHook, DistEvalHook, EMAHook, EvalHook,
@@ -384,22 +383,11 @@ def build_optimizer(model, optimizer_cfg):
         optimizer_cls = getattr(optimizer, optimizer_cfg.pop('type'))
         return optimizer_cls(parameters, **optimizer_cfg)
 
-    constructor_type = optimizer_cfg.pop('constructor', None)
     optimizer_cfg = optimizer_cfg.copy()
     paramwise_options = optimizer_cfg.pop('paramwise_options', None)
     # if no paramwise option is specified, just use the global setting
 
-    if constructor_type is not None:
-        optimizer_cls = getattr(optimizer, optimizer_cfg.pop('type'))
-        optim_constructor = build_optimizer_constructor(
-            dict(
-                type=constructor_type,
-                optimizer_cfg=optimizer_cfg,
-                paramwise_cfg=paramwise_options))
-        params = []
-        optim_constructor.add_params(params, model)
-        return optimizer_cls(params, **optimizer_cfg)
-    elif paramwise_options is None:
+    if paramwise_options is None:
         return obj_from_dict(optimizer_cfg, optimizer,
                              dict(params=model.parameters()))
     else:
