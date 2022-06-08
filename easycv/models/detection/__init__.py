@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import logging
 
+from .detr import DETR, DETRHead, DetrTransformer
 from .vitdet import SFP, RPNHeadNorm
 
 try:
