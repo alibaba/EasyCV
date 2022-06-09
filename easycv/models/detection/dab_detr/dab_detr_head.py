@@ -35,6 +35,7 @@ class DABDETRHead(nn.Module):
                  embed_dims,
                  query_dim=4,
                  focal_alpha=0.25,
+                 iter_update=True,
                  bbox_embed_diff_each_layer=False,
                  cost_dict={
                      'cost_class': 1,
@@ -66,6 +67,10 @@ class DABDETRHead(nn.Module):
                 [MLP(embed_dims, embed_dims, 4, 3) for i in range(6)])
         else:
             self.bbox_embed = MLP(embed_dims, embed_dims, 4, 3)
+        if iter_update:
+            self.transformer = kwargs['transformer']
+            self.transformer.decoder.bbox_embed = self.bbox_embed
+
         self.num_classes = num_classes
         self.fp16_enabled = False
         self.query_dim = query_dim

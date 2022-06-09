@@ -47,7 +47,6 @@ class DABDetrTransformer(nn.Module):
                  query_scale_type='cond_elewise',
                  modulate_hw_attn=True,
                  bbox_embed_diff_each_layer=False,
-                 iter_update=True,
                  temperatureH=20,
                  temperatureW=20):
         super().__init__()
@@ -104,14 +103,6 @@ class DABDetrTransformer(nn.Module):
             query_scale_type=query_scale_type,
             modulate_hw_attn=modulate_hw_attn,
             bbox_embed_diff_each_layer=bbox_embed_diff_each_layer)
-
-        if iter_update:
-            if bbox_embed_diff_each_layer:
-                self.bbox_embed = nn.ModuleList(
-                    [MLP(d_model, d_model, 4, 3) for i in range(6)])
-            else:
-                self.bbox_embed = MLP(d_model, d_model, 4, 3)
-            self.decoder.bbox_embed = self.bbox_embed
 
         self.d_model = d_model
         self.nhead = nhead

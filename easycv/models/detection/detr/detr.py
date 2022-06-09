@@ -22,8 +22,8 @@ class DETR(BaseModel):
         self.fp16_enabled = False
         self.pretrained = pretrained
         self.backbone = builder.build_backbone(backbone)
-        if neck is not None:
-            self.neck = builder.build_neck(neck)
+        self.neck = builder.build_neck(neck)
+        head['transformer'] = self.neck
         self.head = builder.build_head(head)
 
         self.init_weights()
