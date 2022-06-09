@@ -1,4 +1,6 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) 2022 IDEA. All Rights Reserved.
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,8 +12,15 @@ from ..utils import (accuracy, box_cxcywh_to_xyxy, box_xyxy_to_cxcywh,
                      is_dist_avail_and_initialized)
 
 
+def inverse_sigmoid(x, eps=1e-3):
+    x = x.clamp(min=0, max=1)
+    x1 = x.clamp(min=eps)
+    x2 = (1 - x).clamp(min=eps)
+    return torch.log(x1 / x2)
+
+
 @HEADS.register_module()
-class DETRHead(nn.Module):
+class DABDETRHead(nn.Module):
     """Implements the DETR transformer head.
     See `paper: End-to-End Object Detection with Transformers
     <https://arxiv.org/pdf/2005.12872>`_ for details.
@@ -24,8 +33,9 @@ class DETRHead(nn.Module):
     def __init__(self,
                  num_classes,
                  embed_dims,
+                 query_dim=4,
                  use_sigmoid=False,
-                 eos_coef=0.1,
+                 bbox_embed_diff_each_layer=False,
                  cost_dict={
                      'cost_class': 1,
                      'cost_bbox': 5,
@@ -36,24 +46,32 @@ class DETRHead(nn.Module):
                      'loss_bbox': 5,
                      'loss_giou': 2
                  },
+                 focal_alpha=0.25,
                  **kwargs):
 
-        super(DETRHead, self).__init__()
+        super(DABDETRHead, self).__init__()
 
-        self.matcher = HungarianMatcher(cost_dict=cost_dict)
+        self.matcher = HungarianMatcher(
+            cost_dict=cost_dict, focal_alpha=focal_alpha)
         self.criterion = SetCriterion(
             num_classes,
             matcher=self.matcher,
             weight_dict=weight_dict,
-            eos_coef=eos_coef,
+            focal_alpha=focal_alpha,
             losses=['labels', 'boxes', 'cardinality'])
         self.postprocess = PostProcess()
 
-        self.class_embed = nn.Linear(embed_dims, num_classes + 1)
-        self.bbox_embed = MLP(embed_dims, embed_dims, 4, 3)
+        self.class_embed = nn.Linear(embed_dims, num_classes)
+        if bbox_embed_diff_each_layer:
+            self.bbox_embed = nn.ModuleList(
+                [MLP(embed_dims, embed_dims, 4, 3) for i in range(6)])
+        else:
+            self.bbox_embed = MLP(embed_dims, embed_dims, 4, 3)
         self.num_classes = num_classes
         self.fp16_enabled = False
         self.use_sigmoid = use_sigmoid
+        self.query_dim = query_dim
+        self.bbox_embed_diff_each_layer = bbox_embed_diff_each_layer
 
         if self.use_sigmoid:
             self.cls_out_channels = num_classes
@@ -61,8 +79,20 @@ class DETRHead(nn.Module):
             self.cls_out_channels = num_classes + 1
 
     def init_weights(self):
-        """Initialize weights of the detr head."""
-        pass
+        # init prior_prob setting for focal loss
+        prior_prob = 0.01
+        bias_value = -math.log((1 - prior_prob) / prior_prob)
+        self.class_embed.bias.data = torch.ones(self.num_classes) * bias_value
+
+        # import ipdb; ipdb.set_trace()
+        # init bbox_embed
+        if self.bbox_embed_diff_each_layer:
+            for bbox_embed in self.bbox_embed:
+                nn.init.constant_(bbox_embed.layers[-1].weight.data, 0)
+                nn.init.constant_(bbox_embed.layers[-1].bias.data, 0)
+        else:
+            nn.init.constant_(self.bbox_embed.layers[-1].weight.data, 0)
+            nn.init.constant_(self.bbox_embed.layers[-1].bias.data, 0)
 
     def forward(self, feats, img_metas):
         """Forward function.
@@ -81,8 +111,22 @@ class DETRHead(nn.Module):
                     normalized coordinate format (cx, cy, w, h) and shape \
                     [nb_dec, bs, num_query, 4].
         """
-        outputs_class = self.class_embed(feats)
-        outputs_coord = self.bbox_embed(feats).sigmoid()
+        hs, reference = feats
+        outputs_class = self.class_embed(hs)
+        if not self.bbox_embed_diff_each_layer:
+            reference_before_sigmoid = inverse_sigmoid(reference)
+            tmp = self.bbox_embed(hs)
+            tmp[..., :self.query_dim] += reference_before_sigmoid
+            outputs_coord = tmp.sigmoid()
+        else:
+            reference_before_sigmoid = inverse_sigmoid(reference)
+            outputs_coords = []
+            for lvl in range(hs.shape[0]):
+                tmp = self.bbox_embed[lvl](hs[lvl])
+                tmp[..., :self.query_dim] += reference_before_sigmoid[lvl]
+                outputs_coord = tmp.sigmoid()
+                outputs_coords.append(outputs_coord)
+            outputs_coord = torch.stack(outputs_coords)
 
         out = {
             'pred_logits': outputs_class[-1],
@@ -155,6 +199,10 @@ class DETRHead(nn.Module):
 class PostProcess(nn.Module):
     """ This module converts the model's output into the format expected by the coco api"""
 
+    def __init__(self, num_select=100) -> None:
+        super().__init__()
+        self.num_select = num_select
+
     @torch.no_grad()
     def forward(self, outputs, target_sizes):
         """ Perform the computation
@@ -164,16 +212,22 @@ class PostProcess(nn.Module):
                           For evaluation, this must be the original image size (before any data augmentation)
                           For visualization, this should be the image size after data augment, but before padding
         """
+        num_select = self.num_select
         out_logits, out_bbox = outputs['pred_logits'], outputs['pred_boxes']
 
         assert len(out_logits) == len(target_sizes)
         assert target_sizes.shape[1] == 2
 
-        prob = F.softmax(out_logits, -1)
-        scores, labels = prob[..., :-1].max(-1)
-
-        # convert to [x0, y0, x1, y1] format
+        prob = out_logits.sigmoid()
+        topk_values, topk_indexes = torch.topk(
+            prob.view(out_logits.shape[0], -1), num_select, dim=1)
+        scores = topk_values
+        topk_boxes = topk_indexes // out_logits.shape[2]
+        labels = topk_indexes % out_logits.shape[2]
         boxes = box_cxcywh_to_xyxy(out_bbox)
+        boxes = torch.gather(boxes, 1,
+                             topk_boxes.unsqueeze(-1).repeat(1, 1, 4))
+
         # and from relative [0, 1] to absolute [0, height] coordinates
         img_h, img_w = target_sizes.unbind(1)
         scale_fct = torch.stack([img_w, img_h, img_w, img_h],
@@ -212,7 +266,7 @@ class HungarianMatcher(nn.Module):
     while the others are un-matched (and thus treated as non-objects).
     """
 
-    def __init__(self, cost_dict):
+    def __init__(self, cost_dict, focal_alpha):
         """Creates the matcher
         Params:
             cost_class: This is the relative weight of the classification error in the matching cost
@@ -223,6 +277,7 @@ class HungarianMatcher(nn.Module):
         self.cost_class = cost_dict['cost_class']
         self.cost_bbox = cost_dict['cost_bbox']
         self.cost_giou = cost_dict['cost_giou']
+        self.focal_alpha = focal_alpha
         assert self.cost_class != 0 or self.cost_bbox != 0 or self.cost_giou != 0, 'all costs cant be 0'
 
     @torch.no_grad()
@@ -246,8 +301,8 @@ class HungarianMatcher(nn.Module):
         bs, num_queries = outputs['pred_logits'].shape[:2]
 
         # We flatten to compute the cost matrices in a batch
-        out_prob = outputs['pred_logits'].flatten(0, 1).softmax(
-            -1)  # [batch_size * num_queries, num_classes]
+        out_prob = outputs['pred_logits'].flatten(
+            0, 1).sigmoid()  # [batch_size * num_queries, num_classes]
         out_bbox = outputs['pred_boxes'].flatten(
             0, 1)  # [batch_size * num_queries, 4]
 
@@ -255,15 +310,20 @@ class HungarianMatcher(nn.Module):
         tgt_ids = torch.cat([v['labels'] for v in targets])
         tgt_bbox = torch.cat([v['boxes'] for v in targets])
 
-        # Compute the classification cost. Contrary to the loss, we don't use the NLL,
-        # but approximate it in 1 - proba[target class].
-        # The 1 is a constant that doesn't change the matching, it can be ommitted.
-        cost_class = -out_prob[:, tgt_ids]
+        # Compute the classification cost.
+        alpha = self.focal_alpha
+        gamma = 2.0
+        neg_cost_class = (1 - alpha) * (out_prob**gamma)
+        neg_cost_class = neg_cost_class * (-(1 - out_prob + 1e-8).log())
+        pos_cost_class = alpha * ((1 - out_prob)**gamma)
+        pos_cost_class = pos_cost_class * (-(out_prob + 1e-8).log())
+        cost_class = pos_cost_class[:, tgt_ids] - neg_cost_class[:, tgt_ids]
 
         # Compute the L1 cost between boxes
         cost_bbox = torch.cdist(out_bbox, tgt_bbox, p=1)
 
         # Compute the giou cost betwen boxes
+        # import ipdb; ipdb.set_trace()
         cost_giou = -generalized_box_iou(
             box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
 
@@ -280,34 +340,64 @@ class HungarianMatcher(nn.Module):
                  torch.as_tensor(j, dtype=torch.int64)) for i, j in indices]
 
 
+def sigmoid_focal_loss(inputs,
+                       targets,
+                       num_boxes,
+                       alpha: float = 0.25,
+                       gamma: float = 2):
+    """
+    Loss used in RetinaNet for dense detection: https://arxiv.org/abs/1708.02002.
+    Args:
+        inputs: A float tensor of arbitrary shape.
+                The predictions for each example.
+        targets: A float tensor with the same shape as inputs. Stores the binary
+                 classification label for each element in inputs
+                (0 for the negative class and 1 for the positive class).
+        alpha: (optional) Weighting factor in range (0,1) to balance
+                positive vs negative examples. Default = -1 (no weighting).
+        gamma: Exponent of the modulating factor (1 - p_t) to
+               balance easy vs hard examples.
+    Returns:
+        Loss tensor
+    """
+    prob = inputs.sigmoid()
+    ce_loss = F.binary_cross_entropy_with_logits(
+        inputs, targets, reduction='none')
+    p_t = prob * targets + (1 - prob) * (1 - targets)
+    loss = ce_loss * ((1 - p_t)**gamma)
+
+    if alpha >= 0:
+        alpha_t = alpha * targets + (1 - alpha) * (1 - targets)
+        loss = alpha_t * loss
+
+    return loss.mean(1).sum() / num_boxes
+
+
 class SetCriterion(nn.Module):
-    """ This class computes the loss for DETR.
+    """ This class computes the loss for Conditional DETR.
     The process happens in two steps:
         1) we compute hungarian assignment between ground truth boxes and the outputs of the model
         2) we supervise each pair of matched ground-truth / prediction (supervise class and box)
     """
 
-    def __init__(self, num_classes, matcher, weight_dict, eos_coef, losses):
+    def __init__(self, num_classes, matcher, weight_dict, focal_alpha, losses):
         """ Create the criterion.
         Parameters:
             num_classes: number of object categories, omitting the special no-object category
             matcher: module able to compute a matching between targets and proposals
             weight_dict: dict containing as key the names of the losses and as values their relative weight.
-            eos_coef: relative classification weight applied to the no-object category
             losses: list of all the losses to be applied. See get_loss for list of available losses.
+            focal_alpha: alpha in Focal Loss
         """
         super().__init__()
         self.num_classes = num_classes
         self.matcher = matcher
         self.weight_dict = weight_dict
-        self.eos_coef = eos_coef
         self.losses = losses
-        empty_weight = torch.ones(self.num_classes + 1)
-        empty_weight[-1] = self.eos_coef
-        self.register_buffer('empty_weight', empty_weight)
+        self.focal_alpha = focal_alpha
 
     def loss_labels(self, outputs, targets, indices, num_boxes, log=True):
-        """Classification loss (NLL)
+        """Classification loss (Binary focal loss)
         targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
         """
         assert 'pred_logits' in outputs
@@ -323,9 +413,21 @@ class SetCriterion(nn.Module):
             device=src_logits.device)
         target_classes[idx] = target_classes_o
 
-        loss_ce = F.cross_entropy(
-            src_logits.transpose(1, 2), target_classes,
-            self.empty_weight) * self.weight_dict['loss_ce']
+        target_classes_onehot = torch.zeros([
+            src_logits.shape[0], src_logits.shape[1], src_logits.shape[2] + 1
+        ],
+                                            dtype=src_logits.dtype,
+                                            layout=src_logits.layout,
+                                            device=src_logits.device)
+        target_classes_onehot.scatter_(2, target_classes.unsqueeze(-1), 1)
+
+        target_classes_onehot = target_classes_onehot[:, :, :-1]
+        loss_ce = sigmoid_focal_loss(
+            src_logits,
+            target_classes_onehot,
+            num_boxes,
+            alpha=self.focal_alpha,
+            gamma=2) * src_logits.shape[1] * self.weight_dict['loss_ce']
         losses = {'loss_ce': loss_ce}
 
         if log:
@@ -373,6 +475,12 @@ class SetCriterion(nn.Module):
                 box_cxcywh_to_xyxy(target_boxes)))
         losses['loss_giou'] = loss_giou.sum(
         ) / num_boxes * self.weight_dict['loss_giou']
+
+        # calculate the x,y and h,w loss
+        with torch.no_grad():
+            losses['loss_xy'] = loss_bbox[..., :2].sum() / num_boxes
+            losses['loss_hw'] = loss_bbox[..., 2:].sum() / num_boxes
+
         return losses
 
     def _get_src_permutation_idx(self, indices):
@@ -393,18 +501,21 @@ class SetCriterion(nn.Module):
         loss_map = {
             'labels': self.loss_labels,
             'cardinality': self.loss_cardinality,
-            'boxes': self.loss_boxes
+            'boxes': self.loss_boxes,
         }
         assert loss in loss_map, f'do you really want to compute {loss} loss?'
         return loss_map[loss](outputs, targets, indices, num_boxes, **kwargs)
 
-    def forward(self, outputs, targets):
+    def forward(self, outputs, targets, return_indices=False):
         """ This performs the loss computation.
         Parameters:
              outputs: dict of tensors, see the output specification of the model for the format
              targets: list of dicts, such that len(targets) == batch_size.
                       The expected keys in each dict depends on the losses applied, see each loss' doc
+
+             return_indices: used for vis. if True, the layer0-5 indices will be returned as well.
         """
+
         outputs_without_aux = {
             k: v
             for k, v in outputs.items() if k != 'aux_outputs'
@@ -412,6 +523,9 @@ class SetCriterion(nn.Module):
 
         # Retrieve the matching between the outputs of the last layer and the targets
         indices = self.matcher(outputs_without_aux, targets)
+        if return_indices:
+            indices0_copy = indices
+            indices_list = []
 
         # Compute the average number of target boxes accross all nodes, for normalization purposes
         num_boxes = sum(len(t['labels']) for t in targets)
@@ -432,6 +546,8 @@ class SetCriterion(nn.Module):
         if 'aux_outputs' in outputs:
             for i, aux_outputs in enumerate(outputs['aux_outputs']):
                 indices = self.matcher(aux_outputs, targets)
+                if return_indices:
+                    indices_list.append(indices)
                 for loss in self.losses:
                     if loss == 'masks':
                         # Intermediate masks losses are too costly to compute, we ignore them.
@@ -444,5 +560,9 @@ class SetCriterion(nn.Module):
                                            num_boxes, **kwargs)
                     l_dict = {k + f'_{i}': v for k, v in l_dict.items()}
                     losses.update(l_dict)
+
+        if return_indices:
+            indices_list.append(indices0_copy)
+            return losses, indices_list
 
         return losses

@@ -73,10 +73,10 @@ class DetrTransformer(nn.Module):
         # construct binary masks which used for the transformer.
         # NOTE following the official DETR repo, non-zero values representing
         # ignored positions, while zero values means valid positions.
-        batch_size = src.size(0)
+        bs = src.size(0)
         input_img_h, input_img_w = img_metas[0]['batch_input_shape']
-        mask = src.new_ones((batch_size, input_img_h, input_img_w))
-        for img_id in range(batch_size):
+        mask = src.new_ones((bs, input_img_h, input_img_w))
+        for img_id in range(bs):
             img_h, img_w, _ = img_metas[img_id]['img_shape']
             mask[img_id, :img_h, :img_w] = 0
 
@@ -92,7 +92,7 @@ class DetrTransformer(nn.Module):
         # flatten NxCxHxW to HWxNxC
         src = src.flatten(2).permute(2, 0, 1)
         pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
-        query_embed = query_embed.unsqueeze(1).repeat(1, batch_size, 1)
+        query_embed = query_embed.unsqueeze(1).repeat(1, bs, 1)
         mask = mask.flatten(1)
 
         tgt = torch.zeros_like(query_embed)
@@ -451,19 +451,6 @@ class TransformerDecoderLayer(nn.Module):
 
 def _get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
-
-
-# def build_transformer(args):
-#     return Transformer(
-#         d_model=args.hidden_dim,
-#         dropout=args.dropout,
-#         nhead=args.nheads,
-#         dim_feedforward=args.dim_feedforward,
-#         num_encoder_layers=args.enc_layers,
-#         num_decoder_layers=args.dec_layers,
-#         normalize_before=args.pre_norm,
-#         return_intermediate_dec=True,
-#     )
 
 
 def _get_activation_fn(activation):

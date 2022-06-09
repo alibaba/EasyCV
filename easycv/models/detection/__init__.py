@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import logging
 
+from .dab_detr import DABDETRHead, DABDetrTransformer
 from .detr import DETR, DETRHead, DetrTransformer
 from .vitdet import SFP, RPNHeadNorm
 
