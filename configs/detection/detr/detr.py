@@ -31,7 +31,6 @@ model = dict(
         num_classes=80,
         in_channels=2048,
         embed_dims=256,
-        use_sigmoid=False,
         eos_coef=0.1,
         cost_dict={
             'cost_class': 1,

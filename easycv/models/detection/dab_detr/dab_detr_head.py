@@ -34,7 +34,7 @@ class DABDETRHead(nn.Module):
                  num_classes,
                  embed_dims,
                  query_dim=4,
-                 use_sigmoid=False,
+                 focal_alpha=0.25,
                  bbox_embed_diff_each_layer=False,
                  cost_dict={
                      'cost_class': 1,
@@ -46,7 +46,6 @@ class DABDETRHead(nn.Module):
                      'loss_bbox': 5,
                      'loss_giou': 2
                  },
-                 focal_alpha=0.25,
                  **kwargs):
 
         super(DABDETRHead, self).__init__()
@@ -69,14 +68,8 @@ class DABDETRHead(nn.Module):
             self.bbox_embed = MLP(embed_dims, embed_dims, 4, 3)
         self.num_classes = num_classes
         self.fp16_enabled = False
-        self.use_sigmoid = use_sigmoid
         self.query_dim = query_dim
         self.bbox_embed_diff_each_layer = bbox_embed_diff_each_layer
-
-        if self.use_sigmoid:
-            self.cls_out_channels = num_classes
-        else:
-            self.cls_out_channels = num_classes + 1
 
     def init_weights(self):
         # init prior_prob setting for focal loss

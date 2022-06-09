@@ -24,7 +24,6 @@ class DETRHead(nn.Module):
     def __init__(self,
                  num_classes,
                  embed_dims,
-                 use_sigmoid=False,
                  eos_coef=0.1,
                  cost_dict={
                      'cost_class': 1,
@@ -53,12 +52,6 @@ class DETRHead(nn.Module):
         self.bbox_embed = MLP(embed_dims, embed_dims, 4, 3)
         self.num_classes = num_classes
         self.fp16_enabled = False
-        self.use_sigmoid = use_sigmoid
-
-        if self.use_sigmoid:
-            self.cls_out_channels = num_classes
-        else:
-            self.cls_out_channels = num_classes + 1
 
     def init_weights(self):
         """Initialize weights of the detr head."""
