@@ -36,7 +36,6 @@ class DetrTransformer(nn.Module):
 
         self.input_proj = nn.Conv2d(in_channels, d_model, kernel_size=1)
         self.query_embed = nn.Embedding(num_queries, d_model)
-
         self.positional_encoding = SinePositionalEncoding(
             num_feats=128, normalize=True)
 
@@ -61,9 +60,12 @@ class DetrTransformer(nn.Module):
         self.nhead = nhead
 
     def init_weights(self):
-        for p in self.parameters():
-            if p.dim() > 1:
-                nn.init.xavier_uniform_(p)
+        for p in self.named_parameters():
+            if 'input_proj' in p[0] or 'query_embed' in p[
+                    0] or 'positional_encoding' in p[0]:
+                continue
+            if p[1].dim() > 1:
+                nn.init.xavier_uniform_(p[1])
 
     def forward(self, src, img_metas):
         src = src[0]

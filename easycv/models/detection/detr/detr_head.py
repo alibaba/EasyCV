@@ -17,8 +17,6 @@ class DETRHead(nn.Module):
     <https://arxiv.org/pdf/2005.12872>`_ for details.
     Args:
         num_classes (int): Number of categories excluding the background.
-        num_reg_fcs (int, optional): Number of fully-connected layers used in
-            `FFN`, which is then used for the regression head. Default 2.
     """
 
     _version = 2
@@ -26,7 +24,6 @@ class DETRHead(nn.Module):
     def __init__(self,
                  num_classes,
                  embed_dims,
-                 num_reg_fcs=2,
                  use_sigmoid=False,
                  eos_coef=0.1,
                  cost_dict={
@@ -55,7 +52,6 @@ class DETRHead(nn.Module):
         self.class_embed = nn.Linear(embed_dims, num_classes + 1)
         self.bbox_embed = MLP(embed_dims, embed_dims, 4, 3)
         self.num_classes = num_classes
-        self.num_reg_fcs = num_reg_fcs
         self.fp16_enabled = False
         self.use_sigmoid = use_sigmoid
 
@@ -63,7 +59,6 @@ class DETRHead(nn.Module):
             self.cls_out_channels = num_classes
         else:
             self.cls_out_channels = num_classes + 1
-        self.embed_dims = embed_dims
 
     def init_weights(self):
         """Initialize weights of the detr head."""
@@ -97,6 +92,7 @@ class DETRHead(nn.Module):
         out['aux_outputs'] = self._set_aux_loss(outputs_class, outputs_coord)
         return out
 
+    @torch.jit.unused
     def _set_aux_loss(self, outputs_class, outputs_coord):
         # this is a workaround to make torchscript happy, as torchscript
         # doesn't support dictionary with non-homogeneous values, such
@@ -135,10 +131,9 @@ class DETRHead(nn.Module):
                 [img_w, img_h, img_w, img_h]).unsqueeze(0)
             gt_bboxes[i] = box_xyxy_to_cxcywh(gt_bboxes[i]) / factor
 
-        targets = {
-            'boxes': gt_bboxes,
-            'labels': gt_labels,
-        }
+        targets = []
+        for gt_label, gt_bbox in zip(gt_labels, gt_bboxes):
+            targets.append({'labels': gt_label, 'boxes': gt_bbox})
 
         losses = self.criterion(outputs, targets)
 
@@ -257,8 +252,8 @@ class HungarianMatcher(nn.Module):
             0, 1)  # [batch_size * num_queries, 4]
 
         # Also concat the target labels and boxes
-        tgt_ids = torch.cat([v for v in targets['labels']])
-        tgt_bbox = torch.cat([v for v in targets['boxes']])
+        tgt_ids = torch.cat([v['labels'] for v in targets])
+        tgt_bbox = torch.cat([v['boxes'] for v in targets])
 
         # Compute the classification cost. Contrary to the loss, we don't use the NLL,
         # but approximate it in 1 - proba[target class].
@@ -276,7 +271,7 @@ class HungarianMatcher(nn.Module):
         C = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_giou * cost_giou
         C = C.view(bs, num_queries, -1).cpu()
 
-        sizes = [len(v) for v in targets['boxes']]
+        sizes = [len(v['boxes']) for v in targets]
         indices = [
             linear_sum_assignment(c[i])
             for i, c in enumerate(C.split(sizes, -1))
@@ -320,7 +315,7 @@ class SetCriterion(nn.Module):
 
         idx = self._get_src_permutation_idx(indices)
         target_classes_o = torch.cat(
-            [t[J] for t, (_, J) in zip(targets['labels'], indices)])
+            [t['labels'][J] for t, (_, J) in zip(targets, indices)])
         target_classes = torch.full(
             src_logits.shape[:2],
             self.num_classes,
@@ -346,7 +341,7 @@ class SetCriterion(nn.Module):
         """
         pred_logits = outputs['pred_logits']
         device = pred_logits.device
-        tgt_lengths = torch.as_tensor([len(v) for v in targets['labels']],
+        tgt_lengths = torch.as_tensor([len(v['labels']) for v in targets],
                                       device=device)
         # Count the number of predictions that are NOT "no-object" (which is the last class)
         card_pred = (pred_logits.argmax(-1) !=
@@ -364,7 +359,7 @@ class SetCriterion(nn.Module):
         idx = self._get_src_permutation_idx(indices)
         src_boxes = outputs['pred_boxes'][idx]
         target_boxes = torch.cat(
-            [t[i] for t, (_, i) in zip(targets['boxes'], indices)], dim=0)
+            [t['boxes'][i] for t, (_, i) in zip(targets, indices)], dim=0)
 
         loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction='none')
 
@@ -419,7 +414,7 @@ class SetCriterion(nn.Module):
         indices = self.matcher(outputs_without_aux, targets)
 
         # Compute the average number of target boxes accross all nodes, for normalization purposes
-        num_boxes = sum(len(t) for t in targets['labels'])
+        num_boxes = sum(len(t['labels']) for t in targets)
         num_boxes = torch.as_tensor([num_boxes],
                                     dtype=torch.float,
                                     device=next(iter(outputs.values())).device)
