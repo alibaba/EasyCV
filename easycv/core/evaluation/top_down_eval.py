@@ -245,7 +245,9 @@ def post_dark_udp(coords, batch_heatmaps, kernel=3):
     assert (B == 1 or B == N)
     for heatmaps in batch_heatmaps:
         for heatmap in heatmaps:
+            print('debug0:{}'.format(heatmap))
             cv2.GaussianBlur(heatmap, (kernel, kernel), 0, heatmap)
+            print('debug1:{}'.format(heatmap))
     np.clip(batch_heatmaps, 0.001, 50, batch_heatmaps)
     np.log(batch_heatmaps, batch_heatmaps)
     batch_heatmaps = np.transpose(batch_heatmaps,
@@ -365,7 +367,7 @@ def keypoints_from_heatmaps(heatmaps,
         heatmap width: W
 
     Args:
-        heatmaps (np.ndarray[N, K, H, W]): model predicted heatmaps.
+        heatmaps (np.ndarray[N, K, H, W], dtype=float32): model predicted heatmaps.
         center (np.ndarray[N, 2]): Center of the bounding box (x, y).
         scale (np.ndarray[N, 2]): Scale of the bounding box
             wrt height/width.
@@ -398,6 +400,8 @@ def keypoints_from_heatmaps(heatmaps,
         - maxvals (np.ndarray[N, K, 1]): Scores (confidence) of the keypoints.
     """
     # Avoid being affected
+    if not np.issubsctype(heatmaps, np.float32):
+        heatmaps = heatmaps.astype(np.float32)
     heatmaps = heatmaps.copy()
 
     # detect conflicts
