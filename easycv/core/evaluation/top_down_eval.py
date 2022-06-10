@@ -245,9 +245,7 @@ def post_dark_udp(coords, batch_heatmaps, kernel=3):
     assert (B == 1 or B == N)
     for heatmaps in batch_heatmaps:
         for heatmap in heatmaps:
-            print('debug0:{}'.format(heatmap))
             cv2.GaussianBlur(heatmap, (kernel, kernel), 0, heatmap)
-            print('debug1:{}'.format(heatmap))
     np.clip(batch_heatmaps, 0.001, 50, batch_heatmaps)
     np.log(batch_heatmaps, batch_heatmaps)
     batch_heatmaps = np.transpose(batch_heatmaps,
