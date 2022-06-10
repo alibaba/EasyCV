@@ -3,6 +3,7 @@ from distutils.version import LooseVersion
 
 import torch
 from mmcv.runner import OptimizerHook as _OptimizerHook
+from mmcv.runner.fp16_utils import wrap_fp16_model
 
 from easycv.utils.dist_utils import get_dist_info
 
@@ -103,11 +104,17 @@ class AMPFP16OptimizerHook(OptimizerHook):
         self.ignore_key_epoch = ignore_key_epoch
         if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
             self.scaler = amp.GradScaler()
+            self._scale_update_param = 512.
 
     def before_run(self, runner):
-        runner.fp16_enable = True
+        """Preparing steps before Mixed Precision Training."""
+        # wrap model mode to fp16
+        wrap_fp16_model(runner.model)
+        # resume from state dict
+        if 'fp16' in runner.meta and 'scaler' in runner.meta['fp16']:
+            scaler_state_dict = runner.meta['fp16']['scaler']
+            self.scaler.load_state_dict(scaler_state_dict)
         print('open fp16')
-        runner.optimizer.zero_grad()
 
     def after_train_iter(self, runner):
         loss = runner.outputs['loss'] / self.update_interval
@@ -121,11 +128,17 @@ class AMPFP16OptimizerHook(OptimizerHook):
                         p.grad = None
 
             if self.every_n_iters(runner, self.update_interval):
+                self.scaler.unscale_(runner.optimizer)
                 if self.grad_clip is not None:
-                    self.scaler.unscale_(runner.optimizer)
                     self.clip_grads(runner.model.parameters())
                 self.scaler.step(runner.optimizer)
-                self.scaler.update()
+                self.scaler.update(self._scale_update_param)
+
+                # save state_dict of scaler
+                runner.meta.setdefault(
+                    'fp16', {})['scaler'] = self.scaler.state_dict()
+
+                runner.model.zero_grad()
                 runner.optimizer.zero_grad()
         else:
             with amp.scale_loss(loss, runner.optimizer) as scaled_loss:

@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import torch
+from torch.optim import *  # noqa: F401,F403
 from torch.optim.optimizer import Optimizer, required
 
 

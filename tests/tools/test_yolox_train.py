@@ -100,10 +100,10 @@ class YOLOXTrainTest(unittest.TestCase):
 
         if dist:
             nproc_per_node = 2
-            cmd = 'bash tools/dist_train.sh %s %s --launcher pytorch --work_dir=%s %s ' % (
+            cmd = 'bash tools/dist_train.sh %s %s --launcher pytorch --work_dir=%s %s --fp16' % (
                 tmp_cfg_file, nproc_per_node, work_dir, args_str)
         else:
-            cmd = 'python tools/train.py %s --work_dir=%s %s' % (
+            cmd = 'python tools/train.py %s --work_dir=%s %s --fp16' % (
                 tmp_cfg_file, work_dir, args_str)
 
         logging.info('run command: %s' % cmd)

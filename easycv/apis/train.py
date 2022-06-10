@@ -102,9 +102,10 @@ def train_model(model,
         logger.info('Using SyncBatchNorm()')
 
     if distributed:
+        find_unused_parameters = cfg.get('find_unused_parameters', False)
         model = MMDistributedDataParallel(
             model.cuda(),
-            find_unused_parameters=True,
+            find_unused_parameters=find_unused_parameters,
             device_ids=[torch.cuda.current_device()],
             broadcast_buffers=False)
     else:

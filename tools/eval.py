@@ -204,7 +204,7 @@ def main():
 
     assert 'eval_pipelines' in cfg, 'eval_pipelines is needed for testting'
     for eval_pipe in cfg.eval_pipelines:
-        eval_data = eval_pipe.data
+        eval_data = eval_pipe.get('data', None) or cfg.data.val
         # build the dataloader
         if eval_data.get('dali', False):
             data_loader = datasets.build_dali_dataset(
