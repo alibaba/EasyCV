@@ -36,6 +36,7 @@ class DABDETRHead(nn.Module):
                  query_dim=4,
                  focal_alpha=0.25,
                  iter_update=True,
+                 num_select=300,
                  bbox_embed_diff_each_layer=False,
                  cost_dict={
                      'cost_class': 1,
@@ -59,7 +60,7 @@ class DABDETRHead(nn.Module):
             weight_dict=weight_dict,
             focal_alpha=focal_alpha,
             losses=['labels', 'boxes', 'cardinality'])
-        self.postprocess = PostProcess()
+        self.postprocess = PostProcess(num_select=num_select)
 
         self.class_embed = nn.Linear(embed_dims, num_classes)
         if bbox_embed_diff_each_layer:
@@ -473,6 +474,11 @@ class SetCriterion(nn.Module):
                 box_cxcywh_to_xyxy(target_boxes)))
         losses['loss_giou'] = loss_giou.sum(
         ) / num_boxes * self.weight_dict['loss_giou']
+
+        # calculate the x,y and h,w loss
+        with torch.no_grad():
+            losses['loss_xy'] = loss_bbox[..., :2].sum() / num_boxes
+            losses['loss_hw'] = loss_bbox[..., 2:].sum() / num_boxes
 
         return losses
 

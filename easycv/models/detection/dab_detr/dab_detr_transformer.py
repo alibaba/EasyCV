@@ -68,6 +68,7 @@ class DABDetrTransformer(nn.Module):
                 self.query_embed.weight.data[:, :2])
             self.query_embed.weight.data[:, :2].requires_grad = False
 
+        self.num_queries = num_queries
         self.num_patterns = num_patterns
         if not isinstance(num_patterns, int):
             Warning('num_patterns should be int but {}'.format(
@@ -110,7 +111,7 @@ class DABDetrTransformer(nn.Module):
     def init_weights(self):
         for p in self.named_parameters():
             if 'input_proj' in p[0] or 'query_embed' in p[
-                    0] or 'positional_encoding' in p[0]:
+                    0] or 'positional_encoding' in p[0] or 'patterns' in p[0]:
                 continue
             if p[1].dim() > 1:
                 nn.init.xavier_uniform_(p[1])
