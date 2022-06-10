@@ -166,7 +166,6 @@ class PytorchImageModelWrapper(nn.Module):
                         self.model_name, pretrained))
         else:
             print_log('load model from init weights')
-            self.model.init_weights()
 
     def forward(self, x):
 
