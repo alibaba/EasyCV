@@ -475,10 +475,10 @@ class SetCriterion(nn.Module):
         losses['loss_giou'] = loss_giou.sum(
         ) / num_boxes * self.weight_dict['loss_giou']
 
-        # calculate the x,y and h,w loss
-        with torch.no_grad():
-            losses['loss_xy'] = loss_bbox[..., :2].sum() / num_boxes
-            losses['loss_hw'] = loss_bbox[..., 2:].sum() / num_boxes
+        # # calculate the x,y and h,w loss
+        # with torch.no_grad():
+        #     losses['loss_xy'] = loss_bbox[..., :2].sum() / num_boxes
+        #     losses['loss_hw'] = loss_bbox[..., 2:].sum() / num_boxes
 
         return losses
 

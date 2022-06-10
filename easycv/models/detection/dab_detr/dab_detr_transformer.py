@@ -30,7 +30,7 @@ class DABDetrTransformer(nn.Module):
 
     def __init__(self,
                  in_channels=1024,
-                 num_queries=100,
+                 num_queries=300,
                  query_dim=4,
                  random_refpoints_xy=False,
                  num_patterns=0,
@@ -111,7 +111,8 @@ class DABDetrTransformer(nn.Module):
     def init_weights(self):
         for p in self.named_parameters():
             if 'input_proj' in p[0] or 'query_embed' in p[
-                    0] or 'positional_encoding' in p[0] or 'patterns' in p[0]:
+                    0] or 'positional_encoding' in p[0] or 'patterns' in p[
+                        0] or 'bbox_embed' in p[0]:
                 continue
             if p[1].dim() > 1:
                 nn.init.xavier_uniform_(p[1])
