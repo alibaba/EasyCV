@@ -183,9 +183,6 @@ class EVRunner(EpochBasedRunner):
         Returns:
             dict or OrderedDict: The loaded checkpoint.
         """
-        if torch.cuda.is_available():
-            device_id = torch.cuda.current_device()
-            map_location = lambda storage, loc: storage.cuda(device_id)
         return load_checkpoint(
             self.model,
             filename=filename,
