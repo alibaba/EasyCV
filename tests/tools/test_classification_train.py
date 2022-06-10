@@ -78,7 +78,7 @@ class ClassificationTrainTest(unittest.TestCase):
 
         args_str = ' '.join(
             ['='.join((str(k), str(v))) for k, v in train_cfgs.items()])
-        cmd = 'python tools/train.py %s --work_dir=%s %s' % \
+        cmd = 'python tools/train.py %s --work_dir=%s %s --fp16' % \
               (tmp_cfg_file, work_dir, args_str)
 
         logging.info('run command: %s' % cmd)
