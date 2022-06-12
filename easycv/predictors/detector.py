@@ -48,53 +48,111 @@ class TorchYoloXPredictor(PredictorInterface):
         """
         self.model_path = model_path
         self.max_det = max_det
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.use_jit = model_path.endswith('jit') or model_path.endswith(
+            'blade')
+
+        self.use_blade = model_path.endswith('blade')
+
+        if self.use_blade:
+            import torch_blade
+
         if model_config:
             model_config = json.loads(model_config)
         else:
             model_config = {}
+
         self.score_thresh = model_config[
             'score_thresh'] if 'score_thresh' in model_config else score_thresh
 
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        if self.use_jit:
+            with io.open(model_path, 'rb') as infile:
+                map_location = 'cpu' if self.device == 'cpu' else 'cuda'
+                self.model = torch.jit.load(infile, map_location)
 
-        with io.open(self.model_path, 'rb') as infile:
-            checkpoint = torch.load(infile, map_location='cpu')
+            with io.open(model_path + '.config.json', 'r') as infile:
+                self.cfg = json.load(infile)
+                test_pipeline = self.cfg['test_pipeline']
+                self.CLASSES = self.cfg['classes']
+                self.end2end = self.cfg['export']['end2end']
 
-        assert 'meta' in checkpoint and 'config' in checkpoint[
-            'meta'], 'meta.config is missing from checkpoint'
-        config_str = checkpoint['meta']['config']
-        # get config
-        basename = os.path.basename(self.model_path)
-        fname, _ = os.path.splitext(basename)
-        self.local_config_file = os.path.join(CACHE_DIR,
-                                              f'{fname}_config.json')
-        if not os.path.exists(CACHE_DIR):
-            os.makedirs(CACHE_DIR)
-        with open(self.local_config_file, 'w') as ofile:
-            ofile.write(config_str)
+            self.traceable = True
 
-        self.cfg = mmcv_config_fromfile(self.local_config_file)
+        else:
+            self.end2end = False
+            with io.open(self.model_path, 'rb') as infile:
+                checkpoint = torch.load(infile, map_location='cpu')
 
-        # build model
-        self.model = build_model(self.cfg.model)
+            assert 'meta' in checkpoint and 'config' in checkpoint[
+                'meta'], 'meta.config is missing from checkpoint'
 
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        map_location = 'cpu' if self.device == 'cpu' else 'cuda'
-        self.ckpt = load_checkpoint(
-            self.model, self.model_path, map_location=map_location)
+            config_str = checkpoint['meta']['config']
+            config_str = config_str[config_str.find('_base_'):]
+            # get config
+            basename = os.path.basename(self.model_path)
+            fname, _ = os.path.splitext(basename)
+            self.local_config_file = os.path.join(CACHE_DIR,
+                                                  f'{fname}_config.py')
+            if not os.path.exists(CACHE_DIR):
+                os.makedirs(CACHE_DIR)
+            with open(self.local_config_file, 'w') as ofile:
+                ofile.write(config_str)
 
-        self.model.to(self.device)
-        self.model.eval()
+            self.cfg = mmcv_config_fromfile(self.local_config_file)
 
-        test_pipeline = self.cfg.test_pipeline
+            # build model
+            self.model = build_model(self.cfg.model)
+            self.traceable = getattr(self.model, 'trace_able', False)
 
-        self.CLASSES = self.cfg.CLASSES
+            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            map_location = 'cpu' if self.device == 'cpu' else 'cuda'
+            self.ckpt = load_checkpoint(
+                self.model, self.model_path, map_location=map_location)
+
+            self.model.to(self.device)
+            self.model.eval()
+
+            test_pipeline = self.cfg.test_pipeline
+            self.CLASSES = self.cfg.CLASSES
 
         # build pipeline
         pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
         self.pipeline = Compose(pipeline)
 
-    def predict(self, input_data_list, batch_size=-1):
+    def post_assign(self, outputs, img_metas):
+        detection_boxes = []
+        detection_scores = []
+        detection_classes = []
+        img_metas_list = []
+
+        for i in range(len(outputs)):
+            if img_metas:
+                img_metas_list.append(img_metas[i])
+            if outputs[i].requires_grad == True:
+                outputs[i] = outputs[i].detach()
+            if outputs[i] is not None:
+                bboxes = outputs[i][:, 0:4] if outputs[i] is not None else None
+                if img_metas:
+                    bboxes /= img_metas[i]['scale_factor'][0]
+                detection_boxes.append(bboxes.cpu().numpy())
+                detection_scores.append(
+                    (outputs[i][:, 4] * outputs[i][:, 5]).cpu().numpy())
+                detection_classes.append(outputs[i][:, 6].cpu().numpy().astype(
+                    np.int32))
+            else:
+                detection_boxes.append(None)
+                detection_scores.append(None)
+                detection_classes.append(None)
+
+        test_outputs = {
+            'detection_boxes': detection_boxes,
+            'detection_scores': detection_scores,
+            'detection_classes': detection_classes,
+            'img_metas': img_metas_list
+        }
+        return test_outputs
+
+    def predict(self, input_data_list, batch_size=-1, to_numpy=True):
         """
     using session run predict a number of samples using batch_size
 
@@ -114,29 +172,68 @@ class TorchYoloXPredictor(PredictorInterface):
                 img = np.asarray(img)
 
             ori_img_shape = img.shape[:2]
-            data_dict = {
-                'ori_img_shape': ori_img_shape,
-                'img': cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-            }
-            data_dict = self.pipeline(data_dict)
-            img = data_dict['img']
-            img = torch.unsqueeze(img._data, 0).to(self.device)
-            data_dict.pop('img')
-            det_out = self.model(
-                img, mode='test', img_metas=[data_dict['img_metas']._data])
-            # det_out = det_out[:self.max_det]
-            # scale box to original image scale, this logic has some operation
-            # that can not be traced, see
-            # https://discuss.pytorch.org/t/windows-libtorch-c-load-cuda-module-with-std-runtime-error-message-shape-4-is-invalid-for-input-if-size-40/63073/4
-            # det_out = scale_coords(img.shape[2:], det_out, ori_img_shape, (scale_factor, pad))
 
-            detection_scores = det_out['detection_scores'][0]
-            sel_ids = detection_scores > self.score_thresh
-            detection_boxes = det_out['detection_boxes'][0][sel_ids]
-            detection_classes = det_out['detection_classes'][0][sel_ids]
+            if self.end2end:
+                # the input should also be as the type of uint8 as mmcv
+                img = torch.from_numpy(img).to(self.device)
+                det_out = self.model(img)
+
+                detection_scores = det_out['detection_scores']
+
+                if detection_scores is not None:
+                    sel_ids = detection_scores > self.score_thresh
+                    detection_scores = detection_scores[sel_ids]
+                    detection_boxes = det_out['detection_boxes'][sel_ids]
+                    detection_classes = det_out['detection_classes'][sel_ids]
+                else:
+                    detection_boxes = []
+                    detection_classes = []
+
+                if to_numpy:
+                    detection_scores = detection_scores.detach().numpy()
+                    detection_boxes = detection_boxes.detach().numpy()
+                    detection_classes = detection_classes.detach().numpy()
+
+            else:
+                data_dict = {'img': img}
+                data_dict = self.pipeline(data_dict)
+                img = data_dict['img']
+                img = torch.unsqueeze(img._data, 0).to(self.device)
+                data_dict.pop('img')
+
+                if self.traceable:
+                    with torch.no_grad():
+                        det_out = self.post_assign(
+                            self.model(img),
+                            img_metas=[data_dict['img_metas']._data])
+                else:
+                    with torch.no_grad():
+                        det_out = self.model(
+                            img,
+                            mode='test',
+                            img_metas=[data_dict['img_metas']._data])
+
+                # det_out = det_out[:self.max_det]
+                # scale box to original image scale, this logic has some operation
+                # that can not be traced, see
+                # https://discuss.pytorch.org/t/windows-libtorch-c-load-cuda-module-with-std-runtime-error-message-shape-4-is-invalid-for-input-if-size-40/63073/4
+                # det_out = scale_coords(img.shape[2:], det_out, ori_img_shape, (scale_factor, pad))
+
+                detection_scores = det_out['detection_scores'][0]
+
+                if detection_scores is not None:
+                    sel_ids = detection_scores > self.score_thresh
+                    detection_scores = detection_scores[sel_ids]
+                    detection_boxes = det_out['detection_boxes'][0][sel_ids]
+                    detection_classes = det_out['detection_classes'][0][
+                        sel_ids]
+                else:
+                    detection_boxes = None
+                    detection_classes = None
+
             num_boxes = detection_classes.shape[
                 0] if detection_classes is not None else 0
-            # print(num_boxes)
+
             detection_classes_names = [
                 self.CLASSES[detection_classes[idx]]
                 for idx in range(num_boxes)
