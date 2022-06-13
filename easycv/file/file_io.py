@@ -52,8 +52,13 @@ class IO(IOLocal):
             self.access_oss(
                 ak_id=os.environ.get('OSS_ACCESS_KEY_ID'),
                 ak_secret=os.environ.get('OSS_ACCESS_KEY_SECRET'),
-                hosts=os.environ.get('OSS_ENDPOINTS').split(','),
-                buckets=os.environ.get('OSS_BUCKETS').split(','))
+                hosts=[
+                    i.strip()
+                    for i in os.environ.get('OSS_ENDPOINTS').split(',')
+                ],
+                buckets=[
+                    i.strip() for i in os.environ.get('OSS_BUCKETS').split(',')
+                ])
 
     def _is_oss_env_prepared(self):
         return (os.environ.get('OSS_ACCESS_KEY_ID')

@@ -1,7 +1,6 @@
 import functools
 import json
 
-import cv2
 import mmcv
 import numpy as np
 import torch

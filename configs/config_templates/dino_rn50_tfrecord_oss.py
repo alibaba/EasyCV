@@ -21,7 +21,7 @@ model_output_dim = 65536
 
 model = dict(
     type='DINO',
-    pretrained=None,
+    pretrained=False,
     train_preprocess=[
         'randomGrayScale', 'gaussianBlur', 'solarize'
     ],  # 2+6 view, has different augment pipeline, dino is complex
@@ -42,7 +42,6 @@ model = dict(
         # model_name = 'vit_deit_small_distilled_patch16_224', # good 384,
         model_name='resnet50',
         num_classes=0,
-        # pretrained=True,
     ),
 
     # swav need  mulit crop ,doesn't support vit based model

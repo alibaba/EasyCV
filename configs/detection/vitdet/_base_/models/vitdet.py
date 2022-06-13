@@ -26,7 +26,6 @@ model = dict(
         in_channels=[768, 768, 768, 768],
         out_channels=256,
         norm_cfg=norm_cfg,
-        use_residual=False,
         num_outs=5),
     rpn_head=dict(
         type='RPNHeadNorm',

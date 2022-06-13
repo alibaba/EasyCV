@@ -14,8 +14,6 @@ import torch.nn.functional as F
 from torch.nn import Conv2d, Module, ReLU
 from torch.nn.modules.utils import _pair
 
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
 from ..registry import BACKBONES
 
 
@@ -470,26 +468,19 @@ class ResNeSt(nn.Module):
         self.avgpool = GlobalAvgPool2d()
         self.drop = nn.Dropout(final_drop) if final_drop > 0.0 else None
         self.norm_layer = norm_layer
-        # self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         if num_classes > 0:
             self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
             self.fc = nn.Linear(512 * block.expansion, num_classes)
 
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str) or isinstance(pretrained, dict):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                    m.weight.data.normal_(0, math.sqrt(2. / n))
-                elif isinstance(m, self.norm_layer):
-                    m.weight.data.fill_(1)
-                    m.bias.data.zero_()
-        else:
-            raise TypeError('pretrained must be a str or None')
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+            elif isinstance(m, self.norm_layer):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
 
     def _make_layer(self,
                     block,
@@ -613,7 +604,6 @@ class ResNeSt(nn.Module):
 
         if hasattr(self, 'fc'):
             x = self.avgpool(x)
-            # x = x.view(x.size(0), -1)
             x = torch.flatten(x, 1)
             if self.drop:
                 x = self.drop(x)

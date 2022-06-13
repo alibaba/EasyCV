@@ -3,7 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from easycv.utils.logger import print_log
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger
 from easycv.utils.preprocess_function import gaussianBlur, randomGrayScale
 from .. import builder
 from ..base import BaseModel
@@ -45,6 +46,8 @@ class MoBY(BaseModel):
         """
 
         super(MoBY, self).__init__()
+
+        self.pretrained = pretrained
 
         self.preprocess_key_map = {
             'randomGrayScale': randomGrayScale,
@@ -92,7 +95,7 @@ class MoBY(BaseModel):
         nn.SyncBatchNorm.convert_sync_batchnorm(self.predictor)
 
         # set parameters
-        self.init_weights(pretrained=pretrained)
+        self.init_weights()
         self.queue_len = queue_len
         self.momentum = momentum
         self.contrast_temperature = contrast_temperature
@@ -112,10 +115,13 @@ class MoBY(BaseModel):
 
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
 
-    def init_weights(self, pretrained=None):
-        if pretrained is not None:
-            print_log('load model from: {}'.format(pretrained), logger='root')
-        self.encoder_q.init_weights(pretrained=pretrained)
+    def init_weights(self):
+        if isinstance(self.pretrained, str):
+            logger = get_root_logger()
+            load_checkpoint(
+                self.encoder_q, self.pretrained, strict=False, logger=logger)
+        else:
+            self.encoder_q.init_weights()
         for param_q, param_k in zip(self.encoder_q.parameters(),
                                     self.encoder_k.parameters()):
             param_k.data.copy_(param_q.data)

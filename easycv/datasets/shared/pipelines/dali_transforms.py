@@ -1,7 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import numpy as np
-import nvidia.dali.ops as ops
-import nvidia.dali.types as types
 
 from easycv.datasets.registry import PIPELINES
 
@@ -11,9 +9,10 @@ class DaliImageDecoder(object):
     """refer to: https://docs.nvidia.com/deeplearning/dali/archives/dali_0250/user-guide/docs/supported_ops.html#nvidia.dali.ops.ImageDecoder
     """
 
-    def __init__(self, device='mixed', output_type=types.RGB, **kwargs):
-        self.decode_op = ops.ImageDecoder(
-            device=device, output_type=output_type, **kwargs)
+    def __init__(self, device='mixed', **kwargs):
+        import nvidia.dali.ops as ops
+
+        self.decode_op = ops.ImageDecoder(device=device, **kwargs)
 
     def __call__(self, images):
         return self.decode_op(images)
@@ -25,6 +24,8 @@ class DaliRandomResizedCrop(object):
     """
 
     def __init__(self, size, random_area, device='gpu', **kwargs):
+        import nvidia.dali.ops as ops
+
         self.random_resize_crop_op = ops.RandomResizedCrop(
             size=size, random_area=random_area, device=device, **kwargs)
 
@@ -37,16 +38,14 @@ class DaliResize(object):
     """refer to: https://docs.nvidia.com/deeplearning/dali/archives/dali_0250/user-guide/docs/supported_ops.html#nvidia.dali.ops.Resize
     """
 
-    def __init__(self,
-                 resize_shorter,
-                 device='gpu',
-                 interp_type=types.INTERP_TRIANGULAR,
-                 **kwargs):
+    def __init__(self, resize_shorter, device='gpu', **kwargs):
+        import nvidia.dali.ops as ops
+        import nvidia.dali.types as types
+
+        _kwargs = dict(interp_type=types.INTERP_TRIANGULAR)
+        _kwargs.update(kwargs)
         self.resize_op = ops.Resize(
-            device=device,
-            resize_shorter=resize_shorter,
-            interp_type=interp_type,
-            **kwargs)
+            device=device, resize_shorter=resize_shorter, **_kwargs)
 
     def __call__(self, images, **kwargs):
         return self.resize_op(images, **kwargs)
@@ -65,6 +64,9 @@ class DaliColorTwist(object):
                  hue,
                  device='gpu',
                  center=1):
+        import nvidia.dali.ops as ops
+        import nvidia.dali.types as types
+
         self.color_twist_op = ops.ColorTwist(device=device)
         self.saturation_op = ops.Uniform(
             range=[center - saturation, center + saturation])
@@ -107,6 +109,9 @@ class DaliRandomGrayscale(object):
     """
 
     def __init__(self, prob, device='gpu'):
+        import nvidia.dali.ops as ops
+        import nvidia.dali.types as types
+
         self.coin_flip_op = ops.CoinFlip(probability=1 - prob)
         self.cast_fp32_op = ops.Cast(dtype=types.FLOAT)
         self.hsv_op = ops.Hsv(device=device)
@@ -123,19 +128,20 @@ class DaliCropMirrorNormalize(object):
     """refer to: https://docs.nvidia.com/deeplearning/dali/archives/dali_0250/user-guide/docs/supported_ops.html#nvidia.dali.ops.CropMirrorNormalize
     """
 
-    def __init__(
-            self,
-            crop,
-            mean,
-            std,
-            prob=0.0,
-            device='gpu',
-            dtype=types.FLOAT,
-            output_layout=types.NCHW,
-            crop_pos_x=0.5,
-            crop_pos_y=0.5,
-            # image_type=types.RGB,
-            **kwargs):
+    def __init__(self,
+                 crop,
+                 mean,
+                 std,
+                 prob=0.0,
+                 device='gpu',
+                 crop_pos_x=0.5,
+                 crop_pos_y=0.5,
+                 **kwargs):
+        import nvidia.dali.ops as ops
+        import nvidia.dali.types as types
+
+        _kwargs = dict(dtype=types.FLOAT, output_layout=types.NCHW)
+        _kwargs.update(kwargs)
 
         if isinstance(crop, int):
             crop = [crop, crop]
@@ -156,15 +162,13 @@ class DaliCropMirrorNormalize(object):
         self.coin_flip_op = ops.CoinFlip(probability=prob)
         self.cmn_op = ops.CropMirrorNormalize(
             device=device,
-            dtype=dtype,
-            output_layout=output_layout,
             crop=crop,
             # image_type=image_type,
             crop_pos_x=crop_pos_x,
             crop_pos_y=crop_pos_y,
             mean=mean,
             std=std,
-            **kwargs)
+            **_kwargs)
 
     def __call__(self, images, **kwargs):
         if self.device == 'gpu':

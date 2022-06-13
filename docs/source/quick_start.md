@@ -36,7 +36,7 @@
     pip install mmcv-full==1.4.4 -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.7.0/index.html
 
     # install nvidia-dali
-    pip install http://pai-vision-data-hz.cn-hangzhou.oss-cdn.aliyun-inc.com/third_party/nvidia_dali_cuda100-0.25.0-1535750-py3-none-manylinux2014_x86_64.whl
+    pip install http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/third_party/nvidia_dali_cuda100-0.25.0-1535750-py3-none-manylinux2014_x86_64.whl
 
     # install common_io for MaxCompute table read (optional)
     pip install https://tfsmoke1.oss-cn-zhangjiakou.aliyuncs.com/tunnel_paiio/common_io/py3/common_io-0.1.0-cp36-cp36m-linux_x86_64.whl

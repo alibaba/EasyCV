@@ -6,6 +6,17 @@ from easycv.file import io
 from easycv.utils import dist_utils
 
 
+def get_imagenet_dali_tfrecord_feature():
+    import nvidia.dali.tfrecord as tfrec
+
+    imagenet_feature = {
+        'image/encoded': tfrec.FixedLenFeature((), tfrec.string, ''),
+        'image/format': tfrec.FixedLenFeature((), tfrec.string, 'jpeg'),
+        'image/class/label': tfrec.FixedLenFeature([], tfrec.int64, -1),
+    }
+    return imagenet_feature
+
+
 def get_path_and_index(file_list_or_path):
     if type(file_list_or_path) == str:
         lines = io.open(file_list_or_path).readlines()

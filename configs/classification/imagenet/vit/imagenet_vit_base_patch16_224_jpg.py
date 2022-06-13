@@ -5,5 +5,4 @@ model = dict(
         type='PytorchImageModelWrapper',
         model_name='vit_base_patch16_224',
         num_classes=1000,
-        pretrained=False,
     ))

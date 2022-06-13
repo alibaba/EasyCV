@@ -1,8 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import torch.nn as nn
 
+from easycv.core.evaluation.metrics import accuracy
 from ..registry import HEADS
-from ..utils import MultiPooling, accuracy, build_norm_layer
+from ..utils import MultiPooling, build_norm_layer
 
 
 @HEADS.register_module

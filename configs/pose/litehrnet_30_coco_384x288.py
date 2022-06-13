@@ -40,7 +40,7 @@ channel_cfg = dict(
 # model settings
 model = dict(
     type='TopDown',
-    pretrained=None,
+    pretrained=False,
     backbone=dict(
         type='LiteHRNet',
         in_channels=3,

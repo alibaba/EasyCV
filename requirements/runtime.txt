@@ -10,6 +10,7 @@ opencv-python-headless==4.1.2.30
 oss2
 packaging
 Pillow<=6.2.2
+prettytable
 pycocotools
 pytorch_metric_learning==0.9.89
 scikit-image

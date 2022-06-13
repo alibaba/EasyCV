@@ -19,25 +19,11 @@ data_root = '/apsarapangu/disk2/yunji.cjy/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
-image_size = (1024, 1024)
 train_pipeline = [
-    # large scale jittering
-    dict(
-        type='MMResize',
-        img_scale=image_size,
-        ratio_range=(0.1, 2.0),
-        multiscale_mode='range',
-        keep_ratio=True),
-    dict(
-        type='MMRandomCrop',
-        crop_type='absolute_range',
-        crop_size=image_size,
-        recompute_bbox=False,
-        allow_negative_crop=True),
-    dict(type='MMFilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
+    dict(type='MMResize', img_scale=(1333, 800), keep_ratio=True),
     dict(type='MMRandomFlip', flip_ratio=0.5),
     dict(type='MMNormalize', **img_norm_cfg),
-    dict(type='MMPad', size=image_size),
+    dict(type='MMPad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
     dict(
         type='Collect',
@@ -49,13 +35,13 @@ train_pipeline = [
 test_pipeline = [
     dict(
         type='MMMultiScaleFlipAug',
-        img_scale=image_size,
+        img_scale=(1333, 800),
         flip=False,
         transforms=[
             dict(type='MMResize', keep_ratio=True),
             dict(type='MMRandomFlip'),
             dict(type='MMNormalize', **img_norm_cfg),
-            dict(type='MMPad', size_divisor=1024),
+            dict(type='MMPad', size_divisor=32),
             dict(type='ImageToTensor', keys=['img']),
             dict(
                 type='Collect',
@@ -101,4 +87,4 @@ val_dataset = dict(
     pipeline=test_pipeline)
 
 data = dict(
-    imgs_per_gpu=1, workers_per_gpu=2, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=2, workers_per_gpu=2, train=train_dataset, val=val_dataset)
