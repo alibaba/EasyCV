@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.ops import batched_nms
+# TODO remove mmdet
 from mmdet.models import AnchorHead
 
 from easycv.models.registry import HEADS
