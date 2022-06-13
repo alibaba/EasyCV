@@ -8,8 +8,7 @@ from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from easycv.models.registry import BACKBONES
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
+from ..modelzoo import hrnet as model_urls
 from .resnet import BasicBlock
 
 
@@ -184,7 +183,6 @@ class Bottleneck(nn.Module):
 
         if self.with_cp and x.requires_grad:
             raise NotImplementedError
-            # out = cp.checkpoint(_inner_forward, x)
         else:
             out = _inner_forward(x)
 
@@ -593,6 +591,9 @@ class HRNet(nn.Module):
             multiscale_output=self.stage4_cfg.get('multiscale_output',
                                                   multi_scale_output))
 
+        self.default_pretrained_model_path = model_urls.get(
+            self.__class__.__name__ + arch, None)
+
     @property
     def norm1(self):
         """nn.Module: the normalization layer named "norm1" """
@@ -718,31 +719,19 @@ class HRNet(nn.Module):
 
         return nn.Sequential(*hr_modules), in_channels
 
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in backbone.
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                normal_init(m, std=0.001)
+            elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
+                constant_init(m, 1)
 
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        if isinstance(pretrained, str):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
+        if self.zero_init_residual:
             for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    normal_init(m, std=0.001)
-                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
-                    constant_init(m, 1)
-
-            if self.zero_init_residual:
-                for m in self.modules():
-                    if isinstance(m, Bottleneck):
-                        constant_init(m.norm3, 0)
-                    elif isinstance(m, BasicBlock):
-                        constant_init(m.norm2, 0)
-        else:
-            raise TypeError('pretrained must be a str or None')
+                if isinstance(m, Bottleneck):
+                    constant_init(m.norm3, 0)
+                elif isinstance(m, BasicBlock):
+                    constant_init(m.norm2, 0)
 
     def forward(self, x):
         """Forward function."""

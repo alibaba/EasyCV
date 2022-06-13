@@ -10,12 +10,12 @@ from mmcv.runner import get_dist_info
 from pytorch_metric_learning.miners import *
 from torch import Tensor
 
+from easycv.core.evaluation.metrics import accuracy
 from easycv.models.loss import CrossEntropyLossWithLabelSmooth
 from easycv.models.utils import DistributedLossWrapper, DistributedMinerWrapper
 from easycv.utils.logger import get_root_logger
 from easycv.utils.registry import build_from_cfg
 from ..registry import HEADS, LOSSES
-from ..utils import accuracy
 
 # Softmax based loss doesn't need ddp, the big fc while slowdown the training process.
 MP_NODDP_LOSS = set([

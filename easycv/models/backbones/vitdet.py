@@ -1,16 +1,5 @@
-# --------------------------------------------------------
-# BEIT: BERT Pre-Training of Image Transformers (https://arxiv.org/abs/2106.08254)
-# Github source: https://github.com/microsoft/unilm/tree/master/beit
-# Copyright (c) 2021 Microsoft
-# Licensed under The MIT License [see LICENSE for details]
-# By Hangbo Bao
-# Based on timm, mmseg, setr, xcit and swin code bases
-# https://github.com/rwightman/pytorch-image-models/tree/master/timm
-# https://github.com/fudan-zvg/SETR
-# https://github.com/facebookresearch/xcit/
-# https://github.com/microsoft/Swin-Transformer
-# https://github.com/ViTAE-Transformer/ViTDet
-# --------------------------------------------------------'
+# Copyright 2018-2023 OpenMMLab. All rights reserved.
+# Reference: https://github.com/ViTAE-Transformer/ViTDet/blob/main/mmdet/models/backbones/vit.py
 import math
 from functools import partial
 
@@ -644,6 +633,7 @@ class Norm2d(nn.Module):
         return x
 
 
+# todo: refactor vitdet and vit_transformer_dynamic
 @BACKBONES.register_module()
 class ViTDet(nn.Module):
     """ Vision Transformer with support for patch or hybrid CNN input stage

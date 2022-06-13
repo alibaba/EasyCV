@@ -1,7 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import json
 import math
-import time
 from glob import glob
 
 import numpy as np

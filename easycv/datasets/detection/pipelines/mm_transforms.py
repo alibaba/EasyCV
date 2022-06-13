@@ -1226,8 +1226,10 @@ class MMRandomFlip:
 @PIPELINES.register_module()
 class MMRandomCrop:
     """Random crop the image & bboxes & masks.
+
     The absolute `crop_size` is sampled based on `crop_type` and `image_size`,
     then the cropped results are generated.
+
     Args:
         crop_size (tuple): The relative ratio or absolute pixels of
             height and width.
@@ -1356,8 +1358,10 @@ class MMRandomCrop:
     def _get_crop_size(self, image_size):
         """Randomly generates the absolute crop size based on `crop_type` and
         `image_size`.
+
         Args:
             image_size (tuple): (h, w).
+
         Returns:
             crop_size (tuple): (crop_h, crop_w) in absolute pixels.
         """
@@ -1384,8 +1388,10 @@ class MMRandomCrop:
     def __call__(self, results):
         """Call function to randomly crop images, bounding boxes, masks,
         semantic segmentation maps.
+
         Args:
             results (dict): Result dict from loading pipeline.
+
         Returns:
             dict: Randomly cropped results, 'img_shape' key in result dict is
                 updated according to crop size.
@@ -1852,7 +1858,7 @@ class LoadAnnotations:
         repr_str += f'with_seg={self.with_seg}, '
         repr_str += f'poly2mask={self.poly2mask}, '
         repr_str += f'poly2mask={self.file_client_args})'
-        return repr_str
+        return
 
 
 @PIPELINES.register_module()

@@ -9,8 +9,6 @@ from mmcv.cnn import constant_init, kaiming_init
 from torch import nn
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
 from ..modelzoo import bninception as model_urls
 from ..registry import BACKBONES
 
@@ -344,32 +342,19 @@ class BNInception(nn.Module):
             1024, 128, kernel_size=(1, 1), stride=(1, 1))
         self.inception_5b_pool_proj_bn = nn.BatchNorm2d(128, affine=True)
         self.inception_5b_relu_pool_proj = nn.ReLU(inplace)
-        # self.last_linear = nn.Linear (1024, num_classes)
         self.num_classes = num_classes
         if num_classes > 0:
             self.last_linear = nn.Linear(1024, num_classes)
 
-        self.pretrained = model_urls[self.__class__.__name__]
+        self.default_pretrained_model_path = model_urls[
+            self.__class__.__name__]
 
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str) or isinstance(pretrained, dict):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    kaiming_init(m, mode='fan_in', nonlinearity='relu')
-                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
-                    constant_init(m, 1)
-
-            # if self.zero_init_residual:
-            #     for m in self.modules():
-            #         if isinstance(m, Bottleneck):
-            #             constant_init(m.norm3, 0)
-            #         elif isinstance(m, BasicBlock):
-            #             constant_init(m.norm2, 0)
-        else:
-            raise TypeError('pretrained must be a str or None')
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                kaiming_init(m, mode='fan_in', nonlinearity='relu')
+            elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
+                constant_init(m, 1)
 
     def features(self, input):
         conv1_7x7_s2_out = self.conv1_7x7_s2(input)

@@ -1,11 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import logging
 from distutils.version import LooseVersion
 
 import torch
 from mmcv.runner import OptimizerHook as _OptimizerHook
+from mmcv.runner.fp16_utils import wrap_fp16_model
 
 from easycv.utils.dist_utils import get_dist_info
-from easycv.utils.fp16_utils import wrap_fp16_model
 
 if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
     from torch.cuda import amp
@@ -13,10 +14,9 @@ else:
     try:
         from apex import amp
     except ImportError:
-        print(
-            'Warning: apex not installed, please install apex from https://www.github.com/nvidia/apex if you want to use fp16.'
+        logging.warning(
+            'apex not installed, please install apex from https://www.github.com/nvidia/apex if you want to use fp16.'
         )
-        pass
 
 
 class OptimizerHook(_OptimizerHook):

@@ -15,12 +15,11 @@ model = dict(
     train_preprocess=['randomGrayScale', 'gaussianBlur'],
     queue_len=4096,
     momentum=0.99,
-    pretrained=None,
+    pretrained=False,
     backbone=dict(
         type='PytorchImageModelWrapper',
         model_name='dynamic_swin_tiny_p4_w7_224',
         num_classes=0,
-        pretrained=False,
     ),
     neck=dict(
         type='MoBYMLP',

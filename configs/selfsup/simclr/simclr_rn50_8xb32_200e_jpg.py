@@ -3,7 +3,7 @@ _base_ = '../../base.py'
 # model settings
 model = dict(
     type='SimCLR',
-    pretrained=None,
+    pretrained=False,
     backbone=dict(
         type='ResNet',
         depth=50,

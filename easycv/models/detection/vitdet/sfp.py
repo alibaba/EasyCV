@@ -23,9 +23,8 @@ class Norm2d(nn.Module):
 
 @NECKS.register_module()
 class SFP(BaseModule):
-    r"""Feature Pyramid Network.
-    This is an implementation of paper `Feature Pyramid Networks for Object
-    Detection <https://arxiv.org/abs/1612.03144>`_.
+    r"""Simple Feature Pyramid.
+    This is an implementation of paper `Exploring Plain Vision Transformer Backbones for Object Detection <https://arxiv.org/abs/2203.16527>`_.
     Args:
         in_channels (List[int]): Number of input channels per scale.
         out_channels (int): Number of output channels (used at each scale)
@@ -59,7 +58,7 @@ class SFP(BaseModule):
         >>> scales = [340, 170, 84, 43]
         >>> inputs = [torch.rand(1, c, s, s)
         ...           for c, s in zip(in_channels, scales)]
-        >>> self = FPN(in_channels, 11, len(in_channels)).eval()
+        >>> self = SFP(in_channels, 11, len(in_channels)).eval()
         >>> outputs = self.forward(inputs)
         >>> for i in range(len(outputs)):
         ...     print(f'outputs[{i}].shape = {outputs[i].shape}')
@@ -81,7 +80,6 @@ class SFP(BaseModule):
                  conv_cfg=None,
                  norm_cfg=None,
                  act_cfg=None,
-                 use_residual=True,
                  upsample_cfg=dict(mode='nearest'),
                  init_cfg=[
                      dict(
@@ -100,7 +98,6 @@ class SFP(BaseModule):
         self.no_norm_on_lateral = no_norm_on_lateral
         self.fp16_enabled = False
         self.upsample_cfg = upsample_cfg.copy()
-        self.use_residual = use_residual
 
         if end_level == -1:
             self.backbone_end_level = self.num_ins
@@ -200,19 +197,7 @@ class SFP(BaseModule):
             for i, lateral_conv in enumerate(self.lateral_convs)
         ]
 
-        # build top-down path
         used_backbone_levels = len(laterals)
-        if self.use_residual:
-            for i in range(used_backbone_levels - 1, 0, -1):
-                # In some cases, fixing `scale factor` (e.g. 2) is preferred, but
-                #  it cannot co-exist with `size` in `F.interpolate`.
-                if 'scale_factor' in self.upsample_cfg:
-                    laterals[i - 1] += F.interpolate(laterals[i],
-                                                     **self.upsample_cfg)
-                else:
-                    prev_shape = laterals[i - 1].shape[2:]
-                    laterals[i - 1] += F.interpolate(
-                        laterals[i], size=prev_shape, **self.upsample_cfg)
 
         # build outputs
         # part 1: from original levels

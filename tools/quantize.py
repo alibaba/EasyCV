@@ -3,7 +3,6 @@
 isort:skip_file
 """
 import argparse
-from genericpath import exists
 import os
 import os.path as osp
 import sys

@@ -1,6 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import torch.nn as nn
-from mmcv.runner import get_dist_info
 from torch import optim
 
 

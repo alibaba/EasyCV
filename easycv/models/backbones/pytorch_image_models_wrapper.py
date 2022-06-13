@@ -1,12 +1,13 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from distutils.version import LooseVersion
+import importlib
 
 import timm
 import torch
 import torch.nn as nn
+from timm.models.helpers import load_pretrained
+from timm.models.hub import download_cached_file
 
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
+from easycv.utils.logger import get_root_logger, print_log
 from ..modelzoo import timm_models as model_urls
 from ..registry import BACKBONES
 from .shuffle_transformer import (shuffletrans_base_p4_w7_224,
@@ -66,8 +67,6 @@ class PytorchImageModelWrapper(nn.Module):
 
     def __init__(self,
                  model_name='resnet50',
-                 pretrained=False,
-                 checkpoint_path=None,
                  scriptable=None,
                  exportable=None,
                  no_jit=None,
@@ -76,15 +75,16 @@ class PytorchImageModelWrapper(nn.Module):
         Inits PytorchImageModelWrapper by timm.create_models
         Args:
             model_name (str): name of model to instantiate
-            pretrained (bool): load pretrained ImageNet-1k weights if true
-            checkpoint_path (str): path of checkpoint to load after model is initialized
             scriptable (bool): set layer config so that model is jit scriptable (not working for all models yet)
             exportable (bool): set layer config so that model is traceable / ONNX exportable (not fully impl/obeyed yet)
             no_jit (bool): set layer config so that model doesn't utilize jit scripted layers (so far activations only)
         """
         super(PytorchImageModelWrapper, self).__init__()
 
+        self.model_name = model_name
+
         timm_model_names = timm.list_models(pretrained=False)
+        self.timm_model_names = timm_model_names
         assert model_name in timm_model_names or model_name in _MODEL_MAP, \
             f'{model_name} is not in model_list of timm/fair, please check the model_name!'
 
@@ -94,52 +94,54 @@ class PytorchImageModelWrapper(nn.Module):
 
         # create model by timm
         if model_name in timm_model_names:
-            try:
-                if pretrained and (model_name in model_urls):
-                    self.model = timm.create_model(model_name, False, '',
-                                                   scriptable, exportable,
-                                                   no_jit, **kwargs)
-                    self.init_weights(model_urls[model_name])
-                    print('Info: Load model from %s' % model_urls[model_name])
-
-                    if checkpoint_path is not None:
-                        self.init_weights(checkpoint_path)
-                else:
-                    # load from timm
-                    if pretrained and model_name.startswith('swin_') and (
-                            LooseVersion(
-                                torch.__version__) <= LooseVersion('1.6.0')):
-                        print(
-                            'Warning: Pretrained SwinTransformer from timm may be zipfile extract'
-                            ' error while torch<=1.6.0')
-                    self.model = timm.create_model(model_name, pretrained,
-                                                   checkpoint_path, scriptable,
-                                                   exportable, no_jit,
-                                                   **kwargs)
-
-            # need fix: delete this except after pytorch 1.7 update in all production
-            # (dlc, dsw, studio, ev_predict_py3)
-            except Exception:
-                print(
-                    f'Error: Fail to create {model_name} with (pretrained={pretrained}, checkpoint_path={checkpoint_path} ...)'
-                )
-                print(
-                    f'Try to create {model_name} with pretrained=False, checkpoint_path=None and default params'
-                )
-                self.model = timm.create_model(model_name, False, '', None,
-                                               None, None, **kwargs)
-
-        # facebook model wrapper
-        if model_name in _MODEL_MAP:
+            self.model = timm.create_model(model_name, False, '', scriptable,
+                                           exportable, no_jit, **kwargs)
+        elif model_name in _MODEL_MAP:
             self.model = _MODEL_MAP[model_name](**kwargs)
-            if pretrained:
-                if model_name in model_urls.keys():
+
+    def init_weights(self, pretrained=None):
+        """
+        Args:
+            if pretrained == True, load model from default path;
+            if pretrained == False or None, load from init weights.
+
+            if model_name in timm_model_names, load model from timm default path;
+            if model_name in _MODEL_MAP, load model from easycv default path
+        """
+        logger = get_root_logger()
+        if pretrained:
+            if self.model_name in self.timm_model_names:
+                default_pretrained_model_path = model_urls[self.model_name]
+                print_log(
+                    'load model from default path: {}'.format(
+                        default_pretrained_model_path), logger)
+                if default_pretrained_model_path.endswith('.npz'):
+                    pretrained_loc = download_cached_file(
+                        default_pretrained_model_path,
+                        check_hash=False,
+                        progress=False)
+                    return self.model.load_pretrained(pretrained_loc)
+                else:
+                    backbone_module = importlib.import_module(
+                        self.model.__module__)
+                    return load_pretrained(
+                        self.model,
+                        default_cfg={'url': default_pretrained_model_path},
+                        filter_fn=backbone_module.checkpoint_filter_fn
+                        if hasattr(backbone_module, 'checkpoint_filter_fn')
+                        else None)
+            elif self.model_name in _MODEL_MAP:
+                if self.model_name in model_urls.keys():
+                    default_pretrained_model_path = model_urls[self.model_name]
+                    print_log(
+                        'load model from default path: {}'.format(
+                            default_pretrained_model_path), logger)
                     try_max = 3
                     try_idx = 0
                     while try_idx < try_max:
                         try:
                             state_dict = torch.hub.load_state_dict_from_url(
-                                url=model_urls[model_name],
+                                url=default_pretrained_model_path,
                                 map_location='cpu',
                             )
                             try_idx += try_max
@@ -147,31 +149,22 @@ class PytorchImageModelWrapper(nn.Module):
                             try_idx += 1
                             state_dict = {}
                             if try_idx == try_max:
-                                print(
-                                    'load from url failed ! oh my DLC & OSS, you boys really good! ',
-                                    model_urls[model_name])
+                                print_log(
+                                    f'load from url failed ! oh my DLC & OSS, you boys really good! {model_urls[self.model_name]}',
+                                    logger)
 
-                    # for some model strict = False still failed when model doesn't exactly match
-                    try:
-                        self.model.load_state_dict(state_dict, strict=False)
-                    except Exception:
-                        print('load for model_name not all right')
+                    if 'model' in state_dict:
+                        state_dict = state_dict['model']
+                    self.model.load_state_dict(state_dict, strict=False)
                 else:
-                    print('%s not in evtorch modelzoo!' % model_name)
-
-    def init_weights(self, pretrained=None):
-        # pretrained is the path of pretrained model offered by easycv
-        if pretrained is not None:
-            logger = get_root_logger()
-            load_checkpoint(
-                self.model,
-                pretrained,
-                map_location=torch.device('cpu'),
-                strict=False,
-                logger=logger)
+                    raise ValueError('{} not in evtorch modelzoo!'.format(
+                        self.model_name))
+            else:
+                raise ValueError(
+                    'Error: Fail to create {} with (pretrained={}...)'.format(
+                        self.model_name, pretrained))
         else:
-            # init by timm
-            pass
+            print_log('load model from init weights')
 
     def forward(self, x):
 

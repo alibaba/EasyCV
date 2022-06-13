@@ -14,6 +14,8 @@ from easycv.core.visualization import imshow_bboxes, imshow_keypoints
 from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger
 
 
 @MODELS.register_module()
@@ -40,6 +42,7 @@ class TopDown(BaseModel):
                  loss_pose=None):
         super().__init__()
         self.fp16_enabled = False
+        self.pretrained = pretrained
 
         self.backbone = builder.build_backbone(backbone)
 
@@ -63,7 +66,7 @@ class TopDown(BaseModel):
 
             self.keypoint_head = builder.build_head(keypoint_head)
 
-        self.init_weights(pretrained=pretrained)
+        self.init_weights()
 
     @property
     def with_neck(self):
@@ -75,9 +78,14 @@ class TopDown(BaseModel):
         """Check if has keypoint_head."""
         return hasattr(self, 'keypoint_head')
 
-    def init_weights(self, pretrained=None):
+    def init_weights(self):
         """Weight initialization for model."""
-        self.backbone.init_weights(pretrained)
+        if isinstance(self.pretrained, str):
+            logger = get_root_logger()
+            load_checkpoint(
+                self.backbone, self.pretrained, strict=False, logger=logger)
+        else:
+            self.backbone.init_weights()
         if self.with_neck:
             self.neck.init_weights()
         if self.with_keypoint:

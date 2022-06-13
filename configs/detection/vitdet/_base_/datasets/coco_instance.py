@@ -15,7 +15,7 @@ CLASSES = [
 ]
 
 # dataset settings
-data_root = '/apsarapangu/disk2/yunji.cjy/coco/'
+data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -41,7 +41,7 @@ train_pipeline = [
     dict(type='DefaultFormatBundle'),
     dict(
         type='Collect',
-        keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks'],
+        keys=['img', 'gt_bboxes', 'gt_labels'],
         meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
                    'img_shape', 'pad_shape', 'scale_factor', 'flip',
                    'flip_direction', 'img_norm_cfg'))

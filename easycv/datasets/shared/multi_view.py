@@ -1,9 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import copy
-import random
 
-from PIL import Image, ImageFilter, ImageOps
-from torchvision import transforms
+from PIL import Image
 
 from easycv.datasets.builder import build_datasource
 from easycv.datasets.registry import DATASETS, PIPELINES

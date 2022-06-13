@@ -12,7 +12,7 @@ _base_ = '../../base.py'
 # model settings
 model = dict(
     type='MIXCO',
-    pretrained=None,
+    pretrained=False,
     train_preprocess=['randomGrayScale', 'gaussianBlur', 'mixUp'],
     queue_len=65536,
     feat_dim=128,
