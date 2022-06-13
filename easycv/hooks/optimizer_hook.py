@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import logging
 from distutils.version import LooseVersion
 
 import torch
@@ -13,10 +14,9 @@ else:
     try:
         from apex import amp
     except ImportError:
-        print(
-            'Warning: apex not installed, please install apex from https://www.github.com/nvidia/apex if you want to use fp16.'
+        logging.warning(
+            'apex not installed, please install apex from https://www.github.com/nvidia/apex if you want to use fp16.'
         )
-        pass
 
 
 class OptimizerHook(_OptimizerHook):
