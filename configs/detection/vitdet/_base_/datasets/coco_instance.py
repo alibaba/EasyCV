@@ -41,7 +41,7 @@ train_pipeline = [
     dict(type='DefaultFormatBundle'),
     dict(
         type='Collect',
-        keys=['img', 'gt_bboxes', 'gt_labels'],
+        keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks'],
         meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
                    'img_shape', 'pad_shape', 'scale_factor', 'flip',
                    'flip_direction', 'img_norm_cfg'))
