@@ -33,7 +33,7 @@ from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 # from tools.fuse_conv_bn import fuse_module
 
 # from mmcv import Config
-
+from mmcv.runner.checkpoint import _load_checkpoint
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -172,6 +172,13 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f'use device {device}')
     checkpoint = load_checkpoint(model, args.checkpoint, map_location=device)
+    #
+    # official_path = "/apsarapangu/disk5/zxy/pretrained/models/yolox_s_official_40.5.pth"
+    # if 'official' in official_path:
+    #     checkpoint_model = _load_checkpoint(official_path, device)
+    #     state_dict = checkpoint_model['model']
+    #     model.load_state_dict(state_dict)
+
     model.to(device)
     # if args.fuse_conv_bn:
     #     model = fuse_module(model)

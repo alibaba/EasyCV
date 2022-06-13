@@ -10,10 +10,83 @@ import torch.nn.functional as F
 from easycv.models.backbones.network_blocks import BaseConv, DWConv
 from easycv.models.detection.utils import bboxes_iou
 from easycv.models.loss import IOUloss
-from easycv.models.loss import FocalLoss,VarifocalLoss
+from easycv.models.loss import FocalLoss, VarifocalLoss
+from mmcv.cnn import ConvModule, normal_init
 
 
-class YOLOXHead(nn.Module):
+class TaskDecomposition(nn.Module):
+    """Task decomposition module in task-aligned predictor of TOOD.
+
+    Args:
+        feat_channels (int): Number of feature channels in TOOD head.
+        stacked_convs (int): Number of conv layers in TOOD head.
+        la_down_rate (int): Downsample rate of layer attention.
+        conv_cfg (dict): Config dict for convolution layer.
+        norm_cfg (dict): Config dict for normalization layer.
+    """
+
+    def __init__(self,
+                 feat_channels,
+                 stacked_convs,
+                 la_down_rate=8,
+                 conv_cfg=None,
+                 norm_cfg=None):
+        super(TaskDecomposition, self).__init__()
+        self.feat_channels = feat_channels
+        self.stacked_convs = stacked_convs
+        self.in_channels = self.feat_channels * self.stacked_convs
+        self.norm_cfg = norm_cfg
+        self.layer_attention = nn.Sequential(
+            nn.Conv2d(self.in_channels, self.in_channels // la_down_rate, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(
+                self.in_channels // la_down_rate,
+                self.stacked_convs,
+                1,
+                padding=0), nn.Sigmoid())
+
+        self.reduction_conv = ConvModule(
+            self.in_channels,
+            self.feat_channels,
+            1,
+            stride=1,
+            padding=0,
+            conv_cfg=conv_cfg,
+            norm_cfg=norm_cfg,
+            bias=norm_cfg is None)
+
+    def init_weights(self):
+        for m in self.layer_attention.modules():
+            if isinstance(m, nn.Conv2d):
+                normal_init(m, std=0.001)
+        normal_init(self.reduction_conv.conv, std=0.01)
+
+    def forward(self, feat, avg_feat=None):
+        b, c, h, w = feat.shape
+        if avg_feat is None:
+            avg_feat = F.adaptive_avg_pool2d(feat, (1, 1))
+        weight = self.layer_attention(avg_feat)
+
+        # here we first compute the product between layer attention weight and
+        # conv weight, and then compute the convolution between new conv weight
+        # and feature map, in order to save memory and FLOPs.
+        conv_weight = weight.reshape(
+            b, 1, self.stacked_convs,
+            1) * self.reduction_conv.conv.weight.reshape(
+            1, self.feat_channels, self.stacked_convs, self.feat_channels)
+        conv_weight = conv_weight.reshape(b, self.feat_channels,
+                                          self.in_channels)
+        feat = feat.reshape(b, self.in_channels, h * w)
+        feat = torch.bmm(conv_weight, feat).reshape(b, self.feat_channels, h,
+                                                    w)
+        if self.norm_cfg is not None:
+            feat = self.reduction_conv.norm(feat)
+        feat = self.reduction_conv.activate(feat)
+
+        return feat
+
+
+class TOODHead(nn.Module):
 
     def __init__(self,
                  num_classes,
@@ -24,7 +97,11 @@ class YOLOXHead(nn.Module):
                  depthwise=False,
                  stage='CLOUD',
                  obj_loss_type='l1',
-                 reg_loss_type='l1'):
+                 reg_loss_type='iou',
+                 stacked_convs=6,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
+                 ):
         """
         Args:
             num_classes (int): detection class numbers.
@@ -44,12 +121,22 @@ class YOLOXHead(nn.Module):
         self.stage = stage
         self.decode_in_inference = True  # for deploy, set to False
 
+        self.stacked_convs = stacked_convs
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
+        self.feat_channels = int(256 * width)
+
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
         self.cls_preds = nn.ModuleList()
         self.reg_preds = nn.ModuleList()
         self.obj_preds = nn.ModuleList()
+        self.cls_decomps = nn.ModuleList()
+        self.reg_decomps = nn.ModuleList()
         self.stems = nn.ModuleList()
+
+        self.inter_convs = nn.ModuleList()
+
         Conv = DWConv if depthwise else BaseConv
 
         for i in range(len(in_channels)):
@@ -119,17 +206,37 @@ class YOLOXHead(nn.Module):
                     stride=1,
                     padding=0,
                 ))
+            self.cls_decomps.append(
+                TaskDecomposition(self.feat_channels,
+                                  self.stacked_convs,
+                                  self.stacked_convs * 8,
+                                  self.conv_cfg, self.norm_cfg))
+            self.reg_decomps.append(
+                TaskDecomposition(self.feat_channels,
+                                  self.stacked_convs,
+                                  self.stacked_convs * 8,
+                                  self.conv_cfg, self.norm_cfg)
+            )
 
+        for i in range(self.stacked_convs):
+            conv_cfg = self.conv_cfg
+            chn = self.feat_channels
+            self.inter_convs.append(
+                ConvModule(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=self.norm_cfg))
 
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction='none')
 
-        # if reg_loss_type=='l1':
         self.use_l1 = False
         self.l1_loss = nn.L1Loss(reduction='none')
-        # else:
-        #     self.use_l1 = False
 
-        self.iou_loss = IOUloss(reduction='none',loss_type=reg_loss_type)
+        self.iou_loss = IOUloss(reduction='none', loss_type=reg_loss_type)
 
         self.obj_loss_type = obj_loss_type
         if obj_loss_type == 'BCE':
@@ -163,11 +270,19 @@ class YOLOXHead(nn.Module):
         y_shifts = []
         expanded_strides = []
 
-        for k, (cls_conv, reg_conv, stride_this_level, x) in enumerate(
-                zip(self.cls_convs, self.reg_convs, self.strides, xin)):
+        for k, (cls_decomp, reg_decomp, cls_conv, reg_conv, stride_this_level, x) in enumerate(
+                zip(self.cls_decomps, self.reg_decomps, self.cls_convs, self.reg_convs, self.strides, xin)):
             x = self.stems[k](x)
-            cls_x = x
-            reg_x = x
+
+            inter_feats = []
+            for inter_conv in self.inter_convs:
+                x = inter_conv(x)
+                inter_feats.append(x)
+            feat = torch.cat(inter_feats, 1)
+
+            avg_feat = F.adaptive_avg_pool2d(feat, (1, 1))
+            cls_x = cls_decomp(feat, avg_feat)
+            reg_x = reg_decomp(feat, avg_feat)
 
             cls_feat = cls_conv(cls_x)
             cls_output = self.cls_preds[k](cls_feat)
@@ -185,7 +300,7 @@ class YOLOXHead(nn.Module):
                 expanded_strides.append(
                     torch.zeros(
                         1, grid.shape[1]).fill_(stride_this_level).type_as(
-                            xin[0]))
+                        xin[0]))
                 if self.use_l1:
                     batch_size = reg_output.shape[0]
                     hsize, wsize = reg_output.shape[-2:]
@@ -272,15 +387,15 @@ class YOLOXHead(nn.Module):
         return outputs
 
     def get_losses(
-        self,
-        imgs,
-        x_shifts,
-        y_shifts,
-        expanded_strides,
-        labels,
-        outputs,
-        origin_preds,
-        dtype,
+            self,
+            imgs,
+            x_shifts,
+            y_shifts,
+            expanded_strides,
+            labels,
+            outputs,
+            origin_preds,
+            dtype,
     ):
         bbox_preds = outputs[:, :, :4]  # [batch, n_anchors_all, 4]
         obj_preds = outputs[:, :, 4].unsqueeze(-1)  # [batch, n_anchors_all, 1]
@@ -418,7 +533,7 @@ class YOLOXHead(nn.Module):
                        ).sum() / num_fg
         else:
             loss_obj = (self.obj_loss(obj_preds.view(-1, 1),
-                                             obj_targets)).sum() / num_fg
+                                      obj_targets)).sum() / num_fg
         loss_cls = (self.bcewithlog_loss(
             cls_preds.view(-1, self.num_classes)[fg_masks],
             cls_targets)).sum() / num_fg
@@ -449,7 +564,6 @@ class YOLOXHead(nn.Module):
         loss = -(pos_loss + neg_loss)
         return loss
 
-
     def get_l1_target(self,
                       l1_target,
                       gt,
@@ -465,22 +579,22 @@ class YOLOXHead(nn.Module):
 
     @torch.no_grad()
     def get_assignments(
-        self,
-        batch_idx,
-        num_gt,
-        total_num_anchors,
-        gt_bboxes_per_image,
-        gt_classes,
-        bboxes_preds_per_image,
-        expanded_strides,
-        x_shifts,
-        y_shifts,
-        cls_preds,
-        bbox_preds,
-        obj_preds,
-        labels,
-        imgs,
-        mode='gpu',
+            self,
+            batch_idx,
+            num_gt,
+            total_num_anchors,
+            gt_bboxes_per_image,
+            gt_classes,
+            bboxes_preds_per_image,
+            expanded_strides,
+            x_shifts,
+            y_shifts,
+            cls_preds,
+            bbox_preds,
+            obj_preds,
+            labels,
+            imgs,
+            mode='gpu',
     ):
 
         if mode == 'cpu':
@@ -537,7 +651,6 @@ class YOLOXHead(nn.Module):
         pair_wise_ious = bboxes_iou(gt_bboxes_per_image,
                                     bboxes_preds_per_image, False)
 
-
         if (torch.isnan(pair_wise_ious.max())):
             pair_wise_ious = bboxes_iou(gt_bboxes_per_image,
                                         bboxes_preds_per_image, False)
@@ -545,7 +658,7 @@ class YOLOXHead(nn.Module):
         gt_cls_per_image = (
             F.one_hot(gt_classes.to(torch.int64),
                       self.num_classes).float().unsqueeze(1).repeat(
-                          1, num_in_boxes_anchor, 1))
+                1, num_in_boxes_anchor, 1))
         pair_wise_ious_loss = -torch.log(pair_wise_ious + 1e-8)
 
         if mode == 'cpu':
@@ -554,27 +667,27 @@ class YOLOXHead(nn.Module):
         if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
             with torch.cuda.amp.autocast(enabled=False):
                 cls_preds_ = (
-                    cls_preds_.float().unsqueeze(0).repeat(num_gt, 1,
-                                                           1).sigmoid_() *
-                    obj_preds_.float().unsqueeze(0).repeat(num_gt, 1,
-                                                           1).sigmoid_())
+                        cls_preds_.float().unsqueeze(0).repeat(num_gt, 1,
+                                                               1).sigmoid_() *
+                        obj_preds_.float().unsqueeze(0).repeat(num_gt, 1,
+                                                               1).sigmoid_())
                 pair_wise_cls_loss = F.binary_cross_entropy(
                     cls_preds_.sqrt_(), gt_cls_per_image,
                     reduction='none').sum(-1)
         else:
             cls_preds_ = (
-                cls_preds_.float().unsqueeze(0).repeat(num_gt, 1,
-                                                       1).sigmoid_() *
-                obj_preds_.float().unsqueeze(0).repeat(num_gt, 1,
-                                                       1).sigmoid_())
+                    cls_preds_.float().unsqueeze(0).repeat(num_gt, 1,
+                                                           1).sigmoid_() *
+                    obj_preds_.float().unsqueeze(0).repeat(num_gt, 1,
+                                                           1).sigmoid_())
             pair_wise_cls_loss = F.binary_cross_entropy(
                 cls_preds_.sqrt_(), gt_cls_per_image, reduction='none').sum(-1)
 
         del cls_preds_
 
         cost = (
-            pair_wise_cls_loss + 3.0 * pair_wise_ious_loss + 100000.0 *
-            (~is_in_boxes_and_center))
+                pair_wise_cls_loss + 3.0 * pair_wise_ious_loss + 100000.0 *
+                (~is_in_boxes_and_center))
 
         (
             num_fg,
@@ -601,13 +714,13 @@ class YOLOXHead(nn.Module):
         )
 
     def get_in_boxes_info(
-        self,
-        gt_bboxes_per_image,
-        expanded_strides,
-        x_shifts,
-        y_shifts,
-        total_num_anchors,
-        num_gt,
+            self,
+            gt_bboxes_per_image,
+            expanded_strides,
+            x_shifts,
+            y_shifts,
+            total_num_anchors,
+            num_gt,
     ):
         expanded_strides_per_image = expanded_strides[0]
         x_shifts_per_image = x_shifts[0] * expanded_strides_per_image
@@ -623,19 +736,19 @@ class YOLOXHead(nn.Module):
         gt_bboxes_per_image_l = (
             (gt_bboxes_per_image[:, 0] -
              0.5 * gt_bboxes_per_image[:, 2]).unsqueeze(1).repeat(
-                 1, total_num_anchors))
+                1, total_num_anchors))
         gt_bboxes_per_image_r = (
             (gt_bboxes_per_image[:, 0] +
              0.5 * gt_bboxes_per_image[:, 2]).unsqueeze(1).repeat(
-                 1, total_num_anchors))
+                1, total_num_anchors))
         gt_bboxes_per_image_t = (
             (gt_bboxes_per_image[:, 1] -
              0.5 * gt_bboxes_per_image[:, 3]).unsqueeze(1).repeat(
-                 1, total_num_anchors))
+                1, total_num_anchors))
         gt_bboxes_per_image_b = (
             (gt_bboxes_per_image[:, 1] +
              0.5 * gt_bboxes_per_image[:, 3]).unsqueeze(1).repeat(
-                 1, total_num_anchors))
+                1, total_num_anchors))
 
         b_l = x_centers_per_image - gt_bboxes_per_image_l
         b_r = gt_bboxes_per_image_r - x_centers_per_image
@@ -650,21 +763,21 @@ class YOLOXHead(nn.Module):
         center_radius = 2.5
 
         gt_bboxes_per_image_l = (
-            gt_bboxes_per_image[:, 0]).unsqueeze(1).repeat(
-                1, total_num_anchors
-            ) - center_radius * expanded_strides_per_image.unsqueeze(0)
+                                    gt_bboxes_per_image[:, 0]).unsqueeze(1).repeat(
+            1, total_num_anchors
+        ) - center_radius * expanded_strides_per_image.unsqueeze(0)
         gt_bboxes_per_image_r = (
-            gt_bboxes_per_image[:, 0]).unsqueeze(1).repeat(
-                1, total_num_anchors
-            ) + center_radius * expanded_strides_per_image.unsqueeze(0)
+                                    gt_bboxes_per_image[:, 0]).unsqueeze(1).repeat(
+            1, total_num_anchors
+        ) + center_radius * expanded_strides_per_image.unsqueeze(0)
         gt_bboxes_per_image_t = (
-            gt_bboxes_per_image[:, 1]).unsqueeze(1).repeat(
-                1, total_num_anchors
-            ) - center_radius * expanded_strides_per_image.unsqueeze(0)
+                                    gt_bboxes_per_image[:, 1]).unsqueeze(1).repeat(
+            1, total_num_anchors
+        ) - center_radius * expanded_strides_per_image.unsqueeze(0)
         gt_bboxes_per_image_b = (
-            gt_bboxes_per_image[:, 1]).unsqueeze(1).repeat(
-                1, total_num_anchors
-            ) + center_radius * expanded_strides_per_image.unsqueeze(0)
+                                    gt_bboxes_per_image[:, 1]).unsqueeze(1).repeat(
+            1, total_num_anchors
+        ) + center_radius * expanded_strides_per_image.unsqueeze(0)
 
         c_l = x_centers_per_image - gt_bboxes_per_image_l
         c_r = gt_bboxes_per_image_r - x_centers_per_image
@@ -678,8 +791,8 @@ class YOLOXHead(nn.Module):
         is_in_boxes_anchor = is_in_boxes_all | is_in_centers_all
 
         is_in_boxes_and_center = (
-            is_in_boxes[:, is_in_boxes_anchor]
-            & is_in_centers[:, is_in_boxes_anchor])
+                is_in_boxes[:, is_in_boxes_anchor]
+                & is_in_centers[:, is_in_boxes_anchor])
         return is_in_boxes_anchor, is_in_boxes_and_center
 
     def dynamic_k_matching(self, cost, pair_wise_ious, gt_classes, num_gt,

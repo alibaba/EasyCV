@@ -9,7 +9,8 @@ model = dict(
     nms_thre=0.65,
     use_att=None,
     obj_loss_type='BCE',
-    reg_loss_type='iou'
+    reg_loss_type='iou',
+    spp_type='sppf'
 )
 
 # s m l x
@@ -105,8 +106,7 @@ val_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         classes=CLASSES,
-        filter_empty_gt=True,
-        test_mode = True,
+        filter_empty_gt=False,
         iscrowd=True),
     pipeline=test_pipeline,
     dynamic_scale=None,

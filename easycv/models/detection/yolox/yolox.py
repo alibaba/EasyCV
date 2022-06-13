@@ -11,6 +11,7 @@ from easycv.models.builder import MODELS
 from easycv.models.detection.utils import postprocess
 from .yolo_head import YOLOXHead
 from .yolo_pafpn import YOLOPAFPN
+from .tood_head import TOODHead
 
 
 def init_yolo(M):
@@ -47,6 +48,8 @@ class YOLOX(BaseModel):
                  use_att: str = None,
                  obj_loss_type: str = 'l1',
                  reg_loss_type: str = 'l1',
+                 spp_type: str = 'spp',
+                 head_type: str = 'yolox',
                  pretrained: str = None):
         super(YOLOX, self).__init__()
         assert model_type in self.param_map, f'invalid model_type for yolox {model_type}, valid ones are {list(self.param_map.keys())}'
@@ -55,8 +58,12 @@ class YOLOX(BaseModel):
         depth = self.param_map[model_type][0]
         width = self.param_map[model_type][1]
 
-        self.backbone = YOLOPAFPN(depth, width, in_channels=in_channels, use_att=use_att)
-        self.head = YOLOXHead(num_classes, width, in_channels=in_channels, obj_loss_type=obj_loss_type, reg_loss_type=reg_loss_type)
+        self.backbone = YOLOPAFPN(depth, width, in_channels=in_channels, use_att=use_att, spp_type=spp_type)
+
+        if head_type=='yolox':
+            self.head = YOLOXHead(num_classes, width, in_channels=in_channels, obj_loss_type=obj_loss_type, reg_loss_type=reg_loss_type)
+        elif head_type=='tood':
+            self.head = TOODHead(num_classes, width, in_channels=in_channels, obj_loss_type=obj_loss_type, reg_loss_type=reg_loss_type)
 
         self.apply(init_yolo)  # init_yolo(self)
         self.head.initialize_biases(1e-2)
@@ -85,6 +92,8 @@ class YOLOX(BaseModel):
         fpn_outs = self.backbone(img)
 
         targets = torch.cat([gt_labels, gt_bboxes], dim=2)
+
+
 
         loss, iou_loss, conf_loss, cls_loss, l1_loss, num_fg = self.head(
             fpn_outs, targets, img)

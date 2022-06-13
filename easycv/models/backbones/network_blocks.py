@@ -147,6 +147,38 @@ class ResLayer(nn.Module):
         return x + out
 
 
+class SPPFBottleneck(nn.Module):
+    """Spatial pyramid pooling layer used in YOLOv3-SPP"""
+
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size=5,
+                 activation='silu'):
+        super().__init__()
+        hidden_channels = in_channels // 2
+        self.conv1 = BaseConv(
+            in_channels, hidden_channels, 1, stride=1, act=activation)
+        # self.m = nn.ModuleList([
+        #     nn.MaxPool2d(kernel_size=ks, stride=1, padding=ks // 2)
+        #     for ks in kernel_sizes
+        # ])
+        self.m = nn.MaxPool2d(kernel_size=kernel_size, stride=1, padding=kernel_size // 2)
+
+        conv2_channels = hidden_channels * 4
+        self.conv2 = BaseConv(
+            conv2_channels, out_channels, 1, stride=1, act=activation)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x1 = self.m(x)
+        x2 = self.m(x1)
+        x = self.conv2(torch.cat([x, x1, x2, self.m(x2)], 1))
+        # x = torch.cat([x] + [m(x) for m in self.m], dim=1)
+        # x = self.conv2(x)
+        return x
+
+
 class SPPBottleneck(nn.Module):
     """Spatial pyramid pooling layer used in YOLOv3-SPP"""
 

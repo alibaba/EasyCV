@@ -1,9 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 from torch import nn
-
+import torch
 from .network_blocks import (BaseConv, CSPLayer, DWConv, Focus, ResLayer,
-                             SPPBottleneck)
+                             SPPBottleneck, SPPFBottleneck)
 
 
 class Darknet(nn.Module):
@@ -16,6 +16,7 @@ class Darknet(nn.Module):
             in_channels=3,
             stem_out_channels=32,
             out_features=('dark3', 'dark4', 'dark5'),
+            spp_type = 'spp'
     ):
         """
         Args:
@@ -49,11 +50,18 @@ class Darknet(nn.Module):
             *self.make_group_layer(in_channels, num_blocks[2], stride=2))
         in_channels *= 2  # 512
 
-        self.dark5 = nn.Sequential(
-            *self.make_group_layer(in_channels, num_blocks[3], stride=2),
-            *self.make_spp_block([in_channels, in_channels * 2],
-                                 in_channels * 2),
-        )
+        if spp_type=='spp':
+            self.dark5 = nn.Sequential(
+                *self.make_group_layer(in_channels, num_blocks[3], stride=2),
+                *self.make_spp_block([in_channels, in_channels * 2],
+                                     in_channels * 2),
+            )
+        elif spp_type=='sppf':
+            self.dark5 = nn.Sequential(
+                *self.make_group_layer(in_channels, num_blocks[3], stride=2),
+                *self.make_sppf_block([in_channels, in_channels * 2],
+                                       in_channels * 2),
+            )
 
     def make_group_layer(self,
                          in_channels: int,
@@ -71,6 +79,23 @@ class Darknet(nn.Module):
         ]
 
     def make_spp_block(self, filters_list, in_filters):
+        m = nn.Sequential(*[
+            BaseConv(in_filters, filters_list[0], 1, stride=1, act='lrelu'),
+            BaseConv(
+                filters_list[0], filters_list[1], 3, stride=1, act='lrelu'),
+            SPPBottleneck(
+                in_channels=filters_list[1],
+                out_channels=filters_list[0],
+                activation='lrelu',
+            ),
+            BaseConv(
+                filters_list[0], filters_list[1], 3, stride=1, act='lrelu'),
+            BaseConv(
+                filters_list[1], filters_list[0], 1, stride=1, act='lrelu'),
+        ])
+        return m
+
+    def make_sppf_block(self, filters_list, in_filters):
         m = nn.Sequential(*[
             BaseConv(in_filters, filters_list[0], 1, stride=1, act='lrelu'),
             BaseConv(
@@ -111,6 +136,7 @@ class CSPDarknet(nn.Module):
         out_features=('dark3', 'dark4', 'dark5'),
         depthwise=False,
         act='silu',
+        spp_type='spp'
     ):
         super().__init__()
         assert out_features, 'please provide output features of Darknet'
@@ -160,19 +186,35 @@ class CSPDarknet(nn.Module):
         )
 
         # dark5
-        self.dark5 = nn.Sequential(
-            Conv(base_channels * 8, base_channels * 16, 3, 2, act=act),
-            SPPBottleneck(
-                base_channels * 16, base_channels * 16, activation=act),
-            CSPLayer(
-                base_channels * 16,
-                base_channels * 16,
-                n=base_depth,
-                shortcut=False,
-                depthwise=depthwise,
-                act=act,
-            ),
-        )
+        if spp_type=='spp':
+            self.dark5 = nn.Sequential(
+                Conv(base_channels * 8, base_channels * 16, 3, 2, act=act),
+                SPPBottleneck(
+                    base_channels * 16, base_channels * 16, activation=act),
+                CSPLayer(
+                    base_channels * 16,
+                    base_channels * 16,
+                    n=base_depth,
+                    shortcut=False,
+                    depthwise=depthwise,
+                    act=act,
+                ),
+            )
+
+        elif spp_type=='sppf':
+            self.dark5 = nn.Sequential(
+                Conv(base_channels * 8, base_channels * 16, 3, 2, act=act),
+                SPPFBottleneck(
+                    base_channels * 16, base_channels * 16, activation=act),
+                CSPLayer(
+                    base_channels * 16,
+                    base_channels * 16,
+                    n=base_depth,
+                    shortcut=False,
+                    depthwise=depthwise,
+                    act=act,
+                ),
+            )
 
     def forward(self, x):
         outputs = {}
