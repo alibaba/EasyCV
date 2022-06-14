@@ -105,6 +105,7 @@ def single_gpu_test(model, data_loader, mode='test', use_fp16=False, **kwargs):
                 model, MMDataParallel):
             input_args, kwargs = scatter_kwargs(None, data,
                                                 [torch.cuda.current_device()])
+
             with torch.no_grad():
                 result = model(**kwargs[0], mode=mode)
         else:
