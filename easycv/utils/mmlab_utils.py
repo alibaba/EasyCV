@@ -58,7 +58,7 @@ class MMAdapter:
 
         if not install_success:
             try:
-                run_in_subprocess('pip install mmdet')
+                run_in_subprocess('pip install mmdet==2.23.0')
             except:
                 raise ValueError(
                     'Failed to install mmdet, '
