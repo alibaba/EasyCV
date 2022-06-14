@@ -381,7 +381,6 @@ class TorchViTDetPredictor(PredictorInterface):
                            img,
                            result,
                            score_thr=0.3,
-                           title='result',
                            wait_time=0,
                            palette=None,
                            show=False,
