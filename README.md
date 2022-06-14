@@ -64,6 +64,7 @@ notebook
 * [self-supervised learning](docs/source/tutorials/EasyCV图像自监督训练-MAE.ipynb)
 * [image classification](docs/source/tutorials/EasyCV图像分类resnet50.ipynb)
 * [object detection with yolox](docs/source/tutorials/EasyCV图像检测YoloX.ipynb)
+* [object detection with vitdet](docs/source/tutorials/EasyCV图像检测ViTDet.ipynb)
 * [metric learning](docs/source/tutorials/EasyCV度量学习resnet50.ipynb)
 
 
