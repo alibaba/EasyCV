@@ -30,9 +30,9 @@ def batch_dice_loss(inputs: torch.Tensor, targets: torch.Tensor):
     return loss
 
 
-batch_dice_loss_jit = torch.jit.script(
-    batch_dice_loss
-)  # type: torch.jit.ScriptModule
+# batch_dice_loss_jit = torch.jit.script(
+#     batch_dice_loss
+# )  # type: torch.jit.ScriptModule
 
 
 def batch_sigmoid_ce_loss(inputs: torch.Tensor, targets: torch.Tensor):
@@ -134,7 +134,8 @@ class HungarianMatcher(nn.Module):
                 cost_mask = batch_sigmoid_ce_loss_jit(out_mask, tgt_mask)
 
                 # Compute the dice loss betwen masks
-                cost_dice = batch_dice_loss_jit(out_mask, tgt_mask)
+                # cost_dice = batch_dice_loss_jit(out_mask, tgt_mask)
+                cost_dice = batch_dice_loss(out_mask, tgt_mask)
             
             # Final cost matrix
             C = (
