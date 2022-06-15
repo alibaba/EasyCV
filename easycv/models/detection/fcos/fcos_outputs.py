@@ -141,7 +141,7 @@ def ml_nms(boxlist,
     """
     if nms_thresh <= 0:
         return boxlist
-    boxes = boxlist.pred_boxes.tensor
+    boxes = boxlist.pred_boxes
     scores = boxlist.scores
     labels = boxlist.pred_classes
     keep = batched_nms(boxes, scores, labels, nms_thresh)
@@ -681,6 +681,7 @@ class FCOSOutputs(nn.Module):
                                        ctrness_pred,
                                        image_sizes,
                                        top_feat=None):
+
         N, C, H, W = logits_pred.shape
 
         # put in the same format as locations

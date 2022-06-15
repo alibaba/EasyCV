@@ -215,7 +215,18 @@ class FCOSHead(nn.Module):
         locations = self.compute_locations(x)
         logits_pred, reg_pred, ctrness_pred = self.forward(x)
 
-        results = self.fcos_outputs.predict_proposals(logits_pred, reg_pred,
+        orig_target_sizes = []
+        for i in range(len(img_metas)):
+            ori_h, ori_w, _ = img_metas[i]['ori_shape']
+            orig_target_sizes.append((ori_h, ori_w))
+
+        outputs = self.fcos_outputs.predict_proposals(logits_pred, reg_pred,
                                                       ctrness_pred, locations,
-                                                      x.image_sizes, [])
+                                                      orig_target_sizes, [])
+        results = [{
+            'scores': s,
+            'labels': l,
+            'boxes': b
+        } for s, l, b in zip(outputs[0].scores, outputs[0].pred_classes,
+                             outputs[0].pred_boxes)]
         return results
