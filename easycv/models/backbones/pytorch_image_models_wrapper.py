@@ -111,25 +111,28 @@ class PytorchImageModelWrapper(nn.Module):
         logger = get_root_logger()
         if pretrained:
             if self.model_name in self.timm_model_names:
-                default_pretrained_model_path = model_urls[self.model_name]
-                print_log(
-                    'load model from default path: {}'.format(
-                        default_pretrained_model_path), logger)
-                if default_pretrained_model_path.endswith('.npz'):
-                    pretrained_loc = download_cached_file(
-                        default_pretrained_model_path,
-                        check_hash=False,
-                        progress=False)
-                    return self.model.load_pretrained(pretrained_loc)
+                if self.model_name in model_urls:
+                    default_pretrained_model_path = model_urls[self.model_name]
+                    print_log(
+                        'load model from default path: {}'.format(
+                            default_pretrained_model_path), logger)
+                    if default_pretrained_model_path.endswith('.npz'):
+                        pretrained_loc = download_cached_file(
+                            default_pretrained_model_path,
+                            check_hash=False,
+                            progress=False)
+                        return self.model.load_pretrained(pretrained_loc)
+                    else:
+                        backbone_module = importlib.import_module(
+                            self.model.__module__)
+                        return load_pretrained(
+                            self.model,
+                            default_cfg={'url': default_pretrained_model_path},
+                            filter_fn=backbone_module.checkpoint_filter_fn
+                            if hasattr(backbone_module, 'checkpoint_filter_fn')
+                            else None)
                 else:
-                    backbone_module = importlib.import_module(
-                        self.model.__module__)
-                    return load_pretrained(
-                        self.model,
-                        default_cfg={'url': default_pretrained_model_path},
-                        filter_fn=backbone_module.checkpoint_filter_fn
-                        if hasattr(backbone_module, 'checkpoint_filter_fn')
-                        else None)
+                    print_log('load model from init weights')
             elif self.model_name in _MODEL_MAP:
                 if self.model_name in model_urls.keys():
                     default_pretrained_model_path = model_urls[self.model_name]
