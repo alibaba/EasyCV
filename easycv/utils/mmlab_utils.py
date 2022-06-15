@@ -130,29 +130,29 @@ class MMAdapter:
         return module_obj
 
     def _get_mmtype_registry_map(self):
-        import mmdet.models.builder.MODELS
-        import mmdet.models.builder.BACKBONES
-        import mmdet.models.builder.NECKS
-        import mmdet.models.builder.HEADS
-        mmdet.models.builder.MODELS._module_dict = {}
-        mmdet.models.builder.BACKBONES._module_dict = {}
-        mmdet.models.builder.NECKS._module_dict = {}
-        mmdet.models.builder.HEADS._module_dict = {}
-        importlib.reload(mmdet.models.builder.MODELS)
-        importlib.reload(mmdet.models.builder.BACKBONES)
-        importlib.reload(mmdet.models.builder.NECKS)
-        importlib.reload(mmdet.models.builder.HEADS)
-        import mmdet.models.builder.MODELS
-        import mmdet.models.builder.BACKBONES
-        import mmdet.models.builder.NECKS
-        import mmdet.models.builder.HEADS
+        from mmdet.models.builder import MODELS as MMMODELS
+        from mmdet.models.builder import BACKBONES as MMBACKBONES
+        from mmdet.models.builder import NECKS as MMNECKS
+        from mmdet.models.builder import HEADS as MMHEADS
+        MMMODELS._module_dict = {}
+        MMBACKBONES._module_dict = {}
+        MMNECKS._module_dict = {}
+        MMHEADS._module_dict = {}
+        importlib.reload(MMMODELS)
+        importlib.reload(MMBACKBONES)
+        importlib.reload(MMNECKS)
+        importlib.reload(MMHEADS)
+        from mmdet.models.builder import MODELS as MMMODELS
+        from mmdet.models.builder import BACKBONES as MMBACKBONES
+        from mmdet.models.builder import NECKS as MMNECKS
+        from mmdet.models.builder import HEADS as MMHEADS
 
         registry_map = {
             MMDET: {
-                'model': mmdet.models.builder.MODELS,
-                'backbone': mmdet.models.builder.BACKBONES,
-                'neck': mmdet.models.builder.NECKS,
-                'head': mmdet.models.builder.HEADS
+                'model': MMMODELS,
+                'backbone': MMBACKBONES,
+                'neck': MMNECKS,
+                'head': MMHEADS
             }
         }
         return registry_map
