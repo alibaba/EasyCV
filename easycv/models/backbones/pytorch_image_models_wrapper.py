@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import importlib
+from email.policy import strict
 
 import timm
 import torch
@@ -130,7 +131,8 @@ class PytorchImageModelWrapper(nn.Module):
                             default_cfg={'url': default_pretrained_model_path},
                             filter_fn=backbone_module.checkpoint_filter_fn
                             if hasattr(backbone_module, 'checkpoint_filter_fn')
-                            else None)
+                            else None,
+                            strict=False)
                 else:
                     print_log('load model from init weights')
             elif self.model_name in _MODEL_MAP:
