@@ -58,7 +58,7 @@ class MMAdapter:
 
         if not install_success:
             try:
-                run_in_subprocess('pip install mmdet==2.23.0')
+                run_in_subprocess('pip install mmdet')
             except:
                 raise ValueError(
                     'Failed to install mmdet, '
@@ -133,6 +133,15 @@ class MMAdapter:
         from mmdet.models.builder import BACKBONES as MMBACKBONES
         from mmdet.models.builder import NECKS as MMNECKS
         from mmdet.models.builder import HEADS as MMHEADS
+        MMMODELS._module_dict = {}
+        MMBACKBONES._module_dict = {}
+        MMNECKS._module_dict = {}
+        MMHEADS._module_dict = {}
+        from mmdet.models.builder import MODELS as MMMODELS
+        from mmdet.models.builder import BACKBONES as MMBACKBONES
+        from mmdet.models.builder import NECKS as MMNECKS
+        from mmdet.models.builder import HEADS as MMHEADS
+
         registry_map = {
             MMDET: {
                 'model': MMMODELS,
