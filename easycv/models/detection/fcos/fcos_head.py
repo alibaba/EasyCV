@@ -9,6 +9,18 @@ from easycv.models.builder import HEADS
 from .fcos_outputs import FCOSOutputs
 
 
+def compute_locations(h, w, stride, device):
+    shifts_x = torch.arange(
+        0, w * stride, step=stride, dtype=torch.float32, device=device)
+    shifts_y = torch.arange(
+        0, h * stride, step=stride, dtype=torch.float32, device=device)
+    shift_y, shift_x = torch.meshgrid(shifts_y, shifts_x)
+    shift_x = shift_x.reshape(-1)
+    shift_y = shift_y.reshape(-1)
+    locations = torch.stack((shift_x, shift_y), dim=1) + stride // 2
+    return locations
+
+
 class Scale(nn.Module):
 
     def __init__(self, init_value=1.0):
@@ -119,9 +131,6 @@ class FCOSHead(nn.Module):
         else:
             self.scales = None
 
-        self.top_module = nn.Conv2d(
-            in_channels, in_channels, kernel_size=3, stride=1, padding=1)
-
         self.fcos_outputs = FCOSOutputs(fcos_outputs_config)
 
     def init_weights(self):
@@ -138,6 +147,16 @@ class FCOSHead(nn.Module):
         prior_prob = 0.01
         bias_value = -math.log((1 - prior_prob) / prior_prob)
         torch.nn.init.constant_(self.cls_logits.bias, bias_value)
+
+    def compute_locations(self, features):
+        locations = []
+        for level, feature in enumerate(features):
+            h, w = feature.size()[-2:]
+            locations_per_level = compute_locations(h, w,
+                                                    self.fpn_strides[level],
+                                                    feature.device)
+            locations.append(locations_per_level)
+        return locations
 
     def forward(self, x):
         logits = []
@@ -175,33 +194,28 @@ class FCOSHead(nn.Module):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        outputs = self.forward(x)
+        locations = self.compute_locations(x)
+        logits_pred, reg_pred, ctrness_pred = self.forward(x)
 
-        # for i in range(len(img_metas)):
-        #     img_h, img_w, _ = img_metas[i]['img_shape']
-        #     # DETR regress the relative position of boxes (cxcywh) in the image.
-        #     # Thus the learning target should be normalized by the image size, also
-        #     # the box format should be converted from defaultly x1y1x2y2 to cxcywh.
-        #     factor = outputs['pred_boxes'].new_tensor(
-        #         [img_w, img_h, img_w, img_h]).unsqueeze(0)
-        #     gt_bboxes[i] = box_xyxy_to_cxcywh(gt_bboxes[i]) / factor
+        gt_instances = []
+        for i in range(len(img_metas)):
+            gt_instances.append({
+                'img_meta': img_metas[i],
+                'gt_bboxes': gt_bboxes[i],
+                'gt_labels': gt_labels[i]
+            })
 
-        targets = []
-        for gt_label, gt_bbox in zip(gt_labels, gt_bboxes):
-            targets.append({'labels': gt_label, 'boxes': gt_bbox})
-
-        losses = self.criterion(outputs, targets)
+        _, losses = self.fcos_outputs.losses(logits_pred, reg_pred,
+                                             ctrness_pred, locations,
+                                             gt_instances, [])
 
         return losses
 
     def forward_test(self, x, img_metas):
-        outputs = self.forward(x)
+        locations = self.compute_locations(x)
+        logits_pred, reg_pred, ctrness_pred = self.forward(x)
 
-        ori_shape_list = []
-        for i in range(len(img_metas)):
-            ori_h, ori_w, _ = img_metas[i]['ori_shape']
-            ori_shape_list.append(torch.as_tensor([ori_h, ori_w]))
-        orig_target_sizes = torch.stack(ori_shape_list, dim=0)
-
-        results = self.postprocess(outputs, orig_target_sizes)
+        results = self.fcos_outputs.predict_proposals(logits_pred, reg_pred,
+                                                      ctrness_pred, locations,
+                                                      x.image_sizes, [])
         return results
