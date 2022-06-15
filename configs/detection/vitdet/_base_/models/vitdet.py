@@ -137,5 +137,6 @@ model = dict(
 
 mmlab_modules = [
     dict(type='mmdet', name='MaskRCNN', module='model'),
+    dict(type='mmdet', name='RPNHead', module='head'),
     dict(type='mmdet', name='StandardRoIHead', module='head'),
 ]
