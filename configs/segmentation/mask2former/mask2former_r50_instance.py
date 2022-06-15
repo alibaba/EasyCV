@@ -44,6 +44,7 @@ data_root = "/home/yanhaiqiang.yhq/database/coco/"
 image_size = (1024, 1024)
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+pad_cfg = dict(img=(128, 128, 128), masks=0, seg=255)
 train_pipeline = [
     # dict(type='LoadImageFromFile'),
     # dict(
@@ -64,9 +65,9 @@ train_pipeline = [
         crop_type='absolute',
         recompute_bbox=True,
         allow_negative_crop=True),
+    dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-5, 1e-5), by_mask=True),
+    dict(type='MMPad', size=image_size, pad_val=pad_cfg),
     dict(type='MMNormalize', **img_norm_cfg),
-    dict(type='MMPad', size=image_size),
-    # dict(type='MMSegRescale', scale_factor=1 / 4),
     dict(type='DefaultFormatBundle'),
     dict(
         type='Collect',
@@ -77,24 +78,6 @@ train_pipeline = [
                     'img_norm_cfg')),
 ]
 
-# train_pipeline = [
-#     # dict(type='LoadImageFromFile'),
-#     # dict(
-#     #     type='LoadPanopticAnnotations',
-#     #     with_bbox=True,
-#     #     with_mask=True,
-#     #     with_seg=True),
-#     dict(type='MMResize', img_scale=(1333, 800), keep_ratio=True),
-#     dict(type='MMRandomFlip', flip_ratio=0.5),
-#     dict(type='MMNormalize', **img_norm_cfg),
-#     dict(type='MMPad', size_divisor=32),
-#     # dict(type='MMSegRescale', scale_factor=1 / 4),
-#     dict(type='DefaultFormatBundle'),
-#     dict(
-#         type='Collect',
-#         keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks', 'gt_semantic_seg']),
-# ]
-
 test_pipeline = [
     # dict(type='LoadImageFromFile'),
     dict(
@@ -104,8 +87,8 @@ test_pipeline = [
         transforms=[
             dict(type='MMResize', keep_ratio=True),
             dict(type='MMRandomFlip'),
+            dict(type='MMPad', size_divisor=32, pad_val=pad_cfg),
             dict(type='MMNormalize', **img_norm_cfg),
-            dict(type='MMPad', size_divisor=32),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img'],
             meta_keys=('filename', 'ori_filename', 'ori_shape',
