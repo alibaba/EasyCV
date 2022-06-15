@@ -50,6 +50,13 @@ class EVRunner(EpochBasedRunner):
         self.data_loader = None
         self.fp16_enable = fp16_enable
         self.visualization_buffer = LogBuffer()
+        if self.fp16_enable and LooseVersion(
+                torch.__version__) < LooseVersion('1.6.0'):
+            # convert model to fp16
+            self.model.half()
+            # patch the normalization layers to make it work in fp32 mode
+            from mmcv.runner.fp16_utils import patch_norm_fp32
+            patch_norm_fp32(self.model)
 
     def run_iter(self, data_batch, train_mode, **kwargs):
         """ process for each iteration.
@@ -87,14 +94,6 @@ class EVRunner(EpochBasedRunner):
         self._max_iters = self._max_epochs * len(self.data_loader)
         self.call_hook('before_train_epoch')
         time.sleep(2)  # Prevent possible deadlock during epoch transition
-
-        if self.fp16_enable and LooseVersion(
-                torch.__version__) < LooseVersion('1.6.0'):
-            # convert model to fp16
-            self.model.half()
-            # patch the normalization layers to make it work in fp32 mode
-            from mmcv.runner.fp16_utils import patch_norm_fp32
-            patch_norm_fp32(self.model)
 
         for i, data_batch in enumerate(self.data_loader):
             self._inner_iter = i
