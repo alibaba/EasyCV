@@ -138,10 +138,8 @@ class MMAdapter:
         MMBACKBONES._module_dict = {}
         MMNECKS._module_dict = {}
         MMHEADS._module_dict = {}
-        importlib.reload(MMMODELS)
-        importlib.reload(MMBACKBONES)
-        importlib.reload(MMNECKS)
-        importlib.reload(MMHEADS)
+        from mmdet import models
+        importlib.reload(models)
         from mmdet.models.builder import MODELS as MMMODELS
         from mmdet.models.builder import BACKBONES as MMBACKBONES
         from mmdet.models.builder import NECKS as MMNECKS
