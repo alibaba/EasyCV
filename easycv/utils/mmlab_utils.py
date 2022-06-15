@@ -1,5 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import importlib
 import inspect
 import logging
 
@@ -41,9 +40,9 @@ class MMAdapter:
             self.mmtype_list.add(mmtype)
 
         self.check_env()
+        self.fix_conflicts()
 
         self.MMTYPE_REGISTRY_MAP = self._get_mmtype_registry_map()
-        self.fix_conflicts()
         self.modules_config = modules_config
 
     def check_env(self):
@@ -130,21 +129,18 @@ class MMAdapter:
         return module_obj
 
     def _get_mmtype_registry_map(self):
-        # from mmdet.models.builder import MODELS as MMMODELS
-        # from mmdet.models.builder import BACKBONES as MMBACKBONES
-        # from mmdet.models.builder import NECKS as MMNECKS
-        # from mmdet.models.builder import HEADS as MMHEADS
-        # MMMODELS._module_dict = {}
-        # MMBACKBONES._module_dict = {}
-        # MMNECKS._module_dict = {}
-        # MMHEADS._module_dict = {}
-        from mmdet import models
-        importlib.reload(models)
         from mmdet.models.builder import MODELS as MMMODELS
         from mmdet.models.builder import BACKBONES as MMBACKBONES
         from mmdet.models.builder import NECKS as MMNECKS
         from mmdet.models.builder import HEADS as MMHEADS
-        # print("!!!!!!!!!!!!!!!!!!!!!!", MMMODELS._module_dict)
+        MMMODELS._module_dict = {}
+        MMBACKBONES._module_dict = {}
+        MMNECKS._module_dict = {}
+        MMHEADS._module_dict = {}
+        from mmdet.models.builder import MODELS as MMMODELS
+        from mmdet.models.builder import BACKBONES as MMBACKBONES
+        from mmdet.models.builder import NECKS as MMNECKS
+        from mmdet.models.builder import HEADS as MMHEADS
 
         registry_map = {
             MMDET: {
@@ -159,11 +155,15 @@ class MMAdapter:
 
 class MMDetWrapper:
 
+    def __init__(self):
+        self.is_init = False
+
     def wrap_module(self, cls, module_type):
-        if module_type == 'model':
+        if module_type == 'model' and not self.is_init:
             self._wrap_model_init(cls)
             self._wrap_model_forward(cls)
             self._wrap_model_forward_test(cls)
+            self.is_init = True
 
     def _wrap_model_init(self, cls):
         origin_init = cls.__init__
