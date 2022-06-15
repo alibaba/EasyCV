@@ -1,4 +1,4 @@
-mmcv==1.4.1
+mmcv==1.4.4
 opencv-python
 torch
 torchvision
