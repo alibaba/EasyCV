@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import importlib
-from email.policy import strict
 
 import timm
 import torch
