@@ -130,20 +130,21 @@ class MMAdapter:
         return module_obj
 
     def _get_mmtype_registry_map(self):
-        from mmdet.models.builder import MODELS as MMMODELS
-        from mmdet.models.builder import BACKBONES as MMBACKBONES
-        from mmdet.models.builder import NECKS as MMNECKS
-        from mmdet.models.builder import HEADS as MMHEADS
-        MMMODELS._module_dict = {}
-        MMBACKBONES._module_dict = {}
-        MMNECKS._module_dict = {}
-        MMHEADS._module_dict = {}
+        # from mmdet.models.builder import MODELS as MMMODELS
+        # from mmdet.models.builder import BACKBONES as MMBACKBONES
+        # from mmdet.models.builder import NECKS as MMNECKS
+        # from mmdet.models.builder import HEADS as MMHEADS
+        # MMMODELS._module_dict = {}
+        # MMBACKBONES._module_dict = {}
+        # MMNECKS._module_dict = {}
+        # MMHEADS._module_dict = {}
         from mmdet import models
         importlib.reload(models)
         from mmdet.models.builder import MODELS as MMMODELS
         from mmdet.models.builder import BACKBONES as MMBACKBONES
         from mmdet.models.builder import NECKS as MMNECKS
         from mmdet.models.builder import HEADS as MMHEADS
+        # print("!!!!!!!!!!!!!!!!!!!!!!", MMMODELS._module_dict)
 
         registry_map = {
             MMDET: {
