@@ -10,6 +10,8 @@ from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
 from easycv.utils.logger import get_root_logger, print_log
 from easycv.utils.checkpoint import load_checkpoint
+from mmcv.runner.hooks import HOOKS
+HOOKS._module_dict.pop('YOLOXLrUpdaterHook', None)
 from mmdet.core.mask import mask2bbox
 from mmdet.core import encode_mask_results
 from .matcher import HungarianMatcher
