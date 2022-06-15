@@ -22,7 +22,7 @@ _MMLAB_COPIES = locals()
 
 class MMAdapter:
 
-    def __init__(self, modules_config):
+    def __init__(self, modules_config, mmdet_warpper):
         """Adapt mmlab apis.
         Args: modules_config is as follow format:
             [
@@ -44,6 +44,8 @@ class MMAdapter:
 
         self.MMTYPE_REGISTRY_MAP = self._get_mmtype_registry_map()
         self.modules_config = modules_config
+
+        self.mmdet_warppper = mmdet_warpper
 
     def check_env(self):
         assert self.mmtype_list.issubset(
@@ -87,7 +89,7 @@ class MMAdapter:
     def wrap_module(self, mmtype, module_type, module_name):
         module_obj = self._get_mm_module_obj(mmtype, module_type, module_name)
         if mmtype == MMDET:
-            MMDetWrapper().wrap_module(module_obj, module_type)
+            self.mmdet_warppper.wrap_module(module_obj, module_type)
 
     def _merge_all_easycv_modules_to_mmlab(self, mmtype):
         # Add all my module to mmlab module registry, if duplicated, replace with my module.
@@ -151,7 +153,7 @@ class MMDetWrapper:
         self.is_init = False
 
     def wrap_module(self, cls, module_type):
-        if module_type == 'model' and not self.is_init:
+        if module_type == 'model':
             self._wrap_model_init(cls)
             self._wrap_model_forward(cls)
             self._wrap_model_forward_test(cls)
@@ -252,8 +254,12 @@ class MMDetWrapper:
         setattr(cls, 'forward_test', _new_forward_test)
 
 
+mmdet_wrapper = MMDetWrapper()
+
+
 def dynamic_adapt_for_mmlab(cfg):
     mmlab_modules_cfg = cfg.get('mmlab_modules', [])
     if len(mmlab_modules_cfg) > 1:
-        adapter = MMAdapter(mmlab_modules_cfg)
-        adapter.adapt_mmlab_modules()
+        adapter = MMAdapter(mmlab_modules_cfg, mmdet_wrapper)
+        if not mmdet_wrapper.is_init:
+            adapter.adapt_mmlab_modules()
