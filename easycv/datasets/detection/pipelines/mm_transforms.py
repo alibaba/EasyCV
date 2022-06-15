@@ -9,6 +9,13 @@ import mmcv
 import numpy as np
 from numpy import random
 from torchvision.transforms import functional as F
+try:
+    from panopticapi.utils import rgb2id
+    from mmdet.core import BitmapMasks, PolygonMasks
+    from mmcv.runner.hooks import HOOKS
+    HOOKS._module_dict.pop('YOLOXLrUpdaterHook', None)
+except ImportError:
+    rgb2id = None
 
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.shared.pipelines.transforms import Compose
@@ -829,6 +836,44 @@ class MMPhotoMetricDistortion:
         return repr_str
 
 
+@PIPELINES.register_module()
+class MMSegRescale:
+    """Rescale semantic segmentation maps.
+
+    Args:
+        scale_factor (float): The scale factor of the final output.
+        backend (str): Image rescale backend, choices are 'cv2' and 'pillow'.
+            These two backends generates slightly different results. Defaults
+            to 'cv2'.
+    """
+
+    def __init__(self, scale_factor=1, backend='cv2'):
+        self.scale_factor = scale_factor
+        self.backend = backend
+
+    def __call__(self, results):
+        """Call function to scale the semantic segmentation map.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Result dict with semantic segmentation map scaled.
+        """
+
+        for key in results.get('seg_fields', []):
+            if self.scale_factor != 1:
+                results[key] = mmcv.imrescale(
+                    results[key],
+                    self.scale_factor,
+                    interpolation='nearest',
+                    backend=self.backend)
+        return results
+
+    def __repr__(self):
+        return self.__class__.__name__ + f'(scale_factor={self.scale_factor})'
+
+
 @PIPELINES.register_module
 class MMResize:
     """Resize images & bbox & mask.
@@ -1419,6 +1464,196 @@ class MMNormalize:
 
 
 @PIPELINES.register_module()
+class MMRandomCrop:
+    """Random crop the image & bboxes & masks.
+
+    The absolute `crop_size` is sampled based on `crop_type` and `image_size`,
+    then the cropped results are generated.
+
+    Args:
+        crop_size (tuple): The relative ratio or absolute pixels of
+            height and width.
+        crop_type (str, optional): one of "relative_range", "relative",
+            "absolute", "absolute_range". "relative" randomly crops
+            (h * crop_size[0], w * crop_size[1]) part from an input of size
+            (h, w). "relative_range" uniformly samples relative crop size from
+            range [crop_size[0], 1] and [crop_size[1], 1] for height and width
+            respectively. "absolute" crops from an input with absolute size
+            (crop_size[0], crop_size[1]). "absolute_range" uniformly samples
+            crop_h in range [crop_size[0], min(h, crop_size[1])] and crop_w
+            in range [crop_size[0], min(w, crop_size[1])]. Default "absolute".
+        allow_negative_crop (bool, optional): Whether to allow a crop that does
+            not contain any bbox area. Default False.
+        recompute_bbox (bool, optional): Whether to re-compute the boxes based
+            on cropped instance masks. Default False.
+        bbox_clip_border (bool, optional): Whether clip the objects outside
+            the border of the image. Defaults to True.
+
+    Note:
+        - If the image is smaller than the absolute crop size, return the
+            original image.
+        - The keys for bboxes, labels and masks must be aligned. That is,
+          `gt_bboxes` corresponds to `gt_labels` and `gt_masks`, and
+          `gt_bboxes_ignore` corresponds to `gt_labels_ignore` and
+          `gt_masks_ignore`.
+        - If the crop does not contain any gt-bbox region and
+          `allow_negative_crop` is set to False, skip this image.
+    """
+
+    def __init__(self,
+                 crop_size,
+                 crop_type='absolute',
+                 allow_negative_crop=False,
+                 recompute_bbox=False,
+                 bbox_clip_border=True):
+        if crop_type not in [
+                'relative_range', 'relative', 'absolute', 'absolute_range'
+        ]:
+            raise ValueError(f'Invalid crop_type {crop_type}.')
+        if crop_type in ['absolute', 'absolute_range']:
+            assert crop_size[0] > 0 and crop_size[1] > 0
+            assert isinstance(crop_size[0], int) and isinstance(
+                crop_size[1], int)
+        else:
+            assert 0 < crop_size[0] <= 1 and 0 < crop_size[1] <= 1
+        self.crop_size = crop_size
+        self.crop_type = crop_type
+        self.allow_negative_crop = allow_negative_crop
+        self.bbox_clip_border = bbox_clip_border
+        self.recompute_bbox = recompute_bbox
+        # The key correspondence from bboxes to labels and masks.
+        self.bbox2label = {
+            'gt_bboxes': 'gt_labels',
+            'gt_bboxes_ignore': 'gt_labels_ignore'
+        }
+        self.bbox2mask = {
+            'gt_bboxes': 'gt_masks',
+            'gt_bboxes_ignore': 'gt_masks_ignore'
+        }
+
+    def _crop_data(self, results, crop_size, allow_negative_crop):
+        """Function to randomly crop images, bounding boxes, masks, semantic
+        segmentation maps.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+            crop_size (tuple): Expected absolute size after cropping, (h, w).
+            allow_negative_crop (bool): Whether to allow a crop that does not
+                contain any bbox area. Default to False.
+
+        Returns:
+            dict: Randomly cropped results, 'img_shape' key in result dict is
+                updated according to crop size.
+        """
+        assert crop_size[0] > 0 and crop_size[1] > 0
+        for key in results.get('img_fields', ['img']):
+            img = results[key]
+            margin_h = max(img.shape[0] - crop_size[0], 0)
+            margin_w = max(img.shape[1] - crop_size[1], 0)
+            offset_h = np.random.randint(0, margin_h + 1)
+            offset_w = np.random.randint(0, margin_w + 1)
+            crop_y1, crop_y2 = offset_h, offset_h + crop_size[0]
+            crop_x1, crop_x2 = offset_w, offset_w + crop_size[1]
+
+            # crop the image
+            img = img[crop_y1:crop_y2, crop_x1:crop_x2, ...]
+            img_shape = img.shape
+            results[key] = img
+        results['img_shape'] = img_shape
+
+        # crop bboxes accordingly and clip to the image boundary
+        for key in results.get('bbox_fields', []):
+            # e.g. gt_bboxes and gt_bboxes_ignore
+            bbox_offset = np.array([offset_w, offset_h, offset_w, offset_h],
+                                   dtype=np.float32)
+            bboxes = results[key] - bbox_offset
+            if self.bbox_clip_border:
+                bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1])
+                bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
+            valid_inds = (bboxes[:, 2] > bboxes[:, 0]) & (
+                bboxes[:, 3] > bboxes[:, 1])
+            # If the crop does not contain any gt-bbox area and
+            # allow_negative_crop is False, skip this image.
+            if (key == 'gt_bboxes' and not valid_inds.any()
+                    and not allow_negative_crop):
+                return None
+            results[key] = bboxes[valid_inds, :]
+            # label fields. e.g. gt_labels and gt_labels_ignore
+            label_key = self.bbox2label.get(key)
+            if label_key in results:
+                results[label_key] = results[label_key][valid_inds]
+
+            # mask fields, e.g. gt_masks and gt_masks_ignore
+            mask_key = self.bbox2mask.get(key)
+            if mask_key in results:
+                results[mask_key] = results[mask_key][
+                    valid_inds.nonzero()[0]].crop(
+                        np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
+                if self.recompute_bbox:
+                    results[key] = results[mask_key].get_bboxes()
+
+        # crop semantic seg
+        for key in results.get('seg_fields', []):
+            results[key] = results[key][crop_y1:crop_y2, crop_x1:crop_x2]
+
+        return results
+
+    def _get_crop_size(self, image_size):
+        """Randomly generates the absolute crop size based on `crop_type` and
+        `image_size`.
+
+        Args:
+            image_size (tuple): (h, w).
+
+        Returns:
+            crop_size (tuple): (crop_h, crop_w) in absolute pixels.
+        """
+        h, w = image_size
+        if self.crop_type == 'absolute':
+            return (min(self.crop_size[0], h), min(self.crop_size[1], w))
+        elif self.crop_type == 'absolute_range':
+            assert self.crop_size[0] <= self.crop_size[1]
+            crop_h = np.random.randint(
+                min(h, self.crop_size[0]),
+                min(h, self.crop_size[1]) + 1)
+            crop_w = np.random.randint(
+                min(w, self.crop_size[0]),
+                min(w, self.crop_size[1]) + 1)
+            return crop_h, crop_w
+        elif self.crop_type == 'relative':
+            crop_h, crop_w = self.crop_size
+            return int(h * crop_h + 0.5), int(w * crop_w + 0.5)
+        elif self.crop_type == 'relative_range':
+            crop_size = np.asarray(self.crop_size, dtype=np.float32)
+            crop_h, crop_w = crop_size + np.random.rand(2) * (1 - crop_size)
+            return int(h * crop_h + 0.5), int(w * crop_w + 0.5)
+
+    def __call__(self, results):
+        """Call function to randomly crop images, bounding boxes, masks,
+        semantic segmentation maps.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Randomly cropped results, 'img_shape' key in result dict is
+                updated according to crop size.
+        """
+        image_size = results['img'].shape[:2]
+        crop_size = self._get_crop_size(image_size)
+        results = self._crop_data(results, crop_size, self.allow_negative_crop)
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(crop_size={self.crop_size}, '
+        repr_str += f'crop_type={self.crop_type}, '
+        repr_str += f'allow_negative_crop={self.allow_negative_crop}, '
+        repr_str += f'bbox_clip_border={self.bbox_clip_border})'
+        return repr_str
+
+
+@PIPELINES.register_module()
 class LoadImageFromFile:
     """Load an image from file.
 
@@ -1695,7 +1930,7 @@ class LoadAnnotations:
                 If ``self.poly2mask`` is set ``True``, `gt_mask` will contain
                 :obj:`PolygonMasks`. Otherwise, :obj:`BitmapMasks` is used.
         """
-        from mmdet.core import BitmapMasks, PolygonMasks
+        # from mmdet.core import BitmapMasks, PolygonMasks
 
         h, w = results['img_info']['height'], results['img_info']['width']
         gt_masks = results['ann_info']['masks']
@@ -1764,6 +1999,115 @@ class LoadAnnotations:
         repr_str += f'poly2mask={self.file_client_args})'
         return repr_str
 
+
+@PIPELINES.register_module()
+class LoadPanopticAnnotations(LoadAnnotations):
+    """Load multiple types of panoptic annotations.
+
+    Args:
+        with_bbox (bool): Whether to parse and load the bbox annotation.
+             Default: True.
+        with_label (bool): Whether to parse and load the label annotation.
+            Default: True.
+        with_mask (bool): Whether to parse and load the mask annotation.
+             Default: True.
+        with_seg (bool): Whether to parse and load the semantic segmentation
+            annotation. Default: True.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmcv.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
+    """
+
+    def __init__(self,
+                 with_bbox=True,
+                 with_label=True,
+                 with_mask=True,
+                 with_seg=True,
+                 file_client_args=dict(backend='disk')):
+        if rgb2id is None:
+            raise RuntimeError(
+                'panopticapi is not installed, please install it by: '
+                'pip install git+https://github.com/cocodataset/'
+                'panopticapi.git.')
+
+        super(LoadPanopticAnnotations, self).__init__(
+            with_bbox=with_bbox,
+            with_label=with_label,
+            with_mask=with_mask,
+            with_seg=with_seg,
+            poly2mask=True,
+            # denorm_bbox=False,
+            file_client_args=file_client_args)
+
+    def _load_masks_and_semantic_segs(self, results):
+        """Private function to load mask and semantic segmentation annotations.
+
+        In gt_semantic_seg, the foreground label is from `0` to
+        `num_things - 1`, the background label is from `num_things` to
+        `num_things + num_stuff - 1`, 255 means the ignored label (`VOID`).
+
+        Args:
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
+
+        Returns:
+            dict: The dict contains loaded mask and semantic segmentation
+                annotations. `BitmapMasks` is used for mask annotations.
+        """
+        # from mmdet.core import BitmapMasks, PolygonMasks
+        
+        if self.file_client is None:
+            self.file_client = mmcv.FileClient(**self.file_client_args)
+
+        filename = osp.join(results['seg_prefix'],
+                            results['ann_info']['seg_map'])
+        img_bytes = self.file_client.get(filename)
+        pan_png = mmcv.imfrombytes(
+            img_bytes, flag='color', channel_order='rgb').squeeze()
+        pan_png = rgb2id(pan_png)
+        gt_masks = []
+        gt_seg = np.zeros_like(pan_png) + 255  # 255 as ignore
+        for mask_info in results['ann_info']['masks']:
+            mask = (pan_png == mask_info['id'])
+            gt_seg = np.where(mask, mask_info['category'], gt_seg)
+            # The legal thing masks
+            if mask_info.get('is_thing'):
+                gt_masks.append(mask.astype(np.uint8))
+
+        if self.with_mask:
+            h, w = results['img_info']['height'], results['img_info']['width']
+            gt_masks = BitmapMasks(gt_masks, h, w)
+            results['gt_masks'] = gt_masks
+            results['mask_fields'].append('gt_masks')
+
+        if self.with_seg:
+            results['gt_semantic_seg'] = gt_seg
+            results['seg_fields'].append('gt_semantic_seg')
+        return results
+
+    def __call__(self, results):
+        """Call function to load multiple types panoptic annotations.
+
+        Args:
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
+
+        Returns:
+            dict: The dict contains loaded bounding box, label, mask and
+                semantic segmentation annotations.
+        """
+
+        if self.with_bbox:
+            results = self._load_bboxes(results)
+            if results is None:
+                return None
+        if self.with_label:
+            results = self._load_labels(results)
+        if self.with_mask or self.with_seg:
+            # The tasks completed by '_load_masks' and '_load_semantic_segs'
+            # in LoadAnnotations are merged to one function.
+            results = self._load_masks_and_semantic_segs(results)
+
+        return results
+        
 
 @PIPELINES.register_module()
 class MMMultiScaleFlipAug:

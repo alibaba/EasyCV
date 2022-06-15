@@ -145,7 +145,7 @@ model = dict(
             nms=dict(type='nms', iou_threshold=0.7),
             min_bbox_size=0),
         rcnn=dict(
-            score_thr=0.05,
+            score_thr=0.0,#0.05
             nms=dict(type='nms', iou_threshold=0.5),
             max_per_img=100,
             mask_thr_binary=0.5)))
@@ -159,7 +159,7 @@ mmlab_modules = [
 ]
 
 # dataset settings
-data_root = 'data/coco/'
+data_root = "/home/yanhaiqiang.yhq/database/coco/"
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -262,3 +262,5 @@ eval_pipelines = [
         ],
     )
 ]
+
+load_from = "mask2former_r50_lsj_8x2_50e_coco_20220506_191028-8e96e88b.pth"

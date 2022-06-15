@@ -218,6 +218,7 @@ class MMDetWrapper:
                 # draw segmentation masks
                 segms = []
                 if segm_result is not None and len(labels) > 0:  # non empty
+
                     segms = mmcv.concat_list(segm_result)
                     if isinstance(segms[0], torch.Tensor):
                         segms = torch.stack(
