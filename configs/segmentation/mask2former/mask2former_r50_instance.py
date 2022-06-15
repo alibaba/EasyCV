@@ -65,7 +65,7 @@ train_pipeline = [
         crop_type='absolute',
         recompute_bbox=True,
         allow_negative_crop=True),
-    dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-5, 1e-5), by_mask=True),
+    # dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-5, 1e-5), by_mask=True),
     dict(type='MMPad', size=image_size, pad_val=pad_cfg),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='DefaultFormatBundle'),
