@@ -4,7 +4,6 @@ from distutils.version import LooseVersion
 
 import torch
 from mmcv.runner import OptimizerHook as _OptimizerHook
-from mmcv.runner.fp16_utils import wrap_fp16_model
 
 from easycv.utils.dist_utils import get_dist_info
 
@@ -108,8 +107,6 @@ class AMPFP16OptimizerHook(OptimizerHook):
 
     def before_run(self, runner):
         """Preparing steps before Mixed Precision Training."""
-        # wrap model mode to fp16
-        wrap_fp16_model(runner.model)
         # resume from state dict
         if 'fp16' in runner.meta and 'scaler' in runner.meta['fp16']:
             scaler_state_dict = runner.meta['fp16']['scaler']

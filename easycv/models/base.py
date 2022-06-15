@@ -6,7 +6,6 @@ from typing import Dict
 import torch
 import torch.distributed as dist
 import torch.nn as nn
-from mmcv.runner import auto_fp16
 from torch import Tensor
 
 
@@ -15,7 +14,6 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
 
     def __init__(self):
         super(BaseModel, self).__init__()
-        self.fp16_enabled = False
 
     @abstractmethod
     def forward_train(self, img: Tensor, **kwargs) -> Dict[str, Tensor]:
@@ -36,7 +34,6 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    @auto_fp16(apply_to=('img', ))
     def forward(self, img, mode='train', **kwargs):
         if mode == 'train':
             return self.forward_train(img, **kwargs)
