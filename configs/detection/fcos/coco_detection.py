@@ -76,6 +76,8 @@ val_dataset = dict(
         type='DetSourceCoco',
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
+        # ann_file=data_root + 'annotations/instances_train2017_20.json',
+        # img_prefix=data_root + 'train2017/',
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True)

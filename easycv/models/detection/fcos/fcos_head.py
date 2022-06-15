@@ -223,10 +223,14 @@ class FCOSHead(nn.Module):
         outputs = self.fcos_outputs.predict_proposals(logits_pred, reg_pred,
                                                       ctrness_pred, locations,
                                                       orig_target_sizes, [])
-        results = [{
-            'scores': s,
-            'labels': l,
-            'boxes': b
-        } for s, l, b in zip(outputs[0].scores, outputs[0].pred_classes,
-                             outputs[0].pred_boxes)]
+
+        if len(outputs[0].scores) > 0:
+            results = [{
+                'scores': s.unsqueeze(0),
+                'labels': l.unsqueeze(0),
+                'boxes': b.unsqueeze(0)
+            } for s, l, b in zip(outputs[0].scores, outputs[0].pred_classes,
+                                 outputs[0].pred_boxes)]
+        else:
+            results = [{'scores': None, 'labels': None, 'boxes': None}]
         return results

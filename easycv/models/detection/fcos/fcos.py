@@ -102,11 +102,20 @@ class FCOS(BaseModel):
         results = self.head.forward_test(x, img_metas[0])[0]
 
         test_outputs = {
-            'detection_boxes': [results['boxes'].cpu().numpy()],
-            'detection_scores': [results['scores'].cpu().numpy()],
-            'detection_classes':
-            [results['labels'].cpu().numpy().astype(np.int32)],
-            'img_metas': img_metas[0]
+            'detection_boxes': [
+                results['boxes'].cpu().numpy()
+                if results['boxes'] is not None else None
+            ],
+            'detection_scores': [
+                results['scores'].cpu().numpy()
+                if results['scores'] is not None else None
+            ],
+            'detection_classes': [
+                results['labels'].cpu().numpy().astype(np.int32)
+                if results['labels'] is not None else None
+            ],
+            'img_metas':
+            img_metas[0]
         }
 
         return test_outputs
