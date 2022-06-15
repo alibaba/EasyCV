@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import importlib
 import inspect
 import logging
 
@@ -40,9 +41,9 @@ class MMAdapter:
             self.mmtype_list.add(mmtype)
 
         self.check_env()
-        self.fix_conflicts()
 
         self.MMTYPE_REGISTRY_MAP = self._get_mmtype_registry_map()
+        self.fix_conflicts()
         self.modules_config = modules_config
 
     def check_env(self):
@@ -129,25 +130,29 @@ class MMAdapter:
         return module_obj
 
     def _get_mmtype_registry_map(self):
-        from mmdet.models.builder import MODELS as MMMODELS
-        from mmdet.models.builder import BACKBONES as MMBACKBONES
-        from mmdet.models.builder import NECKS as MMNECKS
-        from mmdet.models.builder import HEADS as MMHEADS
-        MMMODELS._module_dict = {}
-        MMBACKBONES._module_dict = {}
-        MMNECKS._module_dict = {}
-        MMHEADS._module_dict = {}
-        from mmdet.models.builder import MODELS as MMMODELS
-        from mmdet.models.builder import BACKBONES as MMBACKBONES
-        from mmdet.models.builder import NECKS as MMNECKS
-        from mmdet.models.builder import HEADS as MMHEADS
+        import mmdet.models.builder.MODELS
+        import mmdet.models.builder.BACKBONES
+        import mmdet.models.builder.NECKS
+        import mmdet.models.builder.HEADS
+        mmdet.models.builder.MODELS._module_dict = {}
+        mmdet.models.builder.BACKBONES._module_dict = {}
+        mmdet.models.builder.NECKS._module_dict = {}
+        mmdet.models.builder.HEADS._module_dict = {}
+        importlib.reload(mmdet.models.builder.MODELS)
+        importlib.reload(mmdet.models.builder.BACKBONES)
+        importlib.reload(mmdet.models.builder.NECKS)
+        importlib.reload(mmdet.models.builder.HEADS)
+        import mmdet.models.builder.MODELS
+        import mmdet.models.builder.BACKBONES
+        import mmdet.models.builder.NECKS
+        import mmdet.models.builder.HEADS
 
         registry_map = {
             MMDET: {
-                'model': MMMODELS,
-                'backbone': MMBACKBONES,
-                'neck': MMNECKS,
-                'head': MMHEADS
+                'model': mmdet.models.builder.MODELS,
+                'backbone': mmdet.models.builder.BACKBONES,
+                'neck': mmdet.models.builder.NECKS,
+                'head': mmdet.models.builder.HEADS
             }
         }
         return registry_map
