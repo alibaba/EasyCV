@@ -119,17 +119,36 @@ class Mask2Former(BaseModel):
         for mask_cls_result, mask_pred_result, meta in zip(
                 mask_cls_results, mask_pred_results, img_metas[0]):
             # remove padding
+            # print(meta)
+            # img_height, img_width = meta['img_shape'][:2]
+            # mask_pred_result = mask_pred_result[:, :img_height, :img_width]
+            # print(mask_pred_result.shape)
+
+
+            # if rescale:
+            #     # return result in original resolution
+            #     ori_height, ori_width = meta['ori_shape'][:2]
+            #     mask_pred_result = F.interpolate(
+            #         mask_pred_result[:, None],
+            #         size=(ori_height, ori_width),
+            #         mode='bilinear',
+            #         align_corners=False)[:, 0]
+            pad_height, pad_width = meta['pad_shape'][:2]
+            mask_pred_result = F.interpolate(
+                mask_pred_result[:, None],
+                size=(pad_height, pad_width),
+                mode='bilinear',
+                align_corners=False)[:, 0]
             img_height, img_width = meta['img_shape'][:2]
             mask_pred_result = mask_pred_result[:, :img_height, :img_width]
+            ori_height, ori_width = meta['ori_shape'][:2]
+            mask_pred_result = F.interpolate(
+                mask_pred_result[:, None],
+                size=(ori_height, ori_width),
+                mode='bilinear',
+                align_corners=False)[:, 0]
+            #remove padding
 
-            if rescale:
-                # return result in original resolution
-                ori_height, ori_width = meta['ori_shape'][:2]
-                mask_pred_result = F.interpolate(
-                    mask_pred_result[:, None],
-                    size=(ori_height, ori_width),
-                    mode='bilinear',
-                    align_corners=False)[:, 0]
             result = dict()
 
             #instance_on
