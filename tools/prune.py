@@ -25,7 +25,7 @@ from easycv.file import io
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
-from easycv.utils.dist_utils import get_num_gpu_per_node
+from easycv.distributed.utils import get_num_gpus_per_node
 from easycv.toolkit.prune.prune_utils import get_prune_layer, load_pruner
 
 
@@ -189,7 +189,7 @@ def main():
     ]
 
     iters = datasets[0].num_samples * cfg.total_epochs / \
-        (get_num_gpu_per_node() * cfg.data.imgs_per_gpu)
+        (get_num_gpus_per_node() * cfg.data.imgs_per_gpu)
     assert int(
         iters
     ) >= 1200, 'pruner need iters larger than 1200, please increase epoch'

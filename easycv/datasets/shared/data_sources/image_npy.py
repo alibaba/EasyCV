@@ -6,8 +6,8 @@ import numpy as np
 from PIL import Image
 
 from easycv.datasets.registry import DATASOURCES
+from easycv.distributed.utils import dist_zero_exec
 from easycv.file import io, is_oss_path
-from easycv.utils.dist_utils import dist_zero_exec
 
 
 @DATASOURCES.register_module

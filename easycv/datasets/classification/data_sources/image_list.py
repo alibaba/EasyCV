@@ -6,8 +6,8 @@ import time
 from PIL import Image, ImageFile
 
 from easycv.datasets.registry import DATASOURCES
+from easycv.distributed.utils import dist_zero_exec
 from easycv.file import io
-from easycv.utils.dist_utils import dist_zero_exec
 from .utils import split_listfile_byrank
 
 

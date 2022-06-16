@@ -6,8 +6,8 @@ from PIL import Image
 
 from easycv.datasets.registry import DATASOURCES
 from easycv.datasets.utils import tfrecord_util
+from easycv.distributed.utils import dist_zero_exec
 from easycv.file import io
-from easycv.utils.dist_utils import dist_zero_exec
 
 H5_KEYS = ['input_category', 'input_image', 'input_subcategory']
 H5_LABEL_LIST = [
