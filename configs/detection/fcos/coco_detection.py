@@ -17,7 +17,7 @@ CLASSES = [
 # dataset settings
 data_root = '/apsarapangu/disk2/yunji.cjy/coco/'
 img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
 
 train_pipeline = [
     dict(type='MMResize', img_scale=(1333, 800), keep_ratio=True),
