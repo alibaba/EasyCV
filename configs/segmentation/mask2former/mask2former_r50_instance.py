@@ -162,7 +162,7 @@ val_dataset = dict(
         ],
         classes=CLASSES,
         filter_empty_gt=True,
-        iscrowd=False,
+        iscrowd=True,
     ),
     pipeline=test_pipeline)
 

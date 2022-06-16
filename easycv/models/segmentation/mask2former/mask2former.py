@@ -16,7 +16,7 @@ from mmdet.core.mask import mask2bbox
 from mmdet.core import encode_mask_results
 from .matcher import HungarianMatcher
 from .criterion import SetCriterion
-from .panoptic_gt_processing import preprocess_gt
+from .panoptic_gt_processing import multi_apply,preprocess_panoptic_gt
 
 @MODELS.register_module()
 class Mask2Former(BaseModel):
@@ -38,6 +38,7 @@ class Mask2Former(BaseModel):
         # building criterion
         self.num_classes = head.num_things_classes+head.num_stuff_classes
         self.num_things_classes = head.num_things_classes
+        self.num_stuff_classes = head.num_stuff_classes
 
         matcher = HungarianMatcher(
             cost_class=train_cfg.class_weight,
@@ -97,7 +98,7 @@ class Mask2Former(BaseModel):
     def forward_train(self, img, gt_labels,gt_masks,gt_semantic_seg,img_metas):
         features = self.backbone(img)
         outputs = self.head(features)
-        targets = preprocess_gt(gt_labels,gt_masks,gt_semantic_seg,img_metas)
+        targets = self.preprocess_gt(gt_labels,gt_masks,gt_semantic_seg,img_metas)
         losses = self.criterion(outputs, targets)
         return losses
 
@@ -146,7 +147,6 @@ class Mask2Former(BaseModel):
             #instance_on
             ins_results = self.instance_postprocess(
                 mask_cls_result, mask_pred_result)
-            # result['ins_results'] = ins_results
 
             labels_per_image, bboxes, mask_pred_binary = ins_results
             
@@ -238,10 +238,46 @@ class Mask2Former(BaseModel):
         return labels_per_image, bboxes, mask_pred_binary
         
 
+    def preprocess_gt(self,gt_labels_list, gt_masks_list, gt_semantic_segs,img_metas):
+        """Preprocess the ground truth for all images.
 
+        Args:
+            gt_labels_list (list[Tensor]): Each is ground truth
+                labels of each bbox, with shape (num_gts, ).
+            gt_masks_list (list[BitmapMasks]): Each is ground truth
+                masks of each instances of a image, shape
+                (num_gts, h, w).
+            gt_semantic_seg (Tensor): Ground truth of semantic
+                segmentation with the shape (batch_size, n, h, w).
+                [0, num_thing_class - 1] means things,
+                [num_thing_class, num_class-1] means stuff,
+                255 means VOID.
+            target_shape (tuple[int]): Shape of output mask_preds.
+                Resize the masks to shape of mask_preds.
+
+        Returns:
+            tuple: a tuple containing the following targets.
+                - labels (list[Tensor]): Ground truth class indices\
+                    for all images. Each with shape (n, ), n is the sum of\
+                    number of stuff type and number of instance in a image.
+                - masks (list[Tensor]): Ground truth mask for each\
+                    image, each with shape (n, h, w).
+        """
+        num_things_list = [self.num_things_classes] * len(gt_labels_list)
+        num_stuff_list = [self.num_stuff_classes] * len(gt_labels_list)
+        if gt_semantic_segs is None:
+            gt_semantic_segs = [None] * len(gt_labels_list)
             
-
-
-    
-
-        
+        targets = multi_apply(preprocess_panoptic_gt, gt_labels_list,
+                                gt_masks_list, gt_semantic_segs, num_things_list,
+                                num_stuff_list,img_metas)
+        labels, masks = targets
+        new_targets = []
+        for label,mask in zip(labels, masks):
+            new_targets.append(
+                {
+                    "labels": label,
+                    "masks": mask,
+                }
+            )
+        return new_targets
