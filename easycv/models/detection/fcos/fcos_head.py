@@ -239,9 +239,9 @@ class FCOSHead(nn.Module):
                     outputs[0].pred_boxes.device))
 
         outputs[0].pred_boxes = outputs[0].pred_boxes / scale_fct[0]
-        print(img_metas[0])
-        print(outputs[0].pred_boxes, outputs[0].pred_classes,
-              outputs[0].scores)
+        # print(img_metas[0])
+        # print(outputs[0].pred_boxes, outputs[0].pred_classes,
+        #       outputs[0].scores)
 
         if len(outputs[0].scores) > 0:
             results = [{
