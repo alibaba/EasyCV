@@ -4,10 +4,11 @@ from collections import OrderedDict
 from typing import Dict
 
 import torch
-import torch.distributed as dist
 import torch.nn as nn
 from mmcv.runner import auto_fp16
 from torch import Tensor
+
+import easycv.distributed as dist
 
 
 class BaseModel(nn.Module, metaclass=ABCMeta):
@@ -121,7 +122,7 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
 
         # If the loss_vars has different length, raise assertion error
         # to prevent GPUs from infinite waiting.
-        if dist.is_available() and dist.is_initialized():
+        if dist.is_distributed():
             log_var_length = torch.tensor(len(log_vars), device=loss.device)
             dist.all_reduce(log_var_length)
             message = (f'rank {dist.get_rank()}' +
@@ -134,7 +135,7 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
         for loss_name, loss_value in log_vars.items():
             # reduce loss when distributed training
             if not isinstance(loss_value, float):
-                if dist.is_available() and dist.is_initialized():
+                if dist.is_distributed():
                     loss_value = loss_value.data.clone()
                     dist.all_reduce(loss_value.div_(dist.get_world_size()))
                 log_vars[loss_name] = loss_value.item()

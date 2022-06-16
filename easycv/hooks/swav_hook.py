@@ -2,8 +2,9 @@
 import os
 
 import torch
-from mmcv.runner import Hook, get_dist_info
+from mmcv.runner import Hook
 
+import easycv.distributed as dist
 from .registry import HOOKS
 
 
@@ -15,7 +16,7 @@ class SWAVHook(Hook):
     def __init__(self, gpu_batch_size=32, dump_path='data/', **kwargs):
         self.dump_path = dump_path
         self.queue_length = None
-        self.rank, self.world_size = get_dist_info()
+        self.rank, self.world_size = dist.get_rank(), dist.get_world_size()
         self.batch_size = gpu_batch_size
         if not os.path.exists(self.dump_path):
             os.makedirs(self.dump_path)

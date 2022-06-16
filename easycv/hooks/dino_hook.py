@@ -3,8 +3,9 @@ import time
 
 import numpy as np
 import torch
-from mmcv.runner import Hook, get_dist_info
+from mmcv.runner import Hook
 
+import easycv.distributed as dist
 from .registry import HOOKS
 
 
@@ -47,11 +48,7 @@ class DINOHook(Hook):
         # call model init
         runner.model.module.init_before_train()
 
-        try:
-            self.rank, self.world_size = get_dist_info()
-        except:
-            self.rank = 0
-            self.world_size = 1
+        self.rank, self.world_size = dist.get_rank(), dist.get_world_size()
 
         max_progress = runner.max_epochs
         self.epoch_length = runner.data_loader[0].__len__()
@@ -87,8 +84,8 @@ class DINOHook(Hook):
                 [runner.model.module.count, runner.model.module.this_loss],
                 dtype=torch.float64,
                 device='cuda')
-            torch.distributed.barrier()
-            torch.distributed.all_reduce(t)
+            dist.barrier()
+            dist.all_reduce(t)
             t = t.tolist()
             self.count += int(t[0])
             self.epoch_total_loss += t[1]

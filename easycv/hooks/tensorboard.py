@@ -1,9 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import numpy as np
 import torch
-from mmcv.runner.dist_utils import master_only
 from mmcv.runner.hooks import HOOKS
 from mmcv.runner.hooks import TensorboardLoggerHook as _TensorboardLoggerHook
+
+from easycv.distributed.utils import master_only
 
 
 @HOOKS.register_module()

@@ -2,6 +2,7 @@
 import torch
 import torch.nn as nn
 
+import easycv.distributed as dist
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 from easycv.utils.preprocess_function import gaussianBlur, randomGrayScale
@@ -119,13 +120,13 @@ class MOCO(BaseModel):
         idx_shuffle = torch.randperm(batch_size_all).cuda()
 
         # broadcast to all gpus
-        torch.distributed.broadcast(idx_shuffle, src=0)
+        dist.broadcast(idx_shuffle, src=0)
 
         # index for restoring
         idx_unshuffle = torch.argsort(idx_shuffle)
 
         # shuffled index for this gpu
-        gpu_idx = torch.distributed.get_rank()
+        gpu_idx = dist.get_rank()
         idx_this = idx_shuffle.view(num_gpus, -1)[gpu_idx]
 
         return x_gather[idx_this], idx_unshuffle
@@ -144,7 +145,7 @@ class MOCO(BaseModel):
         num_gpus = batch_size_all // batch_size_this
 
         # restored index for this gpu
-        gpu_idx = torch.distributed.get_rank()
+        gpu_idx = dist.get_rank()
         idx_this = idx_unshuffle.view(num_gpus, -1)[gpu_idx]
 
         return x_gather[idx_this]
@@ -248,10 +249,9 @@ def concat_all_gather(tensor):
     *** Warning ***: torch.distributed.all_gather has no gradient.
     """
     tensors_gather = [
-        torch.ones_like(tensor)
-        for _ in range(torch.distributed.get_world_size())
+        torch.ones_like(tensor) for _ in range(dist.get_world_size())
     ]
-    torch.distributed.all_gather(tensors_gather, tensor, async_op=False)
+    dist.all_gather(tensors_gather, tensor, async_op=False)
 
     output = torch.cat(tensors_gather, dim=0)
     return output

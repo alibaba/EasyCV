@@ -1,10 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import numpy as np
 import torch
-import torch.distributed as dist
 import torch.nn as nn
-from mmcv.runner import get_dist_info
 
+import easycv.distributed as dist
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 from easycv.utils.preprocess_function import gaussianBlur, randomGrayScale
@@ -218,7 +217,7 @@ class MultiPrototypes(nn.Module):
 
 
 def distributed_sinkhorn(Q, nmb_iters):
-    rank, world_size = get_dist_info()
+    world_size = dist.get_world_size()
     with torch.no_grad():
         sum_Q = torch.sum(Q)
         dist.all_reduce(sum_Q)

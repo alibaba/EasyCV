@@ -7,10 +7,10 @@ from functools import partial
 import numpy as np
 import torch
 from mmcv.parallel import collate
-from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader, RandomSampler
 
 from easycv.datasets.shared.odps_reader import set_dataloader_workid
+from easycv.distributed import utils
 from .sampler import DistributedMPSampler, DistributedSampler
 
 if platform.system() != 'Windows':
@@ -57,7 +57,7 @@ def build_dataloader(dataset,
     """
 
     if dist:
-        rank, world_size = get_dist_info()
+        rank, world_size = utils.get_rank(), utils.get_world_size()
         split_huge_listfile_byrank = getattr(dataset,
                                              'split_huge_listfile_byrank',
                                              False)

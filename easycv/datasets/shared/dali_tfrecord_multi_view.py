@@ -1,13 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import math
 
-from mmcv.runner import get_dist_info
-
+import easycv.distributed as dist
 from easycv.datasets.builder import build_datasource
 from easycv.datasets.loader.sampler import DistributedSampler
 from easycv.datasets.registry import DATASETS, PIPELINES
 from easycv.datasets.shared.pipelines.transforms import Compose
-from easycv.utils import dist_utils
 from easycv.utils.registry import build_from_cfg
 
 
@@ -18,7 +16,7 @@ class DaliLoaderWrapper(object):
         self.batch_size = batch_size
         self.return_list = return_list
         self.loader = None
-        rank, world_size = get_dist_info()
+        rank, world_size = dist.get_rank(), dist.get_world_size()
         self.rank = rank
         self.sampler = DistributedSampler(
             [1] * 100, world_size, rank, shuffle=True, replace=False)
@@ -67,9 +65,10 @@ def _load_DaliTFRecordMultiViewPipe():
             self.device = device
 
             if distributed:
-                self.rank, self.world_size = get_dist_info()
-                self.local_rank = dist_utils.local_rank()
-                self.local_size = dist_utils.get_num_gpu_per_node()
+                self.rank, self.world_size = dist.get_rank(
+                ), dist.get_world_size()
+                self.local_rank = dist.get_local_rank()
+                self.local_size = dist.get_num_gpus_per_node()
             else:
                 self.rank, self.local_rank, self.world_size = 0, 0, 1
 
@@ -131,7 +130,7 @@ class DaliTFRecordMultiViewDataset(object):
         self.batch_size = batch_size
 
         if distributed:
-            self.rank, self.world_size = get_dist_info()
+            self.rank, self.world_size = dist.get_rank(), dist.get_world_size()
         else:
             self.rank, self.world_size = 0, 1
 

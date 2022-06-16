@@ -6,7 +6,7 @@ import torch
 from mmcv.runner import OptimizerHook as _OptimizerHook
 from mmcv.runner.fp16_utils import wrap_fp16_model
 
-from easycv.utils.dist_utils import get_dist_info
+import easycv.distributed as dist
 
 if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
     from torch.cuda import amp
@@ -71,7 +71,7 @@ class OptimizerHook(_OptimizerHook):
                 runner.optimizer.step()
                 runner.optimizer.zero_grad()
         else:
-            rank, _ = get_dist_info()
+            rank = dist.get_rank()
             # catch nan loss, not update, zero_grad to pass
             if rank == 0:
                 runner.logger.info('catch nan loss in iter %d, epoch %d' %
@@ -118,7 +118,6 @@ class AMPFP16OptimizerHook(OptimizerHook):
 
     def after_train_iter(self, runner):
         loss = runner.outputs['loss'] / self.update_interval
-        _, world_size = get_dist_info()
 
         if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
             self.scaler.scale(loss).backward()

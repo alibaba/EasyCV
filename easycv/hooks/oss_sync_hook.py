@@ -3,8 +3,8 @@ import glob
 import os
 
 from mmcv.runner import Hook
-from mmcv.runner.dist_utils import master_only
 
+from easycv.distributed.utils import master_only
 from easycv.file import io
 from .registry import HOOKS
 

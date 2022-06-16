@@ -1,17 +1,15 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import random
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import kaiming_init, normal_init
-from mmcv.runner import get_dist_info
 from pytorch_metric_learning.miners import *
-from torch import Tensor
 
+import easycv.distributed as dist
 from easycv.core.evaluation.metrics import accuracy
-from easycv.models.loss import CrossEntropyLossWithLabelSmooth
 from easycv.models.utils import DistributedLossWrapper, DistributedMinerWrapper
 from easycv.utils.logger import get_root_logger
 from easycv.utils.registry import build_from_cfg
@@ -113,7 +111,7 @@ class MpMetrixHead(nn.Module):
         self.input_label_index = input_label_index
         self.ignore_label = ignore_label
 
-        rank, world_size = get_dist_info()
+        world_size = dist.get_world_size()
 
         logger = get_root_logger()
         if self.with_avg_pool:

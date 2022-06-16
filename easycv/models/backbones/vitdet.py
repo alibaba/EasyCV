@@ -8,10 +8,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 from mmcv.cnn import build_norm_layer, constant_init, kaiming_init
-from mmcv.runner import get_dist_info
 from timm.models.layers import drop_path, to_2tuple, trunc_normal_
 from torch.nn.modules.batchnorm import _BatchNorm
 
+import easycv.distributed as dist
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 from ..registry import BACKBONES
@@ -772,7 +772,7 @@ class ViTDet(nn.Module):
             raise TypeError('pretrained must be a str or None')
 
     def _prepare_checkpoint_hook(self, state_dict, prefix, *args, **kwargs):
-        rank, _ = get_dist_info()
+        rank = dist.get_rank()
         if 'pos_embed' in state_dict:
             pos_embed_checkpoint = state_dict['pos_embed']
             embedding_size = pos_embed_checkpoint.shape[-1]

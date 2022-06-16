@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import torch
-import torch.distributed as dist
+
+import easycv.distributed as dist
 
 
 class GatherLayer(torch.autograd.Function):

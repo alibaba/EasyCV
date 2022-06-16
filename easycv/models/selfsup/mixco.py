@@ -2,8 +2,8 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from mmcv.runner import get_dist_info
 
+import easycv.distributed as dist
 from easycv.utils.preprocess_function import mixUp
 from .. import builder
 from ..registry import MODELS
@@ -30,7 +30,7 @@ class MIXCO(MOCO):
                  **kwargs):
 
         if 'mixUp' in train_preprocess:
-            rank, _ = get_dist_info()
+            rank = dist.get_rank()
             np.random.seed(rank + 12)
             self.mixup = mixUp
             self.lam = None

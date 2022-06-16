@@ -3,9 +3,10 @@ import copy
 import math
 
 import torch
+from mmcv.parallel import is_module_wrapper
 from mmcv.runner import Hook
 
-from easycv.utils import dist_utils, py_util
+from easycv.utils import py_util
 from .registry import HOOKS
 
 
@@ -24,7 +25,7 @@ class ModelEMA:
     def __init__(self, model, decay=0.9999, updates=0):
         # Create EMA
         self.model = copy.deepcopy(
-            model.module if dist_utils.is_parallel(model) else model).eval(
+            model.module if is_module_wrapper(model) else model).eval(
             )  # FP32 EMA
         # if next(model.parameters()).device.type != 'cpu':
         #     self.model.half()  # FP16 EMA
@@ -40,7 +41,7 @@ class ModelEMA:
             self.updates += 1
             d = self.decay(self.updates)
 
-            msd = model.module.state_dict() if dist_utils.is_parallel(
+            msd = model.module.state_dict() if is_module_wrapper(
                 model) else model.state_dict()  # model state_dict
             for k, v in self.model.state_dict().items():
                 if v.dtype.is_floating_point:

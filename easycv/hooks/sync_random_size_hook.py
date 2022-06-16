@@ -2,10 +2,9 @@
 import random
 
 import torch
-from mmcv.runner import get_dist_info
 from mmcv.runner.hooks import Hook
-from torch import distributed as dist
 
+import easycv.distributed as dist
 from .registry import HOOKS
 
 
@@ -32,7 +31,7 @@ class SyncRandomSizeHook(Hook):
             interval=10,  # by iterations
             device='cuda',
             **kwargs):
-        self.rank, world_size = get_dist_info()
+        self.rank, world_size = dist.get_rank(), dist.get_world_size()
         self.is_distributed = world_size > 1
         self.ratio_range = ratio_range
         self.img_scale = img_scale

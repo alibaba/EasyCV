@@ -1,8 +1,8 @@
 import os
 
-from mmcv.runner import get_dist_info
 from tqdm import tqdm
 
+import easycv.distributed as dist
 from easycv.file import io
 
 
@@ -10,7 +10,7 @@ def split_listfile_byrank(list_file,
                           label_balance,
                           save_path='data/',
                           delimeter=' '):
-    rank, world_size = get_dist_info()
+    rank, world_size = dist.get_rank(), dist.get_world_size()
     if world_size == 1:
         return list_file
 

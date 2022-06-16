@@ -18,7 +18,8 @@ import requests
 import torch
 from mmcv import DictAction
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import get_dist_info, init_dist
+from mmcv.runner import init_dist
+import easycv.distributed as dist
 
 from easycv import datasets
 from easycv.apis import multi_gpu_test, single_gpu_test
@@ -170,7 +171,7 @@ def main():
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
 
-    rank, _ = get_dist_info()
+    rank = dist.get_rank()
 
     if args.work_dir is not None and rank == 0:
         if not io.exists(args.work_dir):

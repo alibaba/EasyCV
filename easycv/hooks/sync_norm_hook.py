@@ -1,11 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from collections import OrderedDict
 
-from mmcv.runner import get_dist_info
 from mmcv.runner.hooks import Hook
 from torch import nn
 
-from ..utils.dist_utils import all_reduce_dict
+import easycv.distributed as dist
+from easycv.distributed.utils import all_reduce_dict
 from .registry import HOOKS
 
 
@@ -44,7 +44,7 @@ class SyncNormHook(Hook):
         epoch = runner.epoch
         module = runner.model
         if (epoch + 1) % self.interval == 0:
-            _, world_size = get_dist_info()
+            world_size = dist.get_world_size()
             if world_size == 1:
                 return
             norm_states = get_norm_states(module)

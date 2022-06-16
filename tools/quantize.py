@@ -20,7 +20,7 @@ except ImportError:
         'to install blade_compression')
 
 from mmcv.parallel import MMDataParallel
-from mmcv.runner import get_dist_info
+import easycv.distributed as dist
 
 from easycv.models import build_model
 from easycv.apis import single_cpu_test, single_gpu_test
@@ -95,7 +95,7 @@ def quantize_eval(cfg, model, eval_mode):
         elif eval_mode == 'cpu':
             outputs = single_cpu_test(model, data_loader, mode=eval_pipe.mode)
 
-        rank, _ = get_dist_info()
+        rank = dist.get_rank()
         if rank == 0:
             for t in eval_pipe.evaluators:
                 if 'metric_type' in t:

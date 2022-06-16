@@ -1,13 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import torch
-from mmcv.runner import get_dist_info
 from pytorch_metric_learning.utils import common_functions as c_f
 
-
-# modified from https://github.com/allenai/allennlp
-def is_distributed():
-    return torch.distributed.is_available(
-    ) and torch.distributed.is_initialized()
+import easycv.distributed as dist
 
 
 # modified from https://github.com/JohnGiorgi/DeCLUTR
@@ -19,15 +14,15 @@ def all_gather(embeddings, labels):
         labels = labels.to(embeddings.device)
 
     # If we are not using distributed training, this is a no-op.
-    if not is_distributed():
+    if not dist.is_distributed():
         return embeddings, labels
-    world_size = torch.distributed.get_world_size()
-    rank = torch.distributed.get_rank()
+    world_size = dist.get_world_size()
+    rank = dist.get_rank()
     # Gather the embeddings on all replicas
     embeddings_list = [torch.ones_like(embeddings) for _ in range(world_size)]
     labels_list = [torch.ones_like(labels) for _ in range(world_size)]
-    torch.distributed.all_gather(embeddings_list, embeddings.contiguous())
-    torch.distributed.all_gather(labels_list, labels.contiguous())
+    dist.all_gather(embeddings_list, embeddings.contiguous())
+    dist.all_gather(labels_list, labels.contiguous())
     # The gathered copy of the current replicas embeddings have no gradients, so we overwrite
     # them with the embeddings generated on this replica, which DO have gradients.
     embeddings_list[rank] = embeddings
@@ -60,7 +55,7 @@ class DistributedLossWrapper(torch.nn.Module):
         super().__init__()
         has_parameters = len([p for p in loss.parameters()]) > 0
         self.loss = loss
-        self.rank, _ = get_dist_info()
+        self.rank = dist.get_rank()
 
     def forward(self, embeddings, labels, *args, **kwargs):
         embeddings, labels = all_gather_embeddings_labels(embeddings, labels)

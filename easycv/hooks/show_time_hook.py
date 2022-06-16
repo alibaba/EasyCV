@@ -1,8 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import time
 
-from mmcv.runner import Hook, get_dist_info
+from mmcv.runner import Hook
 
+import easycv.distributed as dist
 from .registry import HOOKS
 
 
@@ -14,7 +15,7 @@ class TIMEHook(Hook):
 
     def __init__(self, end_momentum=1., **kwargs):
         self.end_infer = 0
-        self.rank, self.num_replicas = get_dist_info()
+        self.rank, self.num_replicas = dist.get_rank(), dist.get_world_size()
         self.now_time = lambda: int(round(time.time() * 1000))
 
     def before_train_iter(self, runner):

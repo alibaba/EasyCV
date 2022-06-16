@@ -2,8 +2,8 @@
 import os
 
 from mmcv.runner import Hook
-from mmcv.runner.dist_utils import master_only
 
+from easycv.distributed.utils import master_only
 from easycv.utils.config_tools import validate_export_config
 from .registry import HOOKS
 

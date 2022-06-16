@@ -2,8 +2,9 @@
 import logging
 import os
 
+import easycv.distributed as dist
+from easycv.distributed import utils
 from easycv.file import io
-from easycv.utils import dist_utils
 
 
 def get_imagenet_dali_tfrecord_feature():
@@ -65,7 +66,7 @@ def download_tfrecord(file_list_or_path,
         path: list of str,  download tfrecord path
         index_path: list of str, download tfrecord idx path
     """
-    with dist_utils.dist_zero_exec():
+    with utils.dist_zero_exec():
         if not os.path.exists(target_path):
             os.makedirs(target_path)
 
@@ -117,7 +118,8 @@ def download_tfrecord(file_list_or_path,
 
     logging.info('rank %s finish downloads!' % slice_id)
 
-    dist_utils.barrier()
+    if dist.is_distributed():
+        dist.barrier()
 
     # return all data list
     new_path = []

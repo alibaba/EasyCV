@@ -33,6 +33,7 @@ from easycv.utils.config_tools import traverse_replace
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
 from easycv.utils.setup_env import setup_multi_processes
+import easycv.distributed as dist
 
 
 def parse_args():
@@ -163,15 +164,15 @@ def main():
         io.access_oss(**cfg.oss_io_config)
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
-        distributed = False
         assert cfg.model.type not in \
             ['DeepCluster', 'MOCO', 'SimCLR', 'ODC', 'NPID'], \
             '{} does not support non-dist training.'.format(cfg.model.type)
     else:
-        distributed = True
         if args.launcher == 'slurm':
             cfg.dist_params['port'] = args.port
         init_dist(args.launcher, **cfg.dist_params)
+
+    distributed = dist.is_distributed()
 
     # create work_dir
     if not io.exists(cfg.work_dir):

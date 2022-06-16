@@ -10,8 +10,9 @@ import mmcv
 import numpy as np
 import torch
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import get_dist_info, init_dist, load_checkpoint
+from mmcv.runner import init_dist, load_checkpoint
 
+import easycv.distributed as dist
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.file import io
 from easycv.models import build_model
@@ -74,7 +75,7 @@ class ExtractProcess(object):
             length = data_loader.data_length
 
         if distributed:
-            rank, world_size = get_dist_info()
+            rank = dist.get_rank()
             results = dist_forward_collect(func, data_loader, rank, length)
         else:
             results = nondist_forward_collect(func, data_loader, length)
@@ -219,7 +220,7 @@ def main():
     # run
     outputs = extractor.extract(model, data_loader[0], distributed=distributed)
 
-    rank, _ = get_dist_info()
+    rank = dist.get_rank()
     mmcv.mkdir_or_exist(args.work_dir)
 
     if rank == 0:

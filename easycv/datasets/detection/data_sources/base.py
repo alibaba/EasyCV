@@ -6,9 +6,9 @@ from abc import abstractmethod
 from multiprocessing import Pool, cpu_count
 
 import numpy as np
-from mmcv.runner.dist_utils import get_dist_info
 from tqdm import tqdm
 
+import easycv.distributed as dist
 from easycv.file.image import load_image
 
 
@@ -62,7 +62,7 @@ class DetSourceBase(object):
             num_processes: number of processes to parse samples
         """
         self.CLASSES = classes
-        self.rank, self.world_size = get_dist_info()
+        self.rank, self.world_size = dist.get_rank(), dist.get_world_size()
         self.cache_at_init = cache_at_init
         self.cache_on_the_fly = cache_on_the_fly
         self.num_processes = num_processes

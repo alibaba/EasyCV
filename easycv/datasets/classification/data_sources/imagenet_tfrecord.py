@@ -4,12 +4,12 @@ import os
 
 from PIL import ImageFile
 
+import easycv.distributed as dist
 from easycv.datasets.registry import DATASOURCES
 from easycv.datasets.utils.tfrecord_util import (download_tfrecord,
                                                  get_path_and_index)
 from easycv.file import io
 from easycv.file.utils import is_oss_path
-from easycv.utils import dist_utils
 
 
 @DATASOURCES.register_module
@@ -39,8 +39,8 @@ class ClsSourceImageNetTFRecord(object):
             is_oss = True if is_oss_path(list_file) else False
 
         if is_oss:
-            local_size = dist_utils.get_num_gpu_per_node()
-            local_rank = dist_utils.local_rank()
+            local_size = dist.get_num_gpus_per_node()
+            local_rank = dist.get_local_rank()
             logging.info('Strat download oss data to target_path!')
             self.data_list, self.index_list = download_tfrecord(
                 file_list,

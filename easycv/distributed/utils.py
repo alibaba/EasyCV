@@ -7,56 +7,96 @@ from contextlib import contextmanager
 
 import torch
 import torch.distributed as dist
-from mmcv.parallel import data_parallel as mm_data_parallel
-from mmcv.parallel import distributed as mm_distributed
-from mmcv.runner.dist_utils import get_dist_info
-from torch import nn
 from torch.distributed import ReduceOp
 
 
+def is_distributed():
+    return dist.is_available() and dist.is_initialized()
+
+
+def get_rank(group=None):
+    rank = 0
+
+    if is_distributed():
+        rank = dist.get_rank(group=group)
+
+    return rank
+
+
+def get_world_size(group=None):
+    world_size = 1
+
+    if is_distributed():
+        world_size = dist.get_world_size(group=group)
+
+    return world_size
+
+
 def is_master():
-    rank, _ = get_dist_info()
-    return rank == 0
+    return get_rank() == 0
 
 
-def local_rank():
+def master_only(func):
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if is_master():
+            return func(*args, **kwargs)
+
+    return wrapper
+
+
+def get_local_rank():
     return int(os.environ.get('LOCAL_RANK', 0))
 
 
+def get_device():
+    if torch.cuda.is_available():
+        return torch.device('cuda')
+    else:
+        return torch.device('cpu')
+
+
+def barrier(**kwargs):
+    return dist.barrier(**kwargs)
+
+
 @contextmanager
-def dist_zero_exec(rank=local_rank()):
+def dist_zero_exec(rank=get_local_rank()):
     if rank not in [-1, 0]:
-        barrier()
+        if is_distributed():
+            barrier()
     # execute the context after yield, then return here to continue
     yield
     if rank == 0:
-        barrier()
+        if is_distributed():
+            barrier()
 
 
-def get_num_gpu_per_node():
+def all_reduce(tensor, op=ReduceOp.SUM, **kwargs):
+    return dist.all_reduce(tensor, op=op, **kwargs)
+
+
+def broadcast(tensor, src, **kwargs):
+    return dist.broadcast(tensor, src, **kwargs)
+
+
+def all_gather(tensor_list, tensor, **kwargs):
+    return dist.all_gather(tensor_list, tensor, **kwargs)
+
+
+def get_num_gpus_per_node():
     """ get number of gpu per node
     """
-    rank, world_size = get_dist_info()
+    world_size = get_world_size()
     if world_size == 1:
         return 1
-    local_rank = int(os.environ.get('LOCAL_RANK', '0'))
+    local_rank = get_local_rank()
     local_rank_tensor = torch.tensor([local_rank], device='cuda')
-    torch.distributed.all_reduce(local_rank_tensor, op=ReduceOp.MAX)
+    all_reduce(local_rank_tensor, op=ReduceOp.MAX)
     num_gpus = local_rank_tensor.tolist()[0] + 1
 
     return num_gpus
-
-
-def barrier():
-    if torch.distributed.is_available() and torch.distributed.is_initialized():
-        torch.distributed.barrier()
-
-
-def is_parallel(model):
-    return type(model) in (nn.parallel.DataParallel,
-                           nn.parallel.DistributedDataParallel,
-                           mm_data_parallel.MMDataParallel,
-                           mm_distributed.MMDistributedDataParallel)
 
 
 # For YOLOX
@@ -101,7 +141,7 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
     Returns:
         OrderedDict: reduced python dict object.
     """
-    _, world_size = get_dist_info()
+    world_size = get_world_size()
     if world_size == 1:
         return py_dict
     if group is None:

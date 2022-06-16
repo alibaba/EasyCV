@@ -143,8 +143,7 @@ class DistEvalHook(EvalHook):
                  gpu_collect=False,
                  flush_buffer=True,
                  **eval_kwargs):
-        if not isinstance(dataloader, DataLoader) and not isinstance(
-                dataloader, DaliLoaderWrapper):
+        if not isinstance(dataloader, (DataLoader, DaliLoaderWrapper)):
             raise TypeError('dataloader must be a pytorch DataLoader, but got'
                             f' {type(dataloader)}')
         self.dataloader = dataloader

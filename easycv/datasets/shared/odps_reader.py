@@ -6,9 +6,9 @@ from random import randint
 
 import numpy as np
 import requests
-from mmcv.runner import get_dist_info
 from PIL import Image, ImageFile
 
+import easycv.distributed as dist
 from easycv.datasets.registry import DATASOURCES
 from easycv.file import io
 
@@ -108,7 +108,7 @@ class OdpsReader(object):
             os.environ['ODPS_CONFIG_FILE_PATH'] = '.odps_config'
 
         # set distribute read
-        rank, world_size = get_dist_info()
+        rank, world_size = dist.get_rank(), dist.get_world_size()
 
         # there are two multi process world for dataset, first multi-gpu worker, secord multi process for per GPU
         self.dataloader_init = False

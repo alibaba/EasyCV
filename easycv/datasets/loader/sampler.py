@@ -6,9 +6,10 @@ import random
 
 import numpy as np
 import torch
-from mmcv.runner import get_dist_info
 from torch.utils.data import DistributedSampler as _DistributedSampler
 from torch.utils.data import Sampler
+
+import easycv.distributed as dist
 
 
 class DistributedMPSampler(_DistributedSampler):
@@ -30,8 +31,7 @@ class DistributedMPSampler(_DistributedSampler):
         """
         super().__init__(dataset, num_replicas=num_replicas, rank=rank)
 
-        current_env = os.environ.copy()
-        self.local_rank = int(current_env['LOCAL_RANK'])
+        self.local_rank = dist.get_local_rank()
 
         self.shuffle = shuffle
         self.unif_sampling_flag = False
@@ -139,9 +139,8 @@ class DistributedMPSampler(_DistributedSampler):
                 int(self.dataset.data_source.get_length() /
                     (m_per_class * this_label_list_size))
             ]).to(self.local_rank)
-            torch.distributed.all_reduce(buckets_num,
-                                         torch.distributed.ReduceOp.MIN)
-            torch.distributed.barrier()
+            dist.all_reduce(buckets_num, torch.distributed.ReduceOp.MIN)
+            dist.barrier()
             self.buckets_num = int(max(buckets_num, 1))
             self.length = self.buckets_num * m_per_class * int(
                 len(self.label_list))
@@ -308,7 +307,7 @@ class DistributedGroupSampler(Sampler):
                  samples_per_gpu=1,
                  num_replicas=None,
                  rank=None):
-        _rank, _num_replicas = get_dist_info()
+        _rank, _num_replicas = dist.get_rank(), dist.get_world_size()
         if num_replicas is None:
             num_replicas = _num_replicas
         if rank is None:
@@ -386,7 +385,7 @@ class DistributedGivenIterationSampler(Sampler):
                  num_replicas=None,
                  rank=None,
                  last_iter=-1):
-        rank, world_size = get_dist_info()
+        rank, world_size = dist.get_rank(), dist.get_world_size()
         assert rank < world_size
         self.dataset = dataset
         self.total_iter = total_iter

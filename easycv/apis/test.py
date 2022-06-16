@@ -9,11 +9,10 @@ from io import BytesIO
 import mmcv
 import numpy as np
 import torch
-import torch.distributed as dist
 from mmcv.parallel import (MMDataParallel, MMDistributedDataParallel,
                            scatter_kwargs)
-from mmcv.runner import get_dist_info
 
+import easycv.distributed as dist
 from easycv.file import io
 
 
@@ -183,7 +182,7 @@ def multi_gpu_test(model,
 
     model.eval()
     results = {}
-    rank, world_size = get_dist_info()
+    rank, world_size = dist.get_rank(), dist.get_world_size()
 
     if hasattr(data_loader, 'dataset'):  # normal dataloader
         data_len = len(data_loader.dataset)
@@ -244,7 +243,7 @@ def multi_gpu_test(model,
 
 
 def collect_results_cpu(result_part, size, tmpdir=None):
-    rank, world_size = get_dist_info()
+    rank, world_size = dist.get_rank(), dist.get_world_size()
     # create a tmp dir if it is not specified
     if tmpdir is None:
         MAX_LEN = 512
@@ -296,7 +295,7 @@ def serialize_tensor(tensor_collection):
 
 
 def collect_results_gpu(result_part, size):
-    rank, world_size = get_dist_info()
+    rank, world_size = dist.get_rank(), dist.get_world_size()
     # dump result part to tensor with pickle
 
     # part_tensor = torch.tensor(

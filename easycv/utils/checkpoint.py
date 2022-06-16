@@ -7,6 +7,7 @@ from mmcv.runner import load_checkpoint as mmcv_load_checkpoint
 from mmcv.runner.checkpoint import get_state_dict, weights_to_cpu
 from torch.optim import Optimizer
 
+import easycv.distributed as dist
 from easycv.file import io
 from easycv.utils.constant import CACHE_DIR
 
@@ -44,9 +45,8 @@ def load_checkpoint(model,
         if not os.path.exists(cache_file):
             print(f'download checkpoint from {filename} to {cache_file}')
             io.copy(filename, cache_file)
-        if torch.distributed.is_available(
-        ) and torch.distributed.is_initialized():
-            torch.distributed.barrier()
+        if dist.is_distributed():
+            dist.barrier()
         return mmcv_load_checkpoint(
             model,
             cache_file,

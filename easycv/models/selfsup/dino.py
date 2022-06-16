@@ -4,11 +4,10 @@ import sys
 
 import numpy as np
 import torch
-import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.runner import get_dist_info
 
+import easycv.distributed as dist
 from easycv.utils.preprocess_function import (gaussianBlurDynamic,
                                               randomGrayScale, solarize)
 from .. import builder
@@ -128,7 +127,7 @@ class DINOLoss(nn.Module):
         """
         batch_center = torch.sum(teacher_output, dim=0, keepdim=True)
 
-        _, world_size = get_dist_info()
+        world_size = dist.get_world_size()
         if world_size > 1:
             dist.all_reduce(batch_center)
         batch_center = batch_center / (len(teacher_output) * world_size)

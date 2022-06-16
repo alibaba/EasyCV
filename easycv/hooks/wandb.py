@@ -1,10 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import cv2
 import numpy as np
-from mmcv.runner.dist_utils import master_only
 from mmcv.runner.hooks import HOOKS
 from mmcv.runner.hooks import WandbLoggerHook as _WandbLoggerHook
 from PIL import Image as PILImage
+
+from easycv.distributed.utils import master_only
 
 
 @HOOKS.register_module()

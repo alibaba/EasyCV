@@ -5,8 +5,8 @@ import pytorch_metric_learning.losses as pml_losses
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.runner import get_dist_info
 
+import easycv.distributed as dist
 from ..registry import LOSSES
 
 # register all existing transforms in torchvision
@@ -193,7 +193,7 @@ class ModelParallelSoftmaxLoss(nn.Module):
         """
         super(ModelParallelSoftmaxLoss, self).__init__()
         import sailfish
-        rank, world_size = get_dist_info()
+        rank, world_size = dist.get_rank(), dist.get_world_size()
         self.model_parallel = sailfish.ModelParallel(rank, world_size)
         self.fc = sailfish.Linear(
             embedding_size,
@@ -233,7 +233,7 @@ class ModelParallelAMSoftmaxLoss(nn.Module):
         self.m = margin
         self.s = scale
 
-        rank, world_size = get_dist_info()
+        rank, world_size = dist.get_rank(), dist.get_world_size()
         self.model_parallel = sailfish.ModelParallel(rank, world_size)
 
         self.fc = sailfish.AMLinear(

@@ -1,7 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import numpy as np
 import torch
-import torch.distributed as dist
+
+import easycv.distributed as dist
 
 
 def gather_tensors(input_array):
