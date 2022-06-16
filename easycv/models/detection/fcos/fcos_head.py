@@ -236,25 +236,23 @@ class FCOSHead(nn.Module):
             scale_factor = img_metas[i]['scale_factor']
             ori_h, ori_w, _ = img_metas[i]['ori_shape']
             scale_factor = torch.from_numpy(scale_factor).to(
-                outputs[i].pred_boxes.device)
-            outputs[i].pred_boxes = outputs[0].pred_boxes / scale_factor
-            outputs[i].pred_boxes[0].clamp(min=0, max=ori_w)
-            outputs[i].pred_boxes[1].clamp(min=0, max=ori_h)
-            outputs[i].pred_boxes[2].clamp(min=0, max=ori_w)
-            outputs[i].pred_boxes[3].clamp(min=0, max=ori_h)
+                outputs[i].pred_boxes.tensor.device)
+            outputs[i].pred_boxes.tensor = outputs[
+                0].pred_boxes.tensor / scale_factor
+            outputs[i].pred_boxes.tensor[0].clamp(min=0, max=ori_w)
+            outputs[i].pred_boxes.tensor[1].clamp(min=0, max=ori_h)
+            outputs[i].pred_boxes.tensor[2].clamp(min=0, max=ori_w)
+            outputs[i].pred_boxes.tensor[3].clamp(min=0, max=ori_h)
 
         # print(img_metas[0])
         # print(outputs[0].pred_boxes, outputs[0].pred_classes,
         #       outputs[0].scores)
 
-        if len(outputs[0].scores) > 0:
-            results = [{
-                'scores': s.unsqueeze(0),
-                'labels': l.unsqueeze(0),
-                'boxes': b.unsqueeze(0)
-            } for s, l, b in zip(outputs[0].scores, outputs[0].pred_classes,
-                                 outputs[0].pred_boxes)]
-        else:
-            results = [{'scores': None, 'labels': None, 'boxes': None}]
+        results = [{
+            'scores': s.unsqueeze(0),
+            'labels': l.unsqueeze(0),
+            'boxes': b.unsqueeze(0)
+        } for s, l, b in zip(outputs[0].scores, outputs[0].pred_classes,
+                             outputs[0].pred_boxes.tensor)]
 
         return results

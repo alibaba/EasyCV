@@ -7,7 +7,7 @@ from torch import gt, nn
 from torchvision.ops import boxes as box_ops
 from torchvision.ops import nms  # BC-compat
 
-from easycv.models.detection.utils import Instances, reduce_mean
+from easycv.models.detection.utils import Boxes, Instances, reduce_mean
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +141,7 @@ def ml_nms(boxlist,
     """
     if nms_thresh <= 0:
         return boxlist
-    boxes = boxlist.pred_boxes
+    boxes = boxlist.pred_boxes.tensor
     scores = boxlist.scores
     labels = boxlist.pred_classes
     keep = batched_nms(boxes, scores, labels, nms_thresh)
@@ -761,7 +761,7 @@ class FCOSOutputs(nn.Module):
                                      dim=1)
 
             boxlist = Instances(image_sizes[i])
-            boxlist.pred_boxes = detections
+            boxlist.pred_boxes = Boxes(detections)
             boxlist.scores = torch.sqrt(per_box_cls)
             boxlist.pred_classes = per_class
             boxlist.locations = per_locations
