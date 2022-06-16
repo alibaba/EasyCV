@@ -133,7 +133,7 @@ class PytorchImageModelWrapper(nn.Module):
                             else None,
                             strict=False)
                 else:
-                    print_log('load model from init weights')
+                    logger.warning('pretrained model for model_name not found')
             elif self.model_name in _MODEL_MAP:
                 if self.model_name in model_urls.keys():
                     default_pretrained_model_path = model_urls[self.model_name]
