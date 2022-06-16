@@ -1,7 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import logging
 
-from .vitdet import SFP, RPNHeadNorm
+from .vitdet import SFP
 
 try:
     from .yolox.yolox import YOLOX
