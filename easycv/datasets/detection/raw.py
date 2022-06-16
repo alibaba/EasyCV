@@ -5,7 +5,7 @@ from easycv.core.visualization.image import imshow_bboxes
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
 from easycv.file.image import load_image
-
+from easycv.datasets.detection.data_sources import DetSourceCoco
 
 @DATASETS.register_module
 class DetDataset(BaseDataset):
@@ -31,9 +31,16 @@ class DetDataset(BaseDataset):
         return self.num_samples
 
     def __getitem__(self, idx):
-        data_dict = self.data_source.get_sample(idx)
-        data_dict = self.pipeline(data_dict)
-        return data_dict
+        while True:
+            data_dict = self.data_source.get_sample(idx)
+            data_dict = self.pipeline(data_dict)
+            if data_dict is None:
+                if isinstance(self.data_source, DetSourceCoco):
+                    idx = self.data_source._rand_another(idx)
+                else:
+                    idx = random.randint(0,self.num_samples-1)
+                continue
+            return data_dict
 
     def evaluate(self, results, evaluators=None, logger=None):
         '''Evaluates the detection boxes.

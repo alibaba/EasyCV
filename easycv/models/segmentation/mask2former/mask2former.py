@@ -25,37 +25,30 @@ class Mask2Former(BaseModel):
         self,
         backbone,
         head,
-        criterion=None,
+        train_cfg=None,
+        test_cfg=None,
         pretrained=None,
         ):
         super(Mask2Former, self).__init__()
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
         self.pretrained = pretrained
         self.backbone = builder.build_backbone(backbone)
         self.head = builder.build_head(head)
         # building criterion
-        # debug
-        class_weight = 2.0
-        mask_weight = 5.0
-        dice_weight = 5.0
-        deep_supervision =  True
-        DEC_LAYERS = 10
-        TRAIN_NUM_POINTS = 12554
-        no_object_weight = 0.1
-        OVERSAMPLE_RATIO = 3.0
-        IMPORTANCE_SAMPLE_RATIO=0.75
-        self.num_classes = 80
-        self.num_things_classes = 80
+        self.num_classes = head.num_things_classes+head.num_stuff_classes
+        self.num_things_classes = head.num_things_classes
 
         matcher = HungarianMatcher(
-            cost_class=class_weight,
-            cost_mask=mask_weight,
-            cost_dice=dice_weight,
-            num_points=TRAIN_NUM_POINTS,
+            cost_class=train_cfg.class_weight,
+            cost_mask=train_cfg.mask_weight,
+            cost_dice=train_cfg.dice_weight,
+            num_points=train_cfg.num_points,
         )
-        weight_dict = {"loss_ce": class_weight, "loss_mask": mask_weight, "loss_dice": dice_weight}
+        weight_dict = {"loss_ce": train_cfg.class_weight, "loss_mask": train_cfg.mask_weight, "loss_dice": train_cfg.dice_weight}
 
-        if deep_supervision:
-            dec_layers = DEC_LAYERS
+        if train_cfg.deep_supervision:
+            dec_layers = train_cfg.dec_layers
             aux_weight_dict = {}
             for i in range(dec_layers - 1):
                 aux_weight_dict.update({k + f"_{i}": v for k, v in weight_dict.items()})
@@ -67,11 +60,11 @@ class Mask2Former(BaseModel):
             self.head.num_classes,
             matcher=matcher,
             weight_dict=weight_dict,
-            eos_coef=no_object_weight,
+            eos_coef=train_cfg.no_object_weight,
             losses=losses,
-            num_points=TRAIN_NUM_POINTS,
-            oversample_ratio=OVERSAMPLE_RATIO,
-            importance_sample_ratio=IMPORTANCE_SAMPLE_RATIO,
+            num_points=train_cfg.num_points,
+            oversample_ratio=train_cfg.oversample_ratio,
+            importance_sample_ratio=train_cfg.importance_sample_ratio,
         )
 
         self.init_weights()
@@ -105,7 +98,6 @@ class Mask2Former(BaseModel):
         features = self.backbone(img)
         outputs = self.head(features)
         targets = preprocess_gt(gt_labels,gt_masks,gt_semantic_seg,img_metas)
-
         losses = self.criterion(outputs, targets)
         return losses
 
@@ -139,6 +131,7 @@ class Mask2Former(BaseModel):
                 size=(pad_height, pad_width),
                 mode='bilinear',
                 align_corners=False)[:, 0]
+            #remove padding
             img_height, img_width = meta['img_shape'][:2]
             mask_pred_result = mask_pred_result[:, :img_height, :img_width]
             ori_height, ori_width = meta['ori_shape'][:2]
@@ -147,7 +140,6 @@ class Mask2Former(BaseModel):
                 size=(ori_height, ori_width),
                 mode='bilinear',
                 align_corners=False)[:, 0]
-            #remove padding
 
             result = dict()
 
@@ -214,8 +206,7 @@ class Mask2Former(BaseModel):
             - mask_pred_binary (Tensor): Instance masks of \
                 shape (n, h, w).
         """
-        # max_per_image = self.test_cfg.get('max_per_image', 100)
-        max_per_image = 100
+        max_per_image = self.test_cfg.get('max_per_image', 100)
         num_queries = mask_cls.shape[0]
         # shape (num_queries, num_class)
         scores = F.softmax(mask_cls, dim=-1)[:, :-1]

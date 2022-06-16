@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import numpy as np
+import random
 from xtcocotools.coco import COCO
 
 from easycv.datasets.registry import DATASOURCES, PIPELINES
@@ -61,12 +62,10 @@ class DetSourceCoco(object):
     def __len__(self):
         """Total number of samples of data."""
         return len(self.data_infos)
-        # return 100
 
     def get_length(self):
         """Total number of samples of data."""
         return len(self.data_infos)
-        # return 100
         
     def load_annotations(self, ann_file):
         """Load annotation from COCO style annotation file.

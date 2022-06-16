@@ -1,8 +1,3 @@
-#issue1 fvcore.nn.weight_init
-#issue2 detectron2.layers.Conv2d A wrapper around :class:`torch.nn.Conv2d` to support empty inputs and more features.
-#issue3 .position_encoding.PositionEmeddingSine
-#issue4 without _load_from_state_dict,from_config
-#issue5 * in python function,必须以关键字传参
 import math
 from typing import Optional
 import torch

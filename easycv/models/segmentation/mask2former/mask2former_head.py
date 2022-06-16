@@ -16,7 +16,8 @@ class Mask2FormerHead(nn.Module):
         transformer_decoder,
         # input_shape: Dict[str, ShapeSpec],
         *,
-        num_classes: int,
+        num_things_classes: int,
+        num_stuff_classes: int,
         # pixel_decoder: nn.Module,
         loss_weight: float = 1.0,
         ignore_value: int = -1,
@@ -48,7 +49,7 @@ class Mask2FormerHead(nn.Module):
         self.predictor = MultiScaleMaskedTransformerDecoder(**transformer_decoder)
         self.transformer_in_feature = transformer_in_feature
 
-        self.num_classes = num_classes
+        self.num_classes = num_things_classes+num_stuff_classes
 
     def forward(self, features, mask=None):
         
