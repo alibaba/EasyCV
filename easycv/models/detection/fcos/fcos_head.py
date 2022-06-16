@@ -195,7 +195,14 @@ class FCOSHead(nn.Module):
             dict[str, Tensor]: A dictionary of loss components.
         """
         locations = self.compute_locations(x)
+        # print("num_features:{}".format(len(x)))
+        # print("features_shape:{}".format(x[0].shape))
+        # print("features:{}".format(x[0]))
+        # print("locations:{}".format(locations))
         logits_pred, reg_pred, ctrness_pred = self.forward(x)
+
+        # print(logits_pred[0].shape, reg_pred[0].shape, ctrness_pred[0].shape)
+        # print("logits:{}, reg:{}, ctr:{}".format(logits_pred[0], reg_pred[0], ctrness_pred[0]))
 
         gt_instances = []
         for i in range(len(img_metas)):
@@ -215,14 +222,25 @@ class FCOSHead(nn.Module):
         locations = self.compute_locations(x)
         logits_pred, reg_pred, ctrness_pred = self.forward(x)
 
-        orig_target_sizes = []
+        img_target_sizes = []
         for i in range(len(img_metas)):
-            ori_h, ori_w, _ = img_metas[i]['ori_shape']
-            orig_target_sizes.append((ori_h, ori_w))
+            img_h, img_w, _ = img_metas[i]['img_shape']
+            img_target_sizes.append((img_h, img_w))
 
         outputs = self.fcos_outputs.predict_proposals(logits_pred, reg_pred,
                                                       ctrness_pred, locations,
-                                                      orig_target_sizes, [])
+                                                      img_target_sizes, [])
+
+        scale_fct = []
+        for i in range(len(img_metas)):
+            scale_factor = img_metas[i]['scale_factor']
+            scale_fct.append(
+                torch.from_numpy(scale_factor).to(
+                    outputs[0].pred_boxes.device))
+
+        outputs[0].pred_boxes = outputs[0].pred_boxes / scale_fct[0]
+        # print(img_metas[0])
+        # print(outputs[0].pred_boxes, outputs[0].pred_classes, outputs[0].scores)
 
         if len(outputs[0].scores) > 0:
             results = [{
@@ -233,4 +251,5 @@ class FCOSHead(nn.Module):
                                  outputs[0].pred_boxes)]
         else:
             results = [{'scores': None, 'labels': None, 'boxes': None}]
+
         return results

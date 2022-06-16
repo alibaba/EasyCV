@@ -3,7 +3,7 @@ from typing import List
 
 import torch
 import torch.nn.functional as F
-from torch import nn
+from torch import gt, nn
 from torchvision.ops import boxes as box_ops
 from torchvision.ops import nms  # BC-compat
 
@@ -477,7 +477,11 @@ class FCOSOutputs(nn.Module):
             dict[loss name -> loss value]: A dict mapping from loss name to loss value.
         """
 
+        # print(gt_instances)
+
         training_targets = self._get_ground_truth(locations, gt_instances)
+
+        # print(training_targets)
 
         # Collect all logits and regression predictions over feature maps
         # and images to arrive at the same shape as the labels and targets
@@ -542,6 +546,18 @@ class FCOSOutputs(nn.Module):
         #         ],
         #         dim=0,
         #     )
+
+        # print("start")
+        # print(instances.labels[0], instances.labels[-1])
+        # print(instances.gt_inds[0], instances.gt_inds[-1])
+        # print(instances.im_inds[0], instances.im_inds[-1])
+        # print(instances.reg_targets[0], instances.reg_targets[-1])
+        # print(instances.locations[0], instances.locations[-1])
+        # print(instances.fpn_levels[0], instances.fpn_levels[-1])
+        # print(instances.logits_pred[0], instances.logits_pred[-1])
+        # print(instances.reg_pred[0], instances.reg_pred[-1])
+        # print(instances.ctrness_pred[0], instances.ctrness_pred[-1])
+        # print("end")
 
         return self.fcos_losses(instances)
 
@@ -627,6 +643,8 @@ class FCOSOutputs(nn.Module):
                           locations,
                           image_sizes,
                           top_feats=None):
+
+        # print(image_sizes)
         if self.training:
             self.pre_nms_thresh = self.pre_nms_thresh_train
             self.pre_nms_topk = self.pre_nms_topk_train

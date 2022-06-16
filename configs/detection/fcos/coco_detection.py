@@ -20,8 +20,9 @@ img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 train_pipeline = [
-    dict(type='MMResize', img_scale=(1333, 800), keep_ratio=True),
-    dict(type='MMRandomFlip', flip_ratio=0.5),
+    # dict(type='MMResize', img_scale=(1333, 800), keep_ratio=True),
+    dict(type='MMResize', img_scale=(800, 800), keep_ratio=True),
+    # dict(type='MMRandomFlip', flip_ratio=0.5),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='MMPad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
@@ -36,6 +37,7 @@ test_pipeline = [
     dict(
         type='MMMultiScaleFlipAug',
         img_scale=(1333, 800),
+        # img_scale=(800, 800),
         flip=False,
         transforms=[
             dict(type='MMResize', keep_ratio=True),
@@ -57,7 +59,9 @@ train_dataset = dict(
     type='DetDataset',
     data_source=dict(
         type='DetSourceCoco',
-        ann_file=data_root + 'annotations/instances_train2017.json',
+        # ann_file=data_root + 'annotations/instances_train2017.json',
+        # img_prefix=data_root + 'train2017/',
+        ann_file=data_root + 'annotations/instances_train2017_1.json',
         img_prefix=data_root + 'train2017/',
         pipeline=[
             dict(type='LoadImageFromFile'),
@@ -76,7 +80,7 @@ val_dataset = dict(
         type='DetSourceCoco',
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
-        # ann_file=data_root + 'annotations/instances_train2017_20.json',
+        # ann_file=data_root + 'annotations/instances_train2017_1.json',
         # img_prefix=data_root + 'train2017/',
         pipeline=[
             dict(type='LoadImageFromFile'),
