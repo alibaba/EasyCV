@@ -194,6 +194,7 @@ class FCOSHead(nn.Module):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
+        # print(gt_bboxes, gt_labels)
         locations = self.compute_locations(x)
         # print("num_features:{}".format(len(x)))
         # print("features_shape:{}".format(x[0].shape))
@@ -231,14 +232,17 @@ class FCOSHead(nn.Module):
                                                       ctrness_pred, locations,
                                                       img_target_sizes, [])
 
-        scale_fct = []
         for i in range(len(img_metas)):
             scale_factor = img_metas[i]['scale_factor']
-            scale_fct.append(
-                torch.from_numpy(scale_factor).to(
-                    outputs[0].pred_boxes.device))
+            ori_h, ori_w, _ = img_metas[i]['ori_shape']
+            scale_factor = torch.from_numpy(scale_factor).to(
+                outputs[i].pred_boxes.device)
+            outputs[i].pred_boxes = outputs[0].pred_boxes / scale_factor
+            outputs[i].pred_boxes[0].clamp(min=0, max=ori_w)
+            outputs[i].pred_boxes[1].clamp(min=0, max=ori_h)
+            outputs[i].pred_boxes[2].clamp(min=0, max=ori_w)
+            outputs[i].pred_boxes[3].clamp(min=0, max=ori_h)
 
-        outputs[0].pred_boxes = outputs[0].pred_boxes / scale_fct[0]
         # print(img_metas[0])
         # print(outputs[0].pred_boxes, outputs[0].pred_classes,
         #       outputs[0].scores)

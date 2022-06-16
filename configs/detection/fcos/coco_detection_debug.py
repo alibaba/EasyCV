@@ -37,7 +37,7 @@ test_pipeline = [
     dict(
         type='MMMultiScaleFlipAug',
         # img_scale=(1333, 800),
-        img_scale=(800, 800),
+        img_scale=(600, 800),
         flip=False,
         transforms=[
             dict(type='MMResize', keep_ratio=True),
