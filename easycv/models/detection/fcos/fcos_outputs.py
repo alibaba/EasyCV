@@ -645,14 +645,14 @@ class FCOSOutputs(nn.Module):
                           top_feats=None):
 
         # print(image_sizes)
-        if self.training:
-            self.pre_nms_thresh = self.pre_nms_thresh_train
-            self.pre_nms_topk = self.pre_nms_topk_train
-            self.post_nms_topk = self.post_nms_topk_train
-        else:
-            self.pre_nms_thresh = self.pre_nms_thresh_test
-            self.pre_nms_topk = self.pre_nms_topk_test
-            self.post_nms_topk = self.post_nms_topk_test
+        # if self.training:
+        #     self.pre_nms_thresh = self.pre_nms_thresh_train
+        #     self.pre_nms_topk = self.pre_nms_topk_train
+        #     self.post_nms_topk = self.post_nms_topk_train
+        # else:
+        self.pre_nms_thresh = self.pre_nms_thresh_test
+        self.pre_nms_topk = self.pre_nms_topk_test
+        self.post_nms_topk = self.post_nms_topk_test
 
         sampled_boxes = []
 
