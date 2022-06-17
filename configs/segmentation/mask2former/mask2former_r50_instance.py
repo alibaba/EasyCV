@@ -161,7 +161,8 @@ val_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True, with_mask=True)
         ],
         classes=CLASSES,
-        filter_empty_gt=True,
+        # filter_empty_gt=True,
+        test_mode=True,
         iscrowd=True,
     ),
     pipeline=test_pipeline)
@@ -210,7 +211,7 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 
 
-eval_config = dict(interval=1, gpu_collect=False)
+eval_config = dict(initial=True,interval=1, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',
