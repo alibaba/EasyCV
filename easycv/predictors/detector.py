@@ -12,12 +12,14 @@ import requests
 import torch
 from mmcv.ops import RoIPool
 from mmcv.parallel import collate, scatter
+from torch.hub import load_state_dict_from_url
 from torchvision.transforms import Compose
 
 from easycv.core.visualization import imshow_bboxes
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.utils import replace_ImageToTensor
 from easycv.file import io
+from easycv.file.utils import is_url_path, url_path_exists
 from easycv.models import build_model
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
@@ -267,10 +269,49 @@ class TorchViTDetPredictor(PredictorInterface):
 
     def __init__(self, model_path):
 
-        self.predictor = Predictor(model_path)
-        self.model = self.predictor.model
-        self.cfg = self.predictor.cfg
+        self.model_path = model_path
         self.CLASSES = self.cfg.CLASSES
+
+        if is_url_path(self.model_path) and url_path_exists(self.model_path):
+            checkpoint = load_state_dict_from_url(model_path)
+        else:
+            assert io.exists(
+                self.model_path), f'{self.model_path} does not exists'
+
+            with io.open(self.model_path, 'rb') as infile:
+                checkpoint = torch.load(infile, map_location='cpu')
+
+        assert 'meta' in checkpoint and 'config' in checkpoint[
+            'meta'], 'meta.config is missing from checkpoint'
+
+        config_str = checkpoint['meta']['config']
+        if isinstance(config_str, dict):
+            config_str = json.dumps(config_str)
+
+        # get config
+        basename = os.path.basename(self.model_path)
+        fname, _ = os.path.splitext(basename)
+        self.local_config_file = os.path.join(CACHE_DIR,
+                                              f'{fname}_config.json')
+        if not os.path.exists(CACHE_DIR):
+            os.makedirs(CACHE_DIR)
+        with open(self.local_config_file, 'w') as ofile:
+            ofile.write(config_str)
+        self.cfg = mmcv_config_fromfile(self.local_config_file)
+
+        # dynamic adapt mmdet models
+        dynamic_adapt_for_mmlab(self.cfg)
+
+        # build model
+        self.model = build_model(self.cfg.model)
+
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        map_location = 'cpu' if self.device == 'cpu' else 'cuda'
+        self.ckpt = load_checkpoint(
+            self.model, self.model_path, map_location=map_location)
+
+        self.model.to(self.device)
+        self.model.eval()
 
     def predict(self, imgs):
         """Inference image(s) with the detector.

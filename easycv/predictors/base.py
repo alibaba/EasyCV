@@ -49,7 +49,6 @@ class Predictor(object):
         config_str = checkpoint['meta']['config']
         if isinstance(config_str, dict):
             config_str = json.dumps(config_str)
-        print(config_str)
 
         # get config
         basename = os.path.basename(self.model_path)
@@ -77,16 +76,12 @@ class Predictor(object):
         self.model.eval()
 
         # build pipeline
-        # transforms = []
-        # for transform in self.cfg.test_pipeline:
-        #     if isinstance(transform, dict):
-        #         transform = build_from_cfg(transform, PIPELINES)
-        #         transforms.append(transform)
-        #     elif callable(transform):
-        #         transforms.append(transform)
-        #     else:
-        #         raise TypeError('transform must be callable or a dict')
-        # self.pipeline = Compose(transforms)
+        pipeline = [
+            build_from_cfg(p, PIPELINES) for p in self.cfg.test_pipeline
+        ]
+        if self.numpy_to_pil:
+            pipeline = [NumpyToPIL()] + pipeline
+        self.pipeline = Compose(pipeline)
 
     def preprocess(self, image_list):
         # only perform transform to img
