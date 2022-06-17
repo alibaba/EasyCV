@@ -354,8 +354,6 @@ class TorchViTDetPredictor(PredictorInterface):
 
         cfg.data.val.pipeline = replace_ImageToTensor(cfg.data.val.pipeline)
 
-        print(cfg.data.val.pipeline)
-
         transforms = []
         for transform in cfg.data.val.pipeline:
             if 'img_scale' in transform:
