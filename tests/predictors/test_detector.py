@@ -177,7 +177,7 @@ class DetectorTest(unittest.TestCase):
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
         out_file = None
         vitdet = TorchViTDetPredictor(config_file, checkpoint_file)
-        output = vitdet.inference_detector(img)
+        output = vitdet.predict(img)
 
         self.assertIn('detection_boxes', output)
         self.assertIn('detection_scores', output)
