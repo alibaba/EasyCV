@@ -173,7 +173,7 @@ class DetectorTest(unittest.TestCase):
 
     def test_vitdet_detector(self):
         config_file = 'configs/detection/vitdet/vitdet_100e.py'
-        checkpoint_file = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/vitdet/vit_base/vitdet_maskrcnn.pth'
+        checkpoint_file = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/vitdet/vit_base/vitdet_maskrcnn_export.pth'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
         out_file = None
         vitdet = TorchViTDetPredictor(config_file, checkpoint_file)

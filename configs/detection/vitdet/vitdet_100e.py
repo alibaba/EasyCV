@@ -63,3 +63,5 @@ eval_pipelines = [
 ]
 
 find_unused_parameters = False
+export = dict(use_jit=False)
+checkpoint_sync_export = True

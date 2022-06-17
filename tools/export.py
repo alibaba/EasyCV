@@ -23,6 +23,7 @@ from easycv.utils.logger import get_root_logger
 # from mmcv import Config
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
+from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 
 
 def parse_args():
@@ -86,6 +87,9 @@ def main():
     # check oss_config and init oss io
     if cfg.get('oss_io_config', None) is not None:
         io.access_oss(**cfg.oss_io_config)
+
+    # dynamic adapt mmdet models
+    dynamic_adapt_for_mmlab(cfg)
 
     # init the logger before other steps
     logger = get_root_logger(log_level=cfg.log_level)
