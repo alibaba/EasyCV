@@ -270,7 +270,6 @@ class TorchViTDetPredictor(PredictorInterface):
     def __init__(self, model_path):
 
         self.model_path = model_path
-        self.CLASSES = self.cfg.CLASSES
 
         if is_url_path(self.model_path) and url_path_exists(self.model_path):
             checkpoint = load_state_dict_from_url(model_path)
@@ -312,6 +311,8 @@ class TorchViTDetPredictor(PredictorInterface):
 
         self.model.to(self.device)
         self.model.eval()
+
+        self.CLASSES = self.cfg.CLASSES
 
     def predict(self, imgs):
         """Inference image(s) with the detector.
