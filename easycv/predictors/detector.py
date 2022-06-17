@@ -14,7 +14,7 @@ from mmcv.ops import RoIPool
 from mmcv.parallel import collate, scatter
 from torchvision.transforms import Compose
 
-from easycv.core.visualization import imshow_det_bboxes
+from easycv.core.visualization import imshow_bboxes
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.utils import replace_ImageToTensor
 from easycv.file import io
@@ -379,33 +379,43 @@ class TorchViTDetPredictor(PredictorInterface):
 
     def show_result_pyplot(self,
                            img,
-                           result,
+                           results,
                            score_thr=0.3,
-                           wait_time=0,
-                           palette=None,
                            show=False,
                            out_file=None):
-        bboxes = result['detection_boxes'][0]
-        scores = result['detection_scores'][0]
-        labels = result['detection_classes'][0]
+        bboxes = results['detection_boxes'][0]
+        scores = results['detection_scores'][0]
+        labels = results['detection_classes'][0]
 
-        bboxes = np.hstack((bboxes, scores[:, np.newaxis]))
+        # If self.CLASSES is not None, class_id will be converted to self.CLASSES for visualization,
+        # otherwise the class_id will be displayed.
+        # And don't try to modify the value in results, it may cause some bugs or even precision problems,
+        # because `self.evaluate` will also use the results, refer to: https://github.com/alibaba/EasyCV/pull/67
 
-        # draw bounding boxes
-        img = imshow_det_bboxes(
+        if self.CLASSES is not None and len(self.CLASSES) > 0:
+            detection_classes = []
+            for i, classes_id in enumerate(labels):
+                if classes_id is None:
+                    detection_classes.append(None)
+                else:
+                    detection_classes.append(self.CLASSES[classes_id.item()])
+
+        if scores is not None and score_thr > 0:
+            inds = scores > score_thr
+            bboxes = bboxes[inds]
+            detection_classes = np.array(detection_classes)[inds]
+
+        imshow_bboxes(
             img,
             bboxes,
-            labels,
-            class_names=self.CLASSES,
-            score_thr=score_thr,
-            bbox_color=palette,
-            text_color=(200, 200, 200),
+            labels=detection_classes,
+            colors='green',
+            text_color='white',
+            font_size=20,
+            thickness=1,
+            font_scale=0.5,
             show=show,
-            wait_time=wait_time,
             out_file=out_file)
-
-        if not (show or out_file):
-            return img
 
 
 @PREDICTORS.register_module()

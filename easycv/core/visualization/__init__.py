@@ -1,7 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from .image import (imshow_bboxes, imshow_det_bboxes, imshow_keypoints,
-                    imshow_label)
+from .image import imshow_bboxes, imshow_keypoints, imshow_label
 
-__all__ = [
-    'imshow_bboxes', 'imshow_keypoints', 'imshow_label', 'imshow_det_bboxes'
-]
+__all__ = ['imshow_bboxes', 'imshow_keypoints', 'imshow_label']
