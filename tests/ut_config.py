@@ -66,8 +66,9 @@ SSL_SMALL_IMAGENET_RAW = os.path.join(BASE_LOCAL_PATH,
                                       'data/selfsup/small_imagenet')
 TEST_IMAGES_DIR = os.path.join(BASE_LOCAL_PATH, 'data/test_images')
 
-COMPRESSION_TEST_DATA = os.path.join(BASE_LOCAL_PATH,
-                                     'data/compression/test_data')
+# COMPRESSION_TEST_DATA = os.path.join(BASE_LOCAL_PATH,
+#                                      'data/compression/test_data')
+COMPRESSION_TEST_DATA = '/apsarapangu/disk2/yunji.cjy/coco'
 
 SEG_DATA_SMALL_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                         'data/segmentation/small_voc_200')
@@ -104,7 +105,8 @@ PRETRAINED_MODEL_YOLOXS = os.path.join(
 PRETRAINED_MODEL_POSE_HRNET_EXPORT = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/pose/hrnet/pose_hrnet_epoch_210_export.pt')
-PRETRAINED_MODEL_YOLOX_COMPRESSION = os.path.join(
-    BASE_LOCAL_PATH, 'pretrained_models/compression/yolox_compression.pth')
+# PRETRAINED_MODEL_YOLOX_COMPRESSION = os.path.join(
+#     BASE_LOCAL_PATH, 'pretrained_models/compression/yolox_compression.pth')
+PRETRAINED_MODEL_YOLOX_COMPRESSION = '/home/yunji.cjy/pretrain/fcos_r50.pth'
 PRETRAINED_MODEL_MAE = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/classification/vit/mae_vit_b_1600.pth')
