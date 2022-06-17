@@ -172,11 +172,10 @@ class DetectorTest(unittest.TestCase):
             decimal=1)
 
     def test_vitdet_detector(self):
-        config_file = 'configs/detection/vitdet/vitdet_100e.py'
-        checkpoint_file = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/vitdet/vit_base/vitdet_maskrcnn_export.pth'
+        model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/vitdet/vit_base/vitdet_maskrcnn_export.pth'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
         out_file = './result.jpg'
-        vitdet = TorchViTDetPredictor(config_file, checkpoint_file)
+        vitdet = TorchViTDetPredictor(model_path)
         output = vitdet.predict(img)
 
         self.assertIn('detection_boxes', output)

@@ -24,6 +24,7 @@ from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
 from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.registry import build_from_cfg
+from .base import Predictor
 from .builder import PREDICTORS
 from .classifier import TorchClassifier
 
@@ -264,32 +265,12 @@ class TorchYoloXPredictor(PredictorInterface):
 @PREDICTORS.register_module()
 class TorchViTDetPredictor(PredictorInterface):
 
-    def __init__(self, config, checkpoint):
+    def __init__(self, model_path):
 
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        if config.startswith('http'):
-
-            r = requests.get(config)
-            # download config in current dir
-            tpath = config.split('/')[-1]
-            while not osp.exists(tpath):
-                try:
-                    with open(tpath, 'wb') as code:
-                        code.write(r.content)
-                except:
-                    pass
-
-            config = tpath
-
-        self.cfg = mmcv_config_fromfile(config)
+        self.predictor = Predictor(model_path)
+        self.model = self.predictor.model
+        self.cfg = self.predictor.cfg
         self.CLASSES = self.cfg.CLASSES
-        # dynamic adapt mmdet models
-        dynamic_adapt_for_mmlab(self.cfg)
-        self.model = build_model(self.cfg.model)
-        checkpoint = load_checkpoint(
-            self.model, checkpoint, map_location='cpu')
-        self.model.to(self.device)
-        self.model.eval()
 
     def predict(self, imgs):
         """Inference image(s) with the detector.
@@ -332,8 +313,12 @@ class TorchViTDetPredictor(PredictorInterface):
 
         cfg.data.val.pipeline = replace_ImageToTensor(cfg.data.val.pipeline)
 
+        print(cfg.data.val.pipeline)
+
         transforms = []
         for transform in cfg.data.val.pipeline:
+            if 'img_scale' in transform:
+                transform['img_scale'] = tuple(transform['img_scale'])
             if isinstance(transform, dict):
                 transform = build_from_cfg(transform, PIPELINES)
                 transforms.append(transform)
