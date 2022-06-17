@@ -385,7 +385,7 @@ class TorchViTDetPredictor(PredictorInterface):
                            out_file=None):
         bboxes = results['detection_boxes'][0]
         scores = results['detection_scores'][0]
-        labels = results['detection_classes'][0]
+        labels = results['detection_classes'][0].tolist()
 
         # If self.CLASSES is not None, class_id will be converted to self.CLASSES for visualization,
         # otherwise the class_id will be displayed.
@@ -393,22 +393,21 @@ class TorchViTDetPredictor(PredictorInterface):
         # because `self.evaluate` will also use the results, refer to: https://github.com/alibaba/EasyCV/pull/67
 
         if self.CLASSES is not None and len(self.CLASSES) > 0:
-            detection_classes = []
             for i, classes_id in enumerate(labels):
                 if classes_id is None:
-                    detection_classes.append(None)
+                    labels[i] = None
                 else:
-                    detection_classes.append(self.CLASSES[classes_id.item()])
+                    labels[i] = self.CLASSES[int(classes_id)]
 
         if scores is not None and score_thr > 0:
             inds = scores > score_thr
             bboxes = bboxes[inds]
-            detection_classes = np.array(detection_classes)[inds]
+            labels = np.array(labels)[inds]
 
         imshow_bboxes(
             img,
             bboxes,
-            labels=detection_classes,
+            labels=labels,
             colors='green',
             text_color='white',
             font_size=20,
