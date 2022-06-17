@@ -56,7 +56,6 @@ class Mask2Former(BaseModel):
             weight_dict.update(aux_weight_dict)
 
         losses = ["labels", "masks"]
-
         self.criterion = SetCriterion(
             self.head.num_classes,
             matcher=matcher,
@@ -100,6 +99,12 @@ class Mask2Former(BaseModel):
         outputs = self.head(features)
         targets = self.preprocess_gt(gt_labels,gt_masks,gt_semantic_seg,img_metas)
         losses = self.criterion(outputs, targets)
+        for k in list(losses.keys()):
+            if k in self.criterion.weight_dict:
+                losses[k] *= self.criterion.weight_dict[k]
+            else:
+                # remove this loss if not specified in `weight_dict`
+                losses.pop(k)
         return losses
 
     def forward_test(self, img,img_metas,rescale=True):
