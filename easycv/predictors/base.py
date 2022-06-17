@@ -6,17 +6,14 @@ from tabnanny import check
 import numpy as np
 import torch
 from PIL import Image
-from torch.hub import load_state_dict_from_url
 from torchvision.transforms import Compose
 
 from easycv.datasets.registry import PIPELINES
 from easycv.file import io
-from easycv.file.utils import is_url_path, url_path_exists
 from easycv.models import build_model
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
-from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.registry import build_from_cfg
 
 
@@ -33,23 +30,15 @@ class Predictor(object):
     def __init__(self, model_path, numpy_to_pil=True):
         self.model_path = model_path
         self.numpy_to_pil = numpy_to_pil
+        assert io.exists(self.model_path), f'{self.model_path} does not exists'
 
-        if is_url_path(self.model_path) and url_path_exists(self.model_path):
-            checkpoint = load_state_dict_from_url(model_path)
-        else:
-            assert io.exists(
-                self.model_path), f'{self.model_path} does not exists'
-
-            with io.open(self.model_path, 'rb') as infile:
-                checkpoint = torch.load(infile, map_location='cpu')
+        with io.open(self.model_path, 'rb') as infile:
+            checkpoint = torch.load(infile, map_location='cpu')
 
         assert 'meta' in checkpoint and 'config' in checkpoint[
             'meta'], 'meta.config is missing from checkpoint'
 
         config_str = checkpoint['meta']['config']
-        if isinstance(config_str, dict):
-            config_str = json.dumps(config_str)
-
         # get config
         basename = os.path.basename(self.model_path)
         fname, _ = os.path.splitext(basename)
@@ -60,9 +49,6 @@ class Predictor(object):
         with open(self.local_config_file, 'w') as ofile:
             ofile.write(config_str)
         self.cfg = mmcv_config_fromfile(self.local_config_file)
-
-        # dynamic adapt mmdet models
-        # dynamic_adapt_for_mmlab(self.cfg)
 
         # build model
         self.model = build_model(self.cfg.model)
