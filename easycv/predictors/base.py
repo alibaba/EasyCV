@@ -62,7 +62,7 @@ class Predictor(object):
         self.cfg = mmcv_config_fromfile(self.local_config_file)
 
         # dynamic adapt mmdet models
-        dynamic_adapt_for_mmlab(self.cfg)
+        # dynamic_adapt_for_mmlab(self.cfg)
 
         # build model
         self.model = build_model(self.cfg.model)
