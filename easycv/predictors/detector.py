@@ -291,7 +291,7 @@ class TorchViTDetPredictor(PredictorInterface):
         self.model.to(self.device)
         self.model.eval()
 
-    def inference_detector(self, imgs):
+    def predict(self, imgs):
         """Inference image(s) with the detector.
 
         Args:
