@@ -57,7 +57,14 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 * [图像分类教程](docs/source/tutorials/cls.md)
 * [使用YOLOX进行物体检测教程](docs/source/tutorials/yolox.md)
 * [YOLOX模型压缩教程](docs/source/tutorials/compression.md)
+* [度量学习教程](docs/source/tutorials/metric_learning.md)
 
+## notebook
+* [自监督学习](docs/source/tutorials/EasyCV图像自监督训练-MAE.ipynb)
+* [图像分类](docs/source/tutorials/EasyCV图像分类resnet50.ipynb)
+* [使用yolox进行物体检测](docs/source/tutorials/EasyCV图像检测YoloX.ipynb)
+* [使用vitdet进行物体检测](docs/source/tutorials/EasyCV图像检测ViTDet.ipynb)
+* [度量学习](docs/source/tutorials/EasyCV度量学习resnet50.ipynb)
 
 ## 模型库
 
@@ -66,7 +73,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 - [自监督模型库](docs/source/model_zoo_ssl.md)
 - [图像分类模型库](docs/source/model_zoo_cls.md)
 - [目标检测模型库](docs/source/model_zoo_detection.md)
-
+- [图像分割模型库](docs/source/model_zoo_seg.md)
 
 ## 变更日志
 
