@@ -181,7 +181,7 @@ class IOLocal(IOBase):
             os.remove(path)
 
     def rmtree(self, path):
-        shutil.rmtree(path)
+        shutil.rmtree(path,ignore_errors=True)
 
     def listdir(self,
                 path,
