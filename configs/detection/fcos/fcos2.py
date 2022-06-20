@@ -49,7 +49,7 @@ model = dict(
             std=0.01,
             override=dict(
                 type='Normal', name='conv_cls', std=0.01, bias_prob=0.01)),
-        conv_bias='auto',
+        conv_bias=True,
         bbox_coder=dict(type='DistancePointBBoxCoder'),
         test_cfg=dict(
             nms_pre=1000,

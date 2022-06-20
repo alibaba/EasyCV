@@ -78,7 +78,7 @@ class FCOS(BaseModel):
             img_metas[i]['batch_input_shape'] = batch_input_shape
 
         x = self.extract_feat(imgs)
-        losses = self.head.forward_train(x, gt_bboxes, gt_labels, img_metas)
+        losses = self.head.forward_train(x, img_metas, gt_bboxes, gt_labels)
         return losses
 
     def forward_test(self, imgs, img_metas):
@@ -99,26 +99,9 @@ class FCOS(BaseModel):
             for img_id in range(batch_size):
                 img_meta[img_id]['batch_input_shape'] = tuple(img.size()[-2:])
         x = self.extract_feat(imgs[0])
-        results = self.head.forward_test(x, img_metas[0])[0]
+        results = self.head.forward_test(x, img_metas[0])
 
-        test_outputs = {
-            'detection_boxes': [
-                results['boxes'].cpu().numpy()
-                if results['boxes'] is not None else None
-            ],
-            'detection_scores': [
-                results['scores'].cpu().numpy()
-                if results['scores'] is not None else None
-            ],
-            'detection_classes': [
-                results['labels'].cpu().numpy().astype(np.int32)
-                if results['labels'] is not None else None
-            ],
-            'img_metas':
-            img_metas[0]
-        }
-
-        return test_outputs
+        return results
 
     @auto_fp16(apply_to=('img', ))
     def forward(self, img, mode='train', **kwargs):

@@ -61,7 +61,7 @@ class FCOSHead2(nn.Module):
                          name='conv_cls',
                          std=0.01,
                          bias_prob=0.01)),
-                 conv_bias='auto',
+                 conv_bias=True,
                  bbox_coder=dict(type='DistancePointBBoxCoder'),
                  test_cfg=dict(
                      nms_pre=1000,
@@ -164,19 +164,16 @@ class FCOSHead2(nn.Module):
         self.conv_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
 
     def init_weights(self):
-        for modules in [
-                self.cls_tower, self.bbox_tower, self.share_tower,
-                self.cls_logits, self.bbox_pred, self.ctrness
-        ]:
-            for l in modules.modules():
-                if isinstance(l, nn.Conv2d):
-                    torch.nn.init.normal_(l.weight, std=0.01)
-                    torch.nn.init.constant_(l.bias, 0)
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                torch.nn.init.normal_(m.weight, std=0.01)
+                if m.bias is not None:
+                    torch.nn.init.constant_(m.bias, 0)
 
         # initialize the bias for focal loss
         prior_prob = 0.01
         bias_value = -math.log((1 - prior_prob) / prior_prob)
-        torch.nn.init.constant_(self.cls_logits.bias, bias_value)
+        torch.nn.init.constant_(self.conv_cls.bias, bias_value)
 
     def forward(self, feats):
         """Forward features from the upstream network.
@@ -283,13 +280,14 @@ class FCOSHead2(nn.Module):
         detection_scores = []
         detection_classes = []
         for res_i in results:
-            bbox_result = res_i
+            bbox_result, labels = res_i
+            bbox_result = bbox_result.cpu()
             bboxes = np.vstack(bbox_result)
-            labels = [
-                np.full(bbox.shape[0], i, dtype=np.int32)
-                for i, bbox in enumerate(bbox_result)
-            ]
-            labels = np.concatenate(labels)
+            # labels = [
+            #     np.full(bbox.shape[0], i, dtype=np.int32)
+            #     for i, bbox in enumerate(bbox_result)
+            # ]
+            # labels = np.concatenate(labels)
 
             scores = bboxes[:, 4] if bboxes.shape[1] == 5 else None
             bboxes = bboxes[:, 0:4] if bboxes.shape[1] == 5 else bboxes
@@ -304,7 +302,7 @@ class FCOSHead2(nn.Module):
             'detection_boxes': detection_boxes,
             'detection_scores': detection_scores,
             'detection_classes': detection_classes,
-            'img_metas': img_metas[0]
+            'img_metas': img_metas
         }
 
         return outputs
