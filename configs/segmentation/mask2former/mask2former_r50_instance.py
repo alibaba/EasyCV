@@ -25,7 +25,7 @@ model = dict(
         out_indices=(1, 2, 3, 4),
         frozen_stages=-1,
         norm_cfg=dict(type='BN', requires_grad=False),
-        norm_eval=False),
+        norm_eval=True),
     head=dict(
         type="Mask2FormerHead",
         pixel_decoder=dict(
