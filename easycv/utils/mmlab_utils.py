@@ -42,7 +42,7 @@ class MMAdapter:
             self.mmtype_list.add(mmtype)
 
         self.check_env()
-        # self.fix_conflicts()
+        self.fix_conflicts()
 
         self.MMTYPE_REGISTRY_MAP = self._get_mmtype_registry_map()
         self.modules_config = modules_config
@@ -324,5 +324,4 @@ def dynamic_adapt_for_mmlab(cfg):
     if len(mmlab_modules_cfg) > 1:
         adapter = MMAdapter(mmlab_modules_cfg, mmdet_wrapper)
         if not mmdet_wrapper.is_init:
-            adapter.fix_conflicts()
             adapter.adapt_mmlab_modules()
