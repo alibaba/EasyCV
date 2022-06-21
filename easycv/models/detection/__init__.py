@@ -4,7 +4,7 @@ import logging
 from .dab_detr import DABDETRHead, DABDetrTransformer
 from .detr import DETR, DETRHead, DetrTransformer
 from .fcos import FCOS, FPN, FCOSHead
-from .vitdet import SFP, RPNHeadNorm
+from .vitdet import SFP
 
 try:
     from .yolox.yolox import YOLOX

@@ -5,7 +5,8 @@ import numpy as np
 import torch
 import torchvision
 from torchvision.ops.boxes import box_area
-from easycv.models.detection.utils import fp16_clamp
+
+from easycv.models.detection.utils.misc import fp16_clamp
 
 __all__ = ['bboxes_iou', 'postprocess']
 
@@ -148,6 +149,7 @@ def generalized_box_iou(boxes1, boxes2):
     area = wh[:, :, 0] * wh[:, :, 1]
 
     return iou - (area - union) / area
+
 
 def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     """Calculate overlap between two set of bboxes.
@@ -337,6 +339,7 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     gious = ious - (enclose_area - union) / enclose_area
     return gious
 
+
 def bbox2distance(points, bbox, max_dis=None, eps=0.1):
     """Decode bounding box based on distances.
 
@@ -359,6 +362,7 @@ def bbox2distance(points, bbox, max_dis=None, eps=0.1):
         right = right.clamp(min=0, max=max_dis - eps)
         bottom = bottom.clamp(min=0, max=max_dis - eps)
     return torch.stack([left, top, right, bottom], -1)
+
 
 def distance2bbox(points, distance, max_shape=None):
     """Decode distance prediction to bounding box.
