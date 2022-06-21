@@ -21,7 +21,7 @@ img_norm_cfg = dict(
 
 train_pipeline = [
     # dict(type='MMResize', img_scale=(1333, 800), keep_ratio=True),
-    dict(type='MMResize', img_scale=(800, 800), keep_ratio=True),
+    dict(type='MMResize', img_scale=(600, 800), keep_ratio=True),
     # dict(type='MMRandomFlip', flip_ratio=0.5),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='MMPad', size_divisor=32),

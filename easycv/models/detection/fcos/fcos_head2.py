@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, Scale
 from mmcv.ops import batched_nms
-from mmdet.core import build_bbox_coder, multi_apply, reduce_mean
+from mmdet.core import bbox2result, build_bbox_coder, multi_apply, reduce_mean
 from mmdet.core.anchor.point_generator import MlvlPointGenerator
 from mmdet.core.utils import filter_scores_and_topk, select_single_mlvl
 
@@ -273,21 +273,29 @@ class FCOSHead2(nn.Module):
                 The shape of the second tensor in the tuple is ``labels``
                 with shape (n, ).
         """
+        # print(feats, feats.shape)
         outs = self.forward(feats)
-        results = self.get_bboxes(*outs, img_metas=img_metas, rescale=rescale)
+        # print(outs)
+        results_list = self.get_bboxes(
+            *outs, img_metas=img_metas, rescale=True)
+        # print(results)
+        results = [
+            bbox2result(det_bboxes, det_labels, self.num_classes)
+            for det_bboxes, det_labels in results_list
+        ]
+        # print(results)
 
         detection_boxes = []
         detection_scores = []
         detection_classes = []
         for res_i in results:
-            bbox_result, labels = res_i
-            bbox_result = bbox_result.cpu()
+            bbox_result = res_i
             bboxes = np.vstack(bbox_result)
-            # labels = [
-            #     np.full(bbox.shape[0], i, dtype=np.int32)
-            #     for i, bbox in enumerate(bbox_result)
-            # ]
-            # labels = np.concatenate(labels)
+            labels = [
+                np.full(bbox.shape[0], i, dtype=np.int32)
+                for i, bbox in enumerate(bbox_result)
+            ]
+            labels = np.concatenate(labels)
 
             scores = bboxes[:, 4] if bboxes.shape[1] == 5 else None
             bboxes = bboxes[:, 0:4] if bboxes.shape[1] == 5 else bboxes
