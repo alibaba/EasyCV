@@ -5,9 +5,9 @@ model = dict(
     backbone=dict(
         type='PytorchImageModelWrapper',
         model_name='swin_tiny_patch4_window7_224',
-        num_classes=10,
+        num_classes=0,
     ),
-    head=dict(type='ClsHead', with_fc=False))
+    head=dict(type='ClsHead', in_channels=768, with_fc=True, num_classes=10))
 # dataset settings
 class_list = [
     'airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse',

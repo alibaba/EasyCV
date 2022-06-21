@@ -28,7 +28,7 @@ model = dict(
         norm_cfg=norm_cfg,
         num_outs=5),
     rpn_head=dict(
-        type='RPNHeadNorm',
+        type='RPNHead',
         in_channels=256,
         feat_channels=256,
         num_convs=2,
@@ -137,5 +137,6 @@ model = dict(
 
 mmlab_modules = [
     dict(type='mmdet', name='MaskRCNN', module='model'),
+    dict(type='mmdet', name='RPNHead', module='head'),
     dict(type='mmdet', name='StandardRoIHead', module='head'),
 ]
