@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from scipy.optimize import linear_sum_assignment
 
-from easycv.models.builder import HEADS, build_neck
+from easycv.models.builder import HEADS, build_transformer
 from easycv.models.detection.utils import (accuracy, box_cxcywh_to_xyxy,
                                            box_xyxy_to_cxcywh,
                                            generalized_box_iou)
@@ -64,7 +64,7 @@ class DABDETRHead(nn.Module):
             focal_alpha=focal_alpha,
             losses=['labels', 'boxes', 'cardinality'])
         self.postprocess = PostProcess(num_select=num_select)
-        self.transformer = build_neck(transformer)
+        self.transformer = build_transformer(transformer)
 
         self.class_embed = nn.Linear(embed_dims, num_classes)
         if bbox_embed_diff_each_layer:

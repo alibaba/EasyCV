@@ -6,9 +6,9 @@ import torch
 import torch.nn as nn
 from mmcv.runner import auto_fp16
 
-from easycv.models import builder
 from easycv.models.base import BaseModel
-from easycv.models.registry import MODELS
+from easycv.models.builder import (MODELS, build_backbone, build_head,
+                                   build_neck)
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger, print_log
 
@@ -21,10 +21,10 @@ class Detection(BaseModel):
 
         self.fp16_enabled = False
         self.pretrained = pretrained
-        self.backbone = builder.build_backbone(backbone)
+        self.backbone = build_backbone(backbone)
         if neck is not None:
-            self.neck = builder.build_neck(neck)
-        self.head = builder.build_head(head)
+            self.neck = build_neck(neck)
+        self.head = build_head(head)
 
         self.init_weights()
 

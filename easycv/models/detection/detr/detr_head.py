@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from scipy.optimize import linear_sum_assignment
 
-from easycv.models.builder import HEADS, build_neck
+from easycv.models.builder import HEADS, build_transformer
 from easycv.models.detection.utils import (accuracy, box_cxcywh_to_xyxy,
                                            box_xyxy_to_cxcywh,
                                            generalized_box_iou)
@@ -50,7 +50,7 @@ class DETRHead(nn.Module):
             eos_coef=eos_coef,
             losses=['labels', 'boxes', 'cardinality'])
         self.postprocess = PostProcess()
-        self.transformer = build_neck(transformer)
+        self.transformer = build_transformer(transformer)
 
         self.class_embed = nn.Linear(embed_dims, num_classes + 1)
         self.bbox_embed = MLP(embed_dims, embed_dims, 4, 3)

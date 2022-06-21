@@ -14,10 +14,10 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from easycv.models.builder import NECKS
+from easycv.models.builder import TRANSFORMER
 
 
-@NECKS.register_module
+@TRANSFORMER.register_module
 class DetrTransformer(nn.Module):
 
     def __init__(self,
