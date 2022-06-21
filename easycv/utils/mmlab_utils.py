@@ -83,7 +83,8 @@ class MMAdapter:
             module_name, module_type = module_cfg['name'], module_cfg['module']
             self._merge_mmlab_module_to_easycv(mmtype, module_type,
                                                module_name)
-            self.wrap_module(mmtype, module_type, module_name)
+            if not self.mmdet_warppper.is_init:
+                self.wrap_module(mmtype, module_type, module_name)
 
         for mmtype in self.mmtype_list:
             self._merge_all_easycv_modules_to_mmlab(mmtype)
@@ -323,5 +324,4 @@ def dynamic_adapt_for_mmlab(cfg):
     mmlab_modules_cfg = cfg.get('mmlab_modules', [])
     if len(mmlab_modules_cfg) > 1:
         adapter = MMAdapter(mmlab_modules_cfg, mmdet_wrapper)
-        if not mmdet_wrapper.is_init:
-            adapter.adapt_mmlab_modules()
+        adapter.adapt_mmlab_modules()

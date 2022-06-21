@@ -1,8 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+from mmcv.runner.hooks import HOOKS
 from mmcv.runner.hooks.lr_updater import (CosineAnnealingLrUpdaterHook,
                                           annealing_cos)
-
-from easycv.hooks.registry import HOOKS
 
 # initial_lr 0.01 = self.exp.basic_lr_per_img * self.args.batch_size
 # min_lr_ratio default 0.05, 0.2
