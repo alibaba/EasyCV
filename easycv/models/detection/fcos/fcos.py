@@ -49,9 +49,7 @@ class FCOS(BaseModel):
     def extract_feat(self, img):
         """Directly extract features from the backbone+neck."""
         x = self.backbone(img)
-        # print(x)
         x = self.neck(x)
-        # print(x)
         return x
 
     def forward_train(self, imgs, img_metas, gt_bboxes, gt_labels):

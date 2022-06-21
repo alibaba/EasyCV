@@ -2,7 +2,7 @@
 model = dict(
     type='FCOS',
     pretrained=
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/detectron/resnet50_caffe.pth',
+    '/home/yunji.cjy/.cache/torch/hub/checkpoints/resnet50_msra-5891d200.pth',
     backbone=dict(
         type='ResNet',
         depth=50,

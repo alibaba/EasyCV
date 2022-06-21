@@ -148,7 +148,8 @@ class FPN(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.xavier_uniform_(m.weight, gain=1)
-                nn.init.constant_(m.bias, 0)
+                if hasattr(m, 'bias') and m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
 
     @auto_fp16()
     def forward(self, inputs):

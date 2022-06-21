@@ -44,7 +44,7 @@ total_epochs = 12
 
 # evaluation
 # eval_config = dict(initial=True, interval=1, gpu_collect=False)
-eval_config = dict(interval=10, gpu_collect=False)
+eval_config = dict(interval=1, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',

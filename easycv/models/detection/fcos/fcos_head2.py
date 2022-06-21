@@ -167,8 +167,8 @@ class FCOSHead2(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 torch.nn.init.normal_(m.weight, std=0.01)
-                if m.bias is not None:
-                    torch.nn.init.constant_(m.bias, 0)
+                if hasattr(m, 'bias') and m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
 
         # initialize the bias for focal loss
         prior_prob = 0.01
@@ -353,6 +353,8 @@ class FCOSHead2(nn.Module):
             device=bbox_preds[0].device)
         labels, bbox_targets = self.get_targets(all_level_points, gt_bboxes,
                                                 gt_labels)
+        # print(labels, bbox_targets)
+        # exit()
 
         num_imgs = cls_scores[0].size(0)
         # flatten cls_scores, bbox_preds and centerness
@@ -391,6 +393,8 @@ class FCOSHead2(nn.Module):
         pos_centerness = flatten_centerness[pos_inds]
         pos_bbox_targets = flatten_bbox_targets[pos_inds]
         pos_centerness_targets = self.centerness_target(pos_bbox_targets)
+        # print(pos_centerness_targets)
+        # exit()
         # centerness weighted iou loss
         centerness_denorm = max(
             reduce_mean(pos_centerness_targets.sum().detach()), 1e-6)
