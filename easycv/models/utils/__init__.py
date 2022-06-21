@@ -2,7 +2,7 @@
 from .activation import FReLU
 from .conv_module import ConvModule, build_conv_layer
 from .conv_ws import ConvWS2d, conv_ws_2d
-from .dist_utils import DistributedLossWrapper, DistributedMinerWrapper
+from .dist_utils import DistributedLossWrapper, DistributedMinerWrapper, reduce_mean, is_dist_avail_and_initialized, get_world_size
 from .gather_layer import GatherLayer
 from .init_weights import _init_weights, trunc_normal_
 from .multi_pooling import GeMPooling, MultiAvgPooling, MultiPooling

@@ -7,9 +7,9 @@ import torch.nn.functional as F
 from scipy.optimize import linear_sum_assignment
 
 from easycv.models.builder import HEADS
-from ..utils import (accuracy, box_cxcywh_to_xyxy, box_xyxy_to_cxcywh,
-                     generalized_box_iou, get_world_size,
-                     is_dist_avail_and_initialized)
+from easycv.models.utils import is_dist_avail_and_initialized, get_world_size
+from easycv.models.detection.utils import (accuracy, box_cxcywh_to_xyxy, box_xyxy_to_cxcywh,
+                     generalized_box_iou)
 
 
 def inverse_sigmoid(x, eps=1e-3):

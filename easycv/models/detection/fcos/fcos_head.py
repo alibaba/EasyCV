@@ -10,7 +10,8 @@ from mmcv.cnn import ConvModule, Scale
 from mmcv.ops import batched_nms
 
 from torch.nn.modules.utils import _pair
-from easycv.models.detection.utils import bbox2result, distance2bbox, multi_apply, reduce_mean, filter_scores_and_topk, select_single_mlvl
+from easycv.models.utils import reduce_mean
+from easycv.models.detection.utils import bbox2result, distance2bbox, multi_apply, filter_scores_and_topk, select_single_mlvl
 from easycv.models.builder import HEADS, build_loss
 
 INF = 1e8
