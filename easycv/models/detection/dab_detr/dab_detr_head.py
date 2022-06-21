@@ -1,15 +1,17 @@
 # Copyright (c) 2022 IDEA. All Rights Reserved.
 import math
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from scipy.optimize import linear_sum_assignment
 
-from easycv.models.builder import HEADS
-from easycv.models.utils import is_dist_avail_and_initialized, get_world_size
-from easycv.models.detection.utils import (accuracy, box_cxcywh_to_xyxy, box_xyxy_to_cxcywh,
-                     generalized_box_iou)
+from easycv.models.builder import HEADS, build_neck
+from easycv.models.detection.utils import (accuracy, box_cxcywh_to_xyxy,
+                                           box_xyxy_to_cxcywh,
+                                           generalized_box_iou)
+from easycv.models.utils import get_world_size, is_dist_avail_and_initialized
 
 
 def inverse_sigmoid(x, eps=1e-3):
@@ -38,6 +40,7 @@ class DABDETRHead(nn.Module):
                  iter_update=True,
                  num_select=300,
                  bbox_embed_diff_each_layer=False,
+                 transformer=None,
                  cost_dict={
                      'cost_class': 1,
                      'cost_bbox': 5,
@@ -61,6 +64,7 @@ class DABDETRHead(nn.Module):
             focal_alpha=focal_alpha,
             losses=['labels', 'boxes', 'cardinality'])
         self.postprocess = PostProcess(num_select=num_select)
+        self.transformer = build_neck(transformer)
 
         self.class_embed = nn.Linear(embed_dims, num_classes)
         if bbox_embed_diff_each_layer:
@@ -69,7 +73,6 @@ class DABDETRHead(nn.Module):
         else:
             self.bbox_embed = MLP(embed_dims, embed_dims, 4, 3)
         if iter_update:
-            self.transformer = kwargs['transformer']
             self.transformer.decoder.bbox_embed = self.bbox_embed
 
         self.num_classes = num_classes
@@ -78,6 +81,8 @@ class DABDETRHead(nn.Module):
         self.bbox_embed_diff_each_layer = bbox_embed_diff_each_layer
 
     def init_weights(self):
+        self.transformer.init_weights()
+
         # init prior_prob setting for focal loss
         prior_prob = 0.01
         bias_value = -math.log((1 - prior_prob) / prior_prob)
@@ -110,6 +115,8 @@ class DABDETRHead(nn.Module):
                     normalized coordinate format (cx, cy, w, h) and shape \
                     [nb_dec, bs, num_query, 4].
         """
+        feats = self.transformer(feats, img_metas)
+
         hs, reference = feats
         outputs_class = self.class_embed(hs)
         if not self.bbox_embed_diff_each_layer:
@@ -146,7 +153,7 @@ class DABDETRHead(nn.Module):
         } for a, b in zip(outputs_class[:-1], outputs_coord[:-1])]
 
     # over-write because img_metas are needed as inputs for bbox_head.
-    def forward_train(self, x, gt_bboxes, gt_labels, img_metas):
+    def forward_train(self, x, img_metas, gt_bboxes, gt_labels):
         """Forward function for training mode.
         Args:
             x (list[Tensor]): Features from backbone.
@@ -191,7 +198,7 @@ class DABDETRHead(nn.Module):
             ori_shape_list.append(torch.as_tensor([ori_h, ori_w]))
         orig_target_sizes = torch.stack(ori_shape_list, dim=0)
 
-        results = self.postprocess(outputs, orig_target_sizes)
+        results = self.postprocess(outputs, orig_target_sizes, img_metas)
         return results
 
 
@@ -203,7 +210,7 @@ class PostProcess(nn.Module):
         self.num_select = num_select
 
     @torch.no_grad()
-    def forward(self, outputs, target_sizes):
+    def forward(self, outputs, target_sizes, img_metas):
         """ Perform the computation
         Parameters:
             outputs: raw outputs of the model
@@ -233,11 +240,12 @@ class PostProcess(nn.Module):
                                 dim=1).to(boxes.device)
         boxes = boxes * scale_fct[:, None, :]
 
-        results = [{
-            'scores': s,
-            'labels': l,
-            'boxes': b
-        } for s, l, b in zip(scores, labels, boxes)]
+        results = {
+            'detection_boxes': [boxes[0].cpu().numpy()],
+            'detection_scores': [scores[0].cpu().numpy()],
+            'detection_classes': [labels[0].cpu().numpy().astype(np.int32)],
+            'img_metas': img_metas
+        }
 
         return results
 

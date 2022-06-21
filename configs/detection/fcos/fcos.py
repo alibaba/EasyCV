@@ -1,6 +1,6 @@
 # model settings
 model = dict(
-    type='FCOS',
+    type='Detection',
     pretrained=
     'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/detectron/resnet50_caffe.pth',
     backbone=dict(

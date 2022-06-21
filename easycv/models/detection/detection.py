@@ -14,15 +14,16 @@ from easycv.utils.logger import get_root_logger, print_log
 
 
 @MODELS.register_module
-class FCOS(BaseModel):
+class Detection(BaseModel):
 
     def __init__(self, backbone, head=None, neck=None, pretrained=None):
-        super(FCOS, self).__init__()
+        super(Detection, self).__init__()
 
         self.fp16_enabled = False
         self.pretrained = pretrained
         self.backbone = builder.build_backbone(backbone)
-        self.neck = builder.build_neck(neck)
+        if neck is not None:
+            self.neck = builder.build_neck(neck)
         self.head = builder.build_head(head)
 
         self.init_weights()
@@ -43,13 +44,15 @@ class FCOS(BaseModel):
                 self.backbone.init_weights(pretrained=self.pretrained)
             else:
                 self.backbone.init_weights()
-        self.neck.init_weights()
+        if self.with_neck:
+            self.neck.init_weights()
         self.head.init_weights()
 
     def extract_feat(self, img):
         """Directly extract features from the backbone+neck."""
         x = self.backbone(img)
-        x = self.neck(x)
+        if self.with_neck:
+            x = self.neck(x)
         return x
 
     def forward_train(self, imgs, img_metas, gt_bboxes, gt_labels):

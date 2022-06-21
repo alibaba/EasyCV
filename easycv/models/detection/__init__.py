@@ -2,8 +2,9 @@
 import logging
 
 from .dab_detr import DABDETRHead, DABDetrTransformer
-from .detr import DETR, DETRHead, DetrTransformer
-from .fcos import FCOS, FPN, FCOSHead
+from .detection import Detection
+from .detr import DETRHead, DetrTransformer
+from .fcos import FPN, FCOSHead
 from .vitdet import SFP
 
 try:

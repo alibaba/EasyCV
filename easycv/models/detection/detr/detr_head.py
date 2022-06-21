@@ -1,13 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from scipy.optimize import linear_sum_assignment
 
-from easycv.models.builder import HEADS
-from easycv.models.utils import is_dist_avail_and_initialized, get_world_size
-from easycv.models.detection.utils import (accuracy, box_cxcywh_to_xyxy, box_xyxy_to_cxcywh,
-                     generalized_box_iou)
+from easycv.models.builder import HEADS, build_neck
+from easycv.models.detection.utils import (accuracy, box_cxcywh_to_xyxy,
+                                           box_xyxy_to_cxcywh,
+                                           generalized_box_iou)
+from easycv.models.utils import get_world_size, is_dist_avail_and_initialized
+
 
 @HEADS.register_module()
 class DETRHead(nn.Module):
@@ -24,6 +27,7 @@ class DETRHead(nn.Module):
                  num_classes,
                  embed_dims,
                  eos_coef=0.1,
+                 transformer=None,
                  cost_dict={
                      'cost_class': 1,
                      'cost_bbox': 5,
@@ -46,6 +50,7 @@ class DETRHead(nn.Module):
             eos_coef=eos_coef,
             losses=['labels', 'boxes', 'cardinality'])
         self.postprocess = PostProcess()
+        self.transformer = build_neck(transformer)
 
         self.class_embed = nn.Linear(embed_dims, num_classes + 1)
         self.bbox_embed = MLP(embed_dims, embed_dims, 4, 3)
@@ -54,7 +59,7 @@ class DETRHead(nn.Module):
 
     def init_weights(self):
         """Initialize weights of the detr head."""
-        pass
+        self.transformer.init_weights()
 
     def forward(self, feats, img_metas):
         """Forward function.
@@ -73,6 +78,8 @@ class DETRHead(nn.Module):
                     normalized coordinate format (cx, cy, w, h) and shape \
                     [nb_dec, bs, num_query, 4].
         """
+        feats = self.transformer(feats, img_metas)
+
         outputs_class = self.class_embed(feats)
         outputs_coord = self.bbox_embed(feats).sigmoid()
 
@@ -95,7 +102,7 @@ class DETRHead(nn.Module):
         } for a, b in zip(outputs_class[:-1], outputs_coord[:-1])]
 
     # over-write because img_metas are needed as inputs for bbox_head.
-    def forward_train(self, x, gt_bboxes, gt_labels, img_metas):
+    def forward_train(self, x, img_metas, gt_bboxes, gt_labels):
         """Forward function for training mode.
         Args:
             x (list[Tensor]): Features from backbone.
@@ -140,7 +147,7 @@ class DETRHead(nn.Module):
             ori_shape_list.append(torch.as_tensor([ori_h, ori_w]))
         orig_target_sizes = torch.stack(ori_shape_list, dim=0)
 
-        results = self.postprocess(outputs, orig_target_sizes)
+        results = self.postprocess(outputs, orig_target_sizes, img_metas)
         return results
 
 
@@ -148,7 +155,7 @@ class PostProcess(nn.Module):
     """ This module converts the model's output into the format expected by the coco api"""
 
     @torch.no_grad()
-    def forward(self, outputs, target_sizes):
+    def forward(self, outputs, target_sizes, img_metas):
         """ Perform the computation
         Parameters:
             outputs: raw outputs of the model
@@ -172,11 +179,12 @@ class PostProcess(nn.Module):
                                 dim=1).to(boxes.device)
         boxes = boxes * scale_fct[:, None, :]
 
-        results = [{
-            'scores': s,
-            'labels': l,
-            'boxes': b
-        } for s, l, b in zip(scores, labels, boxes)]
+        results = {
+            'detection_boxes': [boxes[0].cpu().numpy()],
+            'detection_scores': [scores[0].cpu().numpy()],
+            'detection_classes': [labels[0].cpu().numpy().astype(np.int32)],
+            'img_metas': img_metas
+        }
 
         return results
 
