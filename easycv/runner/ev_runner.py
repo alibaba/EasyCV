@@ -7,6 +7,7 @@ import torch
 from mmcv.runner import EpochBasedRunner
 from mmcv.runner.log_buffer import LogBuffer
 
+from easycv import distributed as dist
 from easycv.file import io
 from easycv.utils.checkpoint import load_checkpoint, save_checkpoint
 
@@ -205,7 +206,7 @@ class EVRunner(EpochBasedRunner):
 
         if map_location == 'default':
             if torch.cuda.is_available():
-                device_id = torch.cuda.current_device()
+                device_id = dist.current_device()
                 checkpoint = self.load_checkpoint(
                     checkpoint,
                     map_location=lambda storage, loc: storage.cuda(device_id))

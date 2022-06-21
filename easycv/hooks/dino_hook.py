@@ -83,7 +83,7 @@ class DINOHook(Hook):
             t = torch.tensor(
                 [runner.model.module.count, runner.model.module.this_loss],
                 dtype=torch.float64,
-                device='cuda')
+                device=dist.cuda_device())
             dist.barrier()
             dist.all_reduce(t)
             t = t.tolist()

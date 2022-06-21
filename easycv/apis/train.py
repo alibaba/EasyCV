@@ -95,7 +95,7 @@ def train_model(model,
         model = MMDistributedDataParallel(
             model,
             find_unused_parameters=find_unused_parameters,
-            device_ids=[torch.cuda.current_device()],
+            device_ids=[dist.current_device()],
             broadcast_buffers=False)
     else:
         model = MMDataParallel(model, device_ids=range(cfg.gpus))

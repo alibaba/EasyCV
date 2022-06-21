@@ -50,11 +50,23 @@ def get_local_rank():
     return int(os.environ.get('LOCAL_RANK', 0))
 
 
+def cuda_device():
+    return torch.device('cuda')
+
+
 def get_device():
     if torch.cuda.is_available():
-        return torch.device('cuda')
+        return cuda_device()
     else:
         return torch.device('cpu')
+
+
+def is_on_cuda_device(tensor):
+    return tensor.device.type == 'cuda'
+
+
+def current_device():
+    return torch.cuda.current_device()
 
 
 def barrier(**kwargs):

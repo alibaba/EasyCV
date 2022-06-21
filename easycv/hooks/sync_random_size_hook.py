@@ -29,7 +29,7 @@ class SyncRandomSizeHook(Hook):
             ratio_range=(14, 26),
             img_scale=(640, 640),
             interval=10,  # by iterations
-            device='cuda',
+            device=dist.cuda_device(),
             **kwargs):
         self.rank, world_size = dist.get_rank(), dist.get_world_size()
         self.is_distributed = world_size > 1

@@ -86,8 +86,8 @@ def single_gpu_test(model, data_loader, mode='test', use_fp16=False, **kwargs):
     """
 
     if use_fp16:
-        device = next(model.parameters()).device
-        assert device.type == 'cuda', 'fp16 can only be used in gpu, model is placed on cpu'
+        assert dist.is_on_cuda_device(next(model.parameters(
+        ))), 'fp16 can only be used in gpu, model is placed on cpu'
         model.half()
 
     model.eval()
@@ -103,7 +103,7 @@ def single_gpu_test(model, data_loader, mode='test', use_fp16=False, **kwargs):
         if not isinstance(model, MMDistributedDataParallel) and not isinstance(
                 model, MMDataParallel):
             input_args, kwargs = scatter_kwargs(None, data,
-                                                [torch.cuda.current_device()])
+                                                [dist.current_device()])
             with torch.no_grad():
                 result = model(**kwargs[0], mode=mode)
         else:
@@ -176,8 +176,8 @@ def multi_gpu_test(model,
         list: The prediction results.
     """
     if use_fp16:
-        device = next(model.parameters()).device
-        assert device.type == 'cuda', 'fp16 can only be used in gpu, model is placed on cpu'
+        assert dist.is_on_cuda_device(next(model.parameters(
+        ))), 'fp16 can only be used in gpu, model is placed on cpu'
         model.half()
 
     model.eval()
@@ -246,16 +246,17 @@ def collect_results_cpu(result_part, size, tmpdir=None):
     rank, world_size = dist.get_rank(), dist.get_world_size()
     # create a tmp dir if it is not specified
     if tmpdir is None:
+        device = dist.cuda_device()
         MAX_LEN = 512
         # 32 is whitespace
         dir_tensor = torch.full((MAX_LEN, ),
                                 32,
                                 dtype=torch.uint8,
-                                device='cuda')
+                                device=device)
         if rank == 0:
             tmpdir = tempfile.mkdtemp()
             tmpdir = torch.tensor(
-                bytearray(tmpdir.encode()), dtype=torch.uint8, device='cuda')
+                bytearray(tmpdir.encode()), dtype=torch.uint8, device=device)
             dir_tensor[:len(tmpdir)] = tmpdir
         dist.broadcast(dir_tensor, 0)
         tmpdir = dir_tensor.cpu().numpy().tobytes().decode().rstrip()
@@ -296,19 +297,18 @@ def serialize_tensor(tensor_collection):
 
 def collect_results_gpu(result_part, size):
     rank, world_size = dist.get_rank(), dist.get_world_size()
+    device = dist.cuda_device()
     # dump result part to tensor with pickle
 
-    # part_tensor = torch.tensor(
-    #     bytearray(serialize_tensor(result_part)), dtype=torch.uint8, device='cuda')
     part_tensor = torch.tensor(
-        bytearray(pickle.dumps(result_part)), dtype=torch.uint8, device='cuda')
+        bytearray(pickle.dumps(result_part)), dtype=torch.uint8, device=device)
     # gather all result part tensor shape
-    shape_tensor = torch.tensor(part_tensor.shape, device='cuda')
+    shape_tensor = torch.tensor(part_tensor.shape, device=device)
     shape_list = [shape_tensor.clone() for _ in range(world_size)]
     dist.all_gather(shape_list, shape_tensor)
     # padding result part tensor to max length
     shape_max = torch.tensor(shape_list).max()
-    part_send = torch.zeros(shape_max, dtype=torch.uint8, device='cuda')
+    part_send = torch.zeros(shape_max, dtype=torch.uint8, device=device)
     part_send[:shape_tensor[0]] = part_tensor
     part_recv_list = [
         part_tensor.new_zeros(shape_max) for _ in range(world_size)
