@@ -3,7 +3,6 @@ from functools import partial
 from typing import List, Optional
 
 import torch
-import torch.distributed as dist
 import torchvision
 from packaging import version
 from six.moves import map, zip
