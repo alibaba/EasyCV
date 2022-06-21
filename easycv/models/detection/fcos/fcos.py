@@ -98,7 +98,6 @@ class FCOS(BaseModel):
             batch_size = len(img_meta)
             for img_id in range(batch_size):
                 img_meta[img_id]['batch_input_shape'] = tuple(img.size()[-2:])
-        # print(imgs[0], img_metas)
         x = self.extract_feat(imgs[0])
         results = self.head.forward_test(x, img_metas[0])
 

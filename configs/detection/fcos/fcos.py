@@ -2,7 +2,7 @@
 model = dict(
     type='FCOS',
     pretrained=
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/detectron/resnet50_caffe.pth',
+    'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/detectron/resnet50_caffe.pth',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -23,30 +23,30 @@ model = dict(
     head=dict(
         type='FCOSHead',
         num_classes=80,
-        in_channels=[256, 256, 256, 256, 256],
-        fpn_strides=[8, 16, 32, 64, 128],
-        num_cls_convs=4,
-        num_bbox_convs=4,
-        num_share_convs=0,
-        use_scale=True,
-        fcos_outputs_config={
-            'loss_alpha': 0.25,
-            'loss_gamma': 2.0,
-            'center_sample': True,
-            'radius': 1.5,
-            'pre_nms_thresh_train': 0.05,
-            'pre_nms_topk_train': 1000,
-            'post_nms_topk_train': 100,
-            'pre_nms_thresh_test': 0.05,
-            'pre_nms_topk_test': 1000,
-            'post_nms_topk_test': 100,
-            'loc_loss_type': 'giou',
-            'nms_thresh': 0.6,
-            'thresh_with_ctr': False,
-            'box_quality': 'ctrness',
-            'num_classes': 80,
-            'strides': [8, 16, 32, 64, 128],
-            'sizes_of_interest': [64, 128, 256, 512],
-            'loss_normalizer_cls': 'fg',
-            'loss_weight_cls': 1.0
-        }))
+        in_channels=256,
+        stacked_convs=4,
+        feat_channels=256,
+        strides=[8, 16, 32, 64, 128],
+        center_sampling=True,
+        center_sample_radius=1.5,
+        norm_on_bbox=True,
+        centerness_on_reg=True,
+        conv_cfg=None,
+        loss_cls=dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_bbox=dict(type='GIoULoss', loss_weight=1.0),
+        loss_centerness=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
+        conv_bias=True,
+        bbox_coder=dict(type='DistancePointBBoxCoder'),
+        test_cfg=dict(
+            nms_pre=1000,
+            min_bbox_size=0,
+            score_thr=0.05,
+            nms=dict(type='nms', iou_threshold=0.6),
+            max_per_img=100)))
