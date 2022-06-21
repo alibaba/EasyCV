@@ -15,6 +15,9 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
     def __init__(self):
         super(BaseModel, self).__init__()
 
+    def init_weights(self):
+        pass
+
     @abstractmethod
     def forward_train(self, img: Tensor, **kwargs) -> Dict[str, Tensor]:
         """ Abstract interface for model forward in training
