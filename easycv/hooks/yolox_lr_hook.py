@@ -3,13 +3,6 @@ from mmcv.runner.hooks import HOOKS
 from mmcv.runner.hooks.lr_updater import (CosineAnnealingLrUpdaterHook,
                                           annealing_cos)
 
-# initial_lr 0.01 = self.exp.basic_lr_per_img * self.args.batch_size
-# min_lr_ratio default 0.05, 0.2
-# total_iters = iters_per_epoch * total_epochs
-# warmup_total_iters = self.iters_per_epoch * self.warmup_epochs
-# warmup_lr_start 0
-# no_aug_epochs no_aug_iter = self.iters_per_epoch * self.no_aug_epochs
-
 
 @HOOKS.register_module()
 class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
