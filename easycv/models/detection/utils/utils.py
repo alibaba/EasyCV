@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import torch
 import numpy as np
 
 
@@ -33,3 +34,11 @@ def output_postprocess(outputs, img_metas=None):
     }
 
     return test_outputs
+
+
+def fp16_clamp(x, min=None, max=None):
+    if not x.is_cuda and x.dtype == torch.float16:
+        # clamp for cpu float16, tensor fp16 has no clamp implementation
+        return x.float().clamp(min, max).half()
+
+    return x.clamp(min, max)

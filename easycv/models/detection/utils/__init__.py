@@ -2,7 +2,7 @@
 # Copyright (c) 2014-2021 Megvii Inc. All rights reserved.
 
 from .boxes import (bbox2result, bboxes_iou, box_cxcywh_to_xyxy,
-                    box_xyxy_to_cxcywh, generalized_box_iou, postprocess)
+                    box_xyxy_to_cxcywh, generalized_box_iou, postprocess, bbox_overlaps)
 from .dist_utils import reduce_mean
 from .instances import Boxes, Instances
 from .misc import (accuracy, get_world_size, interpolate,

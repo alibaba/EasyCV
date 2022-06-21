@@ -5,7 +5,7 @@ import warnings
 import mmcv
 import torch
 import torch.nn as nn
-from mmdet.core import bbox_overlaps
+from easycv.models.detection.utils import bbox_overlaps
 
 from easycv.models.loss.utils import weighted_loss
 from ..registry import LOSSES
