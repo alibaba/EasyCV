@@ -3,6 +3,7 @@ import configparser
 import logging
 import os
 import sys
+import urllib
 from collections import namedtuple
 from contextlib import contextmanager
 from io import StringIO
@@ -10,6 +11,7 @@ from io import StringIO
 from tqdm import tqdm
 
 OSS_PREFIX = 'oss://'
+URL_PREFIX = 'https://'
 
 
 def create_namedtuple(**kwargs):
@@ -18,6 +20,18 @@ def create_namedtuple(**kwargs):
 
 def is_oss_path(s):
     return s.startswith(OSS_PREFIX)
+
+
+def is_url_path(s):
+    return s.startswith(URL_PREFIX)
+
+
+def url_path_exists(url):
+    try:
+        urllib.request.urlopen(url).code
+    except Exception as err:
+        print(err)
+    return True
 
 
 def get_oss_config():
