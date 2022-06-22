@@ -24,7 +24,7 @@ _MMLAB_COPIES = locals()
 
 class MMAdapter:
 
-    def __init__(self, modules_config, mmdet_wrapper):
+    def __init__(self, modules_config):
         """Adapt mmlab apis.
         Args: modules_config is as follow format:
             [
@@ -46,8 +46,6 @@ class MMAdapter:
 
         self.MMTYPE_REGISTRY_MAP = self._get_mmtype_registry_map()
         self.modules_config = modules_config
-
-        self.mmdet_wrapper = mmdet_wrapper
 
     def check_env(self):
         assert self.mmtype_list.issubset(
@@ -91,7 +89,7 @@ class MMAdapter:
     def wrap_module(self, mmtype, module_type, module_name):
         module_obj = self._get_mm_module_obj(mmtype, module_type, module_name)
         if mmtype == MMDET:
-            self.mmdet_wrapper.wrap_module(module_obj, module_type)
+            MMDetWrapper().wrap_module(module_obj, module_type)
 
     def _merge_all_easycv_modules_to_mmlab(self, mmtype):
         # Add all my module to mmlab module registry, if duplicated, replace with my module.
@@ -316,11 +314,8 @@ def update_rpn_head():
                                      self.num_base_priors * 4, 1)
 
 
-mmdet_wrapper = MMDetWrapper()
-
-
 def dynamic_adapt_for_mmlab(cfg):
     mmlab_modules_cfg = cfg.get('mmlab_modules', [])
     if len(mmlab_modules_cfg) > 1:
-        adapter = MMAdapter(mmlab_modules_cfg, mmdet_wrapper)
+        adapter = MMAdapter(mmlab_modules_cfg)
         adapter.adapt_mmlab_modules()
