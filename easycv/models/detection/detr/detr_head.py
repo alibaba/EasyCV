@@ -55,7 +55,6 @@ class DETRHead(nn.Module):
         self.class_embed = nn.Linear(embed_dims, num_classes + 1)
         self.bbox_embed = MLP(embed_dims, embed_dims, 4, 3)
         self.num_classes = num_classes
-        self.fp16_enabled = False
 
     def init_weights(self):
         """Initialize weights of the detr head."""

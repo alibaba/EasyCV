@@ -2,7 +2,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmcv.runner import auto_fp16
 
 from easycv.models.registry import NECKS
 
@@ -78,7 +77,6 @@ class FPN(nn.Module):
         self.num_outs = num_outs
         self.relu_before_extra_convs = relu_before_extra_convs
         self.no_norm_on_lateral = no_norm_on_lateral
-        self.fp16_enabled = False
         self.upsample_cfg = upsample_cfg.copy()
 
         if end_level == -1 or end_level == self.num_ins - 1:
@@ -151,7 +149,6 @@ class FPN(nn.Module):
                 if hasattr(m, 'bias') and m.bias is not None:
                     nn.init.constant_(m.bias, 0)
 
-    @auto_fp16()
     def forward(self, inputs):
         """Forward function."""
         assert len(inputs) == len(self.in_channels)

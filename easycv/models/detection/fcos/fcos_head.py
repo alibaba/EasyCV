@@ -93,7 +93,6 @@ class FCOSHead(nn.Module):
         self.test_cfg = test_cfg
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        self.fp16_enabled = False
 
         self._init_layers()
 

@@ -4,7 +4,6 @@ from typing import Dict, List, Optional
 import numpy as np
 import torch
 import torch.nn as nn
-from mmcv.runner import auto_fp16
 
 from easycv.models.base import BaseModel
 from easycv.models.builder import (MODELS, build_backbone, build_head,
@@ -19,7 +18,6 @@ class Detection(BaseModel):
     def __init__(self, backbone, head=None, neck=None, pretrained=None):
         super(Detection, self).__init__()
 
-        self.fp16_enabled = False
         self.pretrained = pretrained
         self.backbone = build_backbone(backbone)
         if neck is not None:
@@ -106,7 +104,6 @@ class Detection(BaseModel):
 
         return results
 
-    @auto_fp16(apply_to=('img', ))
     def forward(self, img, mode='train', **kwargs):
         if mode == 'train':
             return self.forward_train(img, **kwargs)

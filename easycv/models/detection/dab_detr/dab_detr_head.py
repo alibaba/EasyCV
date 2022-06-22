@@ -75,7 +75,6 @@ class DABDETRHead(nn.Module):
             self.transformer.decoder.bbox_embed = self.bbox_embed
 
         self.num_classes = num_classes
-        self.fp16_enabled = False
         self.query_dim = query_dim
         self.bbox_embed_diff_each_layer = bbox_embed_diff_each_layer
 
