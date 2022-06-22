@@ -8,7 +8,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, Scale
 from mmcv.ops import batched_nms
-from torch.nn.modules.utils import _pair
 
 from easycv.models.builder import HEADS, build_loss
 from easycv.models.detection.utils import (MlvlPointGenerator, bbox2result,

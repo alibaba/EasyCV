@@ -43,7 +43,6 @@ model = dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
         conv_bias=True,
-        bbox_coder=dict(type='DistancePointBBoxCoder'),
         test_cfg=dict(
             nms_pre=1000,
             min_bbox_size=0,
