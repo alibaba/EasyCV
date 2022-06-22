@@ -22,6 +22,7 @@ from easycv.hooks.optimizer_hook import AMPFP16OptimizerHook
 from easycv.runner import EVRunner
 from easycv.utils.eval_utils import generate_best_metric_name
 from easycv.utils.logger import get_root_logger, print_log
+from easycv.utils.torchacc_util import is_torchacc_enabled
 
 
 def set_random_seed(seed, deterministic=False):
@@ -71,6 +72,9 @@ def train_model(model,
     logger = get_root_logger(cfg.log_level)
     print('GPU INFO : ', torch.cuda.get_device_name(0))
 
+    # model.cuda() must be before build_optimizer in torchacc mode
+    model = model.cuda()
+
     if cfg.model.type == 'YOLOX':
         optimizer = build_yolo_optimizer(model, cfg.optimizer)
     else:
@@ -80,24 +84,25 @@ def train_model(model,
     # so  we need to inialize amp here. In torch 1.6 or later, we do not need this
     if use_fp16 and LooseVersion(torch.__version__) < LooseVersion('1.6.0'):
         from apex import amp
-        model, optimizer = amp.initialize(
-            model.to('cuda'), optimizer, opt_level='O1')
+        model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
 
     # SyncBatchNorm
     open_sync_bn = cfg.get('sync_bn', False)
     if open_sync_bn:
-        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to('cuda')
+        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
         logger.info('Using SyncBatchNorm()')
 
-    if distributed:
-        find_unused_parameters = cfg.get('find_unused_parameters', False)
-        model = MMDistributedDataParallel(
-            model.cuda(),
-            find_unused_parameters=find_unused_parameters,
-            device_ids=[torch.cuda.current_device()],
-            broadcast_buffers=False)
-    else:
-        model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
+    # the functions of torchacc DDP split into OptimizerHook and TorchaccLoaderWrapper
+    if not is_torchacc_enabled():
+        if distributed:
+            find_unused_parameters = cfg.get('find_unused_parameters', False)
+            model = MMDistributedDataParallel(
+                model,
+                find_unused_parameters=find_unused_parameters,
+                device_ids=[torch.cuda.current_device()],
+                broadcast_buffers=False)
+        else:
+            model = MMDataParallel(model, device_ids=range(cfg.gpus))
 
     # build runner
     runner = EVRunner(
