@@ -2,12 +2,12 @@
 from functools import partial
 from typing import List, Optional
 
+import numpy as np
 import torch
 import torchvision
 from packaging import version
 from six.moves import map, zip
 from torch import Tensor
-import numpy as np
 
 if version.parse(torchvision.__version__) < version.parse('0.7'):
     from torchvision.ops import _new_empty_tensor
@@ -106,6 +106,7 @@ def select_single_mlvl(mlvl_tensors, batch_id, detach=True):
         ]
     return mlvl_tensor_list
 
+
 def filter_scores_and_topk(scores, score_thr, topk, results=None):
     """Filter results using score threshold and topk candidates.
 
@@ -153,6 +154,7 @@ def filter_scores_and_topk(scores, score_thr, topk, results=None):
             raise NotImplementedError(f'Only supports dict or list or Tensor, '
                                       f'but get {type(results)}.')
     return scores, labels, keep_idxs, filtered_results
+
 
 def output_postprocess(outputs, img_metas=None):
     detection_boxes = []
