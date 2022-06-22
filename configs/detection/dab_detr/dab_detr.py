@@ -43,7 +43,6 @@ model = dict(
         iter_update=True,
         num_select=300,
         bbox_embed_diff_each_layer=False,
-        focal_alpha=0.25,
         cost_dict={
             'cost_class': 2,
             'cost_bbox': 5,
