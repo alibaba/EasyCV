@@ -11,6 +11,14 @@ Pretrained on **ImageNet** dataset.
 | [mae_vit_base_patch16_8xb64_1600e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/mae/mae_vit_base_patch16_8xb64_1600e.py) | 1600   | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mae/vit-b-1600/pretrain_1600.pth) |
 | [mae_vit_large_patch16_8xb32_1600e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/mae/mae_vit_large_patch16_8xb32_1600e.py) | 1600   | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mae/vit-l-1600/pretrain_1600.pth) |
 
+### Fast ConvMAE
+
+Pretrained on **ImageNet** dataset.
+
+| Config                                                       | Epochs | Download                                                     |
+| ------------------------------------------------------------ | ------ | ------------------------------------------------------------ |
+| [fast_convmae_vit_base_patch16_8xb64_50e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/fast_convmae/fast_convmae_vit_base_patch16_8xb64_50e.py) | 50     | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/FastConvMAE/pretrained/epoch_50.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/FastConvMAE/pretrained/20220617_110501.log.json) |
+
 ### DINO
 
 Pretrained on **ImageNet** dataset.
@@ -65,6 +73,7 @@ For detailed usage of benchmark tools, please refer to benchmark [README.md](../
 | **MAE**   | [mae_vit_base_patch16_8xb64_100e_lrdecay075_fintune](../../benchmarks/selfsup/classification/imagenet/mae_vit_base_patch16_8xb64_100e_lrdecay075_fintune.py) | [mae_vit_base_patch16_8xb64_400e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/mae/mae_vit_base_patch16_8xb64_400e.py) | 83.13     | [fintune model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mae/vit-b-400/fintune_400.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mae/vit-b-400/20220126_171312.log.json)|
 |           | [mae_vit_base_patch16_8xb64_100e_lrdecay065_fintune](../../benchmarks/selfsup/classification/imagenet/mae_vit_base_patch16_8xb64_100e_lrdecay065_fintune.py) | [mae_vit_base_patch16_8xb64_1600e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/mae/mae_vit_base_patch16_8xb64_1600e.py) | 83.55     | [fintune model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mae/vit-b-1600/fintune_1600.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mae/vit-b-1600/20220426_101532.log.json)|
 |           | [mae_vit_large_patch16_8xb16_50e_lrdecay075_fintune](../../benchmarks/selfsup/classification/imagenet/mae_vit_large_patch16_8xb16_50e_lrdecay075_fintune.py) | [mae_vit_large_patch16_8xb32_1600e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/mae/mae_vit_large_patch16_8xb32_1600e.py) | 85.70     | [fintune model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mae/vit-l-1600/fintune_1600.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mae/vit-l-1600/20220427_150629.log.json)|
+| **Fast ConvMAE** | [fast_convmae_vit_base_patch16_8xb64_100e_fintune](https://github.com/alibaba/EasyCV/tree/master/benchmarks/selfsup/classification/imagenet/fast_convmae_vit_base_patch16_8xb64_100e_fintune.py) | [fast_convmae_vit_base_patch16_8xb64_50e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/fast_convmae/fast_convmae_vit_base_patch16_8xb64_50e.py) | 84.37     | [fintune model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/FastConvMAE/imagenet_finetune/epoch_100.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/FastConvMAE/imagenet_finetune/20220621_160255.log.json) |
 
 ### COCO2017 Object Detection
 
