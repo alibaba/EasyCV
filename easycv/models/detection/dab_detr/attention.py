@@ -19,7 +19,6 @@ Mostly copy-paste from https://github.com/pytorch/pytorch/blob/master/torch/nn/m
 and https://github.com/pytorch/pytorch/blob/master/torch/nn/functional.py#L4837
 """
 
-import copy
 import warnings
 from typing import Optional, Tuple
 
