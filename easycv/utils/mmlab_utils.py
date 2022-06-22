@@ -91,8 +91,7 @@ class MMAdapter:
     def wrap_module(self, mmtype, module_type, module_name):
         module_obj = self._get_mm_module_obj(mmtype, module_type, module_name)
         if mmtype == MMDET:
-            if not self.mmdet_wrapper.is_init:
-                self.mmdet_wrapper.wrap_module(module_obj, module_type)
+            self.mmdet_wrapper.wrap_module(module_obj, module_type)
 
     def _merge_all_easycv_modules_to_mmlab(self, mmtype):
         # Add all my module to mmlab module registry, if duplicated, replace with my module.
@@ -152,15 +151,16 @@ class MMAdapter:
 class MMDetWrapper:
 
     def __init__(self):
-        self.is_init = False
         self.refactor_modules()
 
     def wrap_module(self, cls, module_type):
+        if hasattr(cls, 'is_wrap') and cls.is_wrap:
+            return
         if module_type == 'model':
             self._wrap_model_init(cls)
             self._wrap_model_forward(cls)
             self._wrap_model_forward_test(cls)
-        self.is_init = True
+            cls.is_wrap = True
 
     def refactor_modules(self):
         update_rpn_head()
