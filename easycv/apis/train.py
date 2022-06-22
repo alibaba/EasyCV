@@ -106,7 +106,8 @@ def train_model(model,
         optimizer=optimizer,
         work_dir=cfg.work_dir,
         logger=logger,
-        meta=meta)
+        meta=meta,
+        fp16_enable=use_fp16)
     runner.data_loader = data_loaders
 
     # an ugly walkaround to make the .log and .log.json filenames the same

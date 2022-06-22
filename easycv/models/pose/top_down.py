@@ -6,7 +6,6 @@ import warnings
 import mmcv
 import numpy as np
 from mmcv.image import imwrite
-from mmcv.runner import auto_fp16
 from mmcv.utils.misc import deprecated_api_warning
 from mmcv.visualization.image import imshow
 
@@ -41,7 +40,6 @@ class TopDown(BaseModel):
                  pretrained=None,
                  loss_pose=None):
         super().__init__()
-        self.fp16_enabled = False
         self.pretrained = pretrained
 
         self.backbone = builder.build_backbone(backbone)
