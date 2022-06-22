@@ -8,8 +8,6 @@ from torchvision.ops.boxes import box_area
 
 from easycv.models.detection.utils.misc import fp16_clamp
 
-__all__ = ['bboxes_iou', 'postprocess']
-
 
 def bboxes_iou(bboxes_a, bboxes_b, xyxy=True):
     if bboxes_a.shape[1] != 4 or bboxes_b.shape[1] != 4:
