@@ -260,16 +260,6 @@ class MMDetWrapper:
         setattr(cls, 'forward_test', _new_forward_test)
 
 
-mmdet_wrapper = MMDetWrapper()
-
-
-def dynamic_adapt_for_mmlab(cfg):
-    mmlab_modules_cfg = cfg.get('mmlab_modules', [])
-    if len(mmlab_modules_cfg) > 1:
-        adapter = MMAdapter(mmlab_modules_cfg, mmdet_wrapper)
-        adapter.adapt_mmlab_modules()
-
-
 def update_rpn_head():
     logging.warning('refactor mmdet.models.RPNHead, add `norm_cfg`')
     from mmdet.models.builder import HEADS
@@ -324,3 +314,13 @@ def update_rpn_head():
                 self.num_base_priors * self.cls_out_channels, 1)
             self.rpn_reg = nn.Conv2d(self.feat_channels,
                                      self.num_base_priors * 4, 1)
+
+
+mmdet_wrapper = MMDetWrapper()
+
+
+def dynamic_adapt_for_mmlab(cfg):
+    mmlab_modules_cfg = cfg.get('mmlab_modules', [])
+    if len(mmlab_modules_cfg) > 1:
+        adapter = MMAdapter(mmlab_modules_cfg, mmdet_wrapper)
+        adapter.adapt_mmlab_modules()
