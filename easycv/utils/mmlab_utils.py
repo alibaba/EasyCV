@@ -283,10 +283,10 @@ def update_rpn_head():
                      num_convs=1,
                      norm_cfg=None,
                      **kwargs):
-            self.num_convs = num_convs
+
             self.norm_cfg = norm_cfg
             super(RPNHead, self).__init__(
-                in_channels, init_cfg=init_cfg, **kwargs)
+                in_channels, init_cfg=init_cfg, num_convs=num_convs, **kwargs)
 
         def _init_layers(self):
             """Initialize layers of the head."""
