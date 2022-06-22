@@ -1,9 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import ConvModule, build_norm_layer
-from mmcv.runner import BaseModule, auto_fp16
+from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule
 
 from easycv.models.builder import NECKS
 
@@ -96,7 +95,6 @@ class SFP(BaseModule):
         self.num_outs = num_outs
         self.relu_before_extra_convs = relu_before_extra_convs
         self.no_norm_on_lateral = no_norm_on_lateral
-        self.fp16_enabled = False
         self.upsample_cfg = upsample_cfg.copy()
 
         if end_level == -1:
@@ -180,7 +178,6 @@ class SFP(BaseModule):
                     inplace=False)
                 self.fpn_convs.append(extra_fpn_conv)
 
-    @auto_fp16()
     def forward(self, inputs):
         """Forward function."""
         assert len(inputs) == 1

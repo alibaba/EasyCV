@@ -40,7 +40,7 @@ optimizer = dict(
     betas=(0.9, 0.999),
     weight_decay=0.1,
     paramwise_options=paramwise_options)
-optimizer_config = dict(grad_clip=None)
+optimizer_config = dict(grad_clip=None, loss_scale=512.)
 # learning policy
 lr_config = dict(
     policy='step',
