@@ -124,6 +124,9 @@ def train_model(model,
     else:
         optimizer_config = OptimizerHook(**cfg.optimizer_config)
 
+    # process tensor type, convert to numpy for dump logs
+    if len(cfg.log_config.get('hooks', [])) > 0:
+        cfg.log_config.hooks.insert(0, dict(type='PreLoggerHook'))
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
 
