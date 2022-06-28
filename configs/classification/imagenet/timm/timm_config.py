@@ -1,45 +1,47 @@
 _base_ = 'configs/base.py'
+
 log_config = dict(
-    interval=100,
+    interval=10,
     hooks=[dict(type='TextLoggerHook'),
            dict(type='TensorboardLoggerHook')])
 
 # model settings
 model = dict(
     type='Classification',
-    pretrained=None,
+    train_preprocess=['mixUp'],
+    mixup_cfg=dict(
+        mixup_alpha=0.2,
+        prob=1.0,
+        mode='batch',
+        label_smoothing=0.1,
+        num_classes=1000),
     backbone=dict(
         type='PytorchImageModelWrapper',
-        # model_name='pit_xs_distilled_224',
-        # model_name='swin_small_patch4_window7_224',
-        # model_name='swin_tiny_patch4_window7_224',
-        # model_name='swin_base_patch4_window7_224_in22k',
-        model_name='vit_deit_small_distilled_patch16_224',
-        # model_name = 'vit_deit_small_distilled_patch16_224',
-        # model_name = 'resnet50',
+        model_name='vit_base_patch16_224',
         num_classes=1000,
-        pretrained=True,
     ),
     head=dict(
-        # type='ClsHead', with_avg_pool=True, in_channels=384,
-        # type='ClsHead', with_avg_pool=True, in_channels=768,
-        # type='ClsHead', with_avg_pool=True, in_channels=1024,
-        # num_classes=0)
         type='ClsHead',
+        loss_config={
+            'type': 'SoftTargetCrossEntropy',
+        },
         with_fc=False))
 
-data_train_list = 'data/imagenet_raw/meta/train_labeled.txt'
-data_train_root = 'data/imagenet_raw/train/'
-data_test_list = 'data/imagenet_raw/meta/val_labeled.txt'
-data_test_root = 'data/imagenet_raw/validation/'
-data_all_list = 'data/imagenet_raw/meta/all_labeled.txt'
-data_root = 'data/imagenet_raw/'
+load_from = None
+
+data_train_list = './imagenet_raw/meta/train_labeled.txt'
+data_train_root = './imagenet_raw/train/'
+data_test_list = './imagenet_raw/meta/val_labeled.txt'
+data_test_root = './imagenet_raw/val/'
+data_all_list = './imagenet_raw/meta/all_labeled.txt'
+data_root = './imagenet_raw/'
 
 dataset_type = 'ClsDataset'
 img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 train_pipeline = [
     dict(type='RandomResizedCrop', size=224),
     dict(type='RandomHorizontalFlip'),
+    dict(type='MMAutoAugment'),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Collect', keys=['img', 'gt_labels'])
@@ -53,7 +55,7 @@ test_pipeline = [
 ]
 
 data = dict(
-    imgs_per_gpu=32,  # total 256
+    imgs_per_gpu=64,  # total 256
     workers_per_gpu=8,
     train=dict(
         type=dataset_type,
@@ -84,11 +86,25 @@ eval_pipelines = [
 custom_hooks = []
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(
+    type='AdamW',
+    lr=0.003,
+    weight_decay=0.3,
+    paramwise_options={
+        'cls_token': dict(weight_decay=0.),
+        'pos_embed': dict(weight_decay=0.),
+    })
+optimizer_config = dict(grad_clip=dict(max_norm=1.0), update_interval=8)
 
 # learning policy
-lr_config = dict(policy='step', step=[30, 60, 90])
-checkpoint_config = dict(interval=10)
+lr_config = dict(
+    policy='CosineAnnealing',
+    min_lr=0,
+    warmup='linear',
+    warmup_iters=10000,
+    warmup_ratio=1e-4,
+)
+checkpoint_config = dict(interval=30)
 
 # runtime settings
 total_epochs = 90

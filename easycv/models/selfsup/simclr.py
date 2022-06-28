@@ -1,7 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import torch
 
-from easycv.utils.logger import print_log
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger
 from easycv.utils.preprocess_function import gaussianBlur, randomGrayScale
 from .. import builder
 from ..base import BaseModel
@@ -19,6 +20,7 @@ class SimCLR(BaseModel):
                  head=None,
                  pretrained=None):
         super(SimCLR, self).__init__()
+        self.pretrained = pretrained
         self.backbone = builder.build_backbone(backbone)
 
         self.preprocess_key_map = {
@@ -30,7 +32,7 @@ class SimCLR(BaseModel):
         ]
         self.neck = builder.build_neck(neck)
         self.head = builder.build_head(head)
-        self.init_weights(pretrained=pretrained)
+        self.init_weights()
 
     @staticmethod
     def _create_buffer(N):
@@ -42,10 +44,13 @@ class SimCLR(BaseModel):
         neg_mask[pos_ind] = 0
         return mask, pos_ind, neg_mask
 
-    def init_weights(self, pretrained=None):
-        if pretrained is not None:
-            print_log('load model from: {}'.format(pretrained), logger='root')
-        self.backbone.init_weights(pretrained=pretrained)
+    def init_weights(self):
+        if isinstance(self.pretrained, str):
+            logger = get_root_logger()
+            load_checkpoint(
+                self.backbone, self.pretrained, strict=False, logger=logger)
+        else:
+            self.backbone.init_weights()
         self.neck.init_weights(init_linear='kaiming')
 
     def forward_backbone(self, img):

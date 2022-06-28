@@ -2,7 +2,7 @@
 
 The file module of easycv supports operations both on local and oss files, oss introduction please refer to: https://www.aliyun.com/product/oss .
 
-If you operate oss files, you need refer to [access_oss](# access_oss) to authorize oss first.
+If you operate oss files, you need refer to [access_oss](#access_oss) to authorize oss first.
 
 ## Support operations
 
@@ -37,12 +37,31 @@ bucket1 = endpoint1
 bucket2 = endpoint2
 ```
 
+If you want to modify the path of the default oss config file (`~/.ossutilconfig`),  you can do as follows:
+
+```shell
+$ export OSS_CONFIG_FILE='your oss config file path'
+```
+
 Then run the following command, the config file will be read by default to authorize oss.
 
-~~~python
+```python
 from easycv.file import io
 io.access_oss()
-~~~
+```
+
+**Method3:**
+
+Set environment variables as follow,  EasyCV will automatically parse environment variables for authorization:
+
+```python
+import os
+
+os.environ['OSS_ACCESS_KEY_ID'] = 'your_accesskey_id'
+os.environ['OSS_ACCESS_KEY_SECRET'] = 'your_accesskey_secret'
+os.environ['OSS_ENDPOINTS'] = 'your endpoint1,your endpoint2'  # split with ","
+os.environ['OSS_BUCKETS'] = 'your bucket1,your bucket2'  # split with ","
+```
 
 ### open
 

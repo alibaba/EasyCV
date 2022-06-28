@@ -56,13 +56,10 @@ class MnasnetTest(unittest.TestCase):
                 original_weight = copy.deepcopy(
                     original_weight.cpu().data.numpy())
 
-                net.init_weights(net.pretrained)
+                net.init_weights()
                 load_weight = net.layers[0].weight.cpu().data.numpy()
 
                 self.assertFalse(np.allclose(original_weight, load_weight))
-
-                self.assertTrue(net.pretrained == modelzoo.mnasnet['MNASNet' +
-                                                                   '1.0'])
 
 
 if __name__ == '__main__':

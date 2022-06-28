@@ -1,9 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import logging
 import os
-import time
 
-from PIL import Image, ImageFile
+from PIL import ImageFile
 
 from easycv.datasets.registry import DATASOURCES
 from easycv.datasets.utils.tfrecord_util import (download_tfrecord,

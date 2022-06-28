@@ -6,7 +6,6 @@ import MNN
 import numpy as np
 import torch
 from mmcv.parallel import scatter_kwargs
-from mmcv.runner import get_dist_info
 
 from easycv.models.detection.utils import output_postprocess, postprocess
 from easycv.models.detection.yolox.yolo_head import YOLOXHead

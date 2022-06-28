@@ -16,6 +16,8 @@ CLASSES = [
     'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'
 ]
 
+model = dict(num_classes=20)
+
 # dataset settings
 data_root = 'data/voc/'
 img_norm_cfg = dict(

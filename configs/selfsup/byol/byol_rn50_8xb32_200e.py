@@ -3,7 +3,7 @@ _base_ = '../../base.py'
 # model settings
 model = dict(
     type='BYOL',
-    pretrained=None,
+    pretrained=False,
     base_momentum=0.996,
     backbone=dict(
         type='ResNet',

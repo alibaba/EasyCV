@@ -53,13 +53,10 @@ class InceptionV3Test(unittest.TestCase):
             original_weight = net.Conv2d_1a_3x3.conv.weight
             original_weight = copy.deepcopy(original_weight.cpu().data.numpy())
 
-            net.init_weights(net.pretrained)
+            net.init_weights()
             load_weight = net.Conv2d_1a_3x3.conv.weight.cpu().data.numpy()
 
             self.assertFalse(np.allclose(original_weight, load_weight))
-
-            self.assertTrue(
-                net.pretrained == modelzoo.inceptionv3['Inception3'])
 
 
 if __name__ == '__main__':

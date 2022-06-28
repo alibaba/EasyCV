@@ -5,6 +5,8 @@ import logging
 import mmcv
 import numpy as np
 import torch
+import torch.nn as nn
+from mmcv.cnn import ConvModule
 
 from easycv.models.registry import BACKBONES, HEADS, MODELS, NECKS
 from .test_util import run_in_subprocess
@@ -146,11 +148,17 @@ class MMAdapter:
 
 class MMDetWrapper:
 
+    def __init__(self):
+        self.refactor_modules()
+
     def wrap_module(self, cls, module_type):
         if module_type == 'model':
             self._wrap_model_init(cls)
             self._wrap_model_forward(cls)
             self._wrap_model_forward_test(cls)
+
+    def refactor_modules(self):
+        update_rpn_head()
 
     def _wrap_model_init(self, cls):
         origin_init = cls.__init__
@@ -252,3 +260,60 @@ def dynamic_adapt_for_mmlab(cfg):
     if len(mmlab_modules_cfg) > 1:
         adapter = MMAdapter(mmlab_modules_cfg)
         adapter.adapt_mmlab_modules()
+
+
+def update_rpn_head():
+    logging.warning('refactor mmdet.models.RPNHead, add `norm_cfg`')
+    from mmdet.models.builder import HEADS
+    HEADS._module_dict.pop('RPNHead', None)
+    from mmdet.models import RPNHead as _RPNHead
+
+    @HEADS.register_module()
+    class RPNHead(_RPNHead):
+        """RPN head with norm.
+        Args:
+            in_channels (int): Number of channels in the input feature map.
+            init_cfg (dict or list[dict], optional): Initialization config dict.
+            num_convs (int): Number of convolution layers in the head. Default 1.
+        """  # noqa: W605
+
+        def __init__(self,
+                     in_channels,
+                     init_cfg=dict(type='Normal', layer='Conv2d', std=0.01),
+                     num_convs=1,
+                     norm_cfg=None,
+                     **kwargs):
+
+            self.norm_cfg = norm_cfg
+            super(RPNHead, self).__init__(
+                in_channels, init_cfg=init_cfg, num_convs=num_convs, **kwargs)
+
+        def _init_layers(self):
+            """Initialize layers of the head."""
+            if self.num_convs > 1:
+                rpn_convs = []
+                for i in range(self.num_convs):
+                    if i == 0:
+                        in_channels = self.in_channels
+                    else:
+                        in_channels = self.feat_channels
+                    # use ``inplace=False`` to avoid error: one of the variables
+                    # needed for gradient computation has been modified by an
+                    # inplace operation.
+                    rpn_convs.append(
+                        ConvModule(
+                            in_channels,
+                            self.feat_channels,
+                            3,
+                            padding=1,
+                            norm_cfg=self.norm_cfg,
+                            inplace=False))
+                self.rpn_conv = nn.Sequential(*rpn_convs)
+            else:
+                self.rpn_conv = nn.Conv2d(
+                    self.in_channels, self.feat_channels, 3, padding=1)
+            self.rpn_cls = nn.Conv2d(
+                self.feat_channels,
+                self.num_base_priors * self.cls_out_channels, 1)
+            self.rpn_reg = nn.Conv2d(self.feat_channels,
+                                     self.num_base_priors * 4, 1)

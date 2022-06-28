@@ -1,17 +1,14 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import math
-from functools import partial, reduce
+from functools import reduce
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import kaiming_init, normal_init
 from packaging import version
 
 from easycv.models.utils import GeMPooling, ResLayer
-from ..backbones.hrnet import Bottleneck, get_expansion
+from ..backbones.hrnet import Bottleneck
 from ..registry import NECKS
-from ..utils import (ConvModule, _init_weights, build_conv_layer,
-                     build_norm_layer)
+from ..utils import ConvModule, _init_weights, build_norm_layer
 
 
 @NECKS.register_module

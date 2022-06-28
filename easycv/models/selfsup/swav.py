@@ -5,7 +5,8 @@ import torch.distributed as dist
 import torch.nn as nn
 from mmcv.runner import get_dist_info
 
-from easycv.utils.logger import print_log
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger
 from easycv.utils.preprocess_function import gaussianBlur, randomGrayScale
 from .. import builder
 from ..base import BaseModel
@@ -22,6 +23,7 @@ class SWAV(BaseModel):
                  config=None,
                  pretrained=None):
         super(SWAV, self).__init__()
+        self.pretrained = pretrained
         self.backbone = builder.build_backbone(backbone)
 
         self.preprocess_key_map = {
@@ -49,13 +51,16 @@ class SWAV(BaseModel):
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.softmax = nn.Softmax(dim=1).cuda()
         self.use_the_queue = False
-        self.init_weights(pretrained=pretrained)
+        self.init_weights()
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
 
-    def init_weights(self, pretrained=None):
-        if pretrained is not None:
-            print_log('load model from: {}'.format(pretrained), logger='root')
-        self.backbone.init_weights(pretrained=pretrained)
+    def init_weights(self):
+        if isinstance(self.pretrained, str):
+            logger = get_root_logger()
+            load_checkpoint(
+                self.backbone, self.pretrained, strict=False, logger=logger)
+        else:
+            self.backbone.init_weights()
         self.neck.init_weights(init_linear='kaiming')
 
         # if torch.load(pretrained).get("prototypes.weight", None) is not None:

@@ -112,7 +112,6 @@ class YOLOX(BaseModel):
             target (List[Tensor]): list of target tensor, NTx5 [class,x_c,y_c,w,h]
         """
         with torch.no_grad():
-
             fpn_outs = self.backbone(img)
             outputs = self.head(fpn_outs)
 
@@ -163,5 +162,15 @@ class YOLOX(BaseModel):
         # fpn output content features of [dark3, dark4, dark5]
         fpn_outs = self.backbone(x)
         outputs = self.head(fpn_outs)
+
+        return outputs
+
+    def forward_export(self, img):
+        with torch.no_grad():
+            fpn_outs = self.backbone(img)
+            outputs = self.head(fpn_outs)
+
+            outputs = postprocess(outputs, self.num_classes, self.test_conf,
+                                  self.nms_thre)
 
         return outputs
