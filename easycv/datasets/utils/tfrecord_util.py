@@ -80,7 +80,8 @@ def download_tfrecord(file_list_or_path,
 
     all_data_list = [
         all_file_list[i] for i in range(len(all_file_list))
-        if not all_file_list[i].endswith('.idx') and not all_file_list[i].endswith('.info')
+        if not all_file_list[i].endswith('.idx')
+        and not all_file_list[i].endswith('.info')
     ]
     all_index_list = [
         all_file_list[i] for i in range(len(all_file_list))
