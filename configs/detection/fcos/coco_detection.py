@@ -15,7 +15,7 @@ CLASSES = [
 ]
 
 # dataset settings
-data_root = '/apsarapangu/disk2/yunji.cjy/coco/'
+data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
 
