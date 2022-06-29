@@ -10,16 +10,10 @@ from easycv.models.builder import HEADS, build_transformer
 from easycv.models.detection.utils import (MLP, HungarianMatcher, accuracy,
                                            box_cxcywh_to_xyxy,
                                            box_xyxy_to_cxcywh,
-                                           generalized_box_iou)
+                                           generalized_box_iou,
+                                           inverse_sigmoid)
 from easycv.models.loss.focal_loss import py_sigmoid_focal_loss
 from easycv.models.utils import get_world_size, is_dist_avail_and_initialized
-
-
-def inverse_sigmoid(x, eps=1e-3):
-    x = x.clamp(min=0, max=1)
-    x1 = x.clamp(min=eps)
-    x2 = (1 - x).clamp(min=eps)
-    return torch.log(x1 / x2)
 
 
 @HEADS.register_module()

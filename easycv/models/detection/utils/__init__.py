@@ -6,5 +6,6 @@ from .boxes import (bbox2result, bbox_overlaps, bboxes_iou, box_cxcywh_to_xyxy,
 from .generator import MlvlPointGenerator
 from .matcher import HungarianMatcher
 from .misc import (accuracy, filter_scores_and_topk, fp16_clamp, interpolate,
-                   multi_apply, output_postprocess, select_single_mlvl)
+                   inverse_sigmoid, multi_apply, output_postprocess,
+                   select_single_mlvl)
 from .transformer import MLP
