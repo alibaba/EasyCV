@@ -61,6 +61,7 @@ class FCOSHead(nn.Module):
                      max_per_img=100),
                  **kwargs):
         super(FCOSHead, self).__init__()
+
         self.regress_ranges = regress_ranges
         self.center_sampling = center_sampling
         self.center_sample_radius = center_sample_radius
