@@ -62,6 +62,7 @@ class DetSourceCoco(object):
     def __len__(self):
         """Total number of samples of data."""
         return len(self.data_infos)
+    
 
     def get_length(self):
         """Total number of samples of data."""
@@ -228,7 +229,6 @@ class DetSourceCoco(object):
             gt_bboxes_ignore = np.zeros((0, 4), dtype=np.float32)
 
         seg_map = img_info['filename'].replace('jpg', 'png')
-
         ann = dict(
             bboxes=gt_bboxes,
             labels=gt_labels,

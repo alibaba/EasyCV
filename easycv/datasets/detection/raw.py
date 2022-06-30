@@ -1,11 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import numpy as np
-
+import random
 from easycv.core.visualization.image import imshow_bboxes
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
 from easycv.file.image import load_image
-from easycv.datasets.detection.data_sources import DetSourceCoco
+from easycv.datasets.detection.data_sources import DetSourceCoco,DetSourceCocoPanoptic
+from easycv.core.evaluation.coco_evaluation import CocoPanopticEvaluator
 
 @DATASETS.register_module
 class DetDataset(BaseDataset):
@@ -59,9 +60,7 @@ class DetDataset(BaseDataset):
                         origin_img_shape, scale_factor and so on.
                 evaluators: evaluators to calculate metric with results and groundtruth_dict
         '''
-
         eval_result = dict()
-
         groundtruth_dict = {}
         groundtruth_dict['groundtruth_boxes'] = [
             self.data_source.get_ann_info(idx)['bboxes']
@@ -81,7 +80,12 @@ class DetDataset(BaseDataset):
         ]
 
         for evaluator in evaluators:
-            eval_result.update(evaluator.evaluate(results, groundtruth_dict))
+            if isinstance(evaluator,CocoPanopticEvaluator):
+                result_files = self.data_source.results2json(results,'test/test_pan')
+                gt_json,gt_folder,pred_json,pred_folder,categories = self.data_source.get_gt_json(result_files, 'test/test_pan')
+                eval_result.update(evaluator.evaluate(gt_json,gt_folder,pred_json,pred_folder,categories))
+            else:
+                eval_result.update(evaluator.evaluate(results, groundtruth_dict))
 
         return eval_result
 

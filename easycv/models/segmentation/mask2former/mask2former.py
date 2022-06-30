@@ -18,6 +18,8 @@ from .matcher import HungarianMatcher
 from .criterion import SetCriterion
 from .panoptic_gt_processing import multi_apply,preprocess_panoptic_gt
 
+INSTANCE_OFFSET = 1000
+
 @MODELS.register_module()
 class Mask2Former(BaseModel):
 
@@ -112,25 +114,14 @@ class Mask2Former(BaseModel):
         outputs = self.head(features)
         mask_cls_results = outputs['pred_logits']
         mask_pred_results = outputs['pred_masks']
-
-        results = []
+        detection_boxes = []
+        detection_scores = []
+        detection_classes = []
+        detection_masks = []
+        pan_masks = []
         for mask_cls_result, mask_pred_result, meta in zip(
                 mask_cls_results, mask_pred_results, img_metas[0]):
-            # remove padding
-            # print(meta)
-            # img_height, img_width = meta['img_shape'][:2]
-            # mask_pred_result = mask_pred_result[:, :img_height, :img_width]
-            # print(mask_pred_result.shape)
 
-
-            # if rescale:
-            #     # return result in original resolution
-            #     ori_height, ori_width = meta['ori_shape'][:2]
-            #     mask_pred_result = F.interpolate(
-            #         mask_pred_result[:, None],
-            #         size=(ori_height, ori_width),
-            #         mode='bilinear',
-            #         align_corners=False)[:, 0]
             pad_height, pad_width = meta['pad_shape'][:2]
             mask_pred_result = F.interpolate(
                 mask_pred_result[:, None],
@@ -147,38 +138,34 @@ class Mask2Former(BaseModel):
                 mode='bilinear',
                 align_corners=False)[:, 0]
 
-            result = dict()
-
             #instance_on
-            ins_results = self.instance_postprocess(
+            labels_per_image, bboxes, mask_pred_binary = self.instance_postprocess(
                 mask_cls_result, mask_pred_result)
-
-            labels_per_image, bboxes, mask_pred_binary = ins_results
-            
-            labels_per_image, bboxes, mask_pred_binary = labels_per_image.cpu().numpy(),bboxes.cpu().numpy(),mask_pred_binary.cpu().numpy()
-            mask_pred_binary = [mask_pred_binary]
-            mask_pred_binary = encode_mask_results(mask_pred_binary)
             segms = []
-            segms = mmcv.concat_list(mask_pred_binary)
-            segms = np.stack(segms, axis=0)
+            if mask_pred_binary is not None and labels_per_image.shape[0] > 0:
+                mask_pred_binary = [mask_pred_binary]
+                mask_pred_binary = encode_mask_results(mask_pred_binary)
+                segms = mmcv.concat_list(mask_pred_binary)
+                segms = np.stack(segms, axis=0)
             scores = bboxes[:, 4] if bboxes.shape[1] == 5 else None
             bboxes = bboxes[:, 0:4] if bboxes.shape[1] == 5 else bboxes
-            detection_boxes = []
-            detection_scores = []
-            detection_classes = []
-            detection_masks = []
             detection_boxes.append(bboxes)
             detection_scores.append(scores)
             detection_classes.append(labels_per_image)
             detection_masks.append(segms)
-            assert len(img_metas) == 1
-            outputs = {
-                'detection_boxes': detection_boxes,
-                'detection_scores': detection_scores,
-                'detection_classes': detection_classes,
-                'detection_masks': detection_masks,
-                'img_metas': img_metas[0]
-            }
+            #panoptic on
+            pan_results = self.panoptic_postprocess(mask_cls_result, mask_pred_result)
+            pan_masks.append(pan_results.cpu().numpy())
+            # outputs['pan_results'] = pan_masks
+        assert len(img_metas) == 1
+        outputs = {
+            'detection_boxes': detection_boxes,
+            'detection_scores': detection_scores,
+            'detection_classes': detection_classes,
+            'detection_masks': detection_masks,
+            'img_metas': img_metas[0]
+        }
+        outputs['pan_results'] = pan_masks
         return outputs
 
     def forward(self, img, mode='train', gt_labels=None,gt_masks=None,gt_semantic_seg=None,img_metas=None,**kwargs):
@@ -189,7 +176,7 @@ class Mask2Former(BaseModel):
             return self.forward_test(img,img_metas)
         else:
             raise Exception('No such mode: {}'.format(mode))
-
+        
     def instance_postprocess(self, mask_cls, mask_pred):
         """Instance segmengation postprocess.
 
@@ -221,7 +208,6 @@ class Mask2Former(BaseModel):
         scores_per_image, top_indices = scores.flatten(0, 1).topk(
             max_per_image, sorted=False)
         labels_per_image = labels[top_indices]
-
         query_indices = top_indices // self.num_classes
         mask_pred = mask_pred[query_indices]
 
@@ -240,9 +226,76 @@ class Mask2Former(BaseModel):
         bboxes = mask2bbox(mask_pred_binary)
         bboxes = torch.cat([bboxes, det_scores[:, None]], dim=-1)
 
+        labels_per_image = labels_per_image.cpu().numpy()
+        bboxes = bboxes.cpu().numpy()
+        mask_pred_binary = mask_pred_binary.cpu().numpy()
         return labels_per_image, bboxes, mask_pred_binary
         
+    def panoptic_postprocess(self, mask_cls, mask_pred):
+        """Panoptic segmengation inference.
 
+        Args:
+            mask_cls (Tensor): Classfication outputs of shape
+                (num_queries, cls_out_channels) for a image.
+                Note `cls_out_channels` should includes
+                background.
+            mask_pred (Tensor): Mask outputs of shape
+                (num_queries, h, w) for a image.
+
+        Returns:
+            Tensor: Panoptic segment result of shape \
+                (h, w), each element in Tensor means: \
+                ``segment_id = _cls + instance_id * INSTANCE_OFFSET``.
+        """
+        object_mask_thr = self.test_cfg.get('object_mask_thr', 0.8)
+        iou_thr = self.test_cfg.get('iou_thr', 0.8)
+        filter_low_score = self.test_cfg.get('filter_low_score', False)
+
+        scores, labels = F.softmax(mask_cls, dim=-1).max(-1)
+        mask_pred = mask_pred.sigmoid()
+
+        keep = labels.ne(self.num_classes) & (scores > object_mask_thr)
+        cur_scores = scores[keep]
+        cur_classes = labels[keep]
+        cur_masks = mask_pred[keep]
+        cur_prob_masks = cur_scores.view(-1, 1, 1) * cur_masks
+
+        h, w = cur_masks.shape[-2:]
+        panoptic_seg = torch.full((h, w),
+                                  self.num_classes,
+                                  dtype=torch.int32,
+                                  device=cur_masks.device)
+        if cur_masks.shape[0] == 0:
+            # We didn't detect any mask :(
+            pass
+        else:
+            cur_mask_ids = cur_prob_masks.argmax(0)
+            instance_id = 1
+            for k in range(cur_classes.shape[0]):
+                pred_class = int(cur_classes[k].item())
+                isthing = pred_class < self.num_things_classes
+                mask = cur_mask_ids == k
+                mask_area = mask.sum().item()
+                original_area = (cur_masks[k] >= 0.5).sum().item()
+
+                if filter_low_score:
+                    mask = mask & (cur_masks[k] >= 0.5)
+
+                if mask_area > 0 and original_area > 0:
+                    if mask_area / original_area < iou_thr:
+                        continue
+
+                    if not isthing:
+                        # different stuff regions of same class will be
+                        # merged here, and stuff share the instance_id 0.
+                        panoptic_seg[mask] = pred_class
+                    else:
+                        panoptic_seg[mask] = (
+                            pred_class + instance_id * INSTANCE_OFFSET)
+                        instance_id += 1
+
+        return panoptic_seg
+    
     def preprocess_gt(self,gt_labels_list, gt_masks_list, gt_semantic_segs,img_metas):
         """Preprocess the ground truth for all images.
 

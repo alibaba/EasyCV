@@ -1,11 +1,13 @@
 #debug
 import sys
 sys.path.append('/home/yanhaiqiang.yhq/code/segmentation/EasyCV/')
+import os
 import numpy as np
 from collections import defaultdict
 
-# from pycocotools.coco import COCO
-from xtcocotools.coco import COCO
+from pycocotools.coco import COCO
+import mmcv
+# from xtcocotools.coco import COCO
 try:
     import panopticapi
     from panopticapi.evaluation import VOID
@@ -19,6 +21,8 @@ from easycv.datasets.detection.data_sources import DetSourceCoco
 from easycv.datasets.registry import DATASOURCES, PIPELINES
 from easycv.datasets.shared.pipelines import Compose
 from easycv.utils.registry import build_from_cfg
+
+INSTANCE_OFFSET = 1000
 
 class COCOPanoptic(COCO):
     """This wrapper is for loading the panoptic style annotation file.
@@ -113,29 +117,32 @@ class DetSourceCocoPanoptic(DetSourceCoco):
 
     def __init__(self,
                  ann_file,
+                 pan_ann_file,
                  img_prefix,
                  seg_prefix,
                  pipeline,
                  test_mode=False,
                  filter_empty_gt=False,
-                 classes=None,
+                 thing_classes=None,
+                 stuff_classes=None,
                  iscrowd=False):
-        self.ann_file = ann_file
-        self.img_prefix = img_prefix
+        super().__init__(ann_file,
+                         img_prefix,
+                         pipeline,
+                         test_mode=test_mode,
+                         filter_empty_gt=filter_empty_gt,
+                         classes=thing_classes,
+                         iscrowd=iscrowd)
+        self.pan_ann_file = pan_ann_file
         self.seg_prefix = seg_prefix
-        self.filter_empty_gt = filter_empty_gt
-        self.CLASSES = classes
+        self.thing_classes = thing_classes
+        self.stuff_classes = stuff_classes
         # load annotations (and proposals)
-        self.data_infos = self.load_annotations(self.ann_file)
-        self.test_mode = test_mode
+        self.data_infos_pan = self.load_annotations_pan(self.pan_ann_file)
         if not test_mode:
-            valid_inds = self._filter_imgs()
-            self.data_infos = [self.data_infos[i] for i in valid_inds]
-            self._set_group_flag()
-
-        self.iscrowd = iscrowd
-        self.max_labels_num = 120
-
+            valid_inds = self._filter_imgs_pan()
+            self.data_infos_pan = [self.data_infos_pan[i] for i in valid_inds]
+            self._set_group_flag_pan()
         transforms = []
         for transform in pipeline:
             if isinstance(transform, dict):
@@ -147,7 +154,7 @@ class DetSourceCocoPanoptic(DetSourceCoco):
                 raise TypeError('transform must be callable or a dict')
         self.pipeline = Compose(transforms)
 
-    def load_annotations(self, ann_file):
+    def load_annotations_pan(self, ann_file):
         """Load annotation from COCO Panoptic style annotation file.
 
         Args:
@@ -156,20 +163,20 @@ class DetSourceCocoPanoptic(DetSourceCoco):
         Returns:
             list[dict]: Annotation info from COCO api.
         """
-        self.coco = COCOPanoptic(ann_file)
-        self.cat_ids = self.coco.getCatIds()
-        self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
-        self.categories = self.coco.cats
-        self.img_ids = self.coco.getImgIds()
+        self.coco_pan = COCOPanoptic(ann_file)
+        self.cat_ids_pan = self.coco_pan.getCatIds()
+        self.cat2label_pan = {cat_id: i for i, cat_id in enumerate(self.cat_ids_pan)}
+        self.categories_pan = self.coco_pan.cats
+        self.img_ids_pan = self.coco_pan.getImgIds()
         data_infos = []
-        for i in self.img_ids:
-            info = self.coco.loadImgs([i])[0]
+        for i in self.img_ids_pan:
+            info = self.coco_pan.loadImgs([i])[0]
             info['filename'] = info['file_name']
             info['segm_file'] = info['filename'].replace('jpg', 'png')
             data_infos.append(info)
         return data_infos
 
-    def get_ann_info(self, idx):
+    def get_ann_info_pan(self, idx):
         """Get COCO annotation by index.
 
         Args:
@@ -178,15 +185,14 @@ class DetSourceCocoPanoptic(DetSourceCoco):
         Returns:
             dict: Annotation info of specified index.
         """
-        img_id = self.data_infos[idx]['id']
-        ann_ids = self.coco.getAnnIds(imgIds=[img_id])
-        ann_info = self.coco.loadAnns(ann_ids)
+        img_id = self.data_infos_pan[idx]['id']
+        ann_ids = self.coco_pan.getAnnIds(imgIds=[img_id])
+        ann_info = self.coco_pan.load_anns(ann_ids)
         # filter out unmatched images
-        # ann_info = [i for i in ann_info if i['image_id'] == img_id]
-        ann_info = [i[0] for i in ann_info if i[0]['image_id'] == img_id]
-        return self._parse_ann_info(self.data_infos[idx], ann_info)
+        ann_info = [i for i in ann_info if i['image_id'] == img_id]
+        return self._parse_ann_info_pan(self.data_infos_pan[idx], ann_info)
 
-    def _parse_ann_info(self, img_info, ann_info):
+    def _parse_ann_info_pan(self, img_info, ann_info):
         """Parse annotations and load panoptic ground truths.
 
         Args:
@@ -201,7 +207,6 @@ class DetSourceCocoPanoptic(DetSourceCoco):
         gt_labels = []
         gt_bboxes_ignore = []
         gt_mask_infos = []
-
         for i, ann in enumerate(ann_info):
             x1, y1, w, h = ann['bbox']
             if ann['area'] <= 0 or w < 1 or h < 1:
@@ -209,9 +214,9 @@ class DetSourceCocoPanoptic(DetSourceCoco):
             bbox = [x1, y1, x1 + w, y1 + h]
 
             category_id = ann['category_id']
-            contiguous_cat_id = self.cat2label[category_id]
+            contiguous_cat_id = self.cat2label_pan[category_id]
 
-            is_thing = self.coco.loadCats(ids=category_id)[0]['isthing']
+            is_thing = self.coco_pan.loadCats(ids=category_id)[0]['isthing']
             if is_thing:
                 is_crowd = ann.get('iscrowd', False)
                 if not is_crowd:
@@ -239,24 +244,22 @@ class DetSourceCocoPanoptic(DetSourceCoco):
             gt_bboxes_ignore = np.array(gt_bboxes_ignore, dtype=np.float32)
         else:
             gt_bboxes_ignore = np.zeros((0, 4), dtype=np.float32)
-
         ann = dict(
             bboxes=gt_bboxes,
             labels=gt_labels,
             bboxes_ignore=gt_bboxes_ignore,
             masks=gt_mask_infos,
             seg_map=img_info['segm_file'])
-
         return ann
 
-    def _filter_imgs(self, min_size=32):
+    def _filter_imgs_pan(self, min_size=32):
         """Filter images too small or without ground truths."""
         ids_with_ann = []
         # check whether images have legal thing annotations.
-        for lists in self.coco.anns.values():
+        for lists in self.coco_pan.anns.values():
             for item in lists:
                 category_id = item['category_id']
-                is_thing = self.coco.loadCats(ids=category_id)[0]['isthing']
+                is_thing = self.coco_pan.loadCats(ids=category_id)[0]['isthing']
                 if not is_thing:
                     continue
                 ids_with_ann.append(item['image_id'])
@@ -264,14 +267,14 @@ class DetSourceCocoPanoptic(DetSourceCoco):
 
         valid_inds = []
         valid_img_ids = []
-        for i, img_info in enumerate(self.data_infos):
-            img_id = self.img_ids[i]
+        for i, img_info in enumerate(self.data_infos_pan):
+            img_id = self.img_ids_pan[i]
             if self.filter_empty_gt and img_id not in ids_with_ann:
                 continue
             if min(img_info['width'], img_info['height']) >= min_size:
                 valid_inds.append(i)
                 valid_img_ids.append(img_id)
-        self.img_ids = valid_img_ids
+        self.img_ids_pan = valid_img_ids
         return valid_inds
 
     def pre_pipeline(self, results):
@@ -281,9 +284,145 @@ class DetSourceCocoPanoptic(DetSourceCoco):
         results['bbox_fields'] = []
         results['mask_fields'] = []
         results['seg_fields'] = []
+        
+    def prepare_train_img(self, idx):
+        """Get training data and annotations after pipeline.
 
+        Args:
+            idx (int): Index of data.
 
+        Returns:
+            dict: Training data and annotation after pipeline with new keys \
+                introduced by pipeline.
+        """
 
+        img_info = self.data_infos_pan[idx]
+        ann_info = self.get_ann_info_pan(idx)
+        results = dict(img_info=img_info, ann_info=ann_info)
+        self.pre_pipeline(results)
+        return self.pipeline(results)
     
+    def _set_group_flag_pan(self):
+        """Set flag according to image aspect ratio.
 
+        Images with aspect ratio greater than 1 will be set as group 1,
+        otherwise group 0.
+        """
+        self.flag = np.zeros(len(self), dtype=np.uint8)
+        for i in range(len(self)):
+            img_info = self.data_infos_pan[i]
+            if img_info['width'] / img_info['height'] > 1:
+                self.flag[i] = 1
 
+    def _pan2json(self, results, outfile_prefix):
+        """Convert panoptic results to COCO panoptic json style."""
+        ##将标签转化为类别
+        label2cat = dict((v, k) for (k, v) in self.cat2label_pan.items())
+        
+        pred_annotations = []
+        outdir = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
+        for idx in range(len(self)):
+            img_id = self.img_ids_pan[idx]
+            segm_file = self.data_infos_pan[idx]['segm_file']
+            pan = results[idx]
+
+            pan_labels = np.unique(pan)
+            segm_info = []
+            for pan_label in pan_labels:
+                sem_label = pan_label % INSTANCE_OFFSET
+                # We reserve the length of self.CLASSES for VOID label
+                if sem_label == len(self.thing_classes+self.stuff_classes):
+                    continue
+                # convert sem_label to json label
+                cat_id = label2cat[sem_label]
+                is_thing = self.categories_pan[cat_id]['isthing']
+                mask = pan == pan_label
+                area = mask.sum()
+                segm_info.append({
+                    'id': int(pan_label),
+                    'category_id': cat_id,
+                    'isthing': is_thing,
+                    'area': int(area)
+                })
+            # evaluation script uses 0 for VOID label.
+            pan[pan % INSTANCE_OFFSET == len(self.thing_classes+self.stuff_classes)] = VOID
+            pan = id2rgb(pan).astype(np.uint8)
+            mmcv.imwrite(pan[:, :, ::-1], os.path.join(outdir, segm_file))
+            record = {
+                'image_id': img_id,
+                'segments_info': segm_info,
+                'file_name': segm_file
+            }
+            pred_annotations.append(record)
+        pan_json_results = dict(annotations=pred_annotations)
+        return pan_json_results
+
+    def results2json(self, results, outfile_prefix):
+        """Dump the results to a COCO style json file.
+
+        There are 4 types of results: proposals, bbox predictions, mask
+        predictions, panoptic segmentation predictions, and they have
+        different data types. This method will automatically recognize
+        the type, and dump them to json files.
+
+        .. code-block:: none
+
+            [
+                {
+                    'pan_results': np.array, # shape (h, w)
+                    # ins_results which includes bboxes and RLE encoded masks
+                    # is optional.
+                    'ins_results': (list[np.array], list[list[str]])
+                },
+                ...
+            ]
+
+        Args:
+            results (list[dict]): Testing results of the dataset.
+            outfile_prefix (str): The filename prefix of the json files. If the
+                prefix is "somepath/xxx", the json files will be named
+                "somepath/xxx.panoptic.json", "somepath/xxx.bbox.json",
+                "somepath/xxx.segm.json"
+
+        Returns:
+            dict[str: str]: Possible keys are "panoptic", "bbox", "segm", \
+                "proposal", and values are corresponding filenames.
+        """
+        result_files = dict()
+        # panoptic segmentation results
+
+        if 'pan_results' in results:
+            pan_results = results['pan_results']
+            pan_json_results = self._pan2json(pan_results, outfile_prefix)
+            result_files['panoptic'] = f'{outfile_prefix}.panoptic.json'
+            mmcv.dump(pan_json_results, result_files['panoptic'])
+
+        # # instance segmentation results
+        # if 'ins_results' in results[0]:
+        #     ins_results = [result['ins_results'] for result in results]
+        #     bbox_json_results, segm_json_results = self._segm2json(ins_results)
+        #     result_files['bbox'] = f'{outfile_prefix}.bbox.json'
+        #     result_files['proposal'] = f'{outfile_prefix}.bbox.json'
+        #     result_files['segm'] = f'{outfile_prefix}.segm.json'
+        #     mmcv.dump(bbox_json_results, result_files['bbox'])
+        #     mmcv.dump(segm_json_results, result_files['segm'])
+
+        return result_files
+    
+    def get_gt_json(self, result_files, outfile_prefix):
+        
+        imgs = self.coco_pan.imgs
+        gt_json = self.coco_pan.imgToAnns
+        gt_json = [{
+            'image_id': k,
+            'segments_info': v,
+            'file_name': imgs[k]['segm_file']
+        } for k, v in gt_json.items()]
+        pred_json = mmcv.load(result_files['panoptic'])
+        pred_json = dict(
+            (el['image_id'], el) for el in pred_json['annotations'])
+        
+        gt_folder = self.seg_prefix
+        pred_folder = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
+        categories = self.categories_pan
+        return gt_json,gt_folder,pred_json,pred_folder,categories
