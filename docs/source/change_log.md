@@ -52,7 +52,7 @@ EasyCV support multi-gpu and multi worker training. EasyCV use DALI to accelerat
 - Support export model with **[blade](https://help.aliyun.com/document_detail/205134.html)** for yolox ([#66](https://github.com/alibaba/EasyCV/pull/66))
 - Support **ViTDet** algorithm ([#35](https://github.com/alibaba/EasyCV/pull/35))
 - Add sailfish for extensible fully sharded data parallel training ([#97](https://github.com/alibaba/EasyCV/pull/97))
-- Support run with **mmdet** models ([#25](https://github.com/alibaba/EasyCV/pull/25))
+- Support run with [mmdetection](https://github.com/open-mmlab/mmdetection) models ([#25](https://github.com/alibaba/EasyCV/pull/25))
 
 ## New Features
 - Set multiprocess env for speedup ([#77](https://github.com/alibaba/EasyCV/pull/77))
