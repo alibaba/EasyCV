@@ -1,13 +1,12 @@
+import os
 import unittest
 
-import os
 import numpy as np
 from PIL import Image
-
+from tests.ut_config import TEST_IMAGES_DIR
 from thirdparty.u2sod.sodpredictor import SODPredictor
 
 from easycv.predictors.builder import build_predictor
-from tests.ut_config import TEST_IMAGES_DIR
 
 bbox_res = [[0, 1077, 1, 1079], [147, 871, 148, 873], [172, 196, 197, 218],
             [266, 68, 267, 70], [676, 0, 679, 2], [104, 0, 507, 1008]]

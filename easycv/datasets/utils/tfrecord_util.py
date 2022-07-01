@@ -26,7 +26,7 @@ def get_path_and_index(file_list_or_path):
     index = []
     for i in lines:
         i = i.strip()
-        if i.endswith('.idx'):
+        if i.endswith('.idx') or i.endswith('.info'):
             pass
         else:
             path.append(i)
@@ -81,6 +81,7 @@ def download_tfrecord(file_list_or_path,
     all_data_list = [
         all_file_list[i] for i in range(len(all_file_list))
         if not all_file_list[i].endswith('.idx')
+        and not all_file_list[i].endswith('.info')
     ]
     all_index_list = [
         all_file_list[i] for i in range(len(all_file_list))
