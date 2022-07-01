@@ -2,7 +2,6 @@
 import argparse
 
 from easycv.models import build_model
-# from mmcv import Config
 from easycv.utils.config_tools import mmcv_config_fromfile
 
 
@@ -20,14 +19,16 @@ def main():
 
     model = build_model(cfg.model)
 
-    num_params = sum(p.numel() for p in model.parameters()) / 1000000.
+    unit = 1e6
+
+    num_params = sum(p.numel() for p in model.parameters()) / unit
     num_grad_params = sum(
-        p.numel() for p in model.parameters() if p.requires_grad) / 1000000
+        p.numel() for p in model.parameters() if p.requires_grad) / unit
     num_backbone_params = sum(p.numel()
-                              for p in model.backbone.parameters()) / 1000000
+                              for p in model.backbone.parameters()) / unit
     num_backbone_grad_params = sum(p.numel()
                                    for p in model.backbone.parameters()
-                                   if p.requires_grad) / 1000000.
+                                   if p.requires_grad) / unit
     print(
         'Number of backbone parameters: {:.5g} M'.format(num_backbone_params))
     print('Number of backbone parameters requiring grad: {:.5g} M'.format(
