@@ -7,7 +7,6 @@ Copy-paste from torch.nn.Transformer with modifications:
     * extra LN at the end of encoder is removed
     * decoder returns a stack of activations from all decoding layers
 """
-import copy
 import math
 from typing import Optional
 
@@ -15,7 +14,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from easycv.models.builder import TRANSFORMER
+from easycv.models.builder import NECKS
 from easycv.models.detection.utils import (MLP, TransformerEncoder,
                                            TransformerEncoderLayer,
                                            _get_activation_fn, _get_clones)
@@ -29,7 +28,7 @@ def inverse_sigmoid(x, eps=1e-3):
     return torch.log(x1 / x2)
 
 
-@TRANSFORMER.register_module
+@NECKS.register_module
 class DABDetrTransformer(nn.Module):
 
     def __init__(self,

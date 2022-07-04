@@ -7,7 +7,6 @@ Copy-paste from torch.nn.Transformer with modifications:
     * extra LN at the end of encoder is removed
     * decoder returns a stack of activations from all decoding layers
 """
-import copy
 import math
 from typing import Optional
 
@@ -15,13 +14,13 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from easycv.models.builder import TRANSFORMER
-from easycv.models.detection.utils import (MLP, TransformerEncoder,
+from easycv.models.builder import NECKS
+from easycv.models.detection.utils import (TransformerEncoder,
                                            TransformerEncoderLayer,
                                            _get_activation_fn, _get_clones)
 
 
-@TRANSFORMER.register_module
+@NECKS.register_module
 class DetrTransformer(nn.Module):
 
     def __init__(self,
