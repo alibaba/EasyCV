@@ -2,8 +2,7 @@
 from torch import nn
 
 from easycv.utils.registry import build_from_cfg
-from .registry import (BACKBONES, HEADS, LOSSES, MEMORIES, MODELS, NECKS,
-                       TRANSFORMER)
+from .registry import BACKBONES, HEADS, LOSSES, MEMORIES, MODELS, NECKS
 
 
 def build(cfg, registry, default_args=None):
@@ -38,7 +37,3 @@ def build_loss(cfg):
 
 def build_model(cfg):
     return build(cfg, MODELS)
-
-
-def build_transformer(cfg):
-    return build(cfg, TRANSFORMER)

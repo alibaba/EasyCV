@@ -1,4 +1,5 @@
 # Copyright (c) 2022 IDEA. All Rights Reserved.
+# Copyright (c) Alibaba, Inc. and its affiliates.
 import math
 
 import numpy as np
@@ -6,7 +7,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from easycv.models.builder import HEADS, build_transformer
+from easycv.models.builder import HEADS
+from easycv.models.detection.builder import build_detr_transformer
 from easycv.models.detection.utils import (MLP, HungarianMatcher, accuracy,
                                            box_cxcywh_to_xyxy,
                                            box_xyxy_to_cxcywh,
@@ -57,7 +59,7 @@ class DABDETRHead(nn.Module):
             weight_dict=weight_dict,
             losses=['labels', 'boxes', 'cardinality'])
         self.postprocess = PostProcess(num_select=num_select)
-        self.transformer = build_transformer(transformer)
+        self.transformer = build_detr_transformer(transformer)
 
         self.class_embed = nn.Linear(embed_dims, num_classes)
         if bbox_embed_diff_each_layer:

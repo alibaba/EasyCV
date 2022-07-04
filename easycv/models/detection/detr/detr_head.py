@@ -1,10 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Alibaba, Inc. and its affiliates.
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from easycv.models.builder import HEADS, build_transformer
+from easycv.models.builder import HEADS
+from easycv.models.detection.builder import build_detr_transformer
 from easycv.models.detection.utils import (MLP, HungarianMatcher, accuracy,
                                            box_cxcywh_to_xyxy,
                                            box_xyxy_to_cxcywh,
@@ -50,7 +52,7 @@ class DETRHead(nn.Module):
             eos_coef=eos_coef,
             losses=['labels', 'boxes', 'cardinality'])
         self.postprocess = PostProcess()
-        self.transformer = build_transformer(transformer)
+        self.transformer = build_detr_transformer(transformer)
 
         self.class_embed = nn.Linear(embed_dims, num_classes + 1)
         self.bbox_embed = MLP(embed_dims, embed_dims, 4, 3)

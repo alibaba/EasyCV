@@ -1,8 +1,7 @@
 # model settings
 model = dict(
     type='Detection',
-    pretrained=
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet50.pth',
+    pretrained=True,
     backbone=dict(
         type='ResNet',
         depth=50,
