@@ -15,7 +15,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from easycv.models.detection import DETRTRANSFORMER
+from easycv.models.builder import TRANSFORMER
 from easycv.models.detection.utils import (MLP, TransformerEncoder,
                                            TransformerEncoderLayer,
                                            _get_activation_fn, _get_clones)
@@ -29,7 +29,7 @@ def inverse_sigmoid(x, eps=1e-3):
     return torch.log(x1 / x2)
 
 
-@DETRTRANSFORMER.register_module
+@TRANSFORMER.register_module
 class DABDetrTransformer(nn.Module):
 
     def __init__(self,

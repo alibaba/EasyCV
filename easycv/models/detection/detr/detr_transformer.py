@@ -15,13 +15,13 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from easycv.models.detection import DETRTRANSFORMER
+from easycv.models.builder import TRANSFORMER
 from easycv.models.detection.utils import (MLP, TransformerEncoder,
                                            TransformerEncoderLayer,
                                            _get_activation_fn, _get_clones)
 
 
-@DETRTRANSFORMER.register_module
+@TRANSFORMER.register_module
 class DetrTransformer(nn.Module):
 
     def __init__(self,
