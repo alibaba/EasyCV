@@ -12,6 +12,7 @@ from .eval_hook import DistEvalHook, EvalHook
 from .export_hook import ExportHook
 from .extractor import Extractor
 from .lr_update_hook import StepFixCosineAnnealingLrUpdaterHook
+from .fps_hook import FPSHook
 from .optimizer_hook import OptimizerHook
 from .oss_sync_hook import OSSSyncHook
 from .registry import HOOKS
@@ -29,7 +30,7 @@ __all__ = [
     'DistEvalHook', 'EvalHook', 'ExportHook', 'Extractor', 'OptimizerHook',
     'OSSSyncHook', 'HOOKS', 'TIMEHook', 'SWAVHook', 'SyncNormHook',
     'SyncRandomSizeHook', 'TensorboardLoggerHookV2', 'WandbLoggerHookV2',
-    'YOLOXLrUpdaterHook', 'YOLOXModeSwitchHook',
+    'YOLOXLrUpdaterHook', 'YOLOXModeSwitchHook', 'FPSHook',
     'StepFixCosineAnnealingLrUpdaterHook'
 ]
 
