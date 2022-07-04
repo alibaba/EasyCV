@@ -2,7 +2,7 @@
 from torch import nn
 
 from easycv.utils.registry import build_from_cfg
-from .registry import BACKBONES, HEADS, LOSSES, MEMORIES, MODELS, NECKS
+from .registry import BACKBONES, HEADS, LOSSES, MODELS, NECKS
 
 
 def build(cfg, registry, default_args=None):
