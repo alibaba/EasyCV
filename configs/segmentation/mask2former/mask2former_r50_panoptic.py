@@ -80,6 +80,8 @@ model = dict(
         importance_sample_ratio=0.75,
     ),
     test_cfg=dict(
+        instance_on=True,
+        panoptic_on=True,
         max_per_image=100,
         filter_low_score=True,
     ),

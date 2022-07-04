@@ -5,12 +5,12 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
+from thirdparty.deformable_transformer.modules import MSDeformAttn
 from torch import nn
 from torch.cuda.amp import autocast
 from torch.nn import functional as F
 from torch.nn.init import constant_, normal_, uniform_, xavier_uniform_
 
-from .ops.modules import MSDeformAttn
 from .transformer_decoder import PositionEmbeddingSine, _get_activation_fn
 
 

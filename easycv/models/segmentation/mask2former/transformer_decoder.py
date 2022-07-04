@@ -513,8 +513,3 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             } for a, b in zip(outputs_class[:-1], outputs_seg_masks[:-1])]
         else:
             return [{'pred_masks': b} for b in outputs_seg_masks[:-1]]
-
-
-if __name__ == '__main__':
-    C = MultiScaleMaskedTransformerDecoder(256)
-    print(C)

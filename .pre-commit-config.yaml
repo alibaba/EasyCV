@@ -23,20 +23,20 @@ repos:
     rev: v3.1.0
     hooks:
       - id: trailing-whitespace
-        exclude: thirdparty/|easycv/models/segmentation/mask2former/ops/src/
+        exclude: thirdparty/
       - id: check-yaml
-        exclude: thirdparty/|easycv/models/segmentation/mask2former/ops/src/
+        exclude: thirdparty/
       - id: end-of-file-fixer
-        exclude: thirdparty/|.git_bin_url|.git_bin_path|easycv/models/segmentation/mask2former/ops/src/
+        exclude: thirdparty/|.git_bin_url|.git_bin_path
       - id: requirements-txt-fixer
-        exclude: thirdparty/|easycv/models/segmentation/mask2former/ops/src/
+        exclude: thirdparty/
       - id: double-quote-string-fixer
-        exclude: thirdparty/|easycv/models/segmentation/mask2former/ops/src/
+        exclude: thirdparty/
       - id: check-merge-conflict
-        exclude: thirdparty/|easycv/models/segmentation/mask2former/ops/src/
+        exclude: thirdparty/
       - id: fix-encoding-pragma
-        exclude: thirdparty/|easycv/models/segmentation/mask2former/ops/src/
+        exclude: thirdparty/
         args: ["--remove"]
       - id: mixed-line-ending
-        exclude: thirdparty/|easycv/models/segmentation/mask2former/ops/src/
+        exclude: thirdparty/
         args: ["--fix=lf"]

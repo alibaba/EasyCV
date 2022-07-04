@@ -35,6 +35,8 @@ class Mask2Former(BaseModel):
         super(Mask2Former, self).__init__()
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        self.instance_on = test_cfg.get('instance_on', False)
+        self.panoptic_on = test_cfg.get('panoptic_on', False)
         self.pretrained = pretrained
         self.backbone = builder.build_backbone(backbone)
         self.head = builder.build_head(head)
@@ -148,25 +150,27 @@ class Mask2Former(BaseModel):
                 align_corners=False)[:, 0]
 
             # instance_on
-            labels_per_image, bboxes, mask_pred_binary = self.instance_postprocess(
-                mask_cls_result, mask_pred_result)
-            segms = []
-            if mask_pred_binary is not None and labels_per_image.shape[0] > 0:
-                mask_pred_binary = [mask_pred_binary]
-                mask_pred_binary = encode_mask_results(mask_pred_binary)
-                segms = mmcv.concat_list(mask_pred_binary)
-                segms = np.stack(segms, axis=0)
-            scores = bboxes[:, 4] if bboxes.shape[1] == 5 else None
-            bboxes = bboxes[:, 0:4] if bboxes.shape[1] == 5 else bboxes
-            detection_boxes.append(bboxes)
-            detection_scores.append(scores)
-            detection_classes.append(labels_per_image)
-            detection_masks.append(segms)
+            if self.instance_on:
+                labels_per_image, bboxes, mask_pred_binary = self.instance_postprocess(
+                    mask_cls_result, mask_pred_result)
+                segms = []
+                if mask_pred_binary is not None and labels_per_image.shape[
+                        0] > 0:
+                    mask_pred_binary = [mask_pred_binary]
+                    mask_pred_binary = encode_mask_results(mask_pred_binary)
+                    segms = mmcv.concat_list(mask_pred_binary)
+                    segms = np.stack(segms, axis=0)
+                scores = bboxes[:, 4] if bboxes.shape[1] == 5 else None
+                bboxes = bboxes[:, 0:4] if bboxes.shape[1] == 5 else bboxes
+                detection_boxes.append(bboxes)
+                detection_scores.append(scores)
+                detection_classes.append(labels_per_image)
+                detection_masks.append(segms)
             # panoptic on
-            pan_results = self.panoptic_postprocess(mask_cls_result,
-                                                    mask_pred_result)
-            pan_masks.append(pan_results.cpu().numpy())
-            # outputs['pan_results'] = pan_masks
+            if self.panoptic_on:
+                pan_results = self.panoptic_postprocess(
+                    mask_cls_result, mask_pred_result)
+                pan_masks.append(pan_results.cpu().numpy())
         assert len(img_metas) == 1
         outputs = {
             'detection_boxes': detection_boxes,
