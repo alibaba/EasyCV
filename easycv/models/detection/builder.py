@@ -1,20 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from torch import nn
 
+from easycv.models.builder import build
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from easycv.utils.registry import Registry, build_from_cfg
+from easycv.models.registry import Registry
 
 DETRTRANSFORMER = Registry('detr_transformer')
-
-
-def build(cfg, registry, default_args=None):
-    if isinstance(cfg, list):
-        modules = [
-            build_from_cfg(cfg_, registry, default_args) for cfg_ in cfg
-        ]
-        return nn.Sequential(*modules)
-    else:
-        return build_from_cfg(cfg, registry, default_args)
 
 
 def build_detr_transformer(cfg):
