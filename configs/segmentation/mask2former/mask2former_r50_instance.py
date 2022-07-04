@@ -17,7 +17,7 @@ CLASSES = [
 ]
 
 model = dict(
-    type = "Mask2Former",
+    type='Mask2Former',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -27,18 +27,18 @@ model = dict(
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True),
     head=dict(
-        type="Mask2FormerHead",
+        type='Mask2FormerHead',
         pixel_decoder=dict(
-            input_stride=[4,8,16,32],
-            input_channel=[256,512,1024,2048],
+            input_stride=[4, 8, 16, 32],
+            input_channel=[256, 512, 1024, 2048],
             transformer_dropout=0.0,
             transformer_nheads=8,
             transformer_dim_feedforward=1024,
             transformer_enc_layers=6,
             conv_dim=256,
             mask_dim=256,
-            norm="GN",
-            transformer_in_features=[1,2,3],
+            norm='GN',
+            transformer_in_features=[1, 2, 3],
             common_stride=4,
         ),
         transformer_decoder=dict(
@@ -67,24 +67,16 @@ model = dict(
         oversample_ratio=3.0,
         importance_sample_ratio=0.75,
     ),
-    test_cfg=dict(
-        max_per_image=100,
-    ),
-    pretrained = "https://download.pytorch.org/models/resnet50-19c8e357.pth",
+    test_cfg=dict(max_per_image=100, ),
+    pretrained='https://download.pytorch.org/models/resnet50-19c8e357.pth',
 )
-#dataset settings
-data_root = "database/coco/"
+# dataset settings
+data_root = 'database/coco/'
 image_size = (1024, 1024)
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 pad_cfg = dict(img=(128, 128, 128), masks=0, seg=255)
 train_pipeline = [
-    # dict(type='LoadImageFromFile'),
-    # dict(
-    #     type='LoadPanopticAnnotations',
-    #     with_bbox=True,
-    #     with_mask=True,
-    #     with_seg=True),
     dict(type='MMRandomFlip', flip_ratio=0.5),
     dict(
         type='MMResize',
@@ -105,10 +97,9 @@ train_pipeline = [
     dict(
         type='Collect',
         keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks'],
-        meta_keys=('filename', 'ori_filename', 'ori_shape',
-                    'ori_img_shape', 'img_shape', 'pad_shape',
-                    'scale_factor', 'flip', 'flip_direction',
-                    'img_norm_cfg')),
+        meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
+                   'img_shape', 'pad_shape', 'scale_factor', 'flip',
+                   'flip_direction', 'img_norm_cfg')),
 ]
 
 test_pipeline = [
@@ -123,11 +114,13 @@ test_pipeline = [
             dict(type='MMPad', size_divisor=32, pad_val=pad_cfg),
             dict(type='MMNormalize', **img_norm_cfg),
             dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img'],
-            meta_keys=('filename', 'ori_filename', 'ori_shape',
-            'ori_img_shape', 'img_shape', 'pad_shape',
-            'scale_factor', 'flip', 'flip_direction',
-            'img_norm_cfg')),
+            dict(
+                type='Collect',
+                keys=['img'],
+                meta_keys=('filename', 'ori_filename', 'ori_shape',
+                           'ori_img_shape', 'img_shape', 'pad_shape',
+                           'scale_factor', 'flip', 'flip_direction',
+                           'img_norm_cfg')),
         ])
 ]
 
@@ -155,13 +148,11 @@ val_dataset = dict(
         type='DetSourceCoco',
         ann_file=data_root + 'annotations/instances_val2017.json',
         img_prefix=data_root + 'val2017/',
-        # seg_prefix=data_root + 'panoptic_val2017/',
         pipeline=[
             dict(type='LoadImageFromFile', to_float32=True),
             dict(type='LoadAnnotations', with_bbox=True, with_mask=True)
         ],
         classes=CLASSES,
-        # filter_empty_gt=True,
         test_mode=True,
         iscrowd=True,
     ),
@@ -169,7 +160,7 @@ val_dataset = dict(
 
 data = dict(
     imgs_per_gpu=2, workers_per_gpu=2, train=train_dataset, val=val_dataset)
-    
+
 embed_multi = dict(lr_mult=1.0, decay_mult=0.0)
 # optimizer
 optimizer = dict(
@@ -178,22 +169,13 @@ optimizer = dict(
     weight_decay=0.05,
     eps=1e-8,
     betas=(0.9, 0.999),
-    # paramwise_cfg=dict(
-    #     custom_keys={
-    #         'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-    #         'query_embed': embed_multi,
-    #         'query_feat': embed_multi,
-    #         'level_embed': embed_multi,
-    #     },
-    #     norm_decay_mult=0.0)
     paramwise_options={
-            'backbone': dict(lr_mult=0.1),
-            'query_embed': dict(weight_decay=0.),
-            'query_feat': dict(weight_decay=0.),
-            'level_embed': dict(weight_decay=0.),
-            'norm': dict(weight_decay=0.),
-    }
-        )
+        'backbone': dict(lr_mult=0.1),
+        'query_embed': dict(weight_decay=0.),
+        'query_feat': dict(weight_decay=0.),
+        'level_embed': dict(weight_decay=0.),
+        'norm': dict(weight_decay=0.),
+    })
 optimizer_config = dict(grad_clip=dict(max_norm=0.01, norm_type=2))
 total_epochs = 50
 
@@ -210,8 +192,7 @@ lr_config = dict(
 
 checkpoint_config = dict(interval=1)
 
-
-eval_config = dict(initial=False,interval=1, gpu_collect=False)
+eval_config = dict(initial=False, interval=1, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',
