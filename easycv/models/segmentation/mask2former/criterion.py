@@ -7,17 +7,15 @@ import logging
 from typing import List, Optional
 
 import torch
-import torch.nn.functional as F
-from torch import nn,Tensor
 import torch.distributed as dist
+import torch.nn.functional as F
 import torchvision
-
-
 from mmcv.runner import get_dist_info
-from .point_rend import (
-    get_uncertain_point_coords_with_randomness,
-    point_sample,
-)
+from torch import Tensor, nn
+
+from .point_rend import (get_uncertain_point_coords_with_randomness,
+                         point_sample)
+
 
 def _max_by_axis(the_list):
     # type: (List[List[int]]) -> List[int]
@@ -27,7 +25,9 @@ def _max_by_axis(the_list):
             maxes[index] = max(maxes[index], item)
     return maxes
 
+
 class NestedTensor(object):
+
     def __init__(self, tensors, mask: Optional[Tensor]):
         self.tensors = tensors
         self.mask = mask
@@ -68,22 +68,23 @@ def nested_tensor_from_tensor_list(tensor_list: List[Tensor]):
         tensor = torch.zeros(batch_shape, dtype=dtype, device=device)
         mask = torch.ones((b, h, w), dtype=torch.bool, device=device)
         for img, pad_img, m in zip(tensor_list, tensor, mask):
-            pad_img[: img.shape[0], : img.shape[1], : img.shape[2]].copy_(img)
-            m[: img.shape[1], : img.shape[2]] = False
+            pad_img[:img.shape[0], :img.shape[1], :img.shape[2]].copy_(img)
+            m[:img.shape[1], :img.shape[2]] = False
     else:
-        raise ValueError("not supported")
+        raise ValueError('not supported')
     return NestedTensor(tensor, mask)
 
 
 # _onnx_nested_tensor_from_tensor_list() is an implementation of
 # nested_tensor_from_tensor_list() that is supported by ONNX tracing.
 @torch.jit.unused
-def _onnx_nested_tensor_from_tensor_list(tensor_list: List[Tensor]) -> NestedTensor:
+def _onnx_nested_tensor_from_tensor_list(
+        tensor_list: List[Tensor]) -> NestedTensor:
     max_size = []
     for i in range(tensor_list[0].dim()):
         max_size_i = torch.max(
-            torch.stack([img.shape[i] for img in tensor_list]).to(torch.float32)
-        ).to(torch.int64)
+            torch.stack([img.shape[i] for img in tensor_list
+                         ]).to(torch.float32)).to(torch.int64)
         max_size.append(max_size_i)
     max_size = tuple(max_size)
 
@@ -95,24 +96,27 @@ def _onnx_nested_tensor_from_tensor_list(tensor_list: List[Tensor]) -> NestedTen
     padded_masks = []
     for img in tensor_list:
         padding = [(s1 - s2) for s1, s2 in zip(max_size, tuple(img.shape))]
-        padded_img = torch.nn.functional.pad(img, (0, padding[2], 0, padding[1], 0, padding[0]))
+        padded_img = torch.nn.functional.pad(
+            img, (0, padding[2], 0, padding[1], 0, padding[0]))
         padded_imgs.append(padded_img)
 
         m = torch.zeros_like(img[0], dtype=torch.int, device=img.device)
-        padded_mask = torch.nn.functional.pad(m, (0, padding[2], 0, padding[1]), "constant", 1)
+        padded_mask = torch.nn.functional.pad(m,
+                                              (0, padding[2], 0, padding[1]),
+                                              'constant', 1)
         padded_masks.append(padded_mask.to(torch.bool))
 
     tensor = torch.stack(padded_imgs)
     mask = torch.stack(padded_masks)
 
     return NestedTensor(tensor, mask=mask)
-    
+
 
 def dice_loss(
-        inputs: torch.Tensor,
-        targets: torch.Tensor,
-        num_masks: float,
-    ):
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    num_masks: float,
+):
     """
     Compute the DICE loss, similar to generalized IOU for masks
     Args:
@@ -130,16 +134,14 @@ def dice_loss(
     return loss.sum() / num_masks
 
 
-dice_loss_jit = torch.jit.script(
-    dice_loss
-)  # type: torch.jit.ScriptModule
+dice_loss_jit = torch.jit.script(dice_loss)  # type: torch.jit.ScriptModule
 
 
 def sigmoid_ce_loss(
-        inputs: torch.Tensor,
-        targets: torch.Tensor,
-        num_masks: float,
-    ):
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    num_masks: float,
+):
     """
     Args:
         inputs: A float tensor of arbitrary shape.
@@ -150,14 +152,14 @@ def sigmoid_ce_loss(
     Returns:
         Loss tensor
     """
-    loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
+    loss = F.binary_cross_entropy_with_logits(
+        inputs, targets, reduction='none')
 
     return loss.mean(1).sum() / num_masks
 
 
 sigmoid_ce_loss_jit = torch.jit.script(
-    sigmoid_ce_loss
-)  # type: torch.jit.ScriptModule
+    sigmoid_ce_loss)  # type: torch.jit.ScriptModule
 
 
 def calculate_uncertainty(logits):
@@ -202,7 +204,7 @@ class SetCriterion(nn.Module):
         self.losses = losses
         empty_weight = torch.ones(self.num_classes + 1)
         empty_weight[-1] = self.eos_coef
-        self.register_buffer("empty_weight", empty_weight)
+        self.register_buffer('empty_weight', empty_weight)
 
         # pointwise mask loss parameters
         self.num_points = num_points
@@ -213,30 +215,34 @@ class SetCriterion(nn.Module):
         """Classification loss (NLL)
         targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
         """
-        assert "pred_logits" in outputs
-        src_logits = outputs["pred_logits"].float()
+        assert 'pred_logits' in outputs
+        src_logits = outputs['pred_logits'].float()
 
         idx = self._get_src_permutation_idx(indices)
-        target_classes_o = torch.cat([t["labels"][J] for t, (_, J) in zip(targets, indices)])
+        target_classes_o = torch.cat(
+            [t['labels'][J] for t, (_, J) in zip(targets, indices)])
         target_classes = torch.full(
-            src_logits.shape[:2], self.num_classes, dtype=torch.int64, device=src_logits.device
-        )
+            src_logits.shape[:2],
+            self.num_classes,
+            dtype=torch.int64,
+            device=src_logits.device)
         target_classes[idx] = target_classes_o
-        loss_ce = F.cross_entropy(src_logits.transpose(1, 2), target_classes, self.empty_weight)
-        losses = {"loss_ce": loss_ce}
+        loss_ce = F.cross_entropy(
+            src_logits.transpose(1, 2), target_classes, self.empty_weight)
+        losses = {'loss_ce': loss_ce}
         return losses
-    
+
     def loss_masks(self, outputs, targets, indices, num_masks):
         """Compute the losses related to the masks: the focal loss and the dice loss.
         targets dicts must contain the key "masks" containing a tensor of dim [nb_target_boxes, h, w]
         """
-        assert "pred_masks" in outputs
+        assert 'pred_masks' in outputs
 
         src_idx = self._get_src_permutation_idx(indices)
         tgt_idx = self._get_tgt_permutation_idx(indices)
-        src_masks = outputs["pred_masks"]
+        src_masks = outputs['pred_masks']
         src_masks = src_masks[src_idx]
-        masks = [t["masks"] for t in targets]
+        masks = [t['masks'] for t in targets]
         # TODO use valid to mask invalid areas due to padding in loss
         target_masks, valid = nested_tensor_from_tensor_list(masks).decompose()
         target_masks = target_masks.to(src_masks)
@@ -269,8 +275,9 @@ class SetCriterion(nn.Module):
             align_corners=False,
         ).squeeze(1)
         losses = {
-            "loss_mask": sigmoid_ce_loss_jit(point_logits, point_labels, num_masks),
-            "loss_dice": dice_loss_jit(point_logits, point_labels, num_masks),
+            'loss_mask': sigmoid_ce_loss_jit(point_logits, point_labels,
+                                             num_masks),
+            'loss_dice': dice_loss_jit(point_logits, point_labels, num_masks),
         }
 
         del src_masks
@@ -279,13 +286,15 @@ class SetCriterion(nn.Module):
 
     def _get_src_permutation_idx(self, indices):
         # permute predictions following indices
-        batch_idx = torch.cat([torch.full_like(src, i) for i, (src, _) in enumerate(indices)])
+        batch_idx = torch.cat(
+            [torch.full_like(src, i) for i, (src, _) in enumerate(indices)])
         src_idx = torch.cat([src for (src, _) in indices])
         return batch_idx, src_idx
 
     def _get_tgt_permutation_idx(self, indices):
         # permute targets following indices
-        batch_idx = torch.cat([torch.full_like(tgt, i) for i, (_, tgt) in enumerate(indices)])
+        batch_idx = torch.cat(
+            [torch.full_like(tgt, i) for i, (_, tgt) in enumerate(indices)])
         tgt_idx = torch.cat([tgt for (_, tgt) in indices])
         return batch_idx, tgt_idx
 
@@ -294,7 +303,7 @@ class SetCriterion(nn.Module):
             'labels': self.loss_labels,
             'masks': self.loss_masks,
         }
-        assert loss in loss_map, f"do you really want to compute {loss} loss?"
+        assert loss in loss_map, f'do you really want to compute {loss} loss?'
         return loss_map[loss](outputs, targets, indices, num_masks)
 
     def forward(self, outputs, targets):
@@ -304,16 +313,19 @@ class SetCriterion(nn.Module):
              targets: list of dicts, such that len(targets) == batch_size.
                       The expected keys in each dict depends on the losses applied, see each loss' doc
         """
-        outputs_without_aux = {k: v for k, v in outputs.items() if k != "aux_outputs"}
+        outputs_without_aux = {
+            k: v
+            for k, v in outputs.items() if k != 'aux_outputs'
+        }
 
         # Retrieve the matching between the outputs of the last layer and the targets
         indices = self.matcher(outputs_without_aux, targets)
 
         # Compute the average number of target boxes accross all nodes, for normalization purposes
-        num_masks = sum(len(t["labels"]) for t in targets)
-        num_masks = torch.as_tensor(
-            [num_masks], dtype=torch.float, device=next(iter(outputs.values())).device
-        )
+        num_masks = sum(len(t['labels']) for t in targets)
+        num_masks = torch.as_tensor([num_masks],
+                                    dtype=torch.float,
+                                    device=next(iter(outputs.values())).device)
         if dist.is_available() and dist.is_initialized():
             torch.distributed.all_reduce(num_masks)
         rank, world_size = get_dist_info()
@@ -322,31 +334,33 @@ class SetCriterion(nn.Module):
         # Compute all the requested losses
         losses = {}
         for loss in self.losses:
-            losses.update(self.get_loss(loss, outputs, targets, indices, num_masks))
+            losses.update(
+                self.get_loss(loss, outputs, targets, indices, num_masks))
 
         # In case of auxiliary losses, we repeat this process with the output of each intermediate layer.
-        if "aux_outputs" in outputs:
-            for i, aux_outputs in enumerate(outputs["aux_outputs"]):
+        if 'aux_outputs' in outputs:
+            for i, aux_outputs in enumerate(outputs['aux_outputs']):
                 indices = self.matcher(aux_outputs, targets)
                 for loss in self.losses:
-                    l_dict = self.get_loss(loss, aux_outputs, targets, indices, num_masks)
-                    l_dict = {k + f"_{i}": v for k, v in l_dict.items()}
+                    l_dict = self.get_loss(loss, aux_outputs, targets, indices,
+                                           num_masks)
+                    l_dict = {k + f'_{i}': v for k, v in l_dict.items()}
                     losses.update(l_dict)
 
         return losses
 
     def __repr__(self):
-        head = "Criterion " + self.__class__.__name__
+        head = 'Criterion ' + self.__class__.__name__
         body = [
-            "matcher: {}".format(self.matcher.__repr__(_repr_indent=8)),
-            "losses: {}".format(self.losses),
-            "weight_dict: {}".format(self.weight_dict),
-            "num_classes: {}".format(self.num_classes),
-            "eos_coef: {}".format(self.eos_coef),
-            "num_points: {}".format(self.num_points),
-            "oversample_ratio: {}".format(self.oversample_ratio),
-            "importance_sample_ratio: {}".format(self.importance_sample_ratio),
+            'matcher: {}'.format(self.matcher.__repr__(_repr_indent=8)),
+            'losses: {}'.format(self.losses),
+            'weight_dict: {}'.format(self.weight_dict),
+            'num_classes: {}'.format(self.num_classes),
+            'eos_coef: {}'.format(self.eos_coef),
+            'num_points: {}'.format(self.num_points),
+            'oversample_ratio: {}'.format(self.oversample_ratio),
+            'importance_sample_ratio: {}'.format(self.importance_sample_ratio),
         ]
         _repr_indent = 4
-        lines = [head] + [" " * _repr_indent + line for line in body]
-        return "\n".join(lines)
+        lines = [head] + [' ' * _repr_indent + line for line in body]
+        return '\n'.join(lines)

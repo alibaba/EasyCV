@@ -1,6 +1,8 @@
 from functools import partial
-from six.moves import map, zip
+
 import torch
+from six.moves import map, zip
+
 
 def multi_apply(func, *args, **kwargs):
     """Apply function to a list of arguments.

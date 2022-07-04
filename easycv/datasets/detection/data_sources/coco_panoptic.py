@@ -1,12 +1,15 @@
-#debug
-import sys
-sys.path.append('/home/yanhaiqiang.yhq/code/segmentation/EasyCV/')
 import os
-import numpy as np
 from collections import defaultdict
 
-from pycocotools.coco import COCO
 import mmcv
+import numpy as np
+from pycocotools.coco import COCO
+
+from easycv.datasets.detection.data_sources import DetSourceCoco
+from easycv.datasets.registry import DATASOURCES, PIPELINES
+from easycv.datasets.shared.pipelines import Compose
+from easycv.utils.registry import build_from_cfg
+
 # from xtcocotools.coco import COCO
 try:
     import panopticapi
@@ -17,12 +20,8 @@ except ImportError:
     id2rgb = None
     VOID = None
 
-from easycv.datasets.detection.data_sources import DetSourceCoco
-from easycv.datasets.registry import DATASOURCES, PIPELINES
-from easycv.datasets.shared.pipelines import Compose
-from easycv.utils.registry import build_from_cfg
-
 INSTANCE_OFFSET = 1000
+
 
 class COCOPanoptic(COCO):
     """This wrapper is for loading the panoptic style annotation file.
@@ -108,7 +107,7 @@ class COCOPanoptic(COCO):
         elif type(ids) == int:
             return self.anns[ids]
 
-    
+
 @DATASOURCES.register_module
 class DetSourceCocoPanoptic(DetSourceCoco):
     """
@@ -126,13 +125,14 @@ class DetSourceCocoPanoptic(DetSourceCoco):
                  thing_classes=None,
                  stuff_classes=None,
                  iscrowd=False):
-        super().__init__(ann_file,
-                         img_prefix,
-                         pipeline,
-                         test_mode=test_mode,
-                         filter_empty_gt=filter_empty_gt,
-                         classes=thing_classes,
-                         iscrowd=iscrowd)
+        super().__init__(
+            ann_file,
+            img_prefix,
+            pipeline,
+            test_mode=test_mode,
+            filter_empty_gt=filter_empty_gt,
+            classes=thing_classes,
+            iscrowd=iscrowd)
         self.pan_ann_file = pan_ann_file
         self.seg_prefix = seg_prefix
         self.thing_classes = thing_classes
@@ -165,7 +165,10 @@ class DetSourceCocoPanoptic(DetSourceCoco):
         """
         self.coco_pan = COCOPanoptic(ann_file)
         self.cat_ids_pan = self.coco_pan.getCatIds()
-        self.cat2label_pan = {cat_id: i for i, cat_id in enumerate(self.cat_ids_pan)}
+        self.cat2label_pan = {
+            cat_id: i
+            for i, cat_id in enumerate(self.cat_ids_pan)
+        }
         self.categories_pan = self.coco_pan.cats
         self.img_ids_pan = self.coco_pan.getImgIds()
         data_infos = []
@@ -259,7 +262,8 @@ class DetSourceCocoPanoptic(DetSourceCoco):
         for lists in self.coco_pan.anns.values():
             for item in lists:
                 category_id = item['category_id']
-                is_thing = self.coco_pan.loadCats(ids=category_id)[0]['isthing']
+                is_thing = self.coco_pan.loadCats(
+                    ids=category_id)[0]['isthing']
                 if not is_thing:
                     continue
                 ids_with_ann.append(item['image_id'])
@@ -284,7 +288,7 @@ class DetSourceCocoPanoptic(DetSourceCoco):
         results['bbox_fields'] = []
         results['mask_fields'] = []
         results['seg_fields'] = []
-        
+
     def prepare_train_img(self, idx):
         """Get training data and annotations after pipeline.
 
@@ -301,7 +305,7 @@ class DetSourceCocoPanoptic(DetSourceCoco):
         results = dict(img_info=img_info, ann_info=ann_info)
         self.pre_pipeline(results)
         return self.pipeline(results)
-    
+
     def _set_group_flag_pan(self):
         """Set flag according to image aspect ratio.
 
@@ -316,9 +320,8 @@ class DetSourceCocoPanoptic(DetSourceCoco):
 
     def _pan2json(self, results, outfile_prefix):
         """Convert panoptic results to COCO panoptic json style."""
-        ##将标签转化为类别
         label2cat = dict((v, k) for (k, v) in self.cat2label_pan.items())
-        
+
         pred_annotations = []
         outdir = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
         for idx in range(len(self)):
@@ -331,7 +334,7 @@ class DetSourceCocoPanoptic(DetSourceCoco):
             for pan_label in pan_labels:
                 sem_label = pan_label % INSTANCE_OFFSET
                 # We reserve the length of self.CLASSES for VOID label
-                if sem_label == len(self.thing_classes+self.stuff_classes):
+                if sem_label == len(self.thing_classes + self.stuff_classes):
                     continue
                 # convert sem_label to json label
                 cat_id = label2cat[sem_label]
@@ -345,7 +348,8 @@ class DetSourceCocoPanoptic(DetSourceCoco):
                     'area': int(area)
                 })
             # evaluation script uses 0 for VOID label.
-            pan[pan % INSTANCE_OFFSET == len(self.thing_classes+self.stuff_classes)] = VOID
+            pan[pan % INSTANCE_OFFSET == len(self.thing_classes +
+                                             self.stuff_classes)] = VOID
             pan = id2rgb(pan).astype(np.uint8)
             mmcv.imwrite(pan[:, :, ::-1], os.path.join(outdir, segm_file))
             record = {
@@ -408,9 +412,9 @@ class DetSourceCocoPanoptic(DetSourceCoco):
         #     mmcv.dump(segm_json_results, result_files['segm'])
 
         return result_files
-    
+
     def get_gt_json(self, result_files, outfile_prefix):
-        
+
         imgs = self.coco_pan.imgs
         gt_json = self.coco_pan.imgToAnns
         gt_json = [{
@@ -421,8 +425,8 @@ class DetSourceCocoPanoptic(DetSourceCoco):
         pred_json = mmcv.load(result_files['panoptic'])
         pred_json = dict(
             (el['image_id'], el) for el in pred_json['annotations'])
-        
+
         gt_folder = self.seg_prefix
         pred_folder = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
         categories = self.categories_pan
-        return gt_json,gt_folder,pred_json,pred_folder,categories
+        return gt_json, gt_folder, pred_json, pred_folder, categories

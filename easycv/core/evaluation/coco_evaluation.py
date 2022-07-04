@@ -15,17 +15,26 @@
 """Class for evaluating object detections with COCO metrics."""
 from __future__ import print_function
 import json
+import multiprocessing
 import os
 import tempfile
-import multiprocessing
 from collections import OrderedDict, defaultdict
 
+import mmcv
 import numpy as np
 import six
 import torch
 from xtcocotools.coco import COCO
 from xtcocotools.cocoeval import COCOeval
-import mmcv
+
+from easycv.core import standard_fields
+from easycv.core.evaluation import coco_tools
+from easycv.core.post_processing.nms import oks_nms, soft_oks_nms
+from easycv.core.standard_fields import DetectionResultFields, InputDataFields
+from easycv.utils.json_utils import MyEncoder
+from .base_evaluator import Evaluator
+from .builder import EVALUATORS
+from .metric_registry import METRICS
 
 try:
     from panopticapi.evaluation import OFFSET, VOID, PQStat
@@ -35,15 +44,6 @@ except ImportError:
     rgb2id = None
     VOID = 0
     OFFSET = 256 * 256 * 256
-    
-from easycv.core import standard_fields
-from easycv.core.evaluation import coco_tools
-from easycv.core.post_processing.nms import oks_nms, soft_oks_nms
-from easycv.core.standard_fields import DetectionResultFields, InputDataFields
-from easycv.utils.json_utils import MyEncoder
-from .base_evaluator import Evaluator
-from .builder import EVALUATORS
-from .metric_registry import METRICS
 
 
 @EVALUATORS.register_module
@@ -860,17 +860,32 @@ class CoCoPoseTopDownEvaluator(Evaluator):
 
         return info_str
 
+
 @EVALUATORS.register_module
 class CocoPanopticEvaluator(Evaluator):
     """Class to evaluate COCO panoptic metrics.
     """
-    def __init__(self, dataset_name=None, metric_names=['PQ'], classes=None, file_client_args=dict(backend='disk'), **kwargs):
+
+    def __init__(self,
+                 dataset_name=None,
+                 metric_names=['PQ'],
+                 classes=None,
+                 file_client_args=dict(backend='disk'),
+                 **kwargs):
         super().__init__(dataset_name, metric_names)
         self.CLASSES = classes
         self.file_client = mmcv.FileClient(**file_client_args)
-        
-    def evaluate(self, gt_json, gt_folder, pred_json, pred_folder,categories, nproc=32, classwise=False, **kwargs):
-        
+
+    def evaluate(self,
+                 gt_json,
+                 gt_folder,
+                 pred_json,
+                 pred_folder,
+                 categories,
+                 nproc=32,
+                 classwise=False,
+                 **kwargs):
+
         # match the gt_anns and pred_anns in the same image
         matched_annotations_list = []
         for gt_ann in gt_json:
@@ -888,7 +903,7 @@ class CocoPanopticEvaluator(Evaluator):
             categories,
             self.file_client,
             nproc=nproc)
-        
+
         metrics = [('All', None), ('Things', True), ('Stuff', False)]
         pq_results = {}
 
@@ -905,8 +920,8 @@ class CocoPanopticEvaluator(Evaluator):
             }
         results = self.parse_pq_results(pq_results)
         return results
-        
-    def parse_pq_results(self,pq_results):
+
+    def parse_pq_results(self, pq_results):
         """Parse the Panoptic Quality results."""
         result = dict()
         result['PQ'] = 100 * pq_results['All']['pq']
@@ -919,8 +934,10 @@ class CocoPanopticEvaluator(Evaluator):
         result['SQ_st'] = 100 * pq_results['Stuff']['sq']
         result['RQ_st'] = 100 * pq_results['Stuff']['rq']
         return result
+
     def _evaluate_impl(self, predictions, labels, **kwargs):
         pass
+
 
 def pq_compute_single_core(proc_id,
                            annotation_set,

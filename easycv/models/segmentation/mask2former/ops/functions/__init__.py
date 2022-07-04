@@ -10,4 +10,3 @@
 # Modified by Bowen Cheng from https://github.com/fundamentalvision/Deformable-DETR
 
 from .ms_deform_attn_func import MSDeformAttnFunction
-

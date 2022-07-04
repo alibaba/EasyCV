@@ -3,20 +3,22 @@ import copy
 import logging
 import math
 import os.path as osp
+import warnings
 
 import cv2
 import mmcv
 import numpy as np
 from numpy import random
 from torchvision.transforms import functional as F
+
+from easycv.datasets.registry import PIPELINES
+from easycv.datasets.shared.pipelines.transforms import Compose
+
 try:
     from panopticapi.utils import rgb2id
     from easycv.utils.mmlab_utils import BitmapMasks, PolygonMasks
 except ImportError:
     rgb2id = None
-
-from easycv.datasets.registry import PIPELINES
-from easycv.datasets.shared.pipelines.transforms import Compose
 
 
 @PIPELINES.register_module()
@@ -2049,7 +2051,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
             dict: The dict contains loaded mask and semantic segmentation
                 annotations. `BitmapMasks` is used for mask annotations.
         """
-        
+
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
 
@@ -2102,7 +2104,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
             results = self._load_masks_and_semantic_segs(results)
 
         return results
-        
+
 
 @PIPELINES.register_module()
 class MMMultiScaleFlipAug:

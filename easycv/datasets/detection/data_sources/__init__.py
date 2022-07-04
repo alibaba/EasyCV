@@ -5,4 +5,7 @@ from .pai_format import DetSourcePAI
 from .raw import DetSourceRaw
 from .voc import DetSourceVOC
 
-__all__ = ['DetSourceCoco', 'DetSourceCocoPanoptic', 'DetSourcePAI', 'DetSourceRaw', 'DetSourceVOC']
+__all__ = [
+    'DetSourceCoco', 'DetSourceCocoPanoptic', 'DetSourcePAI', 'DetSourceRaw',
+    'DetSourceVOC'
+]

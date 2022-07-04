@@ -7,6 +7,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
+
+from easycv.models.registry import BACKBONES, HEADS, MODELS, NECKS
+from .test_util import run_in_subprocess
+
 try:
     from mmdet.models.builder import MODELS as MMMODELS
     from mmdet.models.builder import BACKBONES as MMBACKBONES
@@ -18,9 +22,6 @@ try:
     HOOKS._module_dict.pop('YOLOXLrUpdaterHook', None)
 except:
     pass
-
-from easycv.models.registry import BACKBONES, HEADS, MODELS, NECKS
-from .test_util import run_in_subprocess
 
 EASYCV_REGISTRY_MAP = {
     'model': MODELS,

@@ -1,23 +1,25 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import mmcv
+import numpy as np
 import torch
 import torch.nn.functional as F
 
-import mmcv
-import numpy as np
 from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
-from easycv.utils.logger import get_root_logger, print_log
 from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger, print_log
+from .criterion import SetCriterion
+from .matcher import HungarianMatcher
+from .panoptic_gt_processing import multi_apply, preprocess_panoptic_gt
+
 try:
     from easycv.utils.mmlab_utils import mask2bbox, encode_mask_results
 except ImportError:
     pass
-from .matcher import HungarianMatcher
-from .criterion import SetCriterion
-from .panoptic_gt_processing import multi_apply, preprocess_panoptic_gt
 
 INSTANCE_OFFSET = 1000
+
 
 @MODELS.register_module()
 class Mask2Former(BaseModel):
@@ -29,7 +31,7 @@ class Mask2Former(BaseModel):
         train_cfg=None,
         test_cfg=None,
         pretrained=None,
-        ):
+    ):
         super(Mask2Former, self).__init__()
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -37,7 +39,7 @@ class Mask2Former(BaseModel):
         self.backbone = builder.build_backbone(backbone)
         self.head = builder.build_head(head)
         # building criterion
-        self.num_classes = head.num_things_classes+head.num_stuff_classes
+        self.num_classes = head.num_things_classes + head.num_stuff_classes
         self.num_things_classes = head.num_things_classes
         self.num_stuff_classes = head.num_stuff_classes
 
@@ -47,16 +49,22 @@ class Mask2Former(BaseModel):
             cost_dice=train_cfg.dice_weight,
             num_points=train_cfg.num_points,
         )
-        weight_dict = {"loss_ce": train_cfg.class_weight, "loss_mask": train_cfg.mask_weight, "loss_dice": train_cfg.dice_weight}
+        weight_dict = {
+            'loss_ce': train_cfg.class_weight,
+            'loss_mask': train_cfg.mask_weight,
+            'loss_dice': train_cfg.dice_weight
+        }
 
         if train_cfg.deep_supervision:
             dec_layers = train_cfg.dec_layers
             aux_weight_dict = {}
             for i in range(dec_layers - 1):
-                aux_weight_dict.update({k + f"_{i}": v for k, v in weight_dict.items()})
+                aux_weight_dict.update(
+                    {k + f'_{i}': v
+                     for k, v in weight_dict.items()})
             weight_dict.update(aux_weight_dict)
 
-        losses = ["labels", "masks"]
+        losses = ['labels', 'masks']
         self.criterion = SetCriterion(
             self.head.num_classes,
             matcher=matcher,
@@ -95,10 +103,12 @@ class Mask2Former(BaseModel):
             print_log('load model from init weights')
             self.backbone.init_weights()
 
-    def forward_train(self, img, gt_labels,gt_masks,gt_semantic_seg,img_metas):
+    def forward_train(self, img, gt_labels, gt_masks, gt_semantic_seg,
+                      img_metas):
         features = self.backbone(img)
         outputs = self.head(features)
-        targets = self.preprocess_gt(gt_labels,gt_masks,gt_semantic_seg,img_metas)
+        targets = self.preprocess_gt(gt_labels, gt_masks, gt_semantic_seg,
+                                     img_metas)
         losses = self.criterion(outputs, targets)
         for k in list(losses.keys()):
             if k in self.criterion.weight_dict:
@@ -108,7 +118,7 @@ class Mask2Former(BaseModel):
                 losses.pop(k)
         return losses
 
-    def forward_test(self, img,img_metas,rescale=True):
+    def forward_test(self, img, img_metas, rescale=True):
         features = self.backbone(img[0])
         outputs = self.head(features)
         mask_cls_results = outputs['pred_logits']
@@ -127,7 +137,7 @@ class Mask2Former(BaseModel):
                 size=(pad_height, pad_width),
                 mode='bilinear',
                 align_corners=False)[:, 0]
-            #remove padding
+            # remove padding
             img_height, img_width = meta['img_shape'][:2]
             mask_pred_result = mask_pred_result[:, :img_height, :img_width]
             ori_height, ori_width = meta['ori_shape'][:2]
@@ -137,7 +147,7 @@ class Mask2Former(BaseModel):
                 mode='bilinear',
                 align_corners=False)[:, 0]
 
-            #instance_on
+            # instance_on
             labels_per_image, bboxes, mask_pred_binary = self.instance_postprocess(
                 mask_cls_result, mask_pred_result)
             segms = []
@@ -152,8 +162,9 @@ class Mask2Former(BaseModel):
             detection_scores.append(scores)
             detection_classes.append(labels_per_image)
             detection_masks.append(segms)
-            #panoptic on
-            pan_results = self.panoptic_postprocess(mask_cls_result, mask_pred_result)
+            # panoptic on
+            pan_results = self.panoptic_postprocess(mask_cls_result,
+                                                    mask_pred_result)
             pan_masks.append(pan_results.cpu().numpy())
             # outputs['pan_results'] = pan_masks
         assert len(img_metas) == 1
@@ -167,15 +178,23 @@ class Mask2Former(BaseModel):
         outputs['pan_results'] = pan_masks
         return outputs
 
-    def forward(self, img, mode='train', gt_labels=None,gt_masks=None,gt_semantic_seg=None,img_metas=None,**kwargs):
+    def forward(self,
+                img,
+                mode='train',
+                gt_labels=None,
+                gt_masks=None,
+                gt_semantic_seg=None,
+                img_metas=None,
+                **kwargs):
 
         if mode == 'train':
-            return self.forward_train(img, gt_labels,gt_masks,gt_semantic_seg,img_metas)
+            return self.forward_train(img, gt_labels, gt_masks,
+                                      gt_semantic_seg, img_metas)
         elif mode == 'test':
-            return self.forward_test(img,img_metas)
+            return self.forward_test(img, img_metas)
         else:
             raise Exception('No such mode: {}'.format(mode))
-        
+
     def instance_postprocess(self, mask_cls, mask_pred):
         """Instance segmengation postprocess.
 
@@ -229,7 +248,7 @@ class Mask2Former(BaseModel):
         bboxes = bboxes.cpu().numpy()
         mask_pred_binary = mask_pred_binary.cpu().numpy()
         return labels_per_image, bboxes, mask_pred_binary
-        
+
     def panoptic_postprocess(self, mask_cls, mask_pred):
         """Panoptic segmengation inference.
 
@@ -294,8 +313,9 @@ class Mask2Former(BaseModel):
                         instance_id += 1
 
         return panoptic_seg
-    
-    def preprocess_gt(self,gt_labels_list, gt_masks_list, gt_semantic_segs,img_metas):
+
+    def preprocess_gt(self, gt_labels_list, gt_masks_list, gt_semantic_segs,
+                      img_metas):
         """Preprocess the ground truth for all images.
 
         Args:
@@ -324,17 +344,15 @@ class Mask2Former(BaseModel):
         num_stuff_list = [self.num_stuff_classes] * len(gt_labels_list)
         if gt_semantic_segs is None:
             gt_semantic_segs = [None] * len(gt_labels_list)
-            
+
         targets = multi_apply(preprocess_panoptic_gt, gt_labels_list,
-                                gt_masks_list, gt_semantic_segs, num_things_list,
-                                num_stuff_list,img_metas)
+                              gt_masks_list, gt_semantic_segs, num_things_list,
+                              num_stuff_list, img_metas)
         labels, masks = targets
         new_targets = []
-        for label,mask in zip(labels, masks):
-            new_targets.append(
-                {
-                    "labels": label,
-                    "masks": mask,
-                }
-            )
+        for label, mask in zip(labels, masks):
+            new_targets.append({
+                'labels': label,
+                'masks': mask,
+            })
         return new_targets

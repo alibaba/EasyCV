@@ -211,7 +211,7 @@ def multi_gpu_test(model,
 
         if rank == 0:
             if 'img_metas' in data:
-                if isinstance(data['img_metas'],list):
+                if isinstance(data['img_metas'], list):
                     batch_size = len(data['img_metas'][0].data[0])
                 else:
                     batch_size = len(data['img_metas'].data[0])
