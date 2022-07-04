@@ -15,7 +15,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from easycv.models.builder import DETRTRANSFORMER
+from easycv.models.detection import DETRTRANSFORMER
 from easycv.models.detection.utils import (MLP, TransformerEncoder,
                                            TransformerEncoderLayer,
                                            _get_activation_fn, _get_clones)

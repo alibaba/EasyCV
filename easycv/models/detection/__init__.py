@@ -2,6 +2,7 @@
 import logging
 
 from .dab_detr import DABDETRHead, DABDetrTransformer
+from .det_builder import DETRTRANSFORMER, build_detr_transformer
 from .detection import Detection
 from .detr import DETRHead, DetrTransformer
 from .vitdet import SFP
