@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
 import mmcv
@@ -10,13 +9,13 @@ from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
 from easycv.utils.logger import get_root_logger, print_log
 from easycv.utils.checkpoint import load_checkpoint
-from mmcv.runner.hooks import HOOKS
-HOOKS._module_dict.pop('YOLOXLrUpdaterHook', None)
-from mmdet.core.mask import mask2bbox
-from mmdet.core import encode_mask_results
+try:
+    from easycv.utils.mmlab_utils import mask2bbox, encode_mask_results
+except ImportError:
+    pass
 from .matcher import HungarianMatcher
 from .criterion import SetCriterion
-from .panoptic_gt_processing import multi_apply,preprocess_panoptic_gt
+from .panoptic_gt_processing import multi_apply, preprocess_panoptic_gt
 
 INSTANCE_OFFSET = 1000
 

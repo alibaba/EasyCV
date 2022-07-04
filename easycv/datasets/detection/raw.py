@@ -5,7 +5,7 @@ from easycv.core.visualization.image import imshow_bboxes
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
 from easycv.file.image import load_image
-from easycv.datasets.detection.data_sources import DetSourceCoco,DetSourceCocoPanoptic
+from easycv.datasets.detection.data_sources import DetSourceCoco
 from easycv.core.evaluation.coco_evaluation import CocoPanopticEvaluator
 
 @DATASETS.register_module
