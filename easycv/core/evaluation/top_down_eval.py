@@ -365,7 +365,7 @@ def keypoints_from_heatmaps(heatmaps,
         heatmap width: W
 
     Args:
-        heatmaps (np.ndarray[N, K, H, W]): model predicted heatmaps.
+        heatmaps (np.ndarray[N, K, H, W], dtype=float32): model predicted heatmaps.
         center (np.ndarray[N, 2]): Center of the bounding box (x, y).
         scale (np.ndarray[N, 2]): Scale of the bounding box
             wrt height/width.
@@ -398,6 +398,8 @@ def keypoints_from_heatmaps(heatmaps,
         - maxvals (np.ndarray[N, K, 1]): Scores (confidence) of the keypoints.
     """
     # Avoid being affected
+    if not np.issubsctype(heatmaps, np.float32):
+        heatmaps = heatmaps.astype(np.float32)
     heatmaps = heatmaps.copy()
 
     # detect conflicts

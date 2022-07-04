@@ -84,6 +84,14 @@ Please refer to [data_hub.md](https://github.com/alibaba/EasyCV/blob/master/docs
 
 ## ChangeLog
 
+* 23/06/2022 EasyCV v0.4.0 was released.
+    * Add semantic segmentation modules, support FCN algorithm
+    * Expand classification model zoo
+    * Support export model with [blade](https://help.aliyun.com/document_detail/205134.html) for yolox
+    * Support ViTDet algorithm
+    * Add sailfish for extensible fully sharded data parallel training
+    * Support run with [mmdetection](https://github.com/open-mmlab/mmdetection) models
+
 * 31/04/2022 EasyCV v0.3.0 was released.
     * Update moby pretrained model to deit small
     * Add mae vit-large benchmark and pretrained models

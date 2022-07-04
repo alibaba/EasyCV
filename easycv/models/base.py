@@ -12,6 +12,9 @@ from torch import Tensor
 class BaseModel(nn.Module, metaclass=ABCMeta):
     ''' base class for model. '''
 
+    def __init__(self):
+        super(BaseModel, self).__init__()
+
     @abstractmethod
     def forward_train(self, img: Tensor, **kwargs) -> Dict[str, Tensor]:
         """ Abstract interface for model forward in training

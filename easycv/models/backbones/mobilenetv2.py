@@ -5,8 +5,6 @@ r""" This model is taken from the official PyTorch model zoo.
 
 from torch import nn
 
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
 from ..modelzoo import mobilenetv2 as model_urls
 from ..registry import BACKBONES
 
@@ -153,8 +151,9 @@ class MobileNetV2(nn.Module):
                 nn.Dropout(0.2),
                 nn.Linear(self.last_channel, num_classes),
             )
-        self.pretrained = model_urls[self.__class__.__name__ + '_' +
-                                     str(width_multi)]
+        self.default_pretrained_model_path = model_urls[self.__class__.__name__
+                                                        + '_' +
+                                                        str(width_multi)]
 
     def init_weights(self):
         for m in self.modules():

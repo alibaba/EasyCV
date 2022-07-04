@@ -101,7 +101,6 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
             self.dropout = nn.Dropout2d(dropout_ratio)
         else:
             self.dropout = None
-        self.fp16_enabled = False
 
     def extra_repr(self):
         """Extra repr."""

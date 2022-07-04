@@ -32,10 +32,14 @@ class DetDataset(BaseDataset):
         return self.num_samples
 
     def __getitem__(self, idx):
+        count = 0
         while True:
+            if count > 10:
+                raise RuntimeError('Loops timeout')
             data_dict = self.data_source.get_sample(idx)
             data_dict = self.pipeline(data_dict)
             if data_dict is None:
+                count += 1
                 if isinstance(self.data_source, DetSourceCoco):
                     idx = self.data_source._rand_another(idx)
                 else:

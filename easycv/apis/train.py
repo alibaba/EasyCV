@@ -45,18 +45,6 @@ def set_random_seed(seed, deterministic=False):
         torch.backends.cudnn.benchmark = False
 
 
-def _is_selfsup_model(model_name):
-    from easycv.models import selfsup
-    models = []
-    for m in dir(selfsup):
-        if m.startswith('__'):
-            continue
-        if model_name == m:
-            return True
-
-    return False
-
-
 def train_model(model,
                 data_loaders,
                 cfg,
@@ -102,9 +90,10 @@ def train_model(model,
         logger.info('Using SyncBatchNorm()')
 
     if distributed:
+        find_unused_parameters = cfg.get('find_unused_parameters', False)
         model = MMDistributedDataParallel(
             model.cuda(),
-            find_unused_parameters=True,
+            find_unused_parameters=find_unused_parameters,
             device_ids=[torch.cuda.current_device()],
             broadcast_buffers=False)
     else:
@@ -116,7 +105,8 @@ def train_model(model,
         optimizer=optimizer,
         work_dir=cfg.work_dir,
         logger=logger,
-        meta=meta)
+        meta=meta,
+        fp16_enable=use_fp16)
     runner.data_loader = data_loaders
 
     # an ugly walkaround to make the .log and .log.json filenames the same

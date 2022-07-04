@@ -40,7 +40,6 @@ class TopDown(BaseModel):
                  pretrained=None,
                  loss_pose=None):
         super().__init__()
-        self.fp16_enabled = False
         self.pretrained = pretrained
 
         self.backbone = builder.build_backbone(backbone)

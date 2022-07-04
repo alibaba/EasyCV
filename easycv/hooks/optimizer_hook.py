@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import logging
 from distutils.version import LooseVersion
 
 import torch
@@ -12,10 +13,9 @@ else:
     try:
         from apex import amp
     except ImportError:
-        print(
-            'Warning: apex not installed, please install apex from https://www.github.com/nvidia/apex if you want to use fp16.'
+        logging.warning(
+            'apex not installed, please install apex from https://www.github.com/nvidia/apex if you want to use fp16.'
         )
-        pass
 
 
 class OptimizerHook(_OptimizerHook):
@@ -90,10 +90,14 @@ class AMPFP16OptimizerHook(OptimizerHook):
                  coalesce=True,
                  bucket_size_mb=-1,
                  ignore_key=[],
-                 ignore_key_epoch=[]):
+                 ignore_key_epoch=[],
+                 loss_scale={}):
         '''
             ignore_key: [str,...], ignore_key[i], name of parameters, which's gradient will be set to zero before every optimizer step when epoch < ignore_key_epoch[i]
             ignore_key_epoch: [int,...], epoch < ignore_key_epoch[i], ignore_key[i]'s gradient will be set to zero.
+            loss_scale (float | dict): grade scale config. If loss_scale is a float, static loss scaling will be used with the specified scale.
+                It can also be a dict containing arguments of GradScalar. For Pytorch >= 1.6, we use official torch.cuda.amp.GradScaler.
+                please refer to: https://pytorch.org/docs/stable/amp.html#torch.cuda.amp.GradScaler for the parameters.
         '''
         self.grad_clip = grad_clip
         self.coalesce = coalesce
@@ -101,12 +105,21 @@ class AMPFP16OptimizerHook(OptimizerHook):
         self.update_interval = update_interval
         self.ignore_key = ignore_key
         self.ignore_key_epoch = ignore_key_epoch
+        self._scale_update_param = None
+
         if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
-            self.scaler = amp.GradScaler()
+            if isinstance(loss_scale, float):
+                self._scale_update_param = loss_scale
+                self.scaler = amp.GradScaler(init_scale=loss_scale)
+            elif isinstance(loss_scale, dict):
+                self.scaler = amp.GradScaler(**loss_scale)
+            else:
+                raise ValueError(
+                    '`loss_scale` type must be in [float, dict], but got {loss_scale}'
+                )
 
     def before_run(self, runner):
-        runner.fp16_enable = True
-        print('open fp16')
+        logging.info('open fp16')
         runner.optimizer.zero_grad()
 
     def after_train_iter(self, runner):
@@ -121,11 +134,11 @@ class AMPFP16OptimizerHook(OptimizerHook):
                         p.grad = None
 
             if self.every_n_iters(runner, self.update_interval):
+                self.scaler.unscale_(runner.optimizer)
                 if self.grad_clip is not None:
-                    self.scaler.unscale_(runner.optimizer)
                     self.clip_grads(runner.model.parameters())
                 self.scaler.step(runner.optimizer)
-                self.scaler.update()
+                self.scaler.update(self._scale_update_param)
                 runner.optimizer.zero_grad()
         else:
             with amp.scale_loss(loss, runner.optimizer) as scaled_loss:

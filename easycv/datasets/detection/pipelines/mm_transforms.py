@@ -877,7 +877,6 @@ class MMSegRescale:
 @PIPELINES.register_module
 class MMResize:
     """Resize images & bbox & mask.
-
     This transform resizes the input image to some scale. Bboxes and masks are
     then resized with the same scale factor. If the input dict contains the key
     "scale", then the scale in the input dict is used, otherwise the specified
@@ -885,17 +884,14 @@ class MMResize:
     "scale_factor" (if MultiScaleFlipAug does not give img_scale but
     scale_factor), the actual scale will be computed by image shape and
     scale_factor.
-
     `img_scale` can either be a tuple (single-scale) or a list of tuple
     (multi-scale). There are 3 multiscale modes:
-
     - ``ratio_range is not None``: randomly sample a ratio from the ratio \
       range and multiply it with the image scale.
     - ``ratio_range is None`` and ``multiscale_mode == "range"``: randomly \
       sample a scale from the multiscale range.
     - ``ratio_range is None`` and ``multiscale_mode == "value"``: randomly \
       sample a scale from multiple scales.
-
     Args:
         img_scale (tuple or list[tuple]): Images scales for resizing.
         multiscale_mode (str): Either "range" or "value".
@@ -953,10 +949,8 @@ class MMResize:
     @staticmethod
     def random_select(img_scales):
         """Randomly select an img_scale from given candidates.
-
         Args:
             img_scales (list[tuple]): Images scales for selection.
-
         Returns:
             (tuple, int): Returns a tuple ``(img_scale, scale_dix)``, \
                 where ``img_scale`` is the selected image scale and \
@@ -971,12 +965,10 @@ class MMResize:
     @staticmethod
     def random_sample(img_scales):
         """Randomly sample an img_scale when ``multiscale_mode=='range'``.
-
         Args:
             img_scales (list[tuple]): Images scale range for sampling.
                 There must be two tuples in img_scales, which specify the lower
                 and upper bound of image scales.
-
         Returns:
             (tuple, None): Returns a tuple ``(img_scale, None)``, where \
                 ``img_scale`` is sampled scale and None is just a placeholder \
@@ -998,16 +990,13 @@ class MMResize:
     @staticmethod
     def random_sample_ratio(img_scale, ratio_range):
         """Randomly sample an img_scale when ``ratio_range`` is specified.
-
         A ratio will be randomly sampled from the range specified by
         ``ratio_range``. Then it would be multiplied with ``img_scale`` to
         generate sampled scale.
-
         Args:
             img_scale (tuple): Images scale base to multiply with ratio.
             ratio_range (tuple[float]): The minimum and maximum ratio to scale
                 the ``img_scale``.
-
         Returns:
             (tuple, None): Returns a tuple ``(scale, None)``, where \
                 ``scale`` is sampled ratio multiplied with ``img_scale`` and \
@@ -1025,16 +1014,13 @@ class MMResize:
     def _random_scale(self, results):
         """Randomly sample an img_scale according to ``ratio_range`` and
         ``multiscale_mode``.
-
         If ``ratio_range`` is specified, a ratio will be sampled and be
         multiplied with ``img_scale``.
         If multiple scales are specified by ``img_scale``, a scale will be
         sampled according to ``multiscale_mode``.
         Otherwise, single scale will be used.
-
         Args:
             results (dict): Result dict from :obj:`dataset`.
-
         Returns:
             dict: Two new keys 'scale` and 'scale_idx` are added into \
                 ``results``, which would be used by subsequent pipelines.
@@ -1126,10 +1112,8 @@ class MMResize:
     def __call__(self, results):
         """Call function to resize images, bounding boxes, masks, semantic
         segmentation map.
-
         Args:
             results (dict): Result dict from loading pipeline.
-
         Returns:
             dict: Resized results, 'img_shape', 'pad_shape', 'scale_factor', \
                 'keep_ratio' keys are added into result dict.
@@ -1173,14 +1157,11 @@ class MMResize:
 @PIPELINES.register_module()
 class MMRandomFlip:
     """Flip the image & bbox & mask.
-
     If the input dict contains the key "flip", then the flag will be used,
     otherwise it will be randomly decided by a ratio specified in the init
     method.
-
     When random flip is enabled, ``flip_ratio``/``direction`` can either be a
     float/string or tuple of float/string. There are 3 flip modes:
-
     - ``flip_ratio`` is float, ``direction`` is string: the image will be
         ``direction``ly flipped with probability of ``flip_ratio`` .
         E.g., ``flip_ratio=0.5``, ``direction='horizontal'``,
@@ -1197,7 +1178,6 @@ class MMRandomFlip:
         E.g., ``flip_ratio=[0.3, 0.5]``, ``direction=['horizontal',
         'vertical']``, then image will be horizontally flipped with probability
         of 0.3, vertically with probability of 0.5.
-
     Args:
         flip_ratio (float | list[float], optional): The flipping probability.
             Default: None.
@@ -1236,13 +1216,11 @@ class MMRandomFlip:
 
     def bbox_flip(self, bboxes, img_shape, direction):
         """Flip bboxes horizontally.
-
         Args:
             bboxes (numpy.ndarray): Bounding boxes, shape (..., 4*k)
             img_shape (tuple[int]): Image shape (height, width)
             direction (str): Flip direction. Options are 'horizontal',
                 'vertical'.
-
         Returns:
             numpy.ndarray: Flipped bounding boxes.
         """
@@ -1271,10 +1249,8 @@ class MMRandomFlip:
     def __call__(self, results):
         """Call function to flip bounding boxes, masks, semantic segmentation
         maps.
-
         Args:
             results (dict): Result dict from loading pipeline.
-
         Returns:
             dict: Flipped results, 'flip', 'flip_direction' keys are added \
                 into result dict.
@@ -1326,146 +1302,6 @@ class MMRandomFlip:
 
     def __repr__(self):
         return self.__class__.__name__ + f'(flip_ratio={self.flip_ratio})'
-
-
-@PIPELINES.register_module()
-class MMPad:
-    """Pad the image & masks & segmentation map.
-
-    There are two padding modes: (1) pad to a fixed size and (2) pad to the
-    minimum size that is divisible by some number.
-    Added keys are "pad_shape", "pad_fixed_size", "pad_size_divisor",
-
-    Args:
-        size (tuple, optional): Fixed padding size.
-        size_divisor (int, optional): The divisor of padded size.
-        pad_to_square (bool): Whether to pad the image into a square.
-            Currently only used for YOLOX. Default: False.
-        pad_val (dict, optional): A dict for padding value, the default
-            value is `dict(img=0, masks=0, seg=255)`.
-    """
-
-    def __init__(self,
-                 size=None,
-                 size_divisor=None,
-                 pad_to_square=False,
-                 pad_val=dict(img=0, masks=0, seg=255)):
-        self.size = size
-        self.size_divisor = size_divisor
-        if isinstance(pad_val, float) or isinstance(pad_val, int):
-            warnings.warn(
-                'pad_val of float type is deprecated now, '
-                f'please use pad_val=dict(img={pad_val}, '
-                f'masks={pad_val}, seg=255) instead.', DeprecationWarning)
-            pad_val = dict(img=pad_val, masks=pad_val, seg=255)
-        assert isinstance(pad_val, dict)
-        self.pad_val = pad_val
-        self.pad_to_square = pad_to_square
-
-        if pad_to_square:
-            assert size is None and size_divisor is None, \
-                'The size and size_divisor must be None ' \
-                'when pad2square is True'
-        else:
-            assert size is not None or size_divisor is not None, \
-                'only one of size and size_divisor should be valid'
-            assert size is None or size_divisor is None
-
-    def _pad_img(self, results):
-        """Pad images according to ``self.size``."""
-        pad_val = self.pad_val.get('img', 0)
-        for key in results.get('img_fields', ['img']):
-            if self.pad_to_square:
-                max_size = max(results[key].shape[:2])
-                self.size = (max_size, max_size)
-            if self.size is not None:
-                padded_img = mmcv.impad(
-                    results[key], shape=self.size, pad_val=pad_val)
-            elif self.size_divisor is not None:
-                padded_img = mmcv.impad_to_multiple(
-                    results[key], self.size_divisor, pad_val=pad_val)
-            results[key] = padded_img
-        results['pad_shape'] = padded_img.shape
-        results['pad_fixed_size'] = self.size
-        results['pad_size_divisor'] = self.size_divisor
-
-    def _pad_masks(self, results):
-        """Pad masks according to ``results['pad_shape']``."""
-        pad_shape = results['pad_shape'][:2]
-        pad_val = self.pad_val.get('masks', 0)
-        for key in results.get('mask_fields', []):
-            results[key] = results[key].pad(pad_shape, pad_val=pad_val)
-
-    def _pad_seg(self, results):
-        """Pad semantic segmentation map according to
-        ``results['pad_shape']``."""
-        pad_val = self.pad_val.get('seg', 255)
-        for key in results.get('seg_fields', []):
-            results[key] = mmcv.impad(
-                results[key], shape=results['pad_shape'][:2], pad_val=pad_val)
-
-    def __call__(self, results):
-        """Call function to pad images, masks, semantic segmentation maps.
-
-        Args:
-            results (dict): Result dict from loading pipeline.
-
-        Returns:
-            dict: Updated result dict.
-        """
-        self._pad_img(results)
-        self._pad_masks(results)
-        self._pad_seg(results)
-        return results
-
-    def __repr__(self):
-        repr_str = self.__class__.__name__
-        repr_str += f'(size={self.size}, '
-        repr_str += f'size_divisor={self.size_divisor}, '
-        repr_str += f'pad_to_square={self.pad_to_square}, '
-        repr_str += f'pad_val={self.pad_val})'
-        return repr_str
-
-
-@PIPELINES.register_module
-class MMNormalize:
-    """Normalize the image.
-
-    Added key is "img_norm_cfg".
-
-    Args:
-        mean (sequence): Mean values of 3 channels.
-        std (sequence): Std values of 3 channels.
-        to_rgb (bool): Whether to convert the image from BGR to RGB,
-            default is true.
-    """
-
-    def __init__(self, mean, std, to_rgb=True):
-        self.mean = np.array(mean, dtype=np.float32)
-        self.std = np.array(std, dtype=np.float32)
-        self.to_rgb = to_rgb
-
-    def __call__(self, results):
-        """Call function to normalize images.
-
-        Args:
-            results (dict): Result dict from loading pipeline.
-
-        Returns:
-            dict: Normalized results, 'img_norm_cfg' key is added into
-                result dict.
-        """
-        for key in results.get('img_fields', ['img']):
-            results[key] = mmcv.imnormalize(results[key], self.mean, self.std,
-                                            self.to_rgb)
-        results['img_norm_cfg'] = dict(
-            mean=self.mean, std=self.std, to_rgb=self.to_rgb)
-        return results
-
-    def __repr__(self):
-        repr_str = self.__class__.__name__
-        repr_str += f'(mean={self.mean}, std={self.std}, to_rgb={self.to_rgb})'
-        return repr_str
 
 
 @PIPELINES.register_module()
@@ -1658,15 +1494,149 @@ class MMRandomCrop:
         return repr_str
 
 
+@PIPELINES.register_module
+class MMPad:
+    """Pad the image & mask.
+    There are two padding modes: (1) pad to a fixed size and (2) pad to the
+    minimum size that is divisible by some number.
+    Added keys are "pad_shape", "pad_fixed_size", "pad_size_divisor",
+    Args:
+        size (tuple, optional): Fixed padding size.
+        size_divisor (int, optional): The divisor of padded size.
+        pad_to_square (bool): Whether to pad the image into a square.
+            Currently only used for YOLOX. Default: False.
+        pad_val (dict, optional): A dict for padding value, the default
+            value is `dict(img=0, masks=0, seg=255)`.
+    """
+
+    def __init__(self,
+                 size=None,
+                 size_divisor=None,
+                 pad_to_square=False,
+                 pad_val=dict(img=0, masks=0, seg=255)):
+        self.size = size
+        self.size_divisor = size_divisor
+        if isinstance(pad_val, float) or isinstance(pad_val, int):
+            warnings.warn(
+                'pad_val of float type is deprecated now, '
+                f'please use pad_val=dict(img={pad_val}, '
+                f'masks={pad_val}, seg=255) instead.', DeprecationWarning)
+            pad_val = dict(img=pad_val, masks=pad_val, seg=255)
+        assert isinstance(pad_val, dict)
+        self.pad_val = pad_val
+        self.pad_to_square = pad_to_square
+
+        if pad_to_square:
+            assert size is None and size_divisor is None, \
+                'The size and size_divisor must be None ' \
+                'when pad2square is True'
+        else:
+            assert size is not None or size_divisor is not None, \
+                'only one of size and size_divisor should be valid'
+            assert size is None or size_divisor is None
+
+    def _pad_img(self, results):
+        """Pad images according to ``self.size``."""
+        pad_val = self.pad_val.get('img', 0)
+        for key in results.get('img_fields', ['img']):
+            if self.pad_to_square:
+                max_size = max(results[key].shape[:2])
+                self.size = (max_size, max_size)
+            if self.size is not None:
+                padded_img = mmcv.impad(
+                    results[key], shape=self.size, pad_val=pad_val)
+            elif self.size_divisor is not None:
+                padded_img = mmcv.impad_to_multiple(
+                    results[key], self.size_divisor, pad_val=pad_val)
+            results[key] = padded_img
+        results['pad_shape'] = padded_img.shape
+        results['pad_fixed_size'] = self.size
+        results['pad_size_divisor'] = self.size_divisor
+
+    def _pad_masks(self, results):
+        """Pad masks according to ``results['pad_shape']``."""
+        pad_shape = results['pad_shape'][:2]
+        pad_val = self.pad_val.get('masks', 0)
+        for key in results.get('mask_fields', []):
+            results[key] = results[key].pad(pad_shape, pad_val=pad_val)
+
+    def _pad_seg(self, results):
+        """Pad semantic segmentation map according to
+        ``results['pad_shape']``."""
+        pad_val = self.pad_val.get('seg', 255)
+        for key in results.get('seg_fields', []):
+            results[key] = mmcv.impad(
+                results[key], shape=results['pad_shape'][:2], pad_val=pad_val)
+
+    def __call__(self, results):
+        """Call function to pad images, masks, semantic segmentation maps.
+        Args:
+            results (dict): Result dict from loading pipeline.
+        Returns:
+            dict: Updated result dict.
+        """
+        self._pad_img(results)
+        self._pad_masks(results)
+        self._pad_seg(results)
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(size={self.size}, '
+        repr_str += f'size_divisor={self.size_divisor}, '
+        repr_str += f'pad_to_square={self.pad_to_square}, '
+        repr_str += f'pad_val={self.pad_val})'
+        return repr_str
+
+
+@PIPELINES.register_module
+class MMNormalize:
+    """Normalize the image.
+
+    Added key is "img_norm_cfg".
+
+    Args:
+        mean (sequence): Mean values of 3 channels.
+        std (sequence): Std values of 3 channels.
+        to_rgb (bool): Whether to convert the image from BGR to RGB,
+            default is true.
+    """
+
+    def __init__(self, mean, std, to_rgb=True):
+        self.mean = np.array(mean, dtype=np.float32)
+        self.std = np.array(std, dtype=np.float32)
+        self.to_rgb = to_rgb
+
+    def __call__(self, results):
+        """Call function to normalize images.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Normalized results, 'img_norm_cfg' key is added into
+                result dict.
+        """
+        for key in results.get('img_fields', ['img']):
+            results[key] = mmcv.imnormalize(results[key], self.mean, self.std,
+                                            self.to_rgb)
+        results['img_norm_cfg'] = dict(
+            mean=self.mean, std=self.std, to_rgb=self.to_rgb)
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(mean={self.mean}, std={self.std}, to_rgb={self.to_rgb})'
+        return repr_str
+
+
 @PIPELINES.register_module()
 class LoadImageFromFile:
     """Load an image from file.
-
     Required keys are "img_prefix" and "img_info" (a dict that must contain the
     key "filename"). Added or updated keys are "filename", "img", "img_shape",
     "ori_shape" (same as `img_shape`), "pad_shape" (same as `img_shape`),
     "scale_factor" (1.0) and "img_norm_cfg" (means=0 and stds=1).
-
     Args:
         to_float32 (bool): Whether to convert the loaded image to a float32
             numpy array. If set to False, the loaded image is an uint8 array.
@@ -1689,10 +1659,8 @@ class LoadImageFromFile:
 
     def __call__(self, results):
         """Call functions to load image and get image meta information.
-
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
         Returns:
             dict: The dict contains loaded image and meta information.
         """
@@ -1814,7 +1782,6 @@ class LoadMultiChannelImageFromFiles:
 @PIPELINES.register_module()
 class LoadAnnotations:
     """Load multiple types of annotations.
-
     Args:
         with_bbox (bool): Whether to parse and load the bbox annotation.
              Default: True.
@@ -1848,10 +1815,8 @@ class LoadAnnotations:
 
     def _load_bboxes(self, results):
         """Private function to load bounding box annotations.
-
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
         Returns:
             dict: The dict contains loaded bounding box annotations.
         """
@@ -1868,10 +1833,8 @@ class LoadAnnotations:
 
     def _load_labels(self, results):
         """Private function to load label annotations.
-
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
         Returns:
             dict: The dict contains loaded label annotations.
         """
@@ -1882,12 +1845,10 @@ class LoadAnnotations:
     def _poly2mask(self, mask_ann, img_h, img_w):
         """Private function to convert masks represented with polygon to
         bitmaps.
-
         Args:
             mask_ann (list | dict): Polygon mask annotation input.
             img_h (int): The height of output mask.
             img_w (int): The width of output mask.
-
         Returns:
             numpy.ndarray: The decode bitmap mask of shape (img_h, img_w).
         """
@@ -1909,10 +1870,8 @@ class LoadAnnotations:
 
     def process_polygons(self, polygons):
         """Convert polygons to list of ndarray and filter invalid polygons.
-
         Args:
             polygons (list[list]): Polygons of one instance.
-
         Returns:
             list[numpy.ndarray]: Processed polygons.
         """
@@ -1926,10 +1885,8 @@ class LoadAnnotations:
 
     def _load_masks(self, results):
         """Private function to load mask annotations.
-
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
         Returns:
             dict: The dict contains loaded mask annotations.
                 If ``self.poly2mask`` is set ``True``, `gt_mask` will contain
@@ -1952,10 +1909,8 @@ class LoadAnnotations:
 
     def _load_semantic_seg(self, results):
         """Private function to load semantic segmentation annotations.
-
         Args:
             results (dict): Result dict from :obj:`dataset`.
-
         Returns:
             dict: The dict contains loaded semantic segmentation annotations.
         """
@@ -1973,10 +1928,8 @@ class LoadAnnotations:
 
     def __call__(self, results):
         """Call function to load multiple types annotations.
-
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
         Returns:
             dict: The dict contains loaded bounding box, label, mask and
                 semantic segmentation annotations.
@@ -2002,7 +1955,48 @@ class LoadAnnotations:
         repr_str += f'with_seg={self.with_seg}, '
         repr_str += f'poly2mask={self.poly2mask}, '
         repr_str += f'poly2mask={self.file_client_args})'
-        return repr_str
+        return
+
+
+@PIPELINES.register_module()
+class MMFilterAnnotations:
+    """Filter invalid annotations.
+    Args:
+        min_gt_bbox_wh (tuple[int]): Minimum width and height of ground truth
+            boxes.
+        keep_empty (bool): Whether to return None when it
+            becomes an empty bbox after filtering. Default: True
+    """
+
+    def __init__(self, min_gt_bbox_wh, keep_empty=True):
+        # TODO: add more filter options
+        self.min_gt_bbox_wh = min_gt_bbox_wh
+        self.keep_empty = keep_empty
+
+    def __call__(self, results):
+        assert 'gt_bboxes' in results
+        gt_bboxes = results['gt_bboxes']
+        if gt_bboxes.shape[0] == 0:
+            return results
+        w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
+        h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
+        keep = (w > self.min_gt_bbox_wh[0]) & (h > self.min_gt_bbox_wh[1])
+        if not keep.any():
+            if self.keep_empty:
+                return None
+            else:
+                return results
+        else:
+            keys = ('gt_bboxes', 'gt_labels', 'gt_masks', 'gt_semantic_seg')
+            for key in keys:
+                if key in results:
+                    results[key] = results[key][keep]
+            return results
+
+    def __repr__(self):
+        return self.__class__.__name__ + \
+               f'(min_gt_bbox_wh={self.min_gt_bbox_wh},' \
+               f'always_keep={self.always_keep})'
 
 
 @PIPELINES.register_module()

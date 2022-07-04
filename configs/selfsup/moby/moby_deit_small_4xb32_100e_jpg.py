@@ -6,7 +6,7 @@ model = dict(
     train_preprocess=['randomGrayScale', 'gaussianBlur'],
     queue_len=4096,
     momentum=0.99,
-    pretrained=None,
+    pretrained=False,
     backbone=dict(
         type='PytorchImageModelWrapper',
         # model_name='pit_xs_distilled_224',
@@ -16,7 +16,6 @@ model = dict(
         # model_name='vit_deit_tiny_distilled_patch16_224',   # good 192,
         model_name='vit_deit_small_distilled_patch16_224',  # good 384,
         # model_name = 'resnet50',
-        # pretrained=True,
     ),
     neck=dict(
         type='MoBYMLP',

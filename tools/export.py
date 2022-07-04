@@ -23,6 +23,7 @@ from easycv.utils.logger import get_root_logger
 # from mmcv import Config
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
+from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 
 
 def parse_args():
@@ -82,6 +83,9 @@ def main():
         assert args.model_type is not None, 'model_type must be setted'
         # rebuild config by user config params
         cfg = rebuild_config(cfg, args.user_config_params)
+
+    # dynamic adapt mmdet models
+    dynamic_adapt_for_mmlab(cfg)
 
     # check oss_config and init oss io
     if cfg.get('oss_io_config', None) is not None:

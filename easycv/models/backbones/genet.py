@@ -8,8 +8,6 @@ from mmcv.cnn import constant_init, kaiming_init
 from torch import nn
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
 from ..modelzoo import genet as model_urls
 from ..registry import BACKBONES
 
@@ -1659,6 +1657,9 @@ class PlainNet(nn.Module):
 
         self.plainnet_struct = str(self) + str(self.adptive_avg_pool)
         self.zero_init_residual = False
+
+        self.default_pretrained_model_path = model_urls[self.__class__.__name__
+                                                        + plainnet_struct_idx]
 
     def init_weights(self):
         for m in self.modules():

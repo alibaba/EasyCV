@@ -18,9 +18,7 @@ model = dict(
     'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/timm/swin_base_patch4_window7_224_22k_statedict.pth',
     backbone=dict(
         type='PytorchImageModelWrapper',
-        model_name='swin_base_patch4_window7_224_in22k'
-        # pretrained=False,
-    ),
+        model_name='swin_base_patch4_window7_224_in22k'),
     neck=dict(
         type='RetrivalNeck',
         in_channels=1024,
@@ -100,9 +98,10 @@ data = dict(
         data_source=dict(
             list_file=data_train_list,
             root=data_train_root,
-            type='ClsSourceImageList'),
+            m_per_class=4,
+            type='ClsSourceImageListByClass'),
         pipeline=train_pipeline,
-        m_per_class=4),
+    ),
     val=dict(
         type=dataset_type,
         data_source=dict(
