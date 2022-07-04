@@ -7,8 +7,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from easycv.models import build_detr_transformer
 from easycv.models.builder import HEADS
+from easycv.models.detection import build_detr_transformer
 from easycv.models.detection.utils import (MLP, HungarianMatcher, accuracy,
                                            box_cxcywh_to_xyxy,
                                            box_xyxy_to_cxcywh,
