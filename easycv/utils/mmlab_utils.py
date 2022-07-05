@@ -12,15 +12,15 @@ from easycv.models.registry import BACKBONES, HEADS, MODELS, NECKS
 from .test_util import run_in_subprocess
 
 try:
+    from mmcv.runner.hooks import HOOKS
+    HOOKS._module_dict.pop('YOLOXLrUpdaterHook', None)
     from mmdet.models.builder import MODELS as MMMODELS
     from mmdet.models.builder import BACKBONES as MMBACKBONES
     from mmdet.models.builder import NECKS as MMNECKS
     from mmdet.models.builder import HEADS as MMHEADS
     from mmdet.core import BitmapMasks, PolygonMasks, encode_mask_results
     from mmdet.core.mask import mask2bbox
-    from mmcv.runner.hooks import HOOKS
-    HOOKS._module_dict.pop('YOLOXLrUpdaterHook', None)
-except:
+except ImportError:
     pass
 
 EASYCV_REGISTRY_MAP = {

@@ -13,11 +13,6 @@ from .criterion import SetCriterion
 from .matcher import HungarianMatcher
 from .panoptic_gt_processing import multi_apply, preprocess_panoptic_gt
 
-try:
-    from easycv.utils.mmlab_utils import mask2bbox, encode_mask_results
-except ImportError:
-    pass
-
 INSTANCE_OFFSET = 1000
 
 
@@ -151,6 +146,7 @@ class Mask2Former(BaseModel):
 
             # instance_on
             if self.instance_on:
+                from easycv.utils.mmlab_utils import encode_mask_results
                 labels_per_image, bboxes, mask_pred_binary = self.instance_postprocess(
                     mask_cls_result, mask_pred_result)
                 segms = []
@@ -220,6 +216,7 @@ class Mask2Former(BaseModel):
             - mask_pred_binary (Tensor): Instance masks of \
                 shape (n, h, w).
         """
+        from easycv.utils.mmlab_utils import mask2bbox
         max_per_image = self.test_cfg.get('max_per_image', 100)
         num_queries = mask_cls.shape[0]
         # shape (num_queries, num_class)

@@ -16,7 +16,6 @@ from easycv.datasets.shared.pipelines.transforms import Compose
 
 try:
     from panopticapi.utils import rgb2id
-    from easycv.utils.mmlab_utils import BitmapMasks, PolygonMasks
 except ImportError:
     rgb2id = None
 
@@ -1892,6 +1891,7 @@ class LoadAnnotations:
                 If ``self.poly2mask`` is set ``True``, `gt_mask` will contain
                 :obj:`PolygonMasks`. Otherwise, :obj:`BitmapMasks` is used.
         """
+        from easycv.utils.mmlab_utils import BitmapMasks, PolygonMasks
 
         h, w = results['img_info']['height'], results['img_info']['width']
         gt_masks = results['ann_info']['masks']
@@ -2051,7 +2051,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
             dict: The dict contains loaded mask and semantic segmentation
                 annotations. `BitmapMasks` is used for mask annotations.
         """
-
+        from easycv.utils.mmlab_utils import BitmapMasks
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
 

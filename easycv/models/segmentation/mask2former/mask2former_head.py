@@ -12,15 +12,12 @@ class Mask2FormerHead(nn.Module):
         self,
         pixel_decoder,
         transformer_decoder,
-        # input_shape: Dict[str, ShapeSpec],
         *,
         num_things_classes: int,
         num_stuff_classes: int,
-        # pixel_decoder: nn.Module,
         loss_weight: float = 1.0,
         ignore_value: int = -1,
         # extra parameters
-        # transformer_predictor: nn.Module,
         transformer_in_feature: str = 'multi_scale_pixel_decoder',
     ):
         """

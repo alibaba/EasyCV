@@ -128,6 +128,7 @@ test_pipeline = [
             dict(type='MMNormalize', **img_norm_cfg),
             dict(type='MMPad', size_divisor=32),
             dict(type='ImageToTensor', keys=['img']),
+            # dict(type='DefaultFormatBundle'),
             dict(
                 type='Collect',
                 keys=['img'],

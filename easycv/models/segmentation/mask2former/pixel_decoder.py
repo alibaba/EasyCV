@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 import copy
-from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -37,20 +36,6 @@ def c2_xavier_fill(module: nn.Module):
         # pyre-fixme[6]: Expected `Tensor` for 1st param but got `Union[nn.Module,
         #  torch.Tensor]`.
         nn.init.constant_(module.bias, 0)
-
-
-@dataclass
-class ShapeSpec:
-    """
-    A simple structure that contains basic shape specification about a tensor.
-    It is often used as the auxiliary inputs/outputs of models,
-    to complement the lack of shape inference ability among pytorch modules.
-    """
-
-    channels: Optional[int] = None
-    height: Optional[int] = None
-    width: Optional[int] = None
-    stride: Optional[int] = None
 
 
 class Conv2d(torch.nn.Conv2d):

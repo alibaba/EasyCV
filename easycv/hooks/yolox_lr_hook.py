@@ -11,7 +11,7 @@ from mmcv.runner.hooks.lr_updater import (CosineAnnealingLrUpdaterHook,
 # no_aug_epochs no_aug_iter = self.iters_per_epoch * self.no_aug_epochs
 
 
-@HOOKS.register_module()
+@HOOKS.register_module(force=True)
 class YOLOXLrUpdaterHook(CosineAnnealingLrUpdaterHook):
     """YOLOX learning rate scheme.
 
