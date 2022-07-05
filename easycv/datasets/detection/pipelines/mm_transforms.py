@@ -1515,8 +1515,8 @@ class MMPad:
                  pad_val=dict(img=0, masks=0, seg=255)):
         self.size = size
         self.size_divisor = size_divisor
-        if isinstance(pad_val, float) or isinstance(
-                pad_val, int) or isinstance(pad_val, tuple):
+        if not isinstance(pad_val, dict):
+            pad_val = tuple(pad_val) if isinstance(pad_val, list) else pad_val
             warnings.warn(
                 'pad_val of float type is deprecated now, '
                 f'please use pad_val=dict(img={pad_val}, '
