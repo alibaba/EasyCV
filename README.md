@@ -74,6 +74,7 @@ Please refer to the following model zoo for more details.
 - [self-supervised learning model zoo](docs/source/model_zoo_ssl.md)
 - [classification model zoo](docs/source/model_zoo_cls.md)
 - [detection model zoo](docs/source/model_zoo_detection.md)
+- [segmentation model zoo](docs/source/model_zoo_seg.md)
 
 ## Data Hub
 
@@ -82,6 +83,14 @@ EasyCV have collected dataset info for different senarios, making it easy for us
 Please refer to [data_hub.md](https://github.com/alibaba/EasyCV/blob/master/docs/source/data_hub.md).
 
 ## ChangeLog
+
+* 23/06/2022 EasyCV v0.4.0 was released.
+    * Add semantic segmentation modules, support FCN algorithm
+    * Expand classification model zoo
+    * Support export model with [blade](https://help.aliyun.com/document_detail/205134.html) for yolox
+    * Support ViTDet algorithm
+    * Add sailfish for extensible fully sharded data parallel training
+    * Support run with [mmdetection](https://github.com/open-mmlab/mmdetection) models
 
 * 31/04/2022 EasyCV v0.3.0 was released.
     * Update moby pretrained model to deit small

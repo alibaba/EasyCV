@@ -7,7 +7,6 @@ log_config = dict(
 # model settings
 model = dict(
     type='Classification',
-    pretrained=None,
     backbone=dict(
         type='ResNet',
         depth=50,

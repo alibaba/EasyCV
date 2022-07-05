@@ -36,3 +36,21 @@ def unmap(data, count, inds, fill=0):
         ret = data.new_full(new_size, fill)
         ret[inds, :] = data
     return ret
+
+
+def add_prefix(inputs, prefix):
+    """Add prefix for dict key.
+
+    Args:
+        inputs (dict): The input dict with str keys.
+        prefix (str): The prefix add to key name.
+
+    Returns:
+        dict: The dict with keys wrapped with ``prefix``.
+    """
+
+    outputs = dict()
+    for name, value in inputs.items():
+        outputs[f'{prefix}.{name}'] = value
+
+    return outputs

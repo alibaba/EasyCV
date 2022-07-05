@@ -3,7 +3,7 @@ _base_ = '../../base.py'
 # model settings
 model = dict(
     type='MOCO',
-    pretrained=None,
+    pretrained=False,
     train_preprocess=['gaussianBlur'],
     queue_len=65536,
     feat_dim=128,

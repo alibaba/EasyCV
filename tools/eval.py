@@ -20,7 +20,6 @@ from mmcv import DictAction
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, init_dist
 
-# from easycv.core import wrap_fp16_model
 from easycv import datasets
 from easycv.apis import multi_gpu_test, single_gpu_test
 from easycv.core.evaluation.builder import build_evaluator
@@ -31,10 +30,7 @@ from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
 from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
-
-# from tools.fuse_conv_bn import fuse_module
-
-# from mmcv import Config
+from easycv.utils.setup_env import setup_multi_processes
 
 
 def parse_args():
@@ -148,6 +144,9 @@ def main():
     if cfg.get('oss_io_config', None) is not None:
         io.access_oss(**cfg.oss_io_config)
 
+    # set multi-process settings
+    setup_multi_processes(cfg)
+
     # dynamic adapt mmdet models
     dynamic_adapt_for_mmlab(cfg)
 
@@ -205,7 +204,7 @@ def main():
 
     assert 'eval_pipelines' in cfg, 'eval_pipelines is needed for testting'
     for eval_pipe in cfg.eval_pipelines:
-        eval_data = eval_pipe.data
+        eval_data = eval_pipe.get('data', None) or cfg.data.val
         # build the dataloader
         if eval_data.get('dali', False):
             data_loader = datasets.build_dali_dataset(

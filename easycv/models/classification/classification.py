@@ -1,5 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 import torch
@@ -7,7 +7,8 @@ import torch.nn as nn
 from mmcv.runner import get_dist_info
 from timm.data.mixup import Mixup
 
-from easycv.utils.logger import print_log
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger, print_log
 from easycv.utils.preprocess_function import (bninceptionPre, gaussianBlur,
                                               mixUpCls, randomErasing)
 from .. import builder
@@ -16,17 +17,15 @@ from ..registry import MODELS
 from ..utils import Sobel
 
 
-def distill_loss(cls_score, teacher_score, tempreature=1.0):
-    """ Soft cross entropy loss
-    """
-    log_prob = torch.nn.functional.log_softmax(cls_score / tempreature, dim=-1)
-    targets_prob = torch.nn.functional.softmax(
-        teacher_score / tempreature, dim=-1)
-    return (torch.sum(-targets_prob * log_prob, dim=1)).mean()
-
-
 @MODELS.register_module
 class Classification(BaseModel):
+    """
+    Args:
+        pretrained: Select one {str or True or False/None}.
+        if pretrained == str, load model from specified path;
+        if pretrained == True, load model from default path(currently only supports timm);
+        if pretrained == False or None, load from init weights.
+    """
 
     def __init__(self,
                  backbone,
@@ -34,11 +33,11 @@ class Classification(BaseModel):
                  with_sobel=False,
                  head=None,
                  neck=None,
-                 teacher=None,
-                 pretrained=None,
+                 pretrained=True,
                  mixup_cfg=None):
         super(Classification, self).__init__()
         self.with_sobel = with_sobel
+        self.pretrained = pretrained
         if with_sobel:
             self.sobel_layer = Sobel()
         else:
@@ -74,6 +73,7 @@ class Classification(BaseModel):
         self.train_preprocess = [
             self.preprocess_key_map[i] for i in train_preprocess
         ]
+
         self.backbone = builder.build_backbone(backbone)
 
         assert head is not None, 'Classification head should be configed'
@@ -103,29 +103,36 @@ class Classification(BaseModel):
         for idx, n in enumerate(tmp_neck_list):
             setattr(self, 'neck_%d' % idx, n)
 
-        if teacher is not None:
-            self.temperature = teacher.pop('temperature', 1)
-            self.teacher_loss_weight = teacher.pop('loss_weight', 1.0)
-            teacher_pretrained = teacher.pop('pretrained', None)
-
-            self.teacher = builder.build_backbone(teacher)
-            if teacher_pretrained is None:
-                self.teacher.init_weights(pretrained=self.teacher.pretrained)
-            else:
-                self.teacher.init_weights(pretrained=teacher_pretrained)
-            self.teacher.eval()
-        else:
-            self.teacher = None
-
-        self.init_weights(pretrained=pretrained)
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.activate_fn = nn.Softmax(dim=1)
         self.extract_list = ['neck']
 
-    def init_weights(self, pretrained=None):
-        if pretrained is not None:
-            print_log('load model from: {}'.format(pretrained), logger='root')
-        self.backbone.init_weights(pretrained=pretrained)
+        self.init_weights()
+
+    def init_weights(self):
+        logger = get_root_logger()
+        if isinstance(self.pretrained, str):
+            load_checkpoint(
+                self.backbone, self.pretrained, strict=False, logger=logger)
+        elif self.pretrained:
+            if self.backbone.__class__.__name__ == 'PytorchImageModelWrapper':
+                self.backbone.init_weights(pretrained=self.pretrained)
+            elif hasattr(self.backbone, 'default_pretrained_model_path'
+                         ) and self.backbone.default_pretrained_model_path:
+                print_log(
+                    'load model from default path: {}'.format(
+                        self.backbone.default_pretrained_model_path), logger)
+                load_checkpoint(
+                    self.backbone,
+                    self.backbone.default_pretrained_model_path,
+                    strict=False,
+                    logger=logger)
+            else:
+                print_log('load model from init weights')
+                self.backbone.init_weights()
+        else:
+            print_log('load model from init weights')
+            self.backbone.init_weights()
 
         for idx in range(self.head_num):
             h = getattr(self, 'head_%d' % idx)
@@ -189,13 +196,6 @@ class Classification(BaseModel):
                 losses['loss'] += hlosses['loss']
             else:
                 losses['loss'] = hlosses['loss']
-
-            # need to check this head can be teacher
-            if self.teacher is not None:
-                with torch.no_grad():
-                    teacher_outs = self.teacher(img)[0].detach()
-                losses['loss'] += self.teacher_loss_weight * distill_loss(
-                    outs[0], teacher_outs, self.temperature)
 
         return losses
 

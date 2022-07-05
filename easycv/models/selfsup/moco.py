@@ -2,7 +2,8 @@
 import torch
 import torch.nn as nn
 
-from easycv.utils.logger import print_log
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger
 from easycv.utils.preprocess_function import gaussianBlur, randomGrayScale
 from .. import builder
 from ..base import BaseModel
@@ -28,6 +29,8 @@ class MOCO(BaseModel):
                  **kwargs):
         super(MOCO, self).__init__()
 
+        self.pretrained = pretrained
+
         self.preprocess_key_map = {
             'randomGrayScale': randomGrayScale,
             'gaussianBlur': gaussianBlur
@@ -43,7 +46,7 @@ class MOCO(BaseModel):
         for param in self.encoder_k.parameters():
             param.requires_grad = False
         self.head = builder.build_head(head)
-        self.init_weights(pretrained=pretrained)
+        self.init_weights()
 
         self.queue_len = queue_len
         self.momentum = momentum
@@ -54,10 +57,16 @@ class MOCO(BaseModel):
         self.register_buffer('queue_ptr', torch.zeros(1, dtype=torch.long))
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
 
-    def init_weights(self, pretrained=None):
-        if pretrained is not None:
-            print_log('load model from: {}'.format(pretrained), logger='root')
-        self.encoder_q[0].init_weights(pretrained=pretrained)
+    def init_weights(self):
+        if isinstance(self.pretrained, str):
+            logger = get_root_logger()
+            load_checkpoint(
+                self.encoder_q[0],
+                self.pretrained,
+                strict=False,
+                logger=logger)
+        else:
+            self.encoder_q[0].init_weights()
         self.encoder_q[1].init_weights(init_linear='kaiming')
         for param_q, param_k in zip(self.encoder_q.parameters(),
                                     self.encoder_k.parameters()):

@@ -1,11 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os
-
 import torch
 from mmcv.runner import get_dist_info
 from pytorch_metric_learning.utils import common_functions as c_f
-from torch.distributed import ReduceOp
-from torch.nn.parallel import DistributedDataParallel as DDP
 
 
 # modified from https://github.com/allenai/allennlp

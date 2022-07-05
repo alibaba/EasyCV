@@ -9,7 +9,6 @@ import os
 
 import requests
 import torch
-import torch.nn as nn
 try:
     from nni.compression.pytorch import ModelSpeedup
 except ImportError:
