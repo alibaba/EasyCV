@@ -5,13 +5,17 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
-from thirdparty.deformable_transformer.modules import MSDeformAttn
 from torch import nn
 from torch.cuda.amp import autocast
 from torch.nn import functional as F
 from torch.nn.init import constant_, normal_, uniform_, xavier_uniform_
 
 from .transformer_decoder import PositionEmbeddingSine, _get_activation_fn
+
+try:
+    from thirdparty.deformable_transformer.modules import MSDeformAttn
+except:
+    pass
 
 
 def _get_clones(module, N):
@@ -282,7 +286,6 @@ class MSDeformAttnPixelDecoder(nn.Module):
 
     def __init__(
         self,
-        # input_shape: Dict[str, ShapeSpec],
         input_stride,
         input_channel,
         *,
