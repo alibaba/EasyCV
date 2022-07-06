@@ -18,8 +18,7 @@ def prepare_for_dn(mode, dn_args, embedweight, batch_size, num_queries,
     """
     prepare for dn components in forward function
     Args:
-        dn_args: (targets, args.scalar, args.label_noise_scale,
-                                                             args.box_noise_scale, args.num_patterns) from engine input
+        dn_args: (targets, args.scalar, args.label_noise_scale, args.box_noise_scale, args.num_patterns) from engine input
         embedweight: positional queries as anchor
         training: whether it is training or inference
         num_queries: number of queries
