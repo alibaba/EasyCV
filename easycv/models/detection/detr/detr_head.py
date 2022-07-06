@@ -119,20 +119,21 @@ class DETRHead(nn.Module):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        outputs = self.forward(x, img_metas)
-
+        # prepare ground truth
         for i in range(len(img_metas)):
             img_h, img_w, _ = img_metas[i]['img_shape']
             # DETR regress the relative position of boxes (cxcywh) in the image.
             # Thus the learning target should be normalized by the image size, also
             # the box format should be converted from defaultly x1y1x2y2 to cxcywh.
-            factor = outputs['pred_boxes'].new_tensor(
-                [img_w, img_h, img_w, img_h]).unsqueeze(0)
+            factor = gt_bboxes[i].new_tensor([img_w, img_h, img_w,
+                                              img_h]).unsqueeze(0)
             gt_bboxes[i] = box_xyxy_to_cxcywh(gt_bboxes[i]) / factor
 
         targets = []
         for gt_label, gt_bbox in zip(gt_labels, gt_bboxes):
             targets.append({'labels': gt_label, 'boxes': gt_bbox})
+
+        outputs = self.forward(x, img_metas)
 
         losses = self.criterion(outputs, targets)
 

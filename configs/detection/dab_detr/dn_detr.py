@@ -32,6 +32,8 @@ model = dict(
             bbox_embed_diff_each_layer=False,
             temperatureH=20,
             temperatureW=20),
+        dn_components=dict(
+            scalar=5, label_noise_scale=0.2, box_noise_scale=0.4),
         num_classes=80,
         in_channels=2048,
         embed_dims=256,

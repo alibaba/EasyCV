@@ -15,6 +15,7 @@ from easycv.models.detection.utils import (MLP, HungarianMatcher, accuracy,
                                            inverse_sigmoid)
 from easycv.models.loss.focal_loss import py_sigmoid_focal_loss
 from easycv.models.utils import get_world_size, is_dist_avail_and_initialized
+from .dn_components import compute_dn_loss, dn_post_process, prepare_for_dn
 
 
 @HEADS.register_module()
@@ -33,8 +34,12 @@ class DABDETRHead(nn.Module):
                  embed_dims,
                  query_dim=4,
                  iter_update=True,
+                 num_queries=300,
                  num_select=300,
+                 random_refpoints_xy=False,
+                 num_patterns=0,
                  bbox_embed_diff_each_layer=False,
+                 dn_components=None,
                  transformer=None,
                  cost_dict={
                      'cost_class': 1,
@@ -70,8 +75,31 @@ class DABDETRHead(nn.Module):
             self.transformer.decoder.bbox_embed = self.bbox_embed
 
         self.num_classes = num_classes
+        self.num_queries = num_queries
+        self.embed_dims = embed_dims
         self.query_dim = query_dim
         self.bbox_embed_diff_each_layer = bbox_embed_diff_each_layer
+        self.dn_components = dn_components
+
+        self.query_embed = nn.Embedding(num_queries, query_dim)
+        self.random_refpoints_xy = random_refpoints_xy
+        if random_refpoints_xy:
+            self.query_embed.weight.data[:, :2].uniform_(0, 1)
+            self.query_embed.weight.data[:, :2] = inverse_sigmoid(
+                self.query_embed.weight.data[:, :2])
+            self.query_embed.weight.data[:, :2].requires_grad = False
+
+        self.num_patterns = num_patterns
+        if not isinstance(num_patterns, int):
+            Warning('num_patterns should be int but {}'.format(
+                type(num_patterns)))
+            self.num_patterns = 0
+        if self.num_patterns > 0:
+            self.patterns = nn.Embedding(self.num_patterns, embed_dims)
+
+        if self.dn_components:
+            # leave one dim for indicator
+            self.label_enc = nn.Embedding(num_classes + 1, embed_dims - 1)
 
     def init_weights(self):
         self.transformer.init_weights()
@@ -91,7 +119,43 @@ class DABDETRHead(nn.Module):
             nn.init.constant_(self.bbox_embed.layers[-1].weight.data, 0)
             nn.init.constant_(self.bbox_embed.layers[-1].bias.data, 0)
 
-    def forward(self, feats, img_metas):
+    def prepare(self, feats, targets=None, mode='train'):
+        bs = feats[0].shape[0]
+        query_embed = self.query_embed.weight
+        if self.dn_components:
+            # default pipeline
+            self.dn_components['num_patterns'] = self.num_patterns
+            self.dn_components['targets'] = targets
+            # prepare for dn
+            tgt, query_embed, attn_mask, mask_dict = prepare_for_dn(
+                mode, self.dn_components, query_embed, bs, self.num_queries,
+                self.num_classes, self.embed_dims, self.label_enc)
+            if self.num_patterns > 0:
+                l = tgt.shape[0]
+                tgt[l - self.num_queries * self.num_patterns:] += \
+                    self.patterns.weight[:, None, None, :].repeat(1, self.num_queries, bs, 1).flatten(0, 1)
+            return query_embed, tgt, attn_mask, mask_dict
+        else:
+            query_embed = query_embed.unsqueeze(1).repeat(1, bs, 1)
+            num_queries = query_embed.shape[0]
+            if self.num_patterns == 0:
+                tgt = torch.zeros(
+                    num_queries, bs, self.d_model, device=query_embed.device)
+            else:
+                tgt = self.patterns.weight[:, None, None, :].repeat(
+                    1, self.num_queries, bs,
+                    1).flatten(0, 1)  # n_q*n_pat, bs, d_model
+                query_embed = query_embed.repeat(self.num_patterns, 1,
+                                                 1)  # n_q*n_pat, bs, d_model
+        return query_embed, tgt, None, None
+
+    def forward(self,
+                feats,
+                img_metas,
+                query_embed=None,
+                tgt=None,
+                attn_mask=None,
+                mask_dict=None):
         """Forward function.
         Args:
             feats (tuple[Tensor]): Features from the upstream network, each is
@@ -108,7 +172,9 @@ class DABDETRHead(nn.Module):
                     normalized coordinate format (cx, cy, w, h) and shape \
                     [nb_dec, bs, num_query, 4].
         """
-        feats = self.transformer(feats, img_metas)
+
+        feats = self.transformer(
+            feats, img_metas, query_embed, tgt, attn_mask=attn_mask)
 
         hs, reference = feats
         outputs_class = self.class_embed(hs)
@@ -127,6 +193,10 @@ class DABDETRHead(nn.Module):
                 outputs_coords.append(outputs_coord)
             outputs_coord = torch.stack(outputs_coords)
 
+        if mask_dict is not None:
+            # dn post process
+            outputs_class, outputs_coord = dn_post_process(
+                outputs_class, outputs_coord, mask_dict)
         out = {
             'pred_logits': outputs_class[-1],
             'pred_boxes': outputs_coord[-1]
@@ -163,27 +233,45 @@ class DABDETRHead(nn.Module):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        outputs = self.forward(x, img_metas)
-
+        # prepare ground truth
         for i in range(len(img_metas)):
             img_h, img_w, _ = img_metas[i]['img_shape']
             # DETR regress the relative position of boxes (cxcywh) in the image.
             # Thus the learning target should be normalized by the image size, also
             # the box format should be converted from defaultly x1y1x2y2 to cxcywh.
-            factor = outputs['pred_boxes'].new_tensor(
-                [img_w, img_h, img_w, img_h]).unsqueeze(0)
+            factor = gt_bboxes[i].new_tensor([img_w, img_h, img_w,
+                                              img_h]).unsqueeze(0)
             gt_bboxes[i] = box_xyxy_to_cxcywh(gt_bboxes[i]) / factor
 
         targets = []
         for gt_label, gt_bbox in zip(gt_labels, gt_bboxes):
             targets.append({'labels': gt_label, 'boxes': gt_bbox})
 
-        losses = self.criterion(outputs, targets)
+        query_embed, tgt, attn_mask, mask_dict = self.prepare(
+            x, targets=targets, mode='train')
+
+        outputs = self.forward(
+            x,
+            img_metas,
+            query_embed=query_embed,
+            tgt=tgt,
+            attn_mask=attn_mask,
+            mask_dict=mask_dict)
+
+        losses = self.criterion(outputs, targets, mask_dict)
 
         return losses
 
     def forward_test(self, x, img_metas):
-        outputs = self.forward(x, img_metas)
+        query_embed, tgt, attn_mask, mask_dict = self.prepare(x, mode='test')
+
+        outputs = self.forward(
+            x,
+            img_metas,
+            query_embed=query_embed,
+            tgt=tgt,
+            attn_mask=attn_mask,
+            mask_dict=mask_dict)
 
         ori_shape_list = []
         for i in range(len(img_metas)):
@@ -370,7 +458,7 @@ class SetCriterion(nn.Module):
         assert loss in loss_map, f'do you really want to compute {loss} loss?'
         return loss_map[loss](outputs, targets, indices, num_boxes, **kwargs)
 
-    def forward(self, outputs, targets, return_indices=False):
+    def forward(self, outputs, targets, mask_dict=None, return_indices=False):
         """ This performs the loss computation.
         Parameters:
              outputs: dict of tensors, see the output specification of the model for the format
@@ -424,6 +512,16 @@ class SetCriterion(nn.Module):
                                            num_boxes, **kwargs)
                     l_dict = {k + f'_{i}': v for k, v in l_dict.items()}
                     losses.update(l_dict)
+
+        if mask_dict is not None:
+            # print('dn_loss!!!!!!!!!!')
+            # dn loss computation
+            aux_num = 0
+            if 'aux_outputs' in outputs:
+                aux_num = len(outputs['aux_outputs'])
+            dn_losses = compute_dn_loss(mask_dict, self.training, aux_num,
+                                        0.25)
+            losses.update(dn_losses)
 
         if return_indices:
             indices_list.append(indices0_copy)
