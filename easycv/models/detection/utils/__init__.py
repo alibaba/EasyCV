@@ -8,5 +8,6 @@ from .matcher import HungarianMatcher
 from .misc import (accuracy, filter_scores_and_topk, fp16_clamp, interpolate,
                    inverse_sigmoid, multi_apply, output_postprocess,
                    select_single_mlvl)
+from .set_criterion import SetCriterion
 from .transformer import (MLP, TransformerEncoder, TransformerEncoderLayer,
                           _get_activation_fn, _get_clones)

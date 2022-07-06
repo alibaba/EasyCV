@@ -15,7 +15,7 @@ CLASSES = [
 ]
 
 # dataset settings
-data_root = 'data/coco/'
+data_root = '/apsarapangu/disk2/yunji.cjy/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -105,8 +105,10 @@ val_dataset = dict(
     imgs_per_gpu=1,
     data_source=dict(
         type='DetSourceCoco',
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
+        # ann_file=data_root + 'annotations/instances_val2017.json',
+        # img_prefix=data_root + 'val2017/',
+        ann_file=data_root + 'annotations/instances_train2017_1.json',
+        img_prefix=data_root + 'train2017/',
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True)
@@ -119,3 +121,15 @@ val_dataset = dict(
 
 data = dict(
     imgs_per_gpu=2, workers_per_gpu=2, train=train_dataset, val=val_dataset)
+
+# evaluation
+eval_config = dict(initial=True, interval=1, gpu_collect=False)
+# eval_config = dict(interval=1, gpu_collect=False)
+eval_pipelines = [
+    dict(
+        mode='test',
+        evaluators=[
+            dict(type='CocoDetectionEvaluator', classes=CLASSES),
+        ],
+    )
+]
