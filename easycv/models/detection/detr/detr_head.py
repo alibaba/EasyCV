@@ -49,7 +49,7 @@ class DETRHead(nn.Module):
             matcher=self.matcher,
             weight_dict=weight_dict,
             eos_coef=eos_coef,
-            losses=['labels', 'boxes', 'cardinality'])
+            losses=['labels', 'boxes'])
         self.postprocess = PostProcess()
         self.transformer = build_neck(transformer)
 

@@ -55,7 +55,7 @@ class DABDETRHead(nn.Module):
             num_classes,
             matcher=self.matcher,
             weight_dict=weight_dict,
-            losses=['labels', 'boxes', 'cardinality'],
+            losses=['labels', 'boxes'],
             loss_class_type='focal_loss')
         self.postprocess = PostProcess(num_select=num_select)
         self.transformer = build_neck(transformer)
