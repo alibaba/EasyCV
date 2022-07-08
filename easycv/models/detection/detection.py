@@ -1,10 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from typing import Dict, List, Optional
-
-import numpy as np
-import torch
-import torch.nn as nn
-
 from easycv.models.base import BaseModel
 from easycv.models.builder import (MODELS, build_backbone, build_head,
                                    build_neck)
