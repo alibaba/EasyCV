@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from .benchmark_mlp import BenchMarkMLP
 from .bninception import BNInception
+from .conv_mae_vit import FastConvMAEViT
 from .genet import PlainNet
 from .hrnet import HRNet
 from .inceptionv3 import Inception3
