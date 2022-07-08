@@ -8,13 +8,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from easycv.models.builder import HEADS, build_neck
-from easycv.models.detection.utils import (MLP, HungarianMatcher, accuracy,
+from easycv.models.detection.utils import (HungarianMatcher, accuracy,
                                            box_cxcywh_to_xyxy,
                                            box_xyxy_to_cxcywh,
                                            generalized_box_iou,
                                            inverse_sigmoid)
 from easycv.models.loss.focal_loss import py_sigmoid_focal_loss
-from easycv.models.utils import get_world_size, is_dist_avail_and_initialized
+from easycv.models.utils import (MLP, get_world_size,
+                                 is_dist_avail_and_initialized)
 
 
 @HEADS.register_module()

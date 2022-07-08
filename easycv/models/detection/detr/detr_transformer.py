@@ -15,9 +15,8 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 from easycv.models.builder import NECKS
-from easycv.models.detection.utils import (TransformerEncoder,
-                                           TransformerEncoderLayer,
-                                           _get_activation_fn, _get_clones)
+from easycv.models.utils import (TransformerEncoder, TransformerEncoderLayer,
+                                 _get_activation_fn, _get_clones)
 
 
 @NECKS.register_module
