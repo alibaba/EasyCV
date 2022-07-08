@@ -6,6 +6,7 @@ import mmcv
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
 from easycv.models.registry import BACKBONES, HEADS, MODELS, NECKS
@@ -313,6 +314,15 @@ def update_rpn_head():
                 self.num_base_priors * self.cls_out_channels, 1)
             self.rpn_reg = nn.Conv2d(self.feat_channels,
                                      self.num_base_priors * 4, 1)
+
+        def forward_single(self, x):
+            """Forward feature map of a single scale level."""
+            x = self.rpn_conv(x)
+            # inplace=False to fix gradient computation has been modified by F.relu() when run with PyTorch 1.10. 
+            x = F.relu(x, inplace=False)
+            rpn_cls_score = self.rpn_cls(x)
+            rpn_bbox_pred = self.rpn_reg(x)
+            return rpn_cls_score, rpn_bbox_pred
 
 
 def dynamic_adapt_for_mmlab(cfg):
