@@ -546,6 +546,7 @@ def ExportSingleImageDetectionBoxesToCoco(image_id, category_id_set,
       do not have the right lengths or (2) if each of the elements inside these
       lists do not have the correct shapes or (3) if image_ids are not integers.
   """
+
     assert len(detection_classes.shape) == 1 and len(detection_scores.shape) == 1, \
         'All entries in detection_classes and detection_scores expected to be of rank 1.'
     assert len(detection_boxes.shape) == 2,\
