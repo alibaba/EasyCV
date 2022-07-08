@@ -1,12 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from functools import partial
 from typing import List, Optional
 
 import numpy as np
 import torch
 import torchvision
 from packaging import version
-from six.moves import map, zip
 from torch import Tensor
 
 if version.parse(torchvision.__version__) < version.parse('0.7'):
