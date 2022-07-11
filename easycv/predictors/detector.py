@@ -326,17 +326,15 @@ class TorchViTDetPredictor(PredictorInterface):
             imgs = [imgs]
             is_batch = False
 
+        print(imgs)
+
         cfg = self.cfg
         device = next(self.model.parameters()).device  # model device
 
         if isinstance(imgs[0], np.ndarray):
             cfg = cfg.copy()
             # set loading pipeline type
-            cfg.data.val.pipeline.insert(
-                0,
-                dict(
-                    type='LoadImageFromWebcam',
-                    file_client_args=dict(backend='http')))
+            cfg.data.val.pipeline.insert(0, dict(type='LoadImageFromWebcam'))
         else:
             cfg = cfg.copy()
             # set loading pipeline type
@@ -344,7 +342,9 @@ class TorchViTDetPredictor(PredictorInterface):
                 0,
                 dict(
                     type='LoadImageFromFile',
-                    file_client_args=dict(backend='http')))
+                    file_client_args=dict(
+                        backend=('http' if imgs[0].startswith('http'
+                                                              ) else 'disk'))))
 
         cfg.data.val.pipeline = replace_ImageToTensor(cfg.data.val.pipeline)
 
