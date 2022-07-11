@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
 from easycv.models.builder import HEADS
+from easycv.models.utils.ops import resize_tensor
 from .base import BaseDecodeHead
 
 
@@ -111,7 +112,7 @@ class UPerHead(BaseDecodeHead):
         used_backbone_levels = len(laterals)
         for i in range(used_backbone_levels - 1, 0, -1):
             prev_shape = laterals[i - 1].shape[2:]
-            laterals[i - 1] = laterals[i - 1] + resize(
+            laterals[i - 1] = laterals[i - 1] + resize_tensor(
                 laterals[i],
                 size=prev_shape,
                 mode='bilinear',
@@ -126,7 +127,7 @@ class UPerHead(BaseDecodeHead):
         fpn_outs.append(laterals[-1])
 
         for i in range(used_backbone_levels - 1, 0, -1):
-            fpn_outs[i] = resize(
+            fpn_outs[i] = resize_tensor(
                 fpn_outs[i],
                 size=fpn_outs[0].shape[2:],
                 mode='bilinear',
@@ -184,32 +185,10 @@ class PPM(nn.ModuleList):
         ppm_outs = []
         for ppm in self:
             ppm_out = ppm(x)
-            upsampled_ppm_out = resize(
+            upsampled_ppm_out = resize_tensor(
                 ppm_out,
                 size=x.size()[2:],
                 mode='bilinear',
                 align_corners=self.align_corners)
             ppm_outs.append(upsampled_ppm_out)
         return ppm_outs
-
-
-def resize(input,
-           size=None,
-           scale_factor=None,
-           mode='nearest',
-           align_corners=None,
-           warning=True):
-    if warning:
-        if size is not None and align_corners:
-            input_h, input_w = tuple(int(x) for x in input.shape[2:])
-            output_h, output_w = tuple(int(x) for x in size)
-            if output_h > input_h or output_w > input_w:
-                if ((output_h > 1 and output_w > 1 and input_h > 1
-                     and input_w > 1) and (output_h - 1) % (input_h - 1)
-                        and (output_w - 1) % (input_w - 1)):
-                    warnings.warn(
-                        f'When align_corners={align_corners}, '
-                        'the output would more aligned if '
-                        f'input size {(input_h, input_w)} is `x+1` and '
-                        f'out size {(output_h, output_w)} is `nx+1`')
-    return F.interpolate(input, size, scale_factor, mode, align_corners)
