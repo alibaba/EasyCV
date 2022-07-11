@@ -1,5 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-# Reference: https://github.com/Alpha-VL/FastConvMAE
 import logging
 import math
 import os
@@ -96,7 +95,7 @@ def resize_pos_embed(posemb, posemb_new, num_tokens=1, gs_new=()):
 
 @BACKBONES.register_module()
 class ConvViTDet(FastConvMAEViT):
-    """
+    """Reference: https://github.com/Alpha-VL/FastConvMAE
     Args:
         window_size (int): The height and width of the window.
         in_channels (int): The num of input channels. Default: 3
