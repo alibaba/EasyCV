@@ -12,7 +12,6 @@ from easycv.datasets.utils import replace_ImageToTensor
 from easycv.models import build_model
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
-from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.registry import build_from_cfg
 
 
@@ -25,9 +24,6 @@ class FCOSTest(unittest.TestCase):
         self.model_path = model_path
 
         self.cfg = mmcv_config_fromfile(config_path)
-
-        # dynamic adapt mmdet models
-        dynamic_adapt_for_mmlab(self.cfg)
 
         # modify model_config
         if self.cfg.model.head.test_cfg.get('max_per_img', None):
