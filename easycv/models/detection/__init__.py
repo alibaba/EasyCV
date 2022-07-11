@@ -1,7 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import logging
 
+from .dab_detr import DABDETRHead, DABDetrTransformer
 from .detection import Detection
+from .detr import DETRHead, DetrTransformer
 from .fcos import FPN, FCOSHead
 from .vitdet import SFP
 

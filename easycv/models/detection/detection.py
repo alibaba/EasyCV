@@ -1,10 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from typing import Dict, List, Optional
-
-import numpy as np
-import torch
-import torch.nn as nn
-
 from easycv.models.base import BaseModel
 from easycv.models.builder import (MODELS, build_backbone, build_head,
                                    build_neck)
@@ -15,7 +9,7 @@ from easycv.utils.logger import get_root_logger, print_log
 @MODELS.register_module
 class Detection(BaseModel):
 
-    def __init__(self, backbone, head=None, neck=None, pretrained=None):
+    def __init__(self, backbone, head=None, neck=None, pretrained=True):
         super(Detection, self).__init__()
 
         self.pretrained = pretrained
@@ -32,16 +26,30 @@ class Detection(BaseModel):
         return hasattr(self, 'neck') and self.neck is not None
 
     def init_weights(self):
+        logger = get_root_logger()
         if isinstance(self.pretrained, str):
-            logger = get_root_logger()
             load_checkpoint(
                 self.backbone, self.pretrained, strict=False, logger=logger)
-        else:
-            print_log('load model from init weights')
+        elif self.pretrained:
             if self.backbone.__class__.__name__ == 'PytorchImageModelWrapper':
                 self.backbone.init_weights(pretrained=self.pretrained)
+            elif hasattr(self.backbone, 'default_pretrained_model_path'
+                         ) and self.backbone.default_pretrained_model_path:
+                print_log(
+                    'load model from default path: {}'.format(
+                        self.backbone.default_pretrained_model_path), logger)
+                load_checkpoint(
+                    self.backbone,
+                    self.backbone.default_pretrained_model_path,
+                    strict=False,
+                    logger=logger)
             else:
+                print_log('load model from init weights')
                 self.backbone.init_weights()
+        else:
+            print_log('load model from init weights')
+            self.backbone.init_weights()
+
         if self.with_neck:
             self.neck.init_weights()
         self.head.init_weights()
