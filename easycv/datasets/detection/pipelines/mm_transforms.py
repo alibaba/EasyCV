@@ -17,9 +17,7 @@ from easycv.datasets.shared.pipelines.transforms import Compose
 @PIPELINES.register_module()
 class MMToTensor:
     """Transform image to Tensor.
-
     Required key: 'img'. Modifies key: 'img'.
-
     Args:
         results (dict): contain all information about training.
     """
@@ -32,9 +30,7 @@ class MMToTensor:
 @PIPELINES.register_module()
 class NormalizeTensor:
     """Normalize the Tensor image (CxHxW), with mean and std.
-
     Required key: 'img'. Modifies key: 'img'.
-
     Args:
         mean (list[float]): Mean values of 3 channels.
         std (list[float]): Std values of 3 channels.
@@ -53,13 +49,10 @@ class NormalizeTensor:
 @PIPELINES.register_module
 class MMMosaic(object):
     """Mosaic augmentation.
-
     Given 4 images, mosaic transform combines them into
     one output image. The output image is composed of the parts from each sub-
     image.
-
     .. code:: text
-
                         mosaic transform
                            center_x
                 +------------------------------+
@@ -76,14 +69,11 @@ class MMMosaic(object):
                 +----|-------------+-----------+
                      |             |
                      +-------------+
-
      The mosaic transform steps are as follows:
-
          1. Choose the mosaic center as the intersections of 4 images
          2. Get the left top image according to the index, and randomly
             sample another 3 images from the custom dataset.
          3. Sub image will be cropped if image is larger than mosaic patch
-
     Args:
         img_scale (Sequence[int]): Image size after mosaic pipeline of single
            image. Default to (640, 640).
@@ -103,10 +93,8 @@ class MMMosaic(object):
 
     def __call__(self, results):
         """Call function to make a mosaic of image.
-
         Args:
             results (dict): Result dict.
-
         Returns:
             dict: Result dict with mosaic transformed.
         """
@@ -116,10 +104,8 @@ class MMMosaic(object):
 
     def get_indexes(self, dataset):
         """Call function to collect indexes.
-
         Args:
             dataset (:obj:`DetImagesMixDataset`): The dataset.
-
         Returns:
             list: indexes.
         """
@@ -128,10 +114,8 @@ class MMMosaic(object):
 
     def _mosaic_transform(self, results):
         """Mosaic transform function.
-
         Args:
             results (dict): Result dict.
-
         Returns:
             dict: Updated result dict.
         """
@@ -215,14 +199,12 @@ class MMMosaic(object):
     def _mosaic_combine(self, loc, center_position_xy, img_shape_wh):
         """Calculate global coordinate of mosaic image and local coordinate of
         cropped sub-image.
-
         Args:
             loc (str): Index for the sub-image, loc in ('top_left',
               'top_right', 'bottom_left', 'bottom_right').
             center_position_xy (Sequence[float]): Mixing center for 4 images,
                 (x, y).
             img_shape_wh (Sequence[int]): Width and height of sub-image
-
         Returns:
             tuple[tuple[float]]: Corresponding coordinate of pasting and
                 cropping
@@ -285,9 +267,7 @@ class MMMosaic(object):
 @PIPELINES.register_module
 class MMMixUp:
     """MixUp data augmentation.
-
     .. code:: text
-
                          mixup transform
                 +------------------------------+
                 | mixup image   |              |
@@ -301,14 +281,11 @@ class MMMixUp:
                 |      |-----------------+     |
                 |             pad              |
                 +------------------------------+
-
      The mixup transform steps are as follows::
-
         1. Another random image is picked by dataset and embedded in
            the top left patch(after padding and resizing)
         2. The target of mixup transform is the weighted average of mixup
            image and origin image.
-
     Args:
         img_scale (Sequence[int]): Image output size after mixup pipeline.
            Default: (640, 640).
@@ -352,10 +329,8 @@ class MMMixUp:
 
     def __call__(self, results):
         """Call function to make a mixup of image.
-
         Args:
             results (dict): Result dict.
-
         Returns:
             dict: Result dict with mixup transformed.
         """
@@ -365,10 +340,8 @@ class MMMixUp:
 
     def get_indexes(self, dataset):
         """Call function to collect indexes.
-
         Args:
             dataset (:obj:`DetImagesMixDataset`): The dataset.
-
         Returns:
             list: indexes.
         """
@@ -383,10 +356,8 @@ class MMMixUp:
 
     def _mixup_transform(self, results):
         """MixUp transform function.
-
         Args:
             results (dict): Result dict.
-
         Returns:
             dict: Updated result dict.
         """
@@ -494,7 +465,6 @@ class MMMixUp:
 
     def _filter_box_candidates(self, bbox1, bbox2):
         """Compute candidate boxes which include following 5 things:
-
         bbox1 before augment, bbox2 after augment, min_bbox_size (pixels),
         min_area_ratio, max_aspect_ratio.
         """
@@ -523,10 +493,8 @@ class MMMixUp:
 @PIPELINES.register_module
 class MMRandomAffine:
     """Random affine transform data augmentation. for yolox
-
     This operation randomly generates affine transform matrix which including
     rotation, translation, shear and scaling transforms.
-
     Args:
         max_rotate_degree (float): Maximum degrees of rotation transform.
             Default: 10.
@@ -727,7 +695,6 @@ class MMPhotoMetricDistortion:
     """Apply photometric distortion to image sequentially, every transformation
     is applied with a probability of 0.5. The position of random contrast is in
     second or second to last.
-
     1. random brightness
     2. random contrast (mode 0)
     3. convert color from BGR to HSV
@@ -736,7 +703,6 @@ class MMPhotoMetricDistortion:
     6. convert color from HSV to BGR
     7. random contrast (mode 1)
     8. randomly swap channels
-
     Args:
         brightness_delta (int): delta of brightness.
         contrast_range (tuple): range of contrast.
@@ -756,10 +722,8 @@ class MMPhotoMetricDistortion:
 
     def __call__(self, results):
         """Call function to perform photometric distortion on images.
-
         Args:
             results (dict): Result dict from loading pipeline.
-
         Returns:
             dict: Result dict with images distorted.
         """
@@ -1284,7 +1248,6 @@ class MMRandomCrop:
             on cropped instance masks. Default False.
         bbox_clip_border (bool, optional): Whether clip the objects outside
             the border of the image. Defaults to True.
-
     Note:
         - If the image is smaller than the absolute crop size, return the
             original image.
@@ -1330,13 +1293,11 @@ class MMRandomCrop:
     def _crop_data(self, results, crop_size, allow_negative_crop):
         """Function to randomly crop images, bounding boxes, masks, semantic
         segmentation maps.
-
         Args:
             results (dict): Result dict from loading pipeline.
             crop_size (tuple): Expected absolute size after cropping, (h, w).
             allow_negative_crop (bool): Whether to allow a crop that does not
                 contain any bbox area. Default to False.
-
         Returns:
             dict: Randomly cropped results, 'img_shape' key in result dict is
                 updated according to crop size.
@@ -1542,9 +1503,7 @@ class MMPad:
 @PIPELINES.register_module
 class MMNormalize:
     """Normalize the image.
-
     Added key is "img_norm_cfg".
-
     Args:
         mean (sequence): Mean values of 3 channels.
         std (sequence): Std values of 3 channels.
@@ -1559,10 +1518,8 @@ class MMNormalize:
 
     def __call__(self, results):
         """Call function to normalize images.
-
         Args:
             results (dict): Result dict from loading pipeline.
-
         Returns:
             dict: Normalized results, 'img_norm_cfg' key is added into
                 result dict.
@@ -1649,13 +1606,11 @@ class LoadImageFromFile:
 @PIPELINES.register_module()
 class LoadMultiChannelImageFromFiles:
     """Load multi-channel images from a list of separate channel files.
-
     Required keys are "img_prefix" and "img_info" (a dict that must contain the
     key "filename", which is expected to be a list of filenames).
     Added or updated keys are "filename", "img", "img_shape",
     "ori_shape" (same as `img_shape`), "pad_shape" (same as `img_shape`),
     "scale_factor" (1.0) and "img_norm_cfg" (means=0 and stds=1).
-
     Args:
         to_float32 (bool): Whether to convert the loaded image to a float32
             numpy array. If set to False, the loaded image is an uint8 array.
@@ -1679,10 +1634,8 @@ class LoadMultiChannelImageFromFiles:
     def __call__(self, results):
         """Call functions to load multiple images and get images meta
         information.
-
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
         Returns:
             dict: The dict contains loaded images and meta information.
         """
@@ -1909,54 +1862,10 @@ class LoadAnnotations:
 
 
 @PIPELINES.register_module()
-class MMFilterAnnotations:
-    """Filter invalid annotations.
-    Args:
-        min_gt_bbox_wh (tuple[int]): Minimum width and height of ground truth
-            boxes.
-        keep_empty (bool): Whether to return None when it
-            becomes an empty bbox after filtering. Default: True
-    """
-
-    def __init__(self, min_gt_bbox_wh, keep_empty=True):
-        # TODO: add more filter options
-        self.min_gt_bbox_wh = min_gt_bbox_wh
-        self.keep_empty = keep_empty
-
-    def __call__(self, results):
-        assert 'gt_bboxes' in results
-        gt_bboxes = results['gt_bboxes']
-        if gt_bboxes.shape[0] == 0:
-            return results
-        w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
-        h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
-        keep = (w > self.min_gt_bbox_wh[0]) & (h > self.min_gt_bbox_wh[1])
-        if not keep.any():
-            if self.keep_empty:
-                return None
-            else:
-                return results
-        else:
-            keys = ('gt_bboxes', 'gt_labels', 'gt_masks', 'gt_semantic_seg')
-            for key in keys:
-                if key in results:
-                    results[key] = results[key][keep]
-            return results
-
-    def __repr__(self):
-        return self.__class__.__name__ + \
-               f'(min_gt_bbox_wh={self.min_gt_bbox_wh},' \
-               f'always_keep={self.always_keep})'
-
-
-@PIPELINES.register_module()
 class MMMultiScaleFlipAug:
     """Test-time augmentation with multiple scales and flipping.
-
     An example configuration is as followed:
-
     .. code-block::
-
         img_scale=[(1333, 400), (1333, 800)],
         flip=True,
         transforms=[
@@ -1967,12 +1876,9 @@ class MMMultiScaleFlipAug:
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
         ]
-
     After MultiScaleFLipAug with above configuration, the results are wrapped
     into lists of the same length as followed:
-
     .. code-block::
-
         dict(
             img=[...],
             img_shape=[...],
@@ -1980,7 +1886,6 @@ class MMMultiScaleFlipAug:
             flip=[False, True, False, True]
             ...
         )
-
     Args:
         transforms (list[dict]): Transforms to apply in each augmentation.
         img_scale (tuple | list[tuple] | None): Images scales for resizing.
@@ -2026,10 +1931,8 @@ class MMMultiScaleFlipAug:
 
     def __call__(self, results):
         """Call function to apply test time augment transforms on results.
-
         Args:
             results (dict): Result dict contains the data to transform.
-
         Returns:
            dict[str: list]: The augmented data, where each value is wrapped
                into a list.
@@ -2061,3 +1964,44 @@ class MMMultiScaleFlipAug:
         repr_str += f'img_scale={self.img_scale}, flip={self.flip}, '
         repr_str += f'flip_direction={self.flip_direction})'
         return repr_str
+
+
+@PIPELINES.register_module()
+class MMFilterAnnotations:
+    """Filter invalid annotations.
+    Args:
+        min_gt_bbox_wh (tuple[int]): Minimum width and height of ground truth
+            boxes.
+        keep_empty (bool): Whether to return None when it
+            becomes an empty bbox after filtering. Default: True
+    """
+
+    def __init__(self, min_gt_bbox_wh, keep_empty=True):
+        # TODO: add more filter options
+        self.min_gt_bbox_wh = min_gt_bbox_wh
+        self.keep_empty = keep_empty
+
+    def __call__(self, results):
+        assert 'gt_bboxes' in results
+        gt_bboxes = results['gt_bboxes']
+        if gt_bboxes.shape[0] == 0:
+            return results
+        w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
+        h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
+        keep = (w > self.min_gt_bbox_wh[0]) & (h > self.min_gt_bbox_wh[1])
+        if not keep.any():
+            if self.keep_empty:
+                return None
+            else:
+                return results
+        else:
+            keys = ('gt_bboxes', 'gt_labels', 'gt_masks', 'gt_semantic_seg')
+            for key in keys:
+                if key in results:
+                    results[key] = results[key][keep]
+            return results
+
+    def __repr__(self):
+        return self.__class__.__name__ + \
+               f'(min_gt_bbox_wh={self.min_gt_bbox_wh},' \
+               f'always_keep={self.always_keep})'
