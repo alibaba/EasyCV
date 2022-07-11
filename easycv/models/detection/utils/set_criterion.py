@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from easycv.models.detection.dab_detr.dn_components import compute_dn_loss
+from easycv.models.detection.dab_detr.dn_components import DNCriterion
 from easycv.models.detection.utils import (accuracy, box_cxcywh_to_xyxy,
                                            generalized_box_iou)
 from easycv.models.loss.focal_loss import py_sigmoid_focal_loss
@@ -23,7 +23,8 @@ class SetCriterion(nn.Module):
                  weight_dict,
                  losses,
                  eos_coef=None,
-                 loss_class_type='ce'):
+                 loss_class_type='ce',
+                 dn_components=None):
         """ Create the criterion.
         Parameters:
             num_classes: number of object categories, omitting the special no-object category
@@ -41,6 +42,8 @@ class SetCriterion(nn.Module):
             empty_weight = torch.ones(self.num_classes + 1)
             empty_weight[-1] = eos_coef
             self.register_buffer('empty_weight', empty_weight)
+        if dn_components is not None:
+            self.dn_criterion = DNCriterion(self.weight_dict)
 
     def loss_labels(self, outputs, targets, indices, num_boxes, log=True):
         """Classification loss (Binary focal loss)
@@ -211,13 +214,12 @@ class SetCriterion(nn.Module):
                     losses.update(l_dict)
 
         if mask_dict is not None:
-            # print('dn_loss!!!!!!!!!!')
             # dn loss computation
             aux_num = 0
             if 'aux_outputs' in outputs:
                 aux_num = len(outputs['aux_outputs'])
-            dn_losses = compute_dn_loss(mask_dict, self.training, aux_num,
-                                        0.25)
+            dn_losses = self.dn_criterion(mask_dict, self.training, aux_num,
+                                          0.25)
             losses.update(dn_losses)
 
         if return_indices:
