@@ -6,7 +6,7 @@ import torch
 from easycv.models.builder import build_head
 
 
-class FCNHeadTest(unittest.TestCase):
+class UperHeadTest(unittest.TestCase):
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
