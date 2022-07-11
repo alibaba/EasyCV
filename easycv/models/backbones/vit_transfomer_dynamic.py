@@ -93,7 +93,7 @@ class Attention(nn.Module):
         attn = (q @ k.transpose(-2, -1)) * self.scale
 
         if rel_pos_bias is not None:
-           attn = attn + rel_pos_bias
+            attn = attn + rel_pos_bias
 
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)

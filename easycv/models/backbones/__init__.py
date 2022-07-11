@@ -2,6 +2,7 @@
 from .benchmark_mlp import BenchMarkMLP
 from .bninception import BNInception
 from .conv_mae_vit import FastConvMAEViT
+from .conv_vitdet import ConvViTDet
 from .genet import PlainNet
 from .hrnet import HRNet
 from .inceptionv3 import Inception3
@@ -17,4 +18,3 @@ from .resnext import ResNeXt
 from .shuffle_transformer import ShuffleTransformer
 from .swin_transformer_dynamic import SwinTransformer
 from .vitdet import ViTDet
-from .conv_vitdet import ConvViTDet

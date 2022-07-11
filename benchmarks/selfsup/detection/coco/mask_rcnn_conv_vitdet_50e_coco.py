@@ -4,7 +4,7 @@ _base_ = ['configs/base.py']
 norm_cfg = dict(type='GN', num_groups=1, requires_grad=True)
 head_norm_cfg = dict(type='GN', num_groups=1, requires_grad=True)
 
-pretrained='http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/FastConvMAE/pretrained/pretrained.pth'
+pretrained = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/FastConvMAE/pretrained/pretrained.pth'
 model = dict(
     type='MaskRCNN',
     backbone=dict(
@@ -19,7 +19,7 @@ model = dict(
         num_heads=12,
         drop_path_rate=0.1,
         pretrained=pretrained,
-        ),
+    ),
     neck=dict(
         type='FPN',
         norm_cfg=norm_cfg,
@@ -256,7 +256,7 @@ checkpoint_config = dict(interval=1)
 
 # optimizer
 optimizer = dict(
-    type='AdamW', 
+    type='AdamW',
     lr=8.0e-05,
     betas=(0.9, 0.999),
     weight_decay=0.1,

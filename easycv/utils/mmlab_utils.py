@@ -318,7 +318,7 @@ def update_rpn_head():
         def forward_single(self, x):
             """Forward feature map of a single scale level."""
             x = self.rpn_conv(x)
-            # inplace=False to fix gradient computation has been modified by F.relu() when run with PyTorch 1.10. 
+            # inplace=False to fix gradient computation has been modified by F.relu() when run with PyTorch 1.10.
             x = F.relu(x, inplace=False)
             rpn_cls_score = self.rpn_cls(x)
             rpn_bbox_pred = self.rpn_reg(x)
