@@ -2,6 +2,7 @@
 # Reference: https://github.com/Alpha-VL/FastConvMAE
 import logging
 import math
+import os
 from functools import partial
 import torch
 import torch.nn as nn
@@ -9,6 +10,10 @@ import torch.nn.functional as F
 from einops import rearrange
 from timm.models.layers import trunc_normal_ as __call_trunc_normal_
 from timm.models.layers import variance_scaling_
+
+from easycv.file import is_oss_path
+from easycv.file import io
+from easycv.utils.constant import CACHE_DIR
 from .conv_mae_vit import FastConvMAEViT
 from ..registry import BACKBONES
 
@@ -291,9 +296,20 @@ class ConvViTDet(FastConvMAEViT):
         return [outs["s0"], outs["s1"], outs["s2"], outs["s3"]]
 
     def load_pretrained(self, pretrained):
-        unexpected_keys, missing_keys = [], []
+        from mmcv.runner.checkpoint import _load_checkpoint
 
-        checkpoint = torch.load(pretrained, map_location="cpu")
+        if is_oss_path(pretrained):
+            _, fname = os.path.split(pretrained)
+            cache_file = os.path.join(CACHE_DIR, fname)
+            if not os.path.exists(cache_file):
+                print(f'download checkpoint from {pretrained} to {cache_file}')
+                io.copy(pretrained, cache_file)
+            if torch.distributed.is_available() and torch.distributed.is_initialized():
+                torch.distributed.barrier()
+            pretrained = cache_file
+
+        unexpected_keys, missing_keys = [], []
+        checkpoint = _load_checkpoint(pretrained, map_location="cpu")
         if 'state_dict' in checkpoint:
             checkpoint = checkpoint['state_dict']
         else:
@@ -314,9 +330,9 @@ class ConvViTDet(FastConvMAEViT):
                 self.patch_embed3.grid_size,
             )
         self.load_state_dict(checkpoint, strict=False)
-        logging.info(f"Loading ViT pretrained weights from {pretrained}.")
-        logging.info(f"missing keys: {missing_keys}")
-        logging.info(f"unexpected keys: {unexpected_keys}")
+        print(f"Loading ViT pretrained weights from {pretrained}.")
+        print(f"missing keys: {missing_keys}")
+        print(f"unexpected keys: {unexpected_keys}")
 
         if "rel_pos_bias.relative_position_bias_table" in unexpected_keys:
             windowed_relative_position_bias_table = resize_pos_embed(
@@ -331,4 +347,4 @@ class ConvViTDet(FastConvMAEViT):
             self.global_rel_pos_bias.load_state_dict(
                 {"relative_position_bias_table": global_relative_position_bias_table[0]},
                 strict=False)
-            logging.info('Load positional bias table from pretrained.')
+            print('Load positional bias table from pretrained.')

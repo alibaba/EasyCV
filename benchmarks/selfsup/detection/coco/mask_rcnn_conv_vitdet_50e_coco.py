@@ -4,7 +4,7 @@ _base_ = ['configs/base.py']
 norm_cfg = dict(type='GN', num_groups=1, requires_grad=True)
 head_norm_cfg = dict(type='GN', num_groups=1, requires_grad=True)
 
-pretrained='/root/workspace/pretrained_model/convmae_fixlr/pretrained.pth',
+pretrained='http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/FastConvMAE/pretrained/pretrained.pth'
 model = dict(
     type='MaskRCNN',
     backbone=dict(
@@ -158,7 +158,7 @@ CLASSES = [
 ]
 
 # dataset settings
-data_root = '/root/workspace/data/coco/'
+data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
