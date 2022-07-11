@@ -4,16 +4,16 @@ import math
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from mmcv.cnn import ConvModule, Scale
 from mmcv.ops import batched_nms
 
 from easycv.models.builder import HEADS, build_loss
 from easycv.models.detection.utils import (MlvlPointGenerator, bbox2result,
                                            distance2bbox,
-                                           filter_scores_and_topk, multi_apply,
+                                           filter_scores_and_topk,
                                            select_single_mlvl)
 from easycv.models.utils import reduce_mean
+from easycv.utils.misc import multi_apply
 
 INF = 1e8
 
