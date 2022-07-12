@@ -14,6 +14,7 @@ model = dict(
         downsamples=[True, True, True, True],
         vit_num=1,
         fork_feat=False,
+        distillation=False,
     ),
     head=dict(
         type='ClsHead',
