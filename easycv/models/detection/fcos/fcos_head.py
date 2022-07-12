@@ -5,11 +5,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, Scale
-from mmcv.ops import batched_nms
 
 from easycv.models.builder import HEADS, build_loss
-from easycv.models.detection.utils import (MlvlPointGenerator, bbox2result,
-                                           distance2bbox,
+from easycv.models.detection.utils import (MlvlPointGenerator, batched_nms,
+                                           bbox2result, distance2bbox,
                                            filter_scores_and_topk,
                                            select_single_mlvl)
 from easycv.models.utils import reduce_mean
