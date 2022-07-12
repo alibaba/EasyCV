@@ -268,6 +268,30 @@ if __name__ == '__main__':
 
 
 class DistributedTestCase(unittest.TestCase):
+    """Distributed TestCase for test function with distributed mode.
+    Examples:
+        import torch
+        from mmcv.runner import init_dist
+        from torch import distributed as dist
+
+        def _test_func():
+            init_dist(launcher='pytorch')
+            rank = dist.get_rank()
+            if rank == 0:
+                value = torch.tensor(1.0).cuda()
+            else:
+                value = torch.tensor(2.0).cuda()
+            dist.all_reduce(value)
+            return value.cpu().numpy()
+
+        class DistTest(DistributedTestCase):
+            def test_function_dist(self):
+                self.start_with_torch(
+                    _test_func,
+                    num_gpus=2,
+                    assert_callback=lambda x: self.assertEqual(x, 3.0)
+                )
+    """
 
     def _start(self,
                dist_start_cmd,
