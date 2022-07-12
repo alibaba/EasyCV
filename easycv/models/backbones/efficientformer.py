@@ -489,4 +489,4 @@ class EfficientFormer(nn.Module):
         else:
             cls_out = self.head(x.mean(-2))
         # for image classification
-        return cls_out
+        return [cls_out]

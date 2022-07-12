@@ -8,14 +8,18 @@ log_config = dict(
 model = dict(
     type='Classification',
     backbone=dict(
-        type='ResNet',
-        depth=50,
-        out_indices=[4],  # 0: conv-1, x: stage-x
-        norm_cfg=dict(type='BN')),
+        type='EfficientFormer',
+        layers=[48, 96, 224, 448],
+        embed_dims=[3, 2, 6, 4],
+        downsamples=[True, True, True, True],
+        vit_num=1,
+        fork_feat=False,
+    ),
     head=dict(
         type='ClsHead',
-        with_avg_pool=True,
-        in_channels=2048,
+        with_avg_pool=False,
+        with_fc=False,
+        in_channels=448,
         loss_config=dict(
             type='CrossEntropyLossWithLabelSmooth',
             label_smooth=0,
