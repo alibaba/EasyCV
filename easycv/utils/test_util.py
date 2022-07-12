@@ -274,7 +274,7 @@ class DistributedTestCase(unittest.TestCase):
         from mmcv.runner import init_dist
         from torch import distributed as dist
 
-        def _test_func():
+        def _test_func(*args, **kwargs):
             init_dist(launcher='pytorch')
             rank = dist.get_rank()
             if rank == 0:
@@ -286,10 +286,14 @@ class DistributedTestCase(unittest.TestCase):
 
         class DistTest(DistributedTestCase):
             def test_function_dist(self):
+                args = ()  # args should be python builtin type
+                kwargs = {}  # kwargs should be python builtin type
                 self.start_with_torch(
                     _test_func,
                     num_gpus=2,
-                    assert_callback=lambda x: self.assertEqual(x, 3.0)
+                    assert_callback=lambda x: self.assertEqual(x, 3.0),
+                    *args,
+                    **kwargs,
                 )
     """
 
