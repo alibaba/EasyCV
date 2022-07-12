@@ -2,7 +2,7 @@
 # isort:skip_file
 # yapf:disable
 from .mm_transforms import (
-    LoadAnnotations, LoadImageFromFile, LoadMultiChannelImageFromFiles,
+    LoadAnnotations, LoadImageFromFile, LoadImageFromWebcam, LoadMultiChannelImageFromFiles,
     MMFilterAnnotations, MMMixUp, MMMosaic, MMMultiScaleFlipAug, MMNormalize,
     MMPad, MMPhotoMetricDistortion, MMRandomAffine, MMRandomCrop, MMRandomFlip,
     MMResize, MMToTensor, NormalizeTensor)
@@ -10,7 +10,7 @@ from .mm_transforms import (
 __all__ = [
     'MMToTensor', 'NormalizeTensor', 'MMMosaic', 'MMMixUp', 'MMRandomAffine',
     'MMPhotoMetricDistortion', 'MMResize', 'MMRandomFlip', 'MMPad',
-    'MMNormalize', 'LoadImageFromFile', 'LoadMultiChannelImageFromFiles',
+    'MMNormalize', 'LoadImageFromFile', 'LoadImageFromWebcam', 'LoadMultiChannelImageFromFiles',
     'LoadAnnotations', 'MMMultiScaleFlipAug', 'MMRandomCrop',
     'MMFilterAnnotations'
 ]

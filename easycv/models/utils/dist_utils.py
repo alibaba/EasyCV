@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import torch
+import torch.distributed as dist
 from mmcv.runner import get_dist_info
 from pytorch_metric_learning.utils import common_functions as c_f
 
@@ -79,3 +80,26 @@ class DistributedMinerWrapper(torch.nn.Module):
             ref_emb, ref_labels = all_gather_embeddings_labels(
                 ref_emb, ref_labels)
         return self.miner(embeddings, labels, ref_emb, ref_labels)
+
+
+def reduce_mean(tensor):
+    """"Obtain the mean of tensor on different GPUs."""
+    if not (dist.is_available() and dist.is_initialized()):
+        return tensor
+    tensor = tensor.clone()
+    dist.all_reduce(tensor.div_(dist.get_world_size()), op=dist.ReduceOp.SUM)
+    return tensor
+
+
+def is_dist_avail_and_initialized():
+    if not dist.is_available():
+        return False
+    if not dist.is_initialized():
+        return False
+    return True
+
+
+def get_world_size():
+    if not is_dist_avail_and_initialized():
+        return 1
+    return dist.get_world_size()

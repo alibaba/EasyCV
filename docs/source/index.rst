@@ -16,7 +16,7 @@ object detection and so on.
    prepare_data.md
    quick_start.md
    model_zoo_ssl.md
-   model_zoo_detection.md
+   model_zoo_det.md
    develop.md
 
 .. toctree::
