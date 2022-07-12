@@ -1,7 +1,6 @@
 """
 EfficientFormer
 """
-import copy
 import itertools
 import os
 

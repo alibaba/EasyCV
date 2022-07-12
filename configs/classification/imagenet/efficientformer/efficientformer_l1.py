@@ -52,7 +52,7 @@ test_pipeline = [
 ]
 
 data = dict(
-    imgs_per_gpu=32,  # total 256
+    imgs_per_gpu=128,  # total 1024
     workers_per_gpu=4,
     train=dict(
         type=dataset_type,
@@ -83,11 +83,19 @@ eval_pipelines = [
 custom_hooks = []
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='AdamW', lr=2e-3, weight_decay=0.025)
+optimizer_config = dict(grad_clip=dict(max_norm=0.01, norm_type=2))
 
 # learning policy
-lr_config = dict(policy='step', step=[30, 60, 90])
-checkpoint_config = dict(interval=10)
+lr_config = dict(
+    policy='CosineAnnealing',
+    min_lr=1e-5,
+    warmup='linear',
+    warmup_iters=5,
+    warmup_ratio=1e-3,
+    warmup_by_epoch=True,
+    by_epoch=True)
+checkpoint_config = dict(interval=30)
 
 # runtime settings
-total_epochs = 100
+total_epochs = 300
