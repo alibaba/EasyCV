@@ -483,8 +483,7 @@ def batched_nms(boxes, scores, idxs, nms_cfg, class_agnostic=False):
         # Currently it supports bounding boxes [x1, y1, x2, y2, score] or
         # rotated boxes [cx, cy, w, h, angle_radian, score].
 
-        dets = boxes_for_nms[keep]
-        scores = dets[:, -1]
+        scores = scores[keep]
     else:
         max_num = nms_cfg_.pop('max_num', -1)
         total_mask = scores.new_zeros(scores.size(), dtype=torch.bool)
@@ -494,8 +493,7 @@ def batched_nms(boxes, scores, idxs, nms_cfg, class_agnostic=False):
             mask = (idxs == id).nonzero(as_tuple=False).view(-1)
             keep = nms(boxes_for_nms[mask], scores[mask], **nms_cfg_)
             total_mask[mask[keep]] = True
-            dets = boxes_for_nms[keep]
-            scores_after_nms[mask[keep]] = dets[:, -1]
+            scores_after_nms[mask[keep]] = scores[keep]
         keep = total_mask.nonzero(as_tuple=False).view(-1)
 
         scores, inds = scores_after_nms[keep].sort(descending=True)
