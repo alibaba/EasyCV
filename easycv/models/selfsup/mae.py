@@ -15,14 +15,17 @@ class MAE(BaseModel):
                  norm_pix_loss=True,
                  **kwargs):
         super(MAE, self).__init__()
-        assert backbone.get('patch_size', None) is not None, \
-            'patch_size should be set'
-        self.patch_size = backbone['patch_size']
         self.mask_ratio = mask_ratio
         self.norm_pix_loss = norm_pix_loss
         self.encoder = builder.build_backbone(backbone)
+        self.patch_size = self.encoder.patch_size
         neck['num_patches'] = self.encoder.num_patches
         self.decoder = builder.build_neck(neck)
+        self.init_weights()
+
+    def init_weights(self):
+        self.encoder.init_weights()
+        self.decoder.init_weights()
 
     def patchify(self, imgs):
         """convert image to patch
@@ -54,6 +57,10 @@ class MAE(BaseModel):
             mean = target.mean(dim=-1, keepdim=True)
             var = target.var(dim=-1, keepdim=True)
             target = (target - mean) / (var + 1.e-6)**.5
+
+        # adapt to ConvMAE
+        assert pred.shape[0] % target.shape[0] == 0
+        target = torch.cat([target] * (pred.shape[0] // target.shape[0]))
 
         loss = (pred - target)**2
         loss = loss.mean(dim=-1)  # [N, L], mean loss per patch

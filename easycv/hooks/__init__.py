@@ -13,6 +13,7 @@ from .eval_hook import DistEvalHook, EvalHook
 from .export_hook import ExportHook
 from .extractor import Extractor
 from .logger import PreLoggerHook
+from .lr_update_hook import StepFixCosineAnnealingLrUpdaterHook
 from .optimizer_hook import OptimizerHook
 from .oss_sync_hook import OSSSyncHook
 from .registry import HOOKS
@@ -31,7 +32,7 @@ __all__ = [
     'OSSSyncHook', 'HOOKS', 'TIMEHook', 'SWAVHook', 'SyncNormHook',
     'SyncRandomSizeHook', 'TensorboardLoggerHookV2', 'WandbLoggerHookV2',
     'YOLOXLrUpdaterHook', 'YOLOXModeSwitchHook', 'MixupCollateHook',
-    'PreLoggerHook'
+    'PreLoggerHook', 'StepFixCosineAnnealingLrUpdaterHook'
 ]
 
 if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):

@@ -32,7 +32,6 @@ from easycv.datasets.utils import is_dali_dataset_type
 from easycv.file import io
 from easycv.models import build_model
 from easycv.utils.collect_env import collect_env
-from easycv.utils.flops_counter import get_model_info
 from easycv.utils.logger import get_root_logger
 from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.config_tools import traverse_replace
@@ -219,8 +218,10 @@ def main():
         assert isinstance(args.pretrained, str)
         cfg.model.pretrained = args.pretrained
     model = build_model(cfg.model)
+    print(model)
 
     if 'stage' in cfg.model and cfg.model['stage'] == 'EDGE':
+        from easycv.utils.flops_counter import get_model_info
         get_model_info(model, cfg.img_scale, cfg.model, logger)
 
     assert len(cfg.workflow) == 1, 'Validation is called by hook.'
