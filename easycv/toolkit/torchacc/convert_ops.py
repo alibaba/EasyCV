@@ -215,8 +215,8 @@ def _register_torchacc_ops():
                 reduce_type=reduce_op_map[op], inputs=tensor, **kwargs)
 
     def torchacc_reduce(tensor, dst, op=ReduceOp.SUM, **kwargs):
-        if tensor.device.type != 'gpu':
-            return
+        # if tensor.device.type != 'gpu':
+        #     return
         if xm.get_ordinal() != dst:
             tensor = tensor.clone()
             xm.all_reduce(
@@ -229,6 +229,10 @@ def _register_torchacc_ops():
         raise ValueError('Not support broadcast for torchacc yet!')
 
     def torcacc_all_gather(tensor_list, tensor, **kwargs):
+        if len(tensor.size()) == 0:
+            raise ValueError(
+                'Not support ``all_gather`` scaler type for torchacc!')
+
         res = xm.all_gather(value=tensor, dim=0, **kwargs)
         splits = torch.tensor_split(res, len(tensor_list))
 
@@ -325,10 +329,13 @@ def convert_torch_ops_to_torchacc():
 
 # TODO: remove it, fix torch.tensor to adapt torch.jit
 def convert_timm_ops():
-    from timm.models.layers import anti_aliasing
-    _ori_DownsampleJIT = anti_aliasing.DownsampleJIT
+    import timm
 
-    class FixedDownsampleJIT(_ori_DownsampleJIT):
-        pass
+    if hasattr(timm.models.layers, 'anti_aliasing'):
+        from timm.models.layers import anti_aliasing
+        _ori_DownsampleJIT = anti_aliasing.DownsampleJIT
 
-    setattr(anti_aliasing, 'DownsampleJIT', FixedDownsampleJIT)
+        class FixedDownsampleJIT(_ori_DownsampleJIT):
+            pass
+
+        setattr(anti_aliasing, 'DownsampleJIT', FixedDownsampleJIT)
