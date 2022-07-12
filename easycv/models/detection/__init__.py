@@ -6,7 +6,7 @@ from easycv.models.detection.dab_detr import DABDETRHead, DABDetrTransformer
 from easycv.models.detection.detection import Detection
 from easycv.models.detection.detr import DETRHead, DetrTransformer
 from easycv.models.detection.fcos import FCOSHead
-from easycv.models.detection.necks import *
+from easycv.models.detection.necks import FPN, SFP
 
 try:
     from easycv.models.detection.yolox.yolox import YOLOX
