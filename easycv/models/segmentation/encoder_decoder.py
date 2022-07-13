@@ -7,7 +7,8 @@ from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
 from easycv.models.utils.ops import resize_tensor
-from easycv.utils.logger import print_log
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger, print_log
 from easycv.utils.misc import add_prefix
 
 
@@ -36,7 +37,7 @@ class EncoderDecoder(BaseModel):
 
         self.neck = neck
         self.auxiliary_head = auxiliary_head
-
+        self.pretrained = pretrained
         if self.neck is not None:
             self.neck = builder.build_neck(self.neck)
 
@@ -55,12 +56,32 @@ class EncoderDecoder(BaseModel):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-        self.init_weights(pretrained=pretrained)
+        self.init_weights()
 
-    def init_weights(self, pretrained=None):
-        if pretrained is not None:
-            print_log('load model from: {}'.format(pretrained), logger='root')
-        self.backbone.init_weights(pretrained=pretrained)
+    def init_weights(self):
+        logger = get_root_logger()
+        if isinstance(self.pretrained, str):
+            load_checkpoint(
+                self.backbone, self.pretrained, strict=False, logger=logger)
+        elif self.pretrained:
+            if self.backbone.__class__.__name__ == 'PytorchImageModelWrapper':
+                self.backbone.init_weights(pretrained=self.pretrained)
+            elif hasattr(self.backbone, 'default_pretrained_model_path'
+                         ) and self.backbone.default_pretrained_model_path:
+                print_log(
+                    'load model from default path: {}'.format(
+                        self.backbone.default_pretrained_model_path), logger)
+                load_checkpoint(
+                    self.backbone,
+                    self.backbone.default_pretrained_model_path,
+                    strict=False,
+                    logger=logger)
+            else:
+                print_log('load model from init weights')
+                self.backbone.init_weights()
+        else:
+            print_log('load model from init weights')
+            self.backbone.init_weights()
 
         if hasattr(self.decode_head, 'init_weights'):
             self.decode_head.init_weights()
