@@ -68,6 +68,7 @@ test_pipeline = [
 data = dict(
     imgs_per_gpu=64,  # total 256
     workers_per_gpu=8,
+    drop_last=True,
     train_collate_hooks=[
         dict(
             type='MixupCollateHook',
