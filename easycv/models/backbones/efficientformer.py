@@ -1,6 +1,4 @@
-"""
-EfficientFormer
-"""
+# Copyright (c) 2022 Snap Inc. All rights reserved.
 import itertools
 import os
 
