@@ -461,7 +461,12 @@ class EfficientFormer(nn.Module):
             x = block(x)
             if self.fork_feat and idx in self.out_indices:
                 norm_layer = getattr(self, f'norm{idx}')
-                x_out = norm_layer(x)
+                if len(x.shape) == 4:
+                    x = x.permute(0, 2, 3, 1)
+                    x_out = norm_layer(x)
+                    x = x.permute(0, 3, 1, 2).contiguous()
+                else:
+                    x_out = norm_layer(x)
                 outs.append(x_out)
         if self.fork_feat:
             return outs
