@@ -69,7 +69,7 @@ data = dict(
             type='ClsSourceImageList'),
         pipeline=test_pipeline))
 
-eval_config = dict(initial=True, interval=1, gpu_collect=True)
+eval_config = dict(interval=1, gpu_collect=True)
 eval_pipelines = [
     dict(
         mode='test',
