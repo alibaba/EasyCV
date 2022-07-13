@@ -7,14 +7,15 @@ log_config = dict(
 # model settings
 model = dict(
     type='Classification',
+    pretrained='/home/yunji.cjy/pretrain/efficientformer_l1_1000d.pth',
     backbone=dict(
         type='EfficientFormer',
-        layers=[48, 96, 224, 448],
-        embed_dims=[3, 2, 6, 4],
+        layers=[3, 2, 6, 4],
+        embed_dims=[48, 96, 224, 448],
         downsamples=[True, True, True, True],
         vit_num=1,
         fork_feat=False,
-        distillation=False,
+        distillation=True,
     ),
     head=dict(
         type='ClsHead',
@@ -90,9 +91,9 @@ optimizer_config = dict(grad_clip=dict(max_norm=0.01, norm_type=2))
 lr_config = dict(
     policy='CosineAnnealing',
     min_lr=1e-5,
-    warmup='linear',
+    warmup='constant',
     warmup_iters=5,
-    warmup_ratio=1e-3,
+    warmup_ratio=5e-4,
     warmup_by_epoch=True,
     by_epoch=True)
 checkpoint_config = dict(interval=30)
