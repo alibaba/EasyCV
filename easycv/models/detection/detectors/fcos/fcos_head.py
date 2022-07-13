@@ -20,7 +20,6 @@ INF = 1e8
 @HEADS.register_module()
 class FCOSHead(nn.Module):
     """Anchor-free head used in `FCOS <https://arxiv.org/abs/1904.01355>`_.
-
     The FCOS head does not use anchor boxes. Instead bounding boxes are
     predicted at each pixel and a centerness measure is used to suppress
     low-quality predictions.
@@ -28,7 +27,6 @@ class FCOSHead(nn.Module):
     tricks used in official repo, which will bring remarkable mAP gains
     of up to 4.9. Please see https://github.com/tianzhi0549/FCOS for
     more detail.
-
     Args:
         num_classes (int): Number of categories excluding the background
             category.
@@ -53,7 +51,6 @@ class FCOSHead(nn.Module):
         norm_cfg (dict): dictionary to construct and config norm layer.
             Default: norm_cfg=dict(type='GN', num_groups=32, requires_grad=True).
         init_cfg (dict or list[dict], optional): Initialization config dict.
-
     Example:
         >>> self = FCOSHead(11, 7)
         >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
@@ -193,11 +190,9 @@ class FCOSHead(nn.Module):
 
     def forward(self, feats):
         """Forward features from the upstream network.
-
         Args:
             feats (tuple[Tensor]): Features from the upstream network, each is
                 a 4D-tensor.
-
         Returns:
             tuple:
                 cls_scores (list[Tensor]): Box scores for each scale level, \
@@ -214,7 +209,6 @@ class FCOSHead(nn.Module):
 
     def forward_single(self, x, scale, stride):
         """Forward features of a single scale level.
-
         Args:
             x (Tensor): FPN feature maps of the specified stride.
             scale (:obj: `mmcv.cnn.Scale`): Learnable scale module to resize
@@ -222,7 +216,6 @@ class FCOSHead(nn.Module):
             stride (int): The corresponding stride for feature maps, only
                 used to normalize the bbox prediction when self.norm_on_bbox
                 is True.
-
         Returns:
             tuple: scores for each class, bbox predictions and centerness \
                 predictions of input feature maps.
@@ -274,14 +267,12 @@ class FCOSHead(nn.Module):
 
     def forward_test(self, feats, img_metas, rescale=False):
         """Test function without test-time augmentation.
-
         Args:
             feats (tuple[torch.Tensor]): Multi-level features from the
                 upstream network, each is a 4D-tensor.
             img_metas (list[dict]): List of image information.
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
-
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
                 The first item is ``bboxes`` with shape (n, 5),
@@ -336,7 +327,6 @@ class FCOSHead(nn.Module):
              img_metas,
              gt_bboxes_ignore=None):
         """Compute loss of the head.
-
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level,
                 each is a 4D-tensor, the channel number is
@@ -353,7 +343,6 @@ class FCOSHead(nn.Module):
                 image size, scaling factor, etc.
             gt_bboxes_ignore (None | list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
-
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
@@ -431,7 +420,6 @@ class FCOSHead(nn.Module):
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):
         """Compute regression, classification and centerness targets for points
         in multiple images.
-
         Args:
             points (list[Tensor]): Points of each fpn level, each has shape
                 (num_points, 2).
@@ -439,7 +427,6 @@ class FCOSHead(nn.Module):
                 each has shape (num_gt, 4).
             gt_labels_list (list[Tensor]): Ground truth labels of each box,
                 each has shape (num_gt,).
-
         Returns:
             tuple:
                 concat_lvl_labels (list[Tensor]): Labels of each level. \
@@ -575,11 +562,9 @@ class FCOSHead(nn.Module):
 
     def centerness_target(self, pos_bbox_targets):
         """Compute centerness targets.
-
         Args:
             pos_bbox_targets (Tensor): BBox targets of positive bboxes in shape
                 (num_pos, 4)
-
         Returns:
             Tensor: Centerness target.
         """
@@ -604,11 +589,9 @@ class FCOSHead(nn.Module):
                    with_nms=True,
                    **kwargs):
         """Transform network outputs of a batch into bbox results.
-
         Note: When score_factors is not None, the cls_scores are
         usually multiplied by it then obtain the real score used in NMS,
         such as CenterNess in FCOS, IoU branch in ATSS.
-
         Args:
             cls_scores (list[Tensor]): Classification scores for all
                 scale levels, each is a 4D-tensor, has shape
@@ -626,7 +609,6 @@ class FCOSHead(nn.Module):
                 Default False.
             with_nms (bool): If True, do nms before return boxes.
                 Default True.
-
         Returns:
             list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple.
                 The first item is an (n, 5) tensor, where the first 4 columns
@@ -682,7 +664,6 @@ class FCOSHead(nn.Module):
                            with_nms=True,
                            **kwargs):
         """Transform outputs of a single image into bbox predictions.
-
         Args:
             cls_score_list (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
@@ -706,14 +687,12 @@ class FCOSHead(nn.Module):
                 Default: False.
             with_nms (bool): If True, do nms before return boxes.
                 Default: True.
-
         Returns:
             tuple[Tensor]: Results of detected bboxes and labels. If with_nms
                 is False and mlvl_score_factor is None, return mlvl_bboxes and
                 mlvl_scores, else return mlvl_bboxes, mlvl_scores and
                 mlvl_score_factor. Usually with_nms is False is used for aug
                 test. If with_nms is True, then return the following format
-
                 - det_bboxes (Tensor): Predicted bboxes with shape \
                     [num_bboxes, 5], where the first 4 columns are bounding \
                     box positions (tl_x, tl_y, br_x, br_y) and the 5-th \
@@ -798,10 +777,8 @@ class FCOSHead(nn.Module):
                            mlvl_score_factors=None,
                            **kwargs):
         """bbox post-processing method.
-
         The boxes would be rescaled to the original image scale and do
         the nms operation. Usually `with_nms` is False is used for aug test.
-
         Args:
             mlvl_scores (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
@@ -822,14 +799,12 @@ class FCOSHead(nn.Module):
             mlvl_score_factors (list[Tensor], optional): Score factor from
                 all scale levels of a single image, each item has shape
                 (num_bboxes, ). Default: None.
-
         Returns:
             tuple[Tensor]: Results of detected bboxes and labels. If with_nms
                 is False and mlvl_score_factor is None, return mlvl_bboxes and
                 mlvl_scores, else return mlvl_bboxes, mlvl_scores and
                 mlvl_score_factor. Usually with_nms is False is used for aug
                 test. If with_nms is True, then return the following format
-
                 - det_bboxes (Tensor): Predicted bboxes with shape \
                     [num_bboxes, 5], where the first 4 columns are bounding \
                     box positions (tl_x, tl_y, br_x, br_y) and the 5-th \
