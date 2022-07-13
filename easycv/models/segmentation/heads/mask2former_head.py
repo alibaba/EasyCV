@@ -20,22 +20,18 @@ class Mask2FormerHead(nn.Module):
         # extra parameters
         transformer_in_feature: str = 'multi_scale_pixel_decoder',
     ):
-        """
-        NOTE: this interface is experimental.
+        """_summary_
+
         Args:
-            input_shape: shapes (channels and stride) of the input features
-            num_classes: number of classes to predict
-            pixel_decoder: the pixel decoder module
-            loss_weight: loss weight
-            ignore_value: category id to be ignored during training.
-            transformer_predictor: the transformer decoder that makes prediction
-            transformer_in_feature: input feature name to the transformer_predictor
+            pixel_decoder (cfg): config to build pixel decoder
+            transformer_decoder (cfg): config to build transformer decoder
+            num_things_classes (int): number of things classes
+            num_stuff_classes (int): number of stuff classes
+            loss_weight (float, optional): loss weight. Defaults to 1.0.
+            ignore_value (int, optional): category id to be ignored during training. Defaults to -1.
+            transformer_in_feature (str, optional): nput feature name to the transformer_predictor, only support multi_scale_pixel_decoder now. Defaults to 'multi_scale_pixel_decoder'.
         """
         super().__init__()
-        # input_shape = sorted(input_shape.items(), key=lambda x: x[1].stride)
-        # self.in_features = [k for k, v in input_shape]
-        # feature_strides = [v.stride for k, v in input_shape]
-        # feature_channels = [v.channels for k, v in input_shape]
 
         self.ignore_value = ignore_value
         self.common_stride = 4

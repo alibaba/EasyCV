@@ -1,9 +1,4 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
-# Modified by Bowen Cheng from https://github.com/facebookresearch/detr/blob/master/models/detr.py
-"""
-MaskFormer criterion.
-"""
-import logging
 from typing import List, Optional
 
 import torch
@@ -179,8 +174,9 @@ def calculate_uncertainty(logits):
     return -(torch.abs(gt_class_logits))
 
 
+# Modified from https://github.com/facebookresearch/detr/blob/master/models/detr.py
 class SetCriterion(nn.Module):
-    """This class computes the loss for DETR.
+    """This class computes the loss for Mask2former.
     The process happens in two steps:
         1) we compute hungarian assignment between ground truth boxes and the outputs of the model
         2) we supervise each pair of matched ground-truth / prediction (supervise class and box)

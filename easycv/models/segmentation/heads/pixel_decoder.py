@@ -1,4 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
 import copy
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
@@ -81,7 +80,7 @@ class Conv2d(torch.nn.Conv2d):
         return x
 
 
-# MSDeformAttn Transformer encoder in deformable detr
+# Modified from https://github.com/facebookresearch/Mask2Former/blob/main/mask2former/modeling/pixel_decoder/msdeformattn.py
 class MSDeformAttnTransformerEncoderOnly(nn.Module):
 
     def __init__(
@@ -282,14 +281,13 @@ class MSDeformAttnPixelDecoder(nn.Module):
         mask_dim: int = 256,
         norm: Optional[Union[str, Callable]] = 'GN',
         # deformable transformer encoder args
-        # transformer_in_features: List[str] = ['res3', 'res4', 'res5'],
         transformer_in_features: List[int] = [1, 2, 3],
         common_stride: int = 4,
     ):
         """
-        NOTE: this interface is experimental.
         Args:
-            input_shape: shapes (channels and stride) of the input features
+            input_stride: stride of the input features
+            input_channel: channels of the input features
             transformer_dropout: dropout probability in transformer
             transformer_nheads: number of heads in transformer
             transformer_dim_feedforward: dimension of feedforward network
@@ -299,13 +297,6 @@ class MSDeformAttnPixelDecoder(nn.Module):
             norm (str or callable): normalization for all conv layers
         """
         super().__init__()
-        # transformer_input_shape = {
-        #     k: v for k, v in input_shape.items() if k in transformer_in_features
-        # }
-
-        # this is the input shape of pixel decoder
-        # input_shape = sorted(input_shape.items(), key=lambda x: x[1].stride)
-        # self.in_features = [k for k, v in input_shape]  # starting from "res2" to "res5"
         self.in_features = [i for i in range(len(input_stride))]
         self.feature_strides = input_stride
         self.feature_channels = input_channel
@@ -381,8 +372,6 @@ class MSDeformAttnPixelDecoder(nn.Module):
         use_bias = False
         for idx, in_channels in enumerate(
                 self.feature_channels[:self.num_fpn_levels]):
-            # lateral_norm = get_norm(norm, conv_dim)
-            # output_norm = get_norm(norm, conv_dim)
             lateral_norm = torch.nn.GroupNorm(32, conv_dim)
             output_norm = torch.nn.GroupNorm(32, conv_dim)
 

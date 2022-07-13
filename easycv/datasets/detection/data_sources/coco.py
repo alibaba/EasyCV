@@ -1,6 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import random
-
 import numpy as np
 from xtcocotools.coco import COCO
 
@@ -32,7 +30,7 @@ class DetSourceCoco(object):
                 boxes of the dataset's classes will be filtered out. This option
                 only works when `test_mode=False`, i.e., we never filter images
                 during tests.
-            iscrowd: when traing setted as False, when val setted as Tre
+            iscrowd: when traing setted as False, when val setted as True
         """
         self.ann_file = ann_file
         self.img_prefix = img_prefix
@@ -220,6 +218,7 @@ class DetSourceCoco(object):
             gt_bboxes_ignore = np.zeros((0, 4), dtype=np.float32)
 
         seg_map = img_info['filename'].replace('jpg', 'png')
+
         ann = dict(
             bboxes=gt_bboxes,
             labels=gt_labels,

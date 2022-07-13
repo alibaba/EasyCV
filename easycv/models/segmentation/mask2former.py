@@ -7,11 +7,12 @@ import torch.nn.functional as F
 from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
+from easycv.models.segmentation.utils.criterion import SetCriterion
+from easycv.models.segmentation.utils.matcher import HungarianMatcher
+from easycv.models.segmentation.utils.panoptic_gt_processing import (
+    multi_apply, preprocess_panoptic_gt)
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger, print_log
-from .criterion import SetCriterion
-from .matcher import HungarianMatcher
-from .panoptic_gt_processing import multi_apply, preprocess_panoptic_gt
 
 INSTANCE_OFFSET = 1000
 
@@ -23,10 +24,19 @@ class Mask2Former(BaseModel):
         self,
         backbone,
         head,
-        train_cfg=None,
-        test_cfg=None,
+        train_cfg,
+        test_cfg,
         pretrained=None,
     ):
+        """Mask2Former Model
+
+        Args:
+            backbone (dict): config to build backbone
+            head (dict): config to builg mask2former head
+            train_cfg (dict): config of training strategy.
+            test_cfg (dict): config of test strategy.
+            pretrained (str, optional): path of model weights. Defaults to None.
+        """
         super(Mask2Former, self).__init__()
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg

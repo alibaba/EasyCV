@@ -67,7 +67,9 @@ class DetDataset(BaseDataset):
                         origin_img_shape, scale_factor and so on.
                 evaluators: evaluators to calculate metric with results and groundtruth_dict
         '''
+
         eval_result = dict()
+
         groundtruth_dict = {}
         groundtruth_dict['groundtruth_boxes'] = [
             self.data_source.get_ann_info(idx)['bboxes']
@@ -88,10 +90,9 @@ class DetDataset(BaseDataset):
 
         for evaluator in evaluators:
             if isinstance(evaluator, CocoPanopticEvaluator):
-                result_files = self.data_source.results2json(
-                    results, 'test/test_pan')
+                result_files = self.data_source.results2json(results)
                 gt_json, gt_folder, pred_json, pred_folder, categories = self.data_source.get_gt_json(
-                    result_files, 'test/test_pan')
+                    result_files)
                 eval_result.update(
                     evaluator.evaluate(gt_json, gt_folder, pred_json,
                                        pred_folder, categories))

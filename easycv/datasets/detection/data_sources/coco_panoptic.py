@@ -3,14 +3,13 @@ from collections import defaultdict
 
 import mmcv
 import numpy as np
-from pycocotools.coco import COCO
+from xtcocotools.coco import COCO
 
 from easycv.datasets.detection.data_sources import DetSourceCoco
 from easycv.datasets.registry import DATASOURCES, PIPELINES
 from easycv.datasets.shared.pipelines import Compose
 from easycv.utils.registry import build_from_cfg
 
-# from xtcocotools.coco import COCO
 try:
     import panopticapi
     from panopticapi.evaluation import VOID
@@ -120,11 +119,33 @@ class DetSourceCocoPanoptic(DetSourceCoco):
                  img_prefix,
                  seg_prefix,
                  pipeline,
+                 outfile_prefix='test/test_pan',
                  test_mode=False,
                  filter_empty_gt=False,
                  thing_classes=None,
                  stuff_classes=None,
                  iscrowd=False):
+        """
+
+        Args:
+            ann_file (str): Path of coco detection annotation file
+            pan_ann_file (str): Path of coco panoptic annotation file
+            img_prefix (str): Path of image file
+            seg_prefix (str): Path of semantic image file
+            pipeline (list[dict]): list of data augmentatin operation
+            outfile_prefix (str, optional): The filename prefix of the output files. If the
+                prefix is "somepath/xxx", the json files will be named
+                "somepath/xxx.panoptic.json", "somepath/xxx.bbox.json",
+                "somepath/xxx.segm.json"
+            test_mode (bool, optional): If set True, `self._filter_imgs` will not works.
+            filter_empty_gt (bool, optional): If set true, images without bounding
+                boxes of the dataset's classes will be filtered out. This option
+                only works when `test_mode=False`, i.e., we never filter images
+                during tests.
+            thing_classes (list[str], optional): list of thing classes. Defaults to None.
+            stuff_classes (list[str], optional): list of thing classes. Defaults to None.
+            iscrowd (bool, optional): when traing setted as False, when val setted as True. Defaults to False.
+        """
         super().__init__(
             ann_file,
             img_prefix,
@@ -133,6 +154,7 @@ class DetSourceCocoPanoptic(DetSourceCoco):
             filter_empty_gt=filter_empty_gt,
             classes=thing_classes,
             iscrowd=iscrowd)
+        self.outfile_prefix = outfile_prefix
         self.pan_ann_file = pan_ann_file
         self.seg_prefix = seg_prefix
         self.thing_classes = thing_classes
@@ -318,12 +340,12 @@ class DetSourceCocoPanoptic(DetSourceCoco):
             if img_info['width'] / img_info['height'] > 1:
                 self.flag[i] = 1
 
-    def _pan2json(self, results, outfile_prefix):
+    def _pan2json(self, results):
         """Convert panoptic results to COCO panoptic json style."""
         label2cat = dict((v, k) for (k, v) in self.cat2label_pan.items())
 
         pred_annotations = []
-        outdir = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
+        outdir = os.path.join(os.path.dirname(self.outfile_prefix), 'panoptic')
         for idx in range(len(self)):
             img_id = self.img_ids_pan[idx]
             segm_file = self.data_infos_pan[idx]['segm_file']
@@ -361,7 +383,7 @@ class DetSourceCocoPanoptic(DetSourceCoco):
         pan_json_results = dict(annotations=pred_annotations)
         return pan_json_results
 
-    def results2json(self, results, outfile_prefix):
+    def results2json(self, results):
         """Dump the results to a COCO style json file.
 
         There are 4 types of results: proposals, bbox predictions, mask
@@ -383,10 +405,6 @@ class DetSourceCocoPanoptic(DetSourceCoco):
 
         Args:
             results (list[dict]): Testing results of the dataset.
-            outfile_prefix (str): The filename prefix of the json files. If the
-                prefix is "somepath/xxx", the json files will be named
-                "somepath/xxx.panoptic.json", "somepath/xxx.bbox.json",
-                "somepath/xxx.segm.json"
 
         Returns:
             dict[str: str]: Possible keys are "panoptic", "bbox", "segm", \
@@ -397,23 +415,13 @@ class DetSourceCocoPanoptic(DetSourceCoco):
 
         if 'pan_results' in results:
             pan_results = results['pan_results']
-            pan_json_results = self._pan2json(pan_results, outfile_prefix)
-            result_files['panoptic'] = f'{outfile_prefix}.panoptic.json'
+            pan_json_results = self._pan2json(pan_results, self.outfile_prefix)
+            result_files['panoptic'] = f'{self.outfile_prefix}.panoptic.json'
             mmcv.dump(pan_json_results, result_files['panoptic'])
-
-        # # instance segmentation results
-        # if 'ins_results' in results[0]:
-        #     ins_results = [result['ins_results'] for result in results]
-        #     bbox_json_results, segm_json_results = self._segm2json(ins_results)
-        #     result_files['bbox'] = f'{outfile_prefix}.bbox.json'
-        #     result_files['proposal'] = f'{outfile_prefix}.bbox.json'
-        #     result_files['segm'] = f'{outfile_prefix}.segm.json'
-        #     mmcv.dump(bbox_json_results, result_files['bbox'])
-        #     mmcv.dump(segm_json_results, result_files['segm'])
 
         return result_files
 
-    def get_gt_json(self, result_files, outfile_prefix):
+    def get_gt_json(self, result_files):
 
         imgs = self.coco_pan.imgs
         gt_json = self.coco_pan.imgToAnns
@@ -427,6 +435,7 @@ class DetSourceCocoPanoptic(DetSourceCoco):
             (el['image_id'], el) for el in pred_json['annotations'])
 
         gt_folder = self.seg_prefix
-        pred_folder = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
+        pred_folder = os.path.join(
+            os.path.dirname(self.outfile_prefix), 'panoptic')
         categories = self.categories_pan
         return gt_json, gt_folder, pred_json, pred_folder, categories

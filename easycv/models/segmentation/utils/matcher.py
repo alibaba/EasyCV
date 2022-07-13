@@ -1,8 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
-# Modified by Bowen Cheng from https://github.com/facebookresearch/detr/blob/master/models/matcher.py
-"""
-Modules to compute the matching cost and solve the corresponding LSAP.
-"""
 import torch
 import torch.nn.functional as F
 from scipy.optimize import linear_sum_assignment
@@ -28,11 +23,6 @@ def batch_dice_loss(inputs: torch.Tensor, targets: torch.Tensor):
     denominator = inputs.sum(-1)[:, None] + targets.sum(-1)[None, :]
     loss = 1 - (numerator + 1) / (denominator + 1)
     return loss
-
-
-# batch_dice_loss_jit = torch.jit.script(
-#     batch_dice_loss
-# )  # type: torch.jit.ScriptModule
 
 
 def batch_sigmoid_ce_loss(inputs: torch.Tensor, targets: torch.Tensor):
@@ -62,6 +52,7 @@ batch_sigmoid_ce_loss_jit = torch.jit.script(
     batch_sigmoid_ce_loss)  # type: torch.jit.ScriptModule
 
 
+# Modified from https://github.com/facebookresearch/detr/blob/master/models/matcher.py
 class HungarianMatcher(nn.Module):
     """This class computes an assignment between the targets and the predictions of the network
 
