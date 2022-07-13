@@ -7,7 +7,6 @@ log_config = dict(
 # model settings
 model = dict(
     type='Classification',
-    pretrained='/home/yunji.cjy/pretrain/efficientformer_l1_1000d.pth',
     backbone=dict(
         type='EfficientFormer',
         layers=[3, 2, 6, 4],

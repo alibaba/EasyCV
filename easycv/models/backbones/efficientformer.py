@@ -9,19 +9,8 @@ import torch.nn as nn
 from timm.models.layers import DropPath, trunc_normal_
 from timm.models.layers.helpers import to_2tuple
 
+from ..modelzoo import efficientformer as model_urls
 from ..registry import BACKBONES
-
-EfficientFormer_width = {
-    'l1': [48, 96, 224, 448],
-    'l3': [64, 128, 320, 512],
-    'l7': [96, 192, 384, 768],
-}
-
-EfficientFormer_depth = {
-    'l1': [3, 2, 6, 4],
-    'l3': [4, 4, 12, 6],
-    'l7': [6, 6, 18, 8],
-}
 
 
 class Attention(torch.nn.Module):
@@ -455,6 +444,10 @@ class EfficientFormer(nn.Module):
                     embed_dims[-1], num_classes) if num_classes > 0 \
                     else nn.Identity()
 
+        suffix_dict = {1: 'l1', 4: 'l3', 8: 'l7'}
+        self.default_pretrained_model_path = model_urls.get(
+            self.__class__.__name__ + '_' + suffix_dict[vit_num], None)
+
     def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Linear):
@@ -481,10 +474,11 @@ class EfficientFormer(nn.Module):
             # otuput features of four stages for dense prediction
             return x
         x = self.norm(x)
+
+        # TODO: support kd pipeline
         if self.dist:
             cls_out = self.head(x.mean(-2)), self.dist_head(x.mean(-2))
-            if not self.training:
-                cls_out = (cls_out[0] + cls_out[1]) / 2
+            cls_out = (cls_out[0] + cls_out[1]) / 2
         else:
             cls_out = self.head(x.mean(-2))
         # for image classification
