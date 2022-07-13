@@ -15,7 +15,7 @@ class PreLoggerHook(LoggerHook):
 
             for i, v in enumerate(values):
                 if isinstance(v, torch.Tensor):
-                    values[i] = v.detach().cpu().numpy()
+                    values[i] = v.clone().detach().cpu().numpy()
 
             runner.log_buffer.val_history[key][-n:] = values
 
