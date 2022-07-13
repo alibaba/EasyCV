@@ -70,10 +70,8 @@ class DetSourceCoco(object):
 
     def load_annotations(self, ann_file):
         """Load annotation from COCO style annotation file.
-
         Args:
             ann_file (str): Path of annotation file.
-
         Returns:
             list[dict]: Annotation info from COCO api.
         """
@@ -99,10 +97,8 @@ class DetSourceCoco(object):
 
     def get_ann_info(self, idx):
         """Get COCO annotation by index.
-
         Args:
             idx (int): Index of data.
-
         Returns:
             dict: Annotation info of specified index.
         """
@@ -114,10 +110,8 @@ class DetSourceCoco(object):
 
     def get_cat_ids(self, idx):
         """Get COCO category ids by index.
-
         Args:
             idx (int): Index of data.
-
         Returns:
             list[int]: All categories in the image of specified index.
         """
@@ -153,7 +147,6 @@ class DetSourceCoco(object):
 
     def _set_group_flag(self):
         """Set flag according to image aspect ratio.
-
         Images with aspect ratio greater than 1 will be set as group 1,
         otherwise group 0.
         """
@@ -165,11 +158,9 @@ class DetSourceCoco(object):
 
     def _parse_ann_info(self, img_info, ann_info):
         """Parse bbox and mask annotation.
-
         Args:
             ann_info (list[dict]): Annotation info of an image.
             with_mask (bool): Whether to parse mask annotations.
-
         Returns:
             dict: A dict containing the following keys: bboxes, bboxes_ignore,\
                 labels, masks, seg_map. "masks" are raw annotations and not \
@@ -242,11 +233,9 @@ class DetSourceCoco(object):
     def xyxy2xywh(self, bbox):
         """Convert ``xyxy`` style bounding boxes to ``xywh`` style for COCO
         evaluation.
-
         Args:
             bbox (numpy.ndarray): The bounding boxes, shape (4, ), in
                 ``xyxy`` order.
-
         Returns:
             list[float]: The converted bounding boxes, in ``xywh`` order.
         """
@@ -300,10 +289,8 @@ class DetSourceCoco(object):
 
     def prepare_train_img(self, idx):
         """Get training data and annotations after pipeline.
-
         Args:
             idx (int): Index of data.
-
         Returns:
             dict: Training data and annotation after pipeline with new keys \
                 introduced by pipeline.
@@ -317,10 +304,8 @@ class DetSourceCoco(object):
 
     def __getitem__(self, idx):
         """Get training/test data after pipeline.
-
         Args:
             idx (int): Index of data.
-
         Returns:
             dict: Training/test data (with annotation if `test_mode` is set \
                 True).
