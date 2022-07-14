@@ -24,6 +24,11 @@ from .vit_transfomer_dynamic import (dynamic_deit_small_p16,
 from .xcit_transformer import (xcit_large_24_p8, xcit_medium_24_p8,
                                xcit_medium_24_p16, xcit_small_12_p8,
                                xcit_small_12_p16)
+from .deitiii import (dynamic_deitiii_small_p16,
+                                     dynamic_deitiii_tiny_p16,
+                                     dynamic_vitiii_base_p16,
+                                     dynamic_vitiii_huge_p14,
+                                     dynamic_vitiii_large_p16)
 
 _MODEL_MAP = {
     # shuffle_transformer
@@ -48,7 +53,14 @@ _MODEL_MAP = {
     'xcit_small_12_p8': xcit_small_12_p8,
     'xcit_medium_24_p16': xcit_medium_24_p16,
     'xcit_medium_24_p8': xcit_medium_24_p8,
-    'xcit_large_24_p8': xcit_large_24_p8
+    'xcit_large_24_p8': xcit_large_24_p8,
+
+    # deit iii
+    'dynamic_deitiii_small_p16': dynamic_deitiii_small_p16,
+    'dynamic_deitiii_tiny_p16': dynamic_deitiii_tiny_p16,
+    'dynamic_vitiii_base_p16': dynamic_vitiii_base_p16,
+    'dynamic_vitiii_large_p16': dynamic_vitiii_large_p16,
+    'dynamic_vitiii_huge_p14': dynamic_vitiii_huge_p14
 }
 
 
