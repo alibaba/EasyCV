@@ -12,7 +12,6 @@ from easycv.datasets.utils import replace_ImageToTensor
 from easycv.models import build_model
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
-from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.registry import build_from_cfg
 
 
@@ -25,9 +24,6 @@ class DETRTest(unittest.TestCase):
         self.model_path = model_path
 
         self.cfg = mmcv_config_fromfile(config_path)
-
-        # dynamic adapt mmdet models
-        dynamic_adapt_for_mmlab(self.cfg)
 
         # modify model_config
         if self.cfg.model.head.get('num_select', None):
@@ -600,7 +596,7 @@ class DETRTest(unittest.TestCase):
             decimal=1)
 
     def test_dab_detr(self):
-        model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/dab_detr/epoch_50.pth'
+        model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/dab_detr/dab_detr_epoch_50.pth'
         config_path = 'configs/detection/dab_detr/dab_detr_r50_8x2_50e_coco.py'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
         self.init_detr(model_path, config_path)
@@ -670,6 +666,84 @@ class DETRTest(unittest.TestCase):
                       [
                           0.3374290466308594, 110.91182708740234,
                           63.00359344482422, 146.0926971435547
+                      ]]),
+            decimal=1)
+
+    def test_dn_detr(self):
+        model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/dn_detr/dn_detr_epoch_50.pth'
+        config_path = 'configs/detection/dab_detr/dn_detr_r50_8x2_50e_coco.py'
+        img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
+        self.init_detr(model_path, config_path)
+        output = self.predict(img)
+
+        self.assertIn('detection_boxes', output)
+        self.assertIn('detection_scores', output)
+        self.assertIn('detection_classes', output)
+        self.assertIn('img_metas', output)
+        self.assertEqual(len(output['detection_boxes'][0]), 10)
+        self.assertEqual(len(output['detection_scores'][0]), 10)
+        self.assertEqual(len(output['detection_classes'][0]), 10)
+
+        print(output['detection_classes'][0].tolist(),
+              output['detection_scores'][0].tolist(),
+              output['detection_boxes'][0].tolist())
+
+        self.assertListEqual(
+            output['detection_classes'][0].tolist(),
+            np.array([2, 13, 2, 2, 2, 2, 2, 2, 2, 2], dtype=np.int32).tolist())
+
+        assert_array_almost_equal(
+            output['detection_scores'][0],
+            np.array([
+                0.8800525665283203, 0.866659939289093, 0.8665854930877686,
+                0.8030595183372498, 0.7642921209335327, 0.7375038862228394,
+                0.7270554304122925, 0.6710091233253479, 0.6316548585891724,
+                0.6164721846580505
+            ],
+                     dtype=np.float32),
+            decimal=2)
+
+        assert_array_almost_equal(
+            output['detection_boxes'][0],
+            np.array([[
+                294.9338073730469, 115.7542495727539, 377.5517578125,
+                150.59274291992188
+            ],
+                      [
+                          220.57424926757812, 175.97023010253906,
+                          456.9001770019531, 383.2597351074219
+                      ],
+                      [
+                          479.5928649902344, 109.94012451171875,
+                          523.7343139648438, 130.80604553222656
+                      ],
+                      [
+                          398.6956787109375, 111.45973205566406,
+                          434.0437316894531, 134.1909637451172
+                      ],
+                      [
+                          166.98208618164062, 109.44792938232422,
+                          210.35342407226562, 139.9746856689453
+                      ],
+                      [
+                          609.432373046875, 113.08062744140625,
+                          635.9082641601562, 136.74383544921875
+                      ],
+                      [
+                          268.0716552734375, 105.00788879394531,
+                          327.4037170410156, 128.01449584960938
+                      ],
+                      [
+                          190.77467346191406, 107.42850494384766,
+                          298.35760498046875, 156.2850341796875
+                      ],
+                      [
+                          591.0296020507812, 110.53913116455078,
+                          620.702880859375, 127.42123413085938
+                      ],
+                      [
+                          431.6607971191406, 105.04813385009766,
+                          484.4869689941406, 132.45864868164062
                       ]]),
             decimal=1)
 
