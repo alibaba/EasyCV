@@ -5,7 +5,6 @@ import math
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from easycv.models.builder import HEADS, build_neck
 from easycv.models.detection.utils import (HungarianMatcher, SetCriterion,

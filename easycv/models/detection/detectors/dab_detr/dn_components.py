@@ -5,13 +5,8 @@
 # ------------------------------------------------------------------------
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
-from easycv.models.detection.utils import (accuracy, box_cxcywh_to_xyxy,
-                                           generalized_box_iou,
-                                           inverse_sigmoid)
-from easycv.models.loss.focal_loss import py_sigmoid_focal_loss
+from easycv.models.detection.utils import inverse_sigmoid
 
 
 def prepare_for_dn(mode, dn_args, embedweight, batch_size, num_queries,
