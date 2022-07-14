@@ -8,10 +8,12 @@ from typing import Sequence
 
 import mmcv
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter, ImageOps
 
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.shared.pipelines import Compose
+
+from torchvision import transforms
 
 # Default hyperparameters for all Ops
 _HPARAMS_DEFAULT = dict(pad_val=128)
@@ -157,6 +159,21 @@ rand_increasing_policies = [
         direction='vertical')
 ]
 
+three_augment_policies = [
+    [
+        dict(type='gaussianblur', prob=1.0, radius_min=0.1, radius_max=2.),
+        # dict(type='color_jitter', brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1, prob=1.0)
+    ],
+    [
+        dict(type='solarization', threshold=128, prob=1.0),
+        # dict(type='color_jitter', brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1, prob=1.0)
+    ],
+    [
+        dict(type='gray_scale', prob=1.0),
+        # dict(type='color_jitter', brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1, prob=1.0)
+    ]
+]
+
 
 def random_negative(value, random_negative_prob):
     """Randomly negate value based on random_negative_prob."""
@@ -180,6 +197,39 @@ def merge_hparams(policy: dict, hparams: dict):
         if key in inspect.getfullargspec(op.__init__).args:
             policy[key] = value
     return policy
+
+
+@PIPELINES.register_module()
+class ThreeAugment(object):
+    def __init__(self, policies=three_augment_policies, hparams=_HPARAMS_DEFAULT):
+        assert isinstance(policies, list) and len(policies) > 0, \
+            'Policies must be a non-empty list.'
+        for policy in policies:
+            assert isinstance(policy, list) and len(policy) > 0, \
+                'Each policy in policies must be a non-empty list.'
+            for augment in policy:
+                assert isinstance(augment, dict) and 'type' in augment, \
+                    'Each specific augmentation must be a dict with key' \
+                    ' "type".'
+
+        self.hparams = hparams
+        policies = copy.deepcopy(policies)
+        self.policies = []
+        for sub in policies:
+            merged_sub = [merge_hparams(policy, hparams) for policy in sub]
+            self.policies.append(merged_sub)
+
+        self.sub_policy = [Compose(policy) for policy in self.policies]
+
+    def __call__(self, results):
+        sub_policy = random.choice(self.sub_policy)
+        return sub_policy(results)
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(policies={self.policies})'
+        return repr_str
+
 
 
 @PIPELINES.register_module()
@@ -1043,3 +1093,167 @@ class Cutout(object):
         repr_str += f'pad_val={self.pad_val}, '
         repr_str += f'prob={self.prob})'
         return repr_str
+
+
+@PIPELINES.register_module()
+class gaussianblur(object):
+    """
+    Apply Gaussian Blur to the PIL image.
+    """
+    def __init__(self, prob=0.1, radius_min=0.1, radius_max=2.):
+        assert 0 <= prob <= 1.0, 'The prob should be in range [0,1], ' \
+            f'got {prob} instead.'
+        assert isinstance(radius_min, (int, float)), 'The radius_min type must '\
+            f'be int or float, but got {type(radius_min)} instead.'
+        assert isinstance(radius_max, (int, float)), 'The radius_max type must '\
+            f'be int or float, but got {type(radius_max)} instead.'
+
+        self.prob = prob
+        self.radius_min = radius_min
+        self.radius_max = radius_max
+
+    def __call__(self, results):
+        if np.random.rand() > self.prob:
+            return results
+
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            img = Image.fromarray(img)
+            img = img.filter(
+                ImageFilter.GaussianBlur(
+                    radius=random.uniform(self.radius_min, self.radius_max)
+                )
+            )
+            img = np.array(img)
+            results[key] = Image.fromarray(img.astype(np.uint8))
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(prob={self.prob}, '
+        repr_str += f'radius_min={self.radius_min}, '
+        repr_str += f'radius_max={self.radius_max})'
+        return repr_str
+
+
+# @PIPELINES.register_module()
+# class solarization(object):
+#     """
+#     Apply Solarization to the PIL image.
+#     """
+#     def __init__(self, prob=0.2):
+#         assert 0 <= prob <= 1.0, 'The prob should be in range [0,1], ' \
+#             f'got {prob} instead.'
+
+#         self.prob = prob
+
+#     def __call__(self, results):
+#         if random.random() < self.prob:
+#             return ImageOps.solarize(results)
+#         else:
+#             return results
+
+#     def __repr__(self):
+#         repr_str = self.__class__.__name__
+#         repr_str += f'(prob={self.prob})'
+#         return repr_str
+
+@PIPELINES.register_module
+class solarization(object):
+
+    def __init__(self, threshold=128, prob=0.5):
+        self.threshold = threshold
+        self.prob = prob
+
+    def __call__(self, results):
+        if np.random.rand() > self.prob:
+            return results
+
+        for key in results.get('img_fields', ['img']):
+            img = results[key]
+            img = np.array(img)
+            img = np.where(img < self.threshold, img, 255 - img)
+            results[key] = Image.fromarray(img.astype(np.uint8))
+
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(threshold={self.threshold})'
+        repr_str += f'(prob={self.prob})'
+        return repr_str
+
+
+
+@PIPELINES.register_module()
+class gray_scale(object):
+
+    def __init__(self, prob=0.2):
+        assert 0 <= prob <= 1.0, 'The prob should be in range [0,1], ' \
+            f'got {prob} instead.'
+
+        self.prob = prob
+        self.transf = transforms.Grayscale(3)
+ 
+    def __call__(self, results):
+        if np.random.rand() > self.prob:
+            return results
+
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            img = Image.fromarray(img)
+            img = self.transf(img)
+            img = np.array(img)
+            results[key] = Image.fromarray(img.astype(np.uint8))
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(prob={self.prob})'
+        return repr_str
+ 
+
+# @PIPELINES.register_module()
+# class color_jitter(object):
+
+#     def __init__(self, brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1, prob=0.5):
+#         assert 0 <= brightness <= 1.0, 'The brightness should be in range [0,1], ' \
+#             f'got {brightness} instead.'
+#         assert 0 <= contrast <= 1.0, 'The contrast should be in range [0,1], ' \
+#             f'got {contrast} instead.'
+#         assert 0 <= saturation <= 1.0, 'The saturation should be in range [0,1], ' \
+#             f'got {saturation} instead.'
+#         assert 0 <= hue <= 1.0, 'The hue should be in range [0,1], ' \
+#             f'got {hue} instead.'
+#         assert 0 <= prob <= 1.0, 'The prob should be in range [0,1], ' \
+#             f'got {prob} instead.'
+
+#         self.brightness = brightness
+#         self.contrast = contrast
+#         self.saturation = saturation
+#         self.hue = hue
+#         self.prob = prob
+#         self.transf = transforms.ColorJitter(brightness, contrast, saturation, hue)
+ 
+#     def __call__(self, results):
+#         if np.random.rand() > self.prob:
+#             return results
+
+#         for key in results.get('img_fields', ['img']):
+#             img = np.array(results[key])
+#             img = Image.fromarray(img)
+#             img = self.transf(img)
+#             img = np.array(img)
+#             results[key] = Image.fromarray(img.astype(np.uint8))
+#         return results
+
+#     def __repr__(self):
+#         repr_str = self.__class__.__name__
+#         repr_str += f'(brightness={self.brightness})'
+#         repr_str += f'(contrast={self.contrast})'
+#         repr_str += f'(saturation={self.saturation})'
+#         repr_str += f'(hue={self.hue})'
+#         repr_str += f'(prob={self.prob})'
+#         return repr_str
+ 
+

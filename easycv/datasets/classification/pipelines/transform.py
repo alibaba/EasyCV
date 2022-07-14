@@ -7,6 +7,7 @@ from PIL import Image
 
 from easycv.datasets.registry import PIPELINES
 
+from torchvision import transforms
 
 @PIPELINES.register_module()
 class MMRandomErasing(object):
@@ -134,3 +135,34 @@ class MMRandomErasing(object):
         repr_str += f'fill_color={self.fill_color}, '
         repr_str += f'fill_std={self.fill_std})'
         return repr_str
+
+
+@PIPELINES.register_module()
+class SimpleRandomCrop(object):
+
+    def __init__(self, size=224):
+        assert size > 0, 'The size should > 0, ' \
+            f'got {size} instead.'
+
+        self.size = size
+
+        self.transf_resize = transforms.Resize(size, interpolation=3)
+        self.transf_randomcrop = transforms.RandomCrop(size, padding=4,padding_mode='reflect')
+ 
+    def __call__(self, results):
+
+        for key in results.get('img_fields', ['img']):
+            img = np.array(results[key])
+            img = Image.fromarray(img)
+            img = self.transf_resize(img)
+            img = self.transf_randomcrop(img)
+            img = np.array(img)
+            results[key] = Image.fromarray(img.astype(np.uint8))
+
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(size={self.size})'
+        return repr_str
+
