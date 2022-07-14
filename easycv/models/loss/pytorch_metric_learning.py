@@ -272,3 +272,17 @@ class SoftTargetCrossEntropy(nn.Module):
     def forward(self, x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         loss = torch.sum(-target * F.log_softmax(x, dim=-1), dim=-1)
         return loss.mean()
+
+
+@LOSSES.register_module
+class BinaryCrossEntropyWithLogitsLoss(nn.Module):
+
+    def __init__(self, num_classes=1000, **kwargs):
+        super(SoftTargetCrossEntropy, self).__init__()
+        self.bce = nn.BCEWithLogitsLoss()
+
+    def forward(self, x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        loss = self.bce(x, target)
+        return loss
+
+
