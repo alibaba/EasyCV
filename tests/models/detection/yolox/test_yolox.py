@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 import torch
 
-from easycv.models.detection.yolox.yolox import YOLOX
+from easycv.models.detection.detectors.yolox.yolox import YOLOX
 
 
 class YOLOXTest(unittest.TestCase):

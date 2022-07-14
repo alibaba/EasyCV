@@ -70,6 +70,19 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 ## 变更日志
 
+* 23/06/2022 EasyCV v0.4.0 版本发布。
+    * 增加语义分割模块， 支持FCN算法
+    * 扩充分类算法 model zoo
+    * Yolox支持导出 [blade](https://help.aliyun.com/document_detail/205134.html) 模型
+    * 支持 ViTDet 检测算法
+    * 支持 sailfish 数据并行训练
+    * 支持运行 [mmdetection](https://github.com/open-mmlab/mmdetection) 中的模型
+
+* 31/04/2022 EasyCV v0.3.0 版本发布。
+    * 增加 moby deit-small 预训练模型
+    * 增加 mae vit-large benchmark和预训练模型
+    * 支持 tensorboard和wandb 的图像可视化
+
 * 2022/04/07 EasyCV v0.2.2 版本发布。
 
 更多详细变更日志请参考[变更记录](docs/source/change_log.md)。

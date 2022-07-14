@@ -2,9 +2,9 @@
 import torch.nn as nn
 
 from easycv.models.builder import MODELS
-from easycv.models.detection.yolox.yolo_head import YOLOXHead
-from easycv.models.detection.yolox.yolo_pafpn import YOLOPAFPN
-from easycv.models.detection.yolox.yolox import YOLOX
+from easycv.models.detection.detectors.yolox.yolo_head import YOLOXHead
+from easycv.models.detection.detectors.yolox.yolo_pafpn import YOLOPAFPN
+from easycv.models.detection.detectors.yolox.yolox import YOLOX
 
 
 def init_yolo(M):

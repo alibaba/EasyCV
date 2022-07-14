@@ -43,3 +43,28 @@ EasyCV support multi-gpu and multi worker training. EasyCV use DALI to accelerat
 - Update model zoo link ([#8](https://github.com/alibaba/EasyCV/pull/8))
 - Support readthedocs  ([#29](https://github.com/alibaba/EasyCV/pull/29))
 - refine autorelease gitworkflow ([#13](https://github.com/alibaba/EasyCV/pull/13))
+
+# v 0.4.0 (23/06/2022)
+
+## Highlights
+- Add **semantic segmentation** modules, support FCN algorithm ([#71](https://github.com/alibaba/EasyCV/pull/71))
+- Expand classification model zoo ([#55](https://github.com/alibaba/EasyCV/pull/55))
+- Support export model with **[blade](https://help.aliyun.com/document_detail/205134.html)** for yolox ([#66](https://github.com/alibaba/EasyCV/pull/66))
+- Support **ViTDet** algorithm ([#35](https://github.com/alibaba/EasyCV/pull/35))
+- Add sailfish for extensible fully sharded data parallel training ([#97](https://github.com/alibaba/EasyCV/pull/97))
+- Support run with [mmdetection](https://github.com/open-mmlab/mmdetection) models ([#25](https://github.com/alibaba/EasyCV/pull/25))
+
+## New Features
+- Set multiprocess env for speedup ([#77](https://github.com/alibaba/EasyCV/pull/77))
+- Add data hub, summarized various datasets in different fields ([#70](https://github.com/alibaba/EasyCV/pull/70))
+
+## Bug Fixes
+-  Fix the inaccurate accuracy caused by missing the `groundtruth_is_crowd` field in CocoMaskEvaluator ([#61](https://github.com/alibaba/EasyCV/pull/61))
+- Unified the usage of `pretrained` parameter and fix load bugs（([#79](https://github.com/alibaba/EasyCV/pull/79)) ([#85](https://github.com/alibaba/EasyCV/pull/85)) ([#95](https://github.com/alibaba/EasyCV/pull/95))
+
+## Improvements
+- Update MAE pretrained models and benchmark ([#50](https://github.com/alibaba/EasyCV/pull/50))
+- Add detection benchmark for SwAV and MoCo-v2 ([#58](https://github.com/alibaba/EasyCV/pull/58))
+- Add moby swin-tiny pretrained model and benchmark ([#72](https://github.com/alibaba/EasyCV/pull/72))
+- Update prepare_data.md, add more details ([#69](https://github.com/alibaba/EasyCV/pull/69))
+- Optimize quantize code and support to export MNN model ([#44](https://github.com/alibaba/EasyCV/pull/44))

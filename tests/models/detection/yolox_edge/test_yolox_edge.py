@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 import torch
 
-from easycv.models.detection.yolox_edge.yolox_edge import YOLOX_EDGE
+from easycv.models.detection.detectors.yolox_edge.yolox_edge import YOLOX_EDGE
 
 
 class YOLOXEDGETest(unittest.TestCase):
