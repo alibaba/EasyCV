@@ -33,10 +33,7 @@ class DABDetrTransformer(nn.Module):
 
     def __init__(self,
                  in_channels=1024,
-                 num_queries=300,
                  query_dim=4,
-                 random_refpoints_xy=False,
-                 num_patterns=0,
                  d_model=512,
                  nhead=8,
                  num_encoder_layers=6,
@@ -58,27 +55,11 @@ class DABDetrTransformer(nn.Module):
         ]
 
         self.input_proj = nn.Conv2d(in_channels, d_model, kernel_size=1)
-        self.query_embed = nn.Embedding(num_queries, query_dim)
         self.positional_encoding = PositionEmbeddingSineHW(
             d_model // 2,
             temperatureH=temperatureH,
             temperatureW=temperatureW,
             normalize=True)
-        self.random_refpoints_xy = random_refpoints_xy
-        if random_refpoints_xy:
-            self.query_embed.weight.data[:, :2].uniform_(0, 1)
-            self.query_embed.weight.data[:, :2] = inverse_sigmoid(
-                self.query_embed.weight.data[:, :2])
-            self.query_embed.weight.data[:, :2].requires_grad = False
-
-        self.num_queries = num_queries
-        self.num_patterns = num_patterns
-        if not isinstance(num_patterns, int):
-            Warning('num_patterns should be int but {}'.format(
-                type(num_patterns)))
-            self.num_patterns = 0
-        if self.num_patterns > 0:
-            self.patterns = nn.Embedding(self.num_patterns, d_model)
 
         encoder_layer = TransformerEncoderLayer(d_model, nhead,
                                                 dim_feedforward, dropout,
@@ -116,14 +97,13 @@ class DABDetrTransformer(nn.Module):
 
     def init_weights(self):
         for p in self.named_parameters():
-            if 'input_proj' in p[0] or 'query_embed' in p[
-                    0] or 'positional_encoding' in p[0] or 'patterns' in p[
-                        0] or 'bbox_embed' in p[0]:
+            if 'input_proj' in p[0] or 'positional_encoding' in p[
+                    0] or 'bbox_embed' in p[0]:
                 continue
             if p[1].dim() > 1:
                 nn.init.xavier_uniform_(p[1])
 
-    def forward(self, src, img_metas):
+    def forward(self, src, img_metas, query_embed, tgt, attn_mask=None):
         src = src[0]
 
         # construct binary masks which used for the transformer.
@@ -143,30 +123,18 @@ class DABDetrTransformer(nn.Module):
         # position encoding
         pos_embed = self.positional_encoding(mask)  # [bs, embed_dim, h, w]
         # outs_dec: [nb_dec, bs, num_query, embed_dim]
-        query_embed = self.query_embed.weight
 
         # flatten NxCxHxW to HWxNxC
         src = src.flatten(2).permute(2, 0, 1)
         pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
-        query_embed = query_embed.unsqueeze(1).repeat(1, bs, 1)
         mask = mask.flatten(1)
 
         memory = self.encoder(src, src_key_padding_mask=mask, pos=pos_embed)
 
-        num_queries = query_embed.shape[0]
-        if self.num_patterns == 0:
-            tgt = torch.zeros(
-                num_queries, bs, self.d_model, device=query_embed.device)
-        else:
-            tgt = self.patterns.weight[:, None, None, :].repeat(
-                1, self.num_queries, bs,
-                1).flatten(0, 1)  # n_q*n_pat, bs, d_model
-            query_embed = query_embed.repeat(self.num_patterns, 1,
-                                             1)  # n_q*n_pat, bs, d_model
-
         hs, references = self.decoder(
             tgt,
             memory,
+            tgt_mask=attn_mask,
             memory_key_padding_mask=mask,
             pos=pos_embed,
             refpoints_unsigmoid=query_embed)

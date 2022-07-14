@@ -684,10 +684,6 @@ class DETRTest(unittest.TestCase):
         self.assertEqual(len(output['detection_scores'][0]), 10)
         self.assertEqual(len(output['detection_classes'][0]), 10)
 
-        print(output['detection_classes'][0].tolist(),
-              output['detection_scores'][0].tolist(),
-              output['detection_boxes'][0].tolist())
-
         self.assertListEqual(
             output['detection_classes'][0].tolist(),
             np.array([2, 13, 2, 2, 2, 2, 2, 2, 2, 2], dtype=np.int32).tolist())
