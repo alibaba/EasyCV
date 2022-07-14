@@ -125,7 +125,7 @@ class Mask2Former(BaseModel):
                 losses.pop(k)
         return losses
 
-    def forward_test(self, img, img_metas, rescale=True):
+    def forward_test(self, img, img_metas, rescale=True, encode=True):
         features = self.backbone(img[0])
         outputs = self.head(features)
         mask_cls_results = outputs['pred_logits']
@@ -137,7 +137,6 @@ class Mask2Former(BaseModel):
         pan_masks = []
         for mask_cls_result, mask_pred_result, meta in zip(
                 mask_cls_results, mask_pred_results, img_metas[0]):
-
             pad_height, pad_width = meta['pad_shape'][:2]
             mask_pred_result = F.interpolate(
                 mask_pred_result[:, None],
@@ -163,7 +162,9 @@ class Mask2Former(BaseModel):
                 if mask_pred_binary is not None and labels_per_image.shape[
                         0] > 0:
                     mask_pred_binary = [mask_pred_binary]
-                    mask_pred_binary = encode_mask_results(mask_pred_binary)
+                    if encode:
+                        mask_pred_binary = encode_mask_results(
+                            mask_pred_binary)
                     segms = mmcv.concat_list(mask_pred_binary)
                     segms = np.stack(segms, axis=0)
                 scores = bboxes[:, 4] if bboxes.shape[1] == 5 else None
@@ -255,9 +256,9 @@ class Mask2Former(BaseModel):
         bboxes = mask2bbox(mask_pred_binary)
         bboxes = torch.cat([bboxes, det_scores[:, None]], dim=-1)
 
-        labels_per_image = labels_per_image.cpu().numpy()
-        bboxes = bboxes.cpu().numpy()
-        mask_pred_binary = mask_pred_binary.cpu().numpy()
+        labels_per_image = labels_per_image.detach().cpu().numpy()
+        bboxes = bboxes.detach().cpu().numpy()
+        mask_pred_binary = mask_pred_binary.detach().cpu().numpy()
         return labels_per_image, bboxes, mask_pred_binary
 
     def panoptic_postprocess(self, mask_cls, mask_pred):
