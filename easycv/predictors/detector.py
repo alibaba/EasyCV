@@ -94,12 +94,11 @@ class TorchYoloXPredictor(PredictorInterface):
                 'meta'], 'meta.config is missing from checkpoint'
 
             config_str = checkpoint['meta']['config']
-            config_str = config_str[config_str.find('_base_'):]
             # get config
             basename = os.path.basename(self.model_path)
             fname, _ = os.path.splitext(basename)
             self.local_config_file = os.path.join(CACHE_DIR,
-                                                  f'{fname}_config.py')
+                                                  f'{fname}_config.json')
             if not os.path.exists(CACHE_DIR):
                 os.makedirs(CACHE_DIR)
             with open(self.local_config_file, 'w') as ofile:
@@ -109,6 +108,7 @@ class TorchYoloXPredictor(PredictorInterface):
 
             # build model
             self.model = build_model(self.cfg.model)
+
             self.traceable = getattr(self.model, 'trace_able', False)
 
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
