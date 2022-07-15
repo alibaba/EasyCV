@@ -23,7 +23,8 @@ SMALL_COCO_DATA_ROOT = DET_DATA_SMALL_COCO_LOCAL.rstrip('/') + '/'
 _COMMON_OPTIONS = {
     'total_epochs': 1,
     'load_from': PRETRAINED_MODEL_MASK2FORMER,
-    'optimizer.lr': 0.0
+    'optimizer.lr': 0.0,
+    'data.imgs_per_gpu': 1,
 }
 
 TRAIN_CONFIGS = [
