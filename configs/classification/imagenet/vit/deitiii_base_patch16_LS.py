@@ -101,7 +101,8 @@ custom_hooks = []
 
 # optimizer
 optimizer = dict(
-    type='AdamW',
+    # type='AdamW',
+    type='FusedLAMB',
     lr=0.003,
     weight_decay=0.05,
     paramwise_options={
@@ -115,6 +116,7 @@ lr_config = dict(
     policy='CosineAnnealing',
     min_lr=1e-5,
     warmup='linear',
+    warmup_by_epoch=True,
     warmup_iters=5,
     # warmup_iters=12515,
     warmup_ratio=1e-6,
