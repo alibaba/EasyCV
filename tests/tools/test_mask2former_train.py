@@ -8,13 +8,10 @@ import sys
 import tempfile
 import unittest
 
-import torch
-from mmcv import Config
 from tests.ut_config import (DET_DATA_SMALL_COCO_LOCAL,
                              PRETRAINED_MODEL_MASK2FORMER)
 
 from easycv.file import io
-from easycv.file.utils import get_oss_config
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.test_util import run_in_subprocess
 
