@@ -415,7 +415,7 @@ class DetSourceCocoPanoptic(DetSourceCoco):
 
         if 'pan_results' in results:
             pan_results = results['pan_results']
-            pan_json_results = self._pan2json(pan_results, self.outfile_prefix)
+            pan_json_results = self._pan2json(pan_results)
             result_files['panoptic'] = f'{self.outfile_prefix}.panoptic.json'
             mmcv.dump(pan_json_results, result_files['panoptic'])
 
