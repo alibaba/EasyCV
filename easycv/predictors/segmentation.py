@@ -1,9 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import base64
-import copy
-
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from matplotlib.collections import PatchCollection
@@ -67,7 +63,6 @@ class Mask2formerPredictor(PredictorInterface):
             output = {}
             if not isinstance(img, np.ndarray):
                 img = np.asarray(img)
-            ori_img = copy.deepcopy(img)
             data_dict = {'img': img}
             ori_shape = img.shape
             data_dict = self.pipeline(data_dict)

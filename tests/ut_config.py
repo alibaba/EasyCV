@@ -108,3 +108,6 @@ PRETRAINED_MODEL_YOLOX_COMPRESSION = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/compression/yolox_compression.pth')
 PRETRAINED_MODEL_MAE = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/classification/vit/mae_vit_b_1600.pth')
+PRETRAINED_MODEL_MASK2FORMER = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/segmentation/mask2former/mask2former_r50_instance.pth')
