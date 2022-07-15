@@ -76,6 +76,10 @@ class MASK2FORMERTrainTest(unittest.TestCase):
         cfg.eval_pipelines[0].data = dict(**cfg.data.val)  # imgs_per_gpu=1
         cfg.eval_pipelines[0].dist_eval = dist_eval
 
+        # to save gpu memory avoid error
+        cfg.data.train.pipeline[1].img_scale = (512, 512)
+        cfg.data.train.pipeline[2].crop_size = (512, 512)
+        cfg.data.train.pipeline[4].size = (512, 512)
         tmp_cfg_file = tempfile.NamedTemporaryFile(suffix='.py').name
         cfg.dump(tmp_cfg_file)
 
