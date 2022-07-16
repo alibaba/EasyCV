@@ -105,10 +105,11 @@ optimizer = dict(
     type='FusedLAMB',
     lr=0.003,
     weight_decay=0.05,
-    paramwise_options={
-        'cls_token': dict(weight_decay=0.),
-        'pos_embed': dict(weight_decay=0.),
-    })
+    # paramwise_options={
+    #     'cls_token': dict(weight_decay=0.),
+    #     'pos_embed': dict(weight_decay=0.),
+    # })
+    )
 optimizer_config = dict(grad_clip=dict(max_norm=1.0), update_interval=8)
 
 # learning policy
