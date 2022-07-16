@@ -110,7 +110,7 @@ class Block(nn.Module):
                  qk_scale=None,
                  drop=0.,
                  attn_drop=0.,
-                 drop_path=0.2,
+                 drop_path=0.,
                  act_layer=nn.GELU,
                  norm_layer=nn.LayerNorm):
         super().__init__()
@@ -218,7 +218,7 @@ class VisionTransformer(nn.Module):
                  qk_scale=None,
                  drop_rate=0.,
                  attn_drop_rate=0.,
-                 drop_path_rate=0.,
+                 drop_path_rate=0.2,
                  norm_layer=nn.LayerNorm,
                  use_dense_prediction=False,
                  global_pool=False,
