@@ -102,7 +102,7 @@ custom_hooks = []
 # optimizer
 optimizer = dict(
     # type='AdamW',
-    type='FusedLAMB',
+    type='Lamb',
     lr=0.003,
     weight_decay=0.05,
     # paramwise_options={
