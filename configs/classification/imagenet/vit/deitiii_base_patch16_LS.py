@@ -47,7 +47,7 @@ data_root = 'imagenet_raw/'
 dataset_type = 'ClsDataset'
 img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 train_pipeline = [
-    dict(type='RandomResizedCrop', size=192, scale=(0.08, 1.0), interpolation='bicubic'), # interpolation=3
+    dict(type='RandomResizedCrop', size=192, scale=(0.08, 1.0), interpolation=3), # interpolation='bicubic'
     # dict(type='SimpleRandomCrop', size=192),
     dict(type='RandomHorizontalFlip'),
     dict(type='ThreeAugment'),
@@ -104,18 +104,20 @@ custom_hooks = []
 optimizer = dict(
     # type='AdamW',
     type='Lamb',
+    # lr=0.003 * 2048 / 512,
     lr=0.003,
     weight_decay=0.05,
-    # paramwise_options={
-    #     'cls_token': dict(weight_decay=0.),
-    #     'pos_embed': dict(weight_decay=0.),
-    # })
-    )
+    paramwise_options={
+        'cls_token': dict(weight_decay=0.),
+        'pos_embed': dict(weight_decay=0.),
+    })
+    # )
 optimizer_config = dict(grad_clip=dict(max_norm=1.0), update_interval=8)
 
 # learning policy
 lr_config = dict(
     policy='CosineAnnealing',
+    by_epoch=False,
     min_lr=1e-5,
     warmup='linear',
     warmup_by_epoch=True,
