@@ -165,7 +165,7 @@ three_augment_policies = [
         # dict(type='color_jitter', brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1, prob=1.0)
     ],
     [
-        dict(type='solarization', threshold=128, prob=1.0),
+        dict(type='solarization', prob=1.0),
         # dict(type='color_jitter', brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1, prob=1.0)
     ],
     [
@@ -1136,33 +1136,15 @@ class gaussianblur(object):
         return repr_str
 
 
-# @PIPELINES.register_module()
-# class solarization(object):
-#     """
-#     Apply Solarization to the PIL image.
-#     """
-#     def __init__(self, prob=0.2):
-#         assert 0 <= prob <= 1.0, 'The prob should be in range [0,1], ' \
-#             f'got {prob} instead.'
-
-#         self.prob = prob
-
-#     def __call__(self, results):
-#         if random.random() < self.prob:
-#             return ImageOps.solarize(results)
-#         else:
-#             return results
-
-#     def __repr__(self):
-#         repr_str = self.__class__.__name__
-#         repr_str += f'(prob={self.prob})'
-#         return repr_str
-
-@PIPELINES.register_module
+@PIPELINES.register_module()
 class solarization(object):
+    """
+    Apply Solarization to the PIL image.
+    """
+    def __init__(self, prob=0.2):
+        assert 0 <= prob <= 1.0, 'The prob should be in range [0,1], ' \
+            f'got {prob} instead.'
 
-    def __init__(self, threshold=128, prob=0.5):
-        self.threshold = threshold
         self.prob = prob
 
     def __call__(self, results):
@@ -1170,18 +1152,42 @@ class solarization(object):
             return results
 
         for key in results.get('img_fields', ['img']):
-            img = results[key]
+            img = np.array(results[key])
+            img = Image.fromarray(img)
+            img = ImageOps.solarize(img)
             img = np.array(img)
-            img = np.where(img < self.threshold, img, 255 - img)
             results[key] = Image.fromarray(img.astype(np.uint8))
-
         return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += f'(threshold={self.threshold})'
         repr_str += f'(prob={self.prob})'
         return repr_str
+
+# @PIPELINES.register_module
+# class solarization(object):
+
+#     def __init__(self, threshold=128, prob=0.5):
+#         self.threshold = threshold
+#         self.prob = prob
+
+#     def __call__(self, results):
+#         if np.random.rand() > self.prob:
+#             return results
+
+#         for key in results.get('img_fields', ['img']):
+#             img = results[key]
+#             img = np.array(img)
+#             img = np.where(img < self.threshold, img, 255 - img)
+#             results[key] = Image.fromarray(img.astype(np.uint8))
+
+#         return results
+
+#     def __repr__(self):
+#         repr_str = self.__class__.__name__
+#         repr_str += f'(threshold={self.threshold})'
+#         repr_str += f'(prob={self.prob})'
+#         return repr_str
 
 
 

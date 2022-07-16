@@ -46,8 +46,8 @@ data_root = 'imagenet_raw/'
 dataset_type = 'ClsDataset'
 img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 train_pipeline = [
-    # dict(type='RandomResizedCrop', size=224),
-    dict(type='SimpleRandomCrop', size=192),
+    dict(type='RandomResizedCrop', size=192, scale=(0.08, 1.0), interpolation='bicubic'), # interpolation=3
+    # dict(type='SimpleRandomCrop', size=192),
     dict(type='RandomHorizontalFlip'),
     dict(type='ThreeAugment'),
     # dict(type='MMAutoAugment'),
