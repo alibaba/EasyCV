@@ -114,7 +114,7 @@ optimizer = dict(
         'pos_embed': dict(weight_decay=0.),
     })
     # )
-optimizer_config = dict(grad_clip=dict(max_norm=1.0), update_interval=8)
+optimizer_config = dict(grad_clip=None, update_interval=4)
 
 # learning policy
 lr_config = dict(
