@@ -11,7 +11,7 @@ from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader, RandomSampler
 
 from easycv.datasets.shared.odps_reader import set_dataloader_workid
-from .sampler import DistributedMPSampler, DistributedSampler
+from .sampler import DistributedMPSampler, DistributedSampler, RASampler
 
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
@@ -31,6 +31,7 @@ def build_dataloader(dataset,
                      reuse_worker_cache=False,
                      odps_config=None,
                      persistent_workers=False,
+                     repeated_aug=False,
                      **kwargs):
     """Build PyTorch DataLoader.
     In distributed training, each GPU/process has a dataloader.
@@ -69,6 +70,12 @@ def build_dataloader(dataset,
                 rank,
                 shuffle=shuffle,
                 split_huge_listfile_byrank=split_huge_listfile_byrank)
+        elif repeated_aug:
+            sampler = RASampler(
+                dataset,
+                world_size,
+                rank,
+                shuffle=shuffle)
         else:
             sampler = DistributedSampler(
                 dataset,

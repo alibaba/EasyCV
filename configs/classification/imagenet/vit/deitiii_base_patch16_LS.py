@@ -72,6 +72,7 @@ test_pipeline = [
 data = dict(
     imgs_per_gpu=64,  # total 256
     workers_per_gpu=8,
+    repeated_aug=True,
     train=dict(
         type=dataset_type,
         data_source=dict(
