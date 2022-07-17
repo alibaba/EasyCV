@@ -107,6 +107,7 @@ optimizer = dict(
     # lr=0.003 * 2048 / 512,
     lr=0.003,
     weight_decay=0.05,
+    eps=1e-8,
     paramwise_options={
         'cls_token': dict(weight_decay=0.),
         'pos_embed': dict(weight_decay=0.),
