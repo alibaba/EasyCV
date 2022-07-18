@@ -285,59 +285,69 @@ class VisionTransformer(nn.Module):
                 nn.init.constant_(m.bias, 0)
                 nn.init.constant_(m.weight, 1.0)
 
+    # def forward(self, x):
+    #     # convert to list
+    #     if not isinstance(x, list):
+    #         x = [x]
+    #     # Perform forward pass separately on each resolution input.
+    #     # The inputs corresponding to a single resolution are clubbed and single
+    #     # forward is run on the same resolution inputs. Hence we do several
+    #     # forward passes = number of different resolutions used. We then
+    #     # concatenate all the output features.
+    #     idx_crops = torch.cumsum(
+    #         torch.unique_consecutive(
+    #             torch.tensor([inp.shape[-1] for inp in x]),
+    #             return_counts=True,
+    #         )[1], 0)
+
+    #     if self.use_dense_prediction:
+    #         start_idx = 0
+
+    #         for end_idx in idx_crops:
+    #             _out_cls, _out_fea = self.forward_features(
+    #                 torch.cat(x[start_idx:end_idx]))
+    #             B, N, C = _out_fea.shape
+
+    #             if start_idx == 0:
+    #                 output_cls = _out_cls
+    #                 output_fea = _out_fea.reshape(B * N, C)
+    #                 npatch = [N]
+    #             else:
+    #                 output_cls = torch.cat((output_cls, _out_cls))
+    #                 output_fea = torch.cat(
+    #                     (output_fea, _out_fea.reshape(B * N, C)))
+    #                 npatch.append(N)
+    #             start_idx = end_idx
+
+    #         return [
+    #             self.head(output_cls),
+    #             self.head_dense(output_fea), output_fea, npatch
+    #         ]
+
+    #     else:
+    #         start_idx = 0
+    #         for end_idx in idx_crops:
+    #             _out = self.forward_features(torch.cat(x[start_idx:end_idx]))
+    #             # _out = self.forward_return_n_last_blocks(torch.cat(x[start_idx: end_idx]), 4, True)
+    #             if start_idx == 0:
+    #                 output = _out
+    #             else:
+    #                 output = torch.cat((output, _out))
+    #             start_idx = end_idx
+
+    #         # print(f'output[0] {output[0].shape}')
+    #         # Run the head forward on the concatenated features.
+    #         return [self.head(output)]
+
     def forward(self, x):
-        # convert to list
-        if not isinstance(x, list):
-            x = [x]
-        # Perform forward pass separately on each resolution input.
-        # The inputs corresponding to a single resolution are clubbed and single
-        # forward is run on the same resolution inputs. Hence we do several
-        # forward passes = number of different resolutions used. We then
-        # concatenate all the output features.
-        idx_crops = torch.cumsum(
-            torch.unique_consecutive(
-                torch.tensor([inp.shape[-1] for inp in x]),
-                return_counts=True,
-            )[1], 0)
 
-        if self.use_dense_prediction:
-            start_idx = 0
-
-            for end_idx in idx_crops:
-                _out_cls, _out_fea = self.forward_features(
-                    torch.cat(x[start_idx:end_idx]))
-                B, N, C = _out_fea.shape
-
-                if start_idx == 0:
-                    output_cls = _out_cls
-                    output_fea = _out_fea.reshape(B * N, C)
-                    npatch = [N]
-                else:
-                    output_cls = torch.cat((output_cls, _out_cls))
-                    output_fea = torch.cat(
-                        (output_fea, _out_fea.reshape(B * N, C)))
-                    npatch.append(N)
-                start_idx = end_idx
-
-            return [
-                self.head(output_cls),
-                self.head_dense(output_fea), output_fea, npatch
-            ]
-
-        else:
-            start_idx = 0
-            for end_idx in idx_crops:
-                _out = self.forward_features(torch.cat(x[start_idx:end_idx]))
-                # _out = self.forward_return_n_last_blocks(torch.cat(x[start_idx: end_idx]), 4, True)
-                if start_idx == 0:
-                    output = _out
-                else:
-                    output = torch.cat((output, _out))
-                start_idx = end_idx
-
-            # print(f'output[0] {output[0].shape}')
-            # Run the head forward on the concatenated features.
-            return [self.head(output)]
+        x = self.forward_features(x)
+        
+        # if self.dropout_rate:
+        #     x = F.dropout(x, p=float(self.dropout_rate), training=self.training)
+        x = self.head(x)
+        
+        return [x]
 
     def forward_features(self, x):
         B = x.shape[0]
