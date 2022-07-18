@@ -509,6 +509,7 @@ def dynamic_deitiii_small_p16(patch_size=16, **kwargs):
 
 def dynamic_vitiii_base_p16(patch_size=16, **kwargs):
     model = VisionTransformer(
+        img_size=[192],
         patch_size=patch_size,
         embed_dim=768,
         depth=12,
