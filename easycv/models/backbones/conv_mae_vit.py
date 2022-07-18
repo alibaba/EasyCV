@@ -32,11 +32,11 @@ class PatchEmbed(nn.Module):
         if not isinstance(patch_size, (list, tuple)):
             patch_size = (patch_size, patch_size)
 
-        num_patches = (img_size[1] // patch_size[1]) * (
-            img_size[0] // patch_size[0])
         self.img_size = img_size
         self.patch_size = patch_size
-        self.num_patches = num_patches
+        self.grid_size = (img_size[0] // patch_size[0],
+                          img_size[1] // patch_size[1])
+        self.num_patches = self.grid_size[0] * self.grid_size[1]
 
         self.proj = nn.Conv2d(
             in_channels, embed_dim, kernel_size=patch_size, stride=patch_size)
@@ -201,6 +201,8 @@ class FastConvMAEViT(nn.Module):
         else:
             self.pos_embed = nn.Parameter(
                 torch.zeros(1, self.num_patches, embed_dim[2]), )
+
+        self.pos_drop = nn.Dropout(p=drop_rate)
 
         # stochastic depth decay rule
         dpr = np.linspace(0, drop_path_rate, sum(depth))
@@ -403,6 +405,7 @@ class FastConvMAEViT(nn.Module):
             mask_for_patch2 = None
 
         s1 = self.patch_embed1(x)
+        s1 = self.pos_drop(s1)
         for blk in self.blocks1:
             s1 = blk(s1, mask_for_patch1)
 
