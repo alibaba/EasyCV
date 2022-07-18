@@ -61,9 +61,10 @@ train_pipeline = [
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Collect', keys=['img', 'gt_labels'])
 ]
+size = int((256 / 224) * 192)
 test_pipeline = [
-    dict(type='Resize', size=256),
-    dict(type='CenterCrop', size=224),
+    dict(type='Resize', size=size, interpolation=3),
+    dict(type='CenterCrop', size=192),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Collect', keys=['img', 'gt_labels'])
