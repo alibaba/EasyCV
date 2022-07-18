@@ -106,7 +106,7 @@ optimizer = dict(
     # type='AdamW',
     type='Lamb',
     # lr=0.003 * 2048 / 512,
-    lr=0.003 / 4,
+    lr=0.003,
     weight_decay=0.05,
     eps=1e-8,
     paramwise_options={
@@ -114,12 +114,12 @@ optimizer = dict(
         'pos_embed': dict(weight_decay=0.),
     })
     # )
-optimizer_config = dict(grad_clip=None, update_interval=1)
+optimizer_config = dict(grad_clip=None, update_interval=4)
 
 # learning policy
 lr_config = dict(
     policy='CosineAnnealing',
-    by_epoch=False,
+    # by_epoch=False,
     min_lr=1e-5,
     warmup='linear',
     warmup_by_epoch=True,
