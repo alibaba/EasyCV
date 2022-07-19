@@ -322,15 +322,19 @@ def convert_ops(src_collector, target_collector):
 
 
 def convert_torch_ops_to_torchacc():
+    print(
+        'For adapt torchacc, we replaced part of torch\'s operators with torchacc\'s operators.'
+    )
+
     src_collector = _register_torch_ops()
     target_collector = _register_torchacc_ops()
     convert_ops(src_collector, target_collector)
 
 
-# TODO: remove it, fix torch.tensor to adapt torch.jit
 def convert_timm_ops():
     import timm
 
+    # TODO: remove it, fix torch.tensor to adapt torch.jit
     if hasattr(timm.models.layers, 'anti_aliasing'):
         from timm.models.layers import anti_aliasing
         _ori_DownsampleJIT = anti_aliasing.DownsampleJIT
@@ -339,3 +343,37 @@ def convert_timm_ops():
             pass
 
         setattr(anti_aliasing, 'DownsampleJIT', FixedDownsampleJIT)
+
+    # TODO: remove it, fix torch.cat to support multiple types of arguments
+    def _fix_forward_features(self, x):
+        x = self.patch_embed(x)
+        cls_token = self.cls_token.expand(
+            x.shape[0], -1, -1)  # stole cls_tokens impl from Phil Wang, thanks
+
+        # torch.cat does not support multiple types of arguments
+        # ========================my add=========================
+        if x.dtype == torch.float16:
+            cls_token = cls_token.half()
+        # ======================== end===========================
+
+        if self.dist_token is None:
+            x = torch.cat((cls_token, x), dim=1)
+        else:
+            x = torch.cat(
+                (cls_token, self.dist_token.expand(x.shape[0], -1, -1), x),
+                dim=1)
+        x = self.pos_drop(x + self.pos_embed)
+        x = self.blocks(x)
+        x = self.norm(x)
+        if self.dist_token is None:
+            return self.pre_logits(x[:, 0])
+        else:
+            return x[:, 0], x[:, 1]
+
+    from timm.models.vision_transformer import VisionTransformer
+    setattr(VisionTransformer, 'forward_features', _fix_forward_features)
+
+    print(
+        'For adapt to torchacc, we have modified some apis of timm. '
+        'Please refer to ``easycv.toolkit.torchacc.convert_timm_ops`` for details.'
+    )

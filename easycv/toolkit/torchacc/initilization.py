@@ -1,5 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import logging
 import os
 from distutils.version import LooseVersion
 
@@ -11,10 +10,6 @@ from .convert_ops import convert_timm_ops, convert_torch_ops_to_torchacc
 
 def patch_ops():
     convert_timm_ops()
-
-    logging.info(
-        'For adapt torchacc, we replaced part of torch\'s operators with torchacc\'s operators.'
-    )
     convert_torch_ops_to_torchacc()
 
 
