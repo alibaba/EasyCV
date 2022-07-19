@@ -207,6 +207,9 @@ def main():
     logger.info('GPU INFO : {}'.format(torch.cuda.get_device_name(0)))
 
     # set random seeds
+    if is_torchacc_enabled():
+        assert args.seed is not None, 'Must provide `seed` to sync model initializer if use torchacc!'
+
     if args.seed is not None:
         logger.info('Set random seed to {}, deterministic: {}'.format(
             args.seed, args.deterministic))

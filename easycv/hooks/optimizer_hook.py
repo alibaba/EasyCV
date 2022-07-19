@@ -86,11 +86,11 @@ class OptimizerHook(_OptimizerHook):
             self.multiply_grad(runner)
 
             if self.every_n_iters(runner, self.update_interval):
-                if self.grad_clip is not None:
-                    self.clip_grads(runner.model.parameters())
-
                 if is_torchacc_enabled():
                     self.adapt_torchacc(runner)
+
+                if self.grad_clip is not None:
+                    self.clip_grads(runner.model.parameters())
 
                 runner.optimizer.step()
                 runner.optimizer.zero_grad()
@@ -156,12 +156,14 @@ class AMPFP16OptimizerHook(OptimizerHook):
             self.skip_ignore_key(runner)
 
             if self.every_n_iters(runner, self.update_interval):
+
+                # gradients allreduce must before scaler.unscale_
+                if is_torchacc_enabled():
+                    self.adapt_torchacc(runner)
+
                 self.scaler.unscale_(runner.optimizer)
                 if self.grad_clip is not None:
                     self.clip_grads(runner.model.parameters())
-
-                if is_torchacc_enabled():
-                    self.adapt_torchacc(runner)
 
                 self.scaler.step(runner.optimizer)
                 self.scaler.update(self._scale_update_param)
