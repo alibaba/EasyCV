@@ -21,10 +21,13 @@ def drop_path(x, drop_prob: float = 0., training: bool = False):
     keep_prob = 1 - drop_prob
     shape = (x.shape[0], ) + (1, ) * (
         x.ndim - 1)  # work with diff dim tensors, not just 2D ConvNets
-    random_tensor = keep_prob + torch.rand(
-        shape, dtype=x.dtype, device=x.device)
-    random_tensor.floor_()  # binarize
-    output = x.div(keep_prob) * random_tensor
+    # random_tensor = keep_prob + torch.rand(
+    #     shape, dtype=x.dtype, device=x.device)
+    # random_tensor.floor_()  # binarize
+    random_tensor = x.new_empty(shape).bernoulli_(keep_prob)
+    if keep_prob > 0.0:
+        random_tensor.div_(keep_prob)
+    output = x * random_tensor
     return output
 
 
@@ -32,7 +35,7 @@ class DropPath(nn.Module):
     """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
     """
 
-    def __init__(self, drop_prob=None):
+    def __init__(self, drop_prob: float = 0.):
         super(DropPath, self).__init__()
         self.drop_prob = drop_prob
 
@@ -47,21 +50,26 @@ class Mlp(nn.Module):
                  hidden_features=None,
                  out_features=None,
                  act_layer=nn.GELU,
+                 bias=True,
                  drop=0.):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
-        self.fc1 = nn.Linear(in_features, hidden_features)
+        bias = to_2tuple(bias)
+        drop_probs = to_2tuple(drop)
+
+        self.fc1 = nn.Linear(in_features, hidden_features, bias=bias[0])
         self.act = act_layer()
-        self.fc2 = nn.Linear(hidden_features, out_features)
-        self.drop = nn.Dropout(drop)
+        self.drop1 = nn.Dropout(drop_probs[0])
+        self.fc2 = nn.Linear(hidden_features, out_features, bias=bias[1])
+        self.drop2 = nn.Dropout(drop_probs[1])
 
     def forward(self, x):
         x = self.fc1(x)
         x = self.act(x)
-        x = self.drop(x)
+        x = self.drop1(x)
         x = self.fc2(x)
-        x = self.drop(x)
+        x = self.drop2(x)
         return x
 
 
@@ -90,7 +98,9 @@ class Attention(nn.Module):
                                   C // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
 
-        attn = (q @ k.transpose(-2, -1)) * self.scale
+        q = q * self.scale
+
+        attn = (q @ k.transpose(-2, -1))
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
 
@@ -239,8 +249,9 @@ class VisionTransformer(nn.Module):
             torch.zeros(1, num_patches, embed_dim))
         self.pos_drop = nn.Dropout(p=drop_rate)
 
-        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)
-               ]  # stochastic depth decay rule
+        # dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)
+        #        ]  # stochastic depth decay rule
+        dpr = [drop_path_rate for i in range(depth)]
         self.blocks = nn.ModuleList([
             Layer_scale_init_Block(
                 dim=embed_dim,
@@ -248,7 +259,7 @@ class VisionTransformer(nn.Module):
                 mlp_ratio=mlp_ratio,
                 qkv_bias=qkv_bias,
                 qk_scale=qk_scale,
-                drop=drop_rate,
+                drop=0.0,
                 attn_drop=attn_drop_rate,
                 drop_path=dpr[i],
                 norm_layer=norm_layer,
@@ -284,6 +295,10 @@ class VisionTransformer(nn.Module):
             elif isinstance(m, nn.LayerNorm):
                 nn.init.constant_(m.bias, 0)
                 nn.init.constant_(m.weight, 1.0)
+
+    @torch.jit.ignore
+    def no_weight_decay(self):
+        return {'pos_embed', 'cls_token'}
 
     # def forward(self, x):
     #     # convert to list
