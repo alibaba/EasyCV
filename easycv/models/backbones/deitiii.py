@@ -209,7 +209,7 @@ class VisionTransformer(nn.Module):
                  img_size=[224],
                  patch_size=16,
                  in_chans=3,
-                 num_classes=0,
+                 num_classes=1000,
                  embed_dim=768,
                  depth=12,
                  num_heads=12,
@@ -218,7 +218,7 @@ class VisionTransformer(nn.Module):
                  qk_scale=None,
                  drop_rate=0.,
                  attn_drop_rate=0.,
-                 drop_path_rate=0.2,
+                 drop_path_rate=0.,
                  norm_layer=nn.LayerNorm,
                  use_dense_prediction=False,
                  global_pool=False,
@@ -359,7 +359,7 @@ class VisionTransformer(nn.Module):
         pos_embed = self.pos_embed
         x = x + pos_embed
         x = torch.cat((cls_tokens, x), dim=1)
-        
+
         x = self.pos_drop(x)
 
         for blk in self.blocks:
@@ -529,6 +529,8 @@ def dynamic_vitiii_base_p16(patch_size=16, **kwargs):
         num_heads=12,
         mlp_ratio=4,
         qkv_bias=True,
+        drop_rate=0.,
+        drop_path_rate=0.2,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
         **kwargs)
     return model
