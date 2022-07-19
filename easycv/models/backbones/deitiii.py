@@ -354,7 +354,7 @@ class VisionTransformer(nn.Module):
         x = self.patch_embed(x)
 
         cls_tokens = self.cls_token.expand(B, -1, -1)
-        pos_embed = self.interpolate_pos_encoding(x, self.pos_embed)
+        # x = torch.cat((cls_tokens, x), dim=1)
         # pos_embed = self.interpolate_pos_encoding(x, self.pos_embed)
         pos_embed = self.pos_embed
         x = x + pos_embed
