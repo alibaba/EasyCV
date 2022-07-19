@@ -236,7 +236,7 @@ class VisionTransformer(nn.Module):
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.pos_embed = nn.Parameter(
-            torch.zeros(1, num_patches + 1, embed_dim))
+            torch.zeros(1, num_patches, embed_dim))
         self.pos_drop = nn.Dropout(p=drop_rate)
 
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)
@@ -354,9 +354,12 @@ class VisionTransformer(nn.Module):
         x = self.patch_embed(x)
 
         cls_tokens = self.cls_token.expand(B, -1, -1)
-        x = torch.cat((cls_tokens, x), dim=1)
         pos_embed = self.interpolate_pos_encoding(x, self.pos_embed)
+        # pos_embed = self.interpolate_pos_encoding(x, self.pos_embed)
+        pos_embed = self.pos_embed
         x = x + pos_embed
+        x = torch.cat((cls_tokens, x), dim=1)
+        
         x = self.pos_drop(x)
 
         for blk in self.blocks:
