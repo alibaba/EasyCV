@@ -1,3 +1,5 @@
+# from PIL import Image
+
 _base_ = 'configs/base.py'
 
 log_config = dict(
@@ -130,13 +132,13 @@ optimizer_config = dict(grad_clip=None, update_interval=4)
 # )
 lr_config = dict(
     policy='CosineAnnealing',
-    by_epoch=False,
-    min_lr=1e-5,
+    by_epoch=True,
+    min_lr_ratio=0.00001/0.003,
     warmup='linear',
     warmup_by_epoch=True,
     warmup_iters=5,
     # warmup_iters=12515,
-    warmup_ratio=1e-4,
+    warmup_ratio=0.000001/0.003,
 )
 checkpoint_config = dict(interval=20)
 
