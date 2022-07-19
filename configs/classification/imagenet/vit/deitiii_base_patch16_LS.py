@@ -118,15 +118,25 @@ optimizer = dict(
 optimizer_config = dict(grad_clip=None, update_interval=4)
 
 # learning policy
+# lr_config = dict(
+#     policy='CosineAnnealing',
+#     by_epoch=False,
+#     min_lr=1e-5,
+#     warmup='linear',
+#     warmup_by_epoch=True,
+#     warmup_iters=5,
+#     # warmup_iters=12515,
+#     warmup_ratio=1e-6,
+# )
 lr_config = dict(
     policy='CosineAnnealing',
-    # by_epoch=False,
+    by_epoch=False,
     min_lr=1e-5,
     warmup='linear',
     warmup_by_epoch=True,
     warmup_iters=5,
     # warmup_iters=12515,
-    warmup_ratio=1e-6,
+    warmup_ratio=1e-4,
 )
 checkpoint_config = dict(interval=20)
 
