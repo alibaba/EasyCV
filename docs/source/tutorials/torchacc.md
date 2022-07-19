@@ -13,7 +13,7 @@ Currently we only provide docker run.
 #### Prerequisites
 
 - Driver Version: 470.82.01+
-- CUDA Version: 11.3+ 
+- CUDA Version: 11.3+
 
 **Create Container**
 
@@ -41,14 +41,14 @@ $ USE_TORCHACC=1 python tools/train.py configs/classification/imagenet/swint/ima
 ### Multi Gpus
 
 ```shell
-$ USE_TORCHACC=1 xlarun --nproc_per_node=8 --master_port=29500 tools/train.py configs/classification/imagenet/swint/imagenet_swin_tiny_patch4_window7_224_jpg_torchacc.py --work_dir ./work_dirs  --fp16
+$ USE_TORCHACC=1 xlarun --nproc_per_node=${NUM_GPUS} --master_port=29500 tools/train.py configs/classification/imagenet/swint/imagenet_swin_tiny_patch4_window7_224_jpg_torchacc.py --work_dir ./work_dirs  --fp16
 ```
 
 ## Benchmark
 
 ### Single Gpu
 
-FPS is as follows：
+The FPS is as follows：
 
 |      | Raw    | Torchacc | Speedup    |                                 |
 | ---- | ------ | -------- | ---------- | ------------------------------- |
@@ -56,7 +56,7 @@ FPS is as follows：
 
 ### Multi Gpus
 
-FPS is as follows：
+The FPS of 8 gpus is as follows：
 
 |      | Raw  | Torchacc | Speedup |                                 |
 | ---- | ---- | -------- | ------- | ------------------------------- |
