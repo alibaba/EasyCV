@@ -131,7 +131,8 @@ optimizer_config = dict(grad_clip=None, update_interval=4)
 #     warmup_ratio=1e-6,
 # )
 lr_config = dict(
-    policy='CosineAnnealing',
+    # policy='CosineAnnealing',
+    policy='CosineAnnealingWarmupByEpoch',
     by_epoch=False,
     min_lr_ratio=0.00001/0.003,
     warmup='linear',
@@ -144,3 +145,5 @@ checkpoint_config = dict(interval=20)
 
 # runtime settings
 total_epochs = 800
+
+ema = dict(decay = 0.99996)
