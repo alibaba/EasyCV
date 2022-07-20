@@ -132,7 +132,17 @@ custom_hooks = [
 ]
 
 # evaluation
-eval_config = dict(interval='${interval}', gpu_collect=False)
+vis_num = 20
+score_thr = 0.5
+eval_config = dict(
+    interval='${interval}',
+    gpu_collect=False,
+    visualization_config=dict(
+        vis_num='${vis_num}',
+        score_thr='${score_thr}',
+    )  # show by TensorboardLoggerHookV2
+)
+
 eval_pipelines = [
     dict(
         mode='test',
@@ -172,7 +182,7 @@ log_config = dict(
     interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHook')
+        dict(type='TensorboardLoggerHookV2')
     ])
 # yapf:enable
 # runtime settings
@@ -184,3 +194,4 @@ resume_from = None
 workflow = [('train', 1)]
 
 export = dict(use_jit=False)
+oss_sync_config = dict(other_file_list=['**/events.out.tfevents*', '**/*log*'])
