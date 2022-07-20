@@ -11,7 +11,6 @@ from .ema_hook import EMAHook
 from .eval_hook import DistEvalHook, EvalHook
 from .export_hook import ExportHook
 from .extractor import Extractor
-from .fps_hook import FPSHook
 from .lr_update_hook import StepFixCosineAnnealingLrUpdaterHook
 from .optimizer_hook import OptimizerHook
 from .oss_sync_hook import OSSSyncHook
@@ -21,6 +20,7 @@ from .swav_hook import SWAVHook
 from .sync_norm_hook import SyncNormHook
 from .sync_random_size_hook import SyncRandomSizeHook
 from .tensorboard import TensorboardLoggerHookV2
+from .throughput_hook import ThroughputHook
 from .wandb import WandbLoggerHookV2
 from .yolox_lr_hook import YOLOXLrUpdaterHook
 from .yolox_mode_switch_hook import YOLOXModeSwitchHook
@@ -30,7 +30,7 @@ __all__ = [
     'DistEvalHook', 'EvalHook', 'ExportHook', 'Extractor', 'OptimizerHook',
     'OSSSyncHook', 'HOOKS', 'TIMEHook', 'SWAVHook', 'SyncNormHook',
     'SyncRandomSizeHook', 'TensorboardLoggerHookV2', 'WandbLoggerHookV2',
-    'YOLOXLrUpdaterHook', 'YOLOXModeSwitchHook', 'FPSHook',
+    'YOLOXLrUpdaterHook', 'YOLOXModeSwitchHook', 'ThroughputHook',
     'StepFixCosineAnnealingLrUpdaterHook'
 ]
 

@@ -84,7 +84,7 @@ def main():
             timings[idx] = curr_time
 
     avg = timings.sum() / args.repeat_num
-    print(torch.cuda.memory_summary(device))
+    print('Cuda memory: {}'.format(torch.cuda.memory_summary(device)))
     print('\ninference average time={}ms\n'.format(avg))
 
 

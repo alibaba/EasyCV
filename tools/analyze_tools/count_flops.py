@@ -86,6 +86,9 @@ def count_flop():
         kwargs[0].update({'mode': 'test'})
         inputs = flatten_inputs(model, kwargs[0])
 
+        # Provides access to per-submodule model flop count obtained by
+        # tracing a model with pytorch's jit tracing functionality.
+        # So models that donot support jit tracing may fail.
         flops = FlopCountAnalysis(model, inputs)
         flops.set_op_handle(**handlers)
         if idx > 0:
