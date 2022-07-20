@@ -11,8 +11,8 @@ from .ema_hook import EMAHook
 from .eval_hook import DistEvalHook, EvalHook
 from .export_hook import ExportHook
 from .extractor import Extractor
-from .lr_update_hook import StepFixCosineAnnealingLrUpdaterHook
 from .fps_hook import FPSHook
+from .lr_update_hook import StepFixCosineAnnealingLrUpdaterHook
 from .optimizer_hook import OptimizerHook
 from .oss_sync_hook import OSSSyncHook
 from .registry import HOOKS

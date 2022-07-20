@@ -11,6 +11,7 @@ from easycv.datasets.builder import build_dataset
 from easycv.datasets.loader import build_dataloader
 from easycv.models.builder import build_model
 from easycv.utils.config_tools import mmcv_config_fromfile
+from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 
 
 def parse_args():
@@ -38,6 +39,9 @@ def main():
 
     cfg = mmcv_config_fromfile(args.config)
 
+    # dynamic adapt mmdet models
+    dynamic_adapt_for_mmlab(cfg)
+
     device = torch.device('cuda:{}'.format(args.gpu))
     model = build_model(cfg.model).to(device)
     model.eval()
@@ -60,6 +64,7 @@ def main():
         for idx, data in zip(tqdm.trange(args.repeat_num), data_loader):
             _, kwargs = scatter_kwargs(None, data, [int(args.gpu)])
             inputs = kwargs[0]
+            inputs.update(dict(mode='test'))
             # GPU may be hibernated to save energy at ordinary times, so it needs to be preheated.
             if idx < args.warmup_num:
                 if idx == 0:
@@ -80,7 +85,7 @@ def main():
 
     avg = timings.sum() / args.repeat_num
     print(torch.cuda.memory_summary(device))
-    print('\ninference average time={}\n'.format(avg))
+    print('\ninference average time={}ms\n'.format(avg))
 
 
 if __name__ == '__main__':

@@ -11,8 +11,10 @@ from prettytable import PrettyTable
 
 from easycv.datasets.builder import build_dataset
 from easycv.datasets.loader import build_dataloader
+from easycv.datasets.utils import is_dali_dataset_type
 from easycv.models.builder import build_model
 from easycv.utils.config_tools import mmcv_config_fromfile
+from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 
 
 def parse_args():
@@ -50,25 +52,38 @@ def count_flop():
     device = 'cuda'
     cfg = mmcv_config_fromfile(args.config)
 
+    # dynamic adapt mmdet models
+    dynamic_adapt_for_mmlab(cfg)
+
     model = build_model(cfg.model)
     model.to(device)
     model.eval()
 
-    cfg.data.val.pop('imgs_per_gpu', None)  # pop useless params
-    dataset = build_dataset(cfg.data.val)
-    data_loader = build_dataloader(
-        dataset,
-        imgs_per_gpu=1,
-        workers_per_gpu=0,
-    )
+    if cfg.data.get('val', None) is not None:
+        cfg.data.val.pop('imgs_per_gpu', None)  # pop useless params
+        data_cfg = cfg.data.val
+    else:
+        data_cfg = cfg.data.train
+
+    if is_dali_dataset_type(data_cfg['type']):
+        data_cfg.distributed = False
+        data_cfg.batch_size = 1
+        data_cfg.workers_per_gpu = 1
+        dataset = build_dataset(data_cfg)
+        data_loader = dataset.get_dataloader()
+    else:
+        dataset = build_dataset(data_cfg)
+        data_loader = build_dataloader(
+            dataset, imgs_per_gpu=1, workers_per_gpu=0)
 
     handlers = {}  # mapping from operator names to handles.
     counts = Counter()
-    gfloat_unit = 1e9
+    gflop_unit = 1e9
     total_flops = []
     for idx, data in zip(tqdm.trange(args.repeat_num), data_loader):
         # use scatter_kwargs to unpack DataContainer data for raw torch.nn.module
         _, kwargs = scatter_kwargs(None, data, [0])
+        kwargs[0].update({'mode': 'test'})
         inputs = flatten_inputs(model, kwargs[0])
 
         flops = FlopCountAnalysis(model, inputs)
@@ -83,12 +98,12 @@ def count_flop():
     ops_show = PrettyTable()
     ops_show.field_names = ['operator type', 'Gflops']
     for k, v in counts.items():
-        ops_show.add_row([k, round(v / (idx + 1) / gfloat_unit, 3)])
+        ops_show.add_row([k, round(v / (idx + 1) / gflop_unit, 3)])
     print('Average Gflops of each operator type is:')
     print(ops_show)
     print('Total flops: {:.1f}G ± {:.1f}G'.format(
-        np.mean(total_flops) / gfloat_unit,
-        np.std(total_flops) / gfloat_unit))
+        np.mean(total_flops) / gflop_unit,
+        np.std(total_flops) / gflop_unit))
 
 
 if __name__ == '__main__':
