@@ -11,7 +11,7 @@ from .ema_hook import EMAHook
 from .eval_hook import DistEvalHook, EvalHook
 from .export_hook import ExportHook
 from .extractor import Extractor
-from .lr_update_hook import StepFixCosineAnnealingLrUpdaterHook
+from .lr_update_hook import StepFixCosineAnnealingLrUpdaterHook, CosineAnnealingWarmupByEpochLrUpdaterHook
 from .optimizer_hook import OptimizerHook
 from .oss_sync_hook import OSSSyncHook
 from .registry import HOOKS
@@ -30,7 +30,7 @@ __all__ = [
     'OSSSyncHook', 'HOOKS', 'TIMEHook', 'SWAVHook', 'SyncNormHook',
     'SyncRandomSizeHook', 'TensorboardLoggerHookV2', 'WandbLoggerHookV2',
     'YOLOXLrUpdaterHook', 'YOLOXModeSwitchHook',
-    'StepFixCosineAnnealingLrUpdaterHook'
+    'StepFixCosineAnnealingLrUpdaterHook', 'CosineAnnealingWarmupByEpochLrUpdaterHook'
 ]
 
 if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):

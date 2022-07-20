@@ -54,3 +54,30 @@ class StepFixCosineAnnealingLrUpdaterHook(CosineAnnealingLrUpdaterHook):
             target_lr = self.min_lr
 
         return annealing_cos(base_lr, target_lr, progress / max_progress)
+
+
+
+@HOOKS.register_module()
+class CosineAnnealingWarmupByEpochLrUpdaterHook(CosineAnnealingLrUpdaterHook):
+
+    def before_train_iter(self, runner: 'runner.BaseRunner'):
+        cur_iter = runner.iter
+        epoch_len = len(runner.data_loader)
+        assert isinstance(self.warmup_iters, int)
+        if not self.by_epoch:
+            self.regular_lr = self.get_regular_lr(runner)
+            if self.warmup is None or cur_iter >= self.warmup_iters:
+                self._set_lr(runner, self.regular_lr)
+            else:
+                if cur_iter % epoch_len == 0:
+                    warmup_lr = self.get_warmup_lr(cur_iter)
+                    self._set_lr(runner, warmup_lr)
+        elif self.by_epoch:
+            if self.warmup is None or cur_iter > self.warmup_iters:
+                return
+            elif cur_iter == self.warmup_iters:
+                self._set_lr(runner, self.regular_lr)
+            else:
+                if cur_iter % epoch_len == 0:
+                    warmup_lr = self.get_warmup_lr(cur_iter)
+                    self._set_lr(runner, warmup_lr)
