@@ -46,6 +46,8 @@ $ USE_TORCHACC=1 xlarun --nproc_per_node=${NUM_GPUS} --master_port=29500 tools/t
 
 ### Single Gpu
 
+Device: Tesla V100
+
 The throughput is as follows:
 
 |      | Raw    | Torchacc | Speedup    |                                 |
@@ -53,6 +55,8 @@ The throughput is as follows:
 | Swin | 319.68 | 582.94   | **82.35%** | batch_size=160 (per gpu) / fp16 |
 
 ### Multi Gpus
+
+Device: Tesla V100
 
 The throughput of 8 gpus is as follows:
 
