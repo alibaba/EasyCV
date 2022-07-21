@@ -73,7 +73,7 @@ test_pipeline = [
 ]
 
 data = dict(
-    imgs_per_gpu=64,  # total 256
+    imgs_per_gpu=128,  # total 256
     workers_per_gpu=8,
     repeated_aug=True,
     train=dict(
@@ -117,7 +117,7 @@ optimizer = dict(
         'pos_embed': dict(weight_decay=0.),
     })
     # )
-optimizer_config = dict(grad_clip=None, update_interval=4)
+optimizer_config = dict(grad_clip=None, update_interval=1)
 
 # learning policy
 # lr_config = dict(
