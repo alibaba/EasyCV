@@ -1,8 +1,6 @@
-# Torchacc tutorial
+# TorchAccelerator tutorial
 
-## Support model list
-
-- [x] Swin
+TorchAccelerator is a distributed training acceleration framework that supports dynamic and static on Pytorch. TorchAccelerator accelerates model training on Pytorch by means of compilation optimization and manual operator optimization.
 
 ## Preparation
 
