@@ -133,7 +133,7 @@ optimizer_config = dict(grad_clip=None, update_interval=4)
 lr_config = dict(
     # policy='CosineAnnealing',
     policy='CosineAnnealingWarmupByEpoch',
-    by_epoch=False,
+    by_epoch=True,
     min_lr_ratio=0.00001/0.003,
     warmup='linear',
     warmup_by_epoch=True,
