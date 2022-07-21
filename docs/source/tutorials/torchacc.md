@@ -46,7 +46,7 @@ $ USE_TORCHACC=1 xlarun --nproc_per_node=${NUM_GPUS} --master_port=29500 tools/t
 
 ### Single Gpu
 
-The FPS is as follows：
+The throughput is as follows:
 
 |      | Raw    | Torchacc | Speedup    |                                 |
 | ---- | ------ | -------- | ---------- | ------------------------------- |
@@ -54,7 +54,7 @@ The FPS is as follows：
 
 ### Multi Gpus
 
-The FPS of 8 gpus is as follows：
+The throughput of 8 gpus is as follows:
 
 |      | Raw  | Torchacc | Speedup |                                 |
 | ---- | ---- | -------- | ------- | ------------------------------- |
