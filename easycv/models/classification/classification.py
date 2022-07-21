@@ -68,7 +68,7 @@ class Classification(BaseModel):
                     label_smoothing=0.1,
                     num_classes=num_classes)
             self.mixup = Mixup(**mixup_cfg)
-            head.loss_config = {'type': 'SoftTargetCrossEntropy'}
+            # head.loss_config = {'type': 'SoftTargetCrossEntropy'}
             train_preprocess.remove('mixUp')
         self.train_preprocess = [
             self.preprocess_key_map[i] for i in train_preprocess
