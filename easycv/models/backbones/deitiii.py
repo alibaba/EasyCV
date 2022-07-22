@@ -297,6 +297,18 @@ class VisionTransformer(nn.Module):
     def no_weight_decay(self):
         return {'pos_embed', 'cls_token'}
 
+    def get_classifier(self):
+        return self.head
+
+    def get_num_layers(self):
+        return len(self.blocks)
+
+    def reset_classifier(self, num_classes, global_pool=''):
+        self.num_classes = num_classes
+        self.head = nn.Linear(self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
+
+
+
     # def forward(self, x):
     #     # convert to list
     #     if not isinstance(x, list):
@@ -368,8 +380,8 @@ class VisionTransformer(nn.Module):
         cls_tokens = self.cls_token.expand(B, -1, -1)
         # x = torch.cat((cls_tokens, x), dim=1)
         # pos_embed = self.interpolate_pos_encoding(x, self.pos_embed)
-        pos_embed = self.pos_embed
-        x = x + pos_embed
+        # pos_embed = self.pos_embed
+        x = x + self.pos_embed
         x = torch.cat((cls_tokens, x), dim=1)
 
         x = self.pos_drop(x)
@@ -388,122 +400,122 @@ class VisionTransformer(nn.Module):
             else:
                 return x[:, 0]
 
-    def forward_feature_maps(self, x):
-        B = x.shape[0]
-        x = self.patch_embed(x)
+    # def forward_feature_maps(self, x):
+    #     B = x.shape[0]
+    #     x = self.patch_embed(x)
 
-        cls_tokens = self.cls_token.expand(B, -1, -1)
-        x = torch.cat((cls_tokens, x), dim=1)
-        pos_embed = self.interpolate_pos_encoding(x, self.pos_embed)
-        x = x + pos_embed
-        x = self.pos_drop(x)
+    #     cls_tokens = self.cls_token.expand(B, -1, -1)
+    #     x = torch.cat((cls_tokens, x), dim=1)
+    #     pos_embed = self.interpolate_pos_encoding(x, self.pos_embed)
+    #     x = x + pos_embed
+    #     x = self.pos_drop(x)
 
-        for blk in self.blocks:
-            x = blk(x)
-        if self.norm is not None:
-            x = self.norm(x)
+    #     for blk in self.blocks:
+    #         x = blk(x)
+    #     if self.norm is not None:
+    #         x = self.norm(x)
 
-        return x
+    #     return x
 
-    def interpolate_pos_encoding(self, x, pos_embed):
-        npatch = x.shape[1] - 1
-        N = pos_embed.shape[1] - 1
-        if npatch == N:
-            return pos_embed
-        class_emb = pos_embed[:, 0]
-        pos_embed = pos_embed[:, 1:]
-        dim = x.shape[-1]
-        pos_embed = nn.functional.interpolate(
-            pos_embed.reshape(1, int(math.sqrt(N)), int(math.sqrt(N)),
-                              dim).permute(0, 3, 1, 2),
-            scale_factor=math.sqrt(npatch / N),
-            mode='bicubic',
-        )
-        pos_embed = pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
-        return torch.cat((class_emb.unsqueeze(0), pos_embed), dim=1)
+    # def interpolate_pos_encoding(self, x, pos_embed):
+    #     npatch = x.shape[1] - 1
+    #     N = pos_embed.shape[1] - 1
+    #     if npatch == N:
+    #         return pos_embed
+    #     class_emb = pos_embed[:, 0]
+    #     pos_embed = pos_embed[:, 1:]
+    #     dim = x.shape[-1]
+    #     pos_embed = nn.functional.interpolate(
+    #         pos_embed.reshape(1, int(math.sqrt(N)), int(math.sqrt(N)),
+    #                           dim).permute(0, 3, 1, 2),
+    #         scale_factor=math.sqrt(npatch / N),
+    #         mode='bicubic',
+    #     )
+    #     pos_embed = pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
+    #     return torch.cat((class_emb.unsqueeze(0), pos_embed), dim=1)
 
-    def forward_selfattention(self, x, n=1):
-        # n=1 return the last layer attn map; otherwise return attn maps in all layers
+    # def forward_selfattention(self, x, n=1):
+    #     # n=1 return the last layer attn map; otherwise return attn maps in all layers
 
-        B, nc, w, h = x.shape
-        N = self.pos_embed.shape[1] - 1
-        x = self.patch_embed(x)
+    #     B, nc, w, h = x.shape
+    #     N = self.pos_embed.shape[1] - 1
+    #     x = self.patch_embed(x)
 
-        # interpolate patch embeddings
-        dim = x.shape[-1]
-        w0 = w // self.patch_embed.patch_size
-        h0 = h // self.patch_embed.patch_size
-        class_pos_embed = self.pos_embed[:, 0]
-        patch_pos_embed = self.pos_embed[:, 1:]
-        patch_pos_embed = nn.functional.interpolate(
-            patch_pos_embed.reshape(1, int(math.sqrt(N)), int(math.sqrt(N)),
-                                    dim).permute(0, 3, 1, 2),
-            scale_factor=(w0 / math.sqrt(N), h0 / math.sqrt(N)),
-            mode='bicubic',
-        )
-        if w0 != patch_pos_embed.shape[-2]:
-            helper = torch.zeros(h0)[None, None, None, :].repeat(
-                1, dim, w0 - patch_pos_embed.shape[-2], 1).to(x.device)
-            patch_pos_embed = torch.cat((patch_pos_embed, helper), dim=-2)
-        if h0 != patch_pos_embed.shape[-1]:
-            helper = torch.zeros(w0)[None, None, :, None].repeat(
-                1, dim, 1, h0 - patch_pos_embed.shape[-1]).to(x.device)
-            pos_embed = torch.cat((patch_pos_embed, helper), dim=-1)
-        patch_pos_embed = patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
-        pos_embed = torch.cat((class_pos_embed.unsqueeze(0), patch_pos_embed),
-                              dim=1)
+    #     # interpolate patch embeddings
+    #     dim = x.shape[-1]
+    #     w0 = w // self.patch_embed.patch_size
+    #     h0 = h // self.patch_embed.patch_size
+    #     class_pos_embed = self.pos_embed[:, 0]
+    #     patch_pos_embed = self.pos_embed[:, 1:]
+    #     patch_pos_embed = nn.functional.interpolate(
+    #         patch_pos_embed.reshape(1, int(math.sqrt(N)), int(math.sqrt(N)),
+    #                                 dim).permute(0, 3, 1, 2),
+    #         scale_factor=(w0 / math.sqrt(N), h0 / math.sqrt(N)),
+    #         mode='bicubic',
+    #     )
+    #     if w0 != patch_pos_embed.shape[-2]:
+    #         helper = torch.zeros(h0)[None, None, None, :].repeat(
+    #             1, dim, w0 - patch_pos_embed.shape[-2], 1).to(x.device)
+    #         patch_pos_embed = torch.cat((patch_pos_embed, helper), dim=-2)
+    #     if h0 != patch_pos_embed.shape[-1]:
+    #         helper = torch.zeros(w0)[None, None, :, None].repeat(
+    #             1, dim, 1, h0 - patch_pos_embed.shape[-1]).to(x.device)
+    #         pos_embed = torch.cat((patch_pos_embed, helper), dim=-1)
+    #     patch_pos_embed = patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
+    #     pos_embed = torch.cat((class_pos_embed.unsqueeze(0), patch_pos_embed),
+    #                           dim=1)
 
-        cls_tokens = self.cls_token.expand(B, -1, -1)
-        x = torch.cat((cls_tokens, x), dim=1)
-        x = x + pos_embed
-        x = self.pos_drop(x)
+    #     cls_tokens = self.cls_token.expand(B, -1, -1)
+    #     x = torch.cat((cls_tokens, x), dim=1)
+    #     x = x + pos_embed
+    #     x = self.pos_drop(x)
 
-        if n == 1:
-            return self.forward_last_selfattention(x)
-        else:
-            return self.forward_all_selfattention(x)
+    #     if n == 1:
+    #         return self.forward_last_selfattention(x)
+    #     else:
+    #         return self.forward_all_selfattention(x)
 
-    def forward_last_selfattention(self, x):
-        for i, blk in enumerate(self.blocks):
-            if i < len(self.blocks) - 1:
-                x = blk(x)
-            else:
-                return blk(x, return_attention=True)
+    # def forward_last_selfattention(self, x):
+    #     for i, blk in enumerate(self.blocks):
+    #         if i < len(self.blocks) - 1:
+    #             x = blk(x)
+    #         else:
+    #             return blk(x, return_attention=True)
 
-    def forward_all_selfattention(self, x):
-        attn_out = []
-        for i, blk in enumerate(self.blocks):
-            x, attn = blk.forward_fea_and_attn(x)
-            attn_out.append(attn)
+    # def forward_all_selfattention(self, x):
+    #     attn_out = []
+    #     for i, blk in enumerate(self.blocks):
+    #         x, attn = blk.forward_fea_and_attn(x)
+    #         attn_out.append(attn)
 
-        return attn_out
+    #     return attn_out
 
-    def forward_return_n_last_blocks(self,
-                                     x,
-                                     n=1,
-                                     return_patch_avgpool=False,
-                                     depths=[]):
-        B = x.shape[0]
-        x = self.patch_embed(x)
+    # def forward_return_n_last_blocks(self,
+    #                                  x,
+    #                                  n=1,
+    #                                  return_patch_avgpool=False,
+    #                                  depths=[]):
+    #     B = x.shape[0]
+    #     x = self.patch_embed(x)
 
-        cls_tokens = self.cls_token.expand(B, -1, -1)
-        x = torch.cat((cls_tokens, x), dim=1)
-        pos_embed = self.interpolate_pos_encoding(x, self.pos_embed)
-        x = x + pos_embed
-        x = self.pos_drop(x)
+    #     cls_tokens = self.cls_token.expand(B, -1, -1)
+    #     x = torch.cat((cls_tokens, x), dim=1)
+    #     pos_embed = self.interpolate_pos_encoding(x, self.pos_embed)
+    #     x = x + pos_embed
+    #     x = self.pos_drop(x)
 
-        # we will return the [CLS] tokens from the `n` last blocks
-        output = []
-        for i, blk in enumerate(self.blocks):
-            x = blk(x)
-            if len(self.blocks) - i <= n:
-                output.append(self.norm(x)[:, 0])
-        if return_patch_avgpool:
-            x = self.norm(x)
-            # In addition to the [CLS] tokens from the `n` last blocks, we also return
-            # the patch tokens from the last block. This is useful for linear eval.
-            output.append(torch.mean(x[:, 1:], dim=1))
-        return torch.cat(output, dim=-1)
+    #     # we will return the [CLS] tokens from the `n` last blocks
+    #     output = []
+    #     for i, blk in enumerate(self.blocks):
+    #         x = blk(x)
+    #         if len(self.blocks) - i <= n:
+    #             output.append(self.norm(x)[:, 0])
+    #     if return_patch_avgpool:
+    #         x = self.norm(x)
+    #         # In addition to the [CLS] tokens from the `n` last blocks, we also return
+    #         # the patch tokens from the last block. This is useful for linear eval.
+    #         output.append(torch.mean(x[:, 1:], dim=1))
+    #     return torch.cat(output, dim=-1)
 
 
 def dynamic_deitiii_tiny_p16(patch_size=16, **kwargs):
