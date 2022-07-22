@@ -117,7 +117,7 @@ optimizer = dict(
         'pos_embed': dict(weight_decay=0.),
     })
     # )
-optimizer_config = dict(grad_clip=None, update_interval=1)
+optimizer_config = dict(grad_clip=None, update_interval=2)
 
 # learning policy
 # lr_config = dict(
@@ -141,7 +141,7 @@ lr_config = dict(
     # warmup_iters=12515,
     warmup_ratio=0.000001/0.003,
 )
-checkpoint_config = dict(interval=20)
+checkpoint_config = dict(interval=10)
 
 # runtime settings
 total_epochs = 800
