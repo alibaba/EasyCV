@@ -1,6 +1,6 @@
 # TorchAccelerator tutorial
 
-TorchAccelerator is a distributed training acceleration framework that supports dynamic and static on Pytorch. TorchAccelerator accelerates model training on Pytorch by means of compilation optimization and manual operator optimization.
+TorchAccelerator is a distributed training acceleration framework that transfers eager execution to graph-based intermediate representation on Pytorch. TorchAccelerator accelerates model training on Pytorch by means of compilation optimization and manual operator optimization.
 
 ## Preparation
 
@@ -18,7 +18,6 @@ Currently we only provide docker run.
 image url: `registry.cn-hangzhou.aliyuncs.com/pai-dlc/pytorch-training:cuda11.3.1-cudnn8-devel-ubuntu20.04-py38-0625`
 
 ```shell
-# ROOT_DIR 修改为存放代码和数据的共同根目录即可
 $ nvidia-docker run -it --name $YOUR_NAME --gpus all -v ${YOUR_ROOT_DIR}:/workspace registry.cn-hangzhou.aliyuncs.com/pai-dlc/pytorch-training:cuda11.3.1-cudnn8-devel-ubuntu20.04-py38-0625 bash
 ```
 
