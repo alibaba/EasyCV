@@ -23,7 +23,7 @@ model = dict(
         num_classes=1000),
     backbone=dict(
         type='PytorchImageModelWrapper',
-        model_name='dynamic_vitiii_base_p16',
+        model_name='deitiii_base_p16_192',
         num_classes=1000,
     ),
     head=dict(
