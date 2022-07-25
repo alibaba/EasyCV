@@ -518,7 +518,7 @@ class VisionTransformer(nn.Module):
     #     return torch.cat(output, dim=-1)
 
 
-def dynamic_deitiii_tiny_p16(patch_size=16, **kwargs):
+def deitiii_tiny_p16(patch_size=16, **kwargs):
     model = VisionTransformer(
         patch_size=patch_size,
         embed_dim=192,
@@ -531,7 +531,7 @@ def dynamic_deitiii_tiny_p16(patch_size=16, **kwargs):
     return model
 
 
-def dynamic_deitiii_small_p16(patch_size=16, **kwargs):
+def deitiii_small_p16(patch_size=16, **kwargs):
     model = VisionTransformer(
         patch_size=patch_size,
         embed_dim=384,
@@ -544,7 +544,22 @@ def dynamic_deitiii_small_p16(patch_size=16, **kwargs):
     return model
 
 
-def dynamic_vitiii_base_p16(patch_size=16, **kwargs):
+def deitiii_base_p16(patch_size=16, **kwargs):
+    model = VisionTransformer(
+        patch_size=patch_size,
+        embed_dim=768,
+        depth=12,
+        num_heads=12,
+        mlp_ratio=4,
+        qkv_bias=True,
+        drop_rate=0.,
+        drop_path_rate=0.2,
+        norm_layer=partial(nn.LayerNorm, eps=1e-6),
+        **kwargs)
+    return model
+
+
+def deitiii_base_p16_192(patch_size=16, **kwargs):
     model = VisionTransformer(
         img_size=[192],
         patch_size=patch_size,
@@ -560,7 +575,7 @@ def dynamic_vitiii_base_p16(patch_size=16, **kwargs):
     return model
 
 
-def dynamic_vitiii_large_p16(patch_size=16, **kwargs):
+def deitiii_large_p16(patch_size=16, **kwargs):
     model = VisionTransformer(
         patch_size=patch_size,
         embed_dim=1024,
@@ -573,7 +588,7 @@ def dynamic_vitiii_large_p16(patch_size=16, **kwargs):
     return model
 
 
-def dynamic_vitiii_huge_p14(patch_size=14, **kwargs):
+def deitiii_huge_p14(patch_size=14, **kwargs):
     model = VisionTransformer(
         patch_size=patch_size,
         embed_dim=1280,
