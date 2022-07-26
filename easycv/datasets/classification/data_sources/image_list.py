@@ -80,7 +80,7 @@ class ClsSourceImageList(object):
 
     @staticmethod
     def parse_list_file(list_file, root, delimeter):
-        with open(list_file, 'r') as f:
+        with io.open(list_file, 'r') as f:
             lines = f.readlines()
 
         fns = []
