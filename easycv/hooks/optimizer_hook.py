@@ -120,6 +120,13 @@ class AMPFP16OptimizerHook(OptimizerHook):
 
     def before_run(self, runner):
         logging.info('open fp16')
+
+        # set `fp16_enabled` flag. adapt to mmdet
+        # TODO: find a more pretty way to adapt mmdet
+        for m in runner.model.modules():
+            if hasattr(m, 'fp16_enabled'):
+                m.fp16_enabled = True
+
         runner.optimizer.zero_grad()
 
     def after_train_iter(self, runner):
