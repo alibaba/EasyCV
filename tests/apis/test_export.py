@@ -73,6 +73,7 @@ class ModelExportTest(unittest.TestCase):
     def test_export_classification_jit(self):
         config_file = 'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py'
         cfg = mmcv_config_fromfile(config_file)
+        cfg.model.pretrained = False
         cfg.model.backbone = dict(
             type='ResNetJIT',
             depth=50,
