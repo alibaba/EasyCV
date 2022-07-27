@@ -13,7 +13,7 @@ class HungarianMatcher(nn.Module):
     while the others are un-matched (and thus treated as non-objects).
     """
 
-    def __init__(self, cost_dict, cost_class_type=None):
+    def __init__(self, cost_dict, cost_class_type='ce_cost'):
         """Creates the matcher
         Params:
             cost_class: This is the relative weight of the classification error in the matching cost
@@ -51,7 +51,7 @@ class HungarianMatcher(nn.Module):
         if self.cost_class_type == 'focal_loss_cost':
             out_prob = outputs['pred_logits'].flatten(
                 0, 1).sigmoid()  # [batch_size * num_queries, num_classes]
-        else:
+        elif self.cost_class_type == 'ce_cost':
             out_prob = outputs['pred_logits'].flatten(0, 1).softmax(
                 -1)  # [batch_size * num_queries, num_classes]
 
@@ -72,7 +72,7 @@ class HungarianMatcher(nn.Module):
             pos_cost_class = pos_cost_class * (-(out_prob + 1e-8).log())
             cost_class = pos_cost_class[:, tgt_ids] - neg_cost_class[:,
                                                                      tgt_ids]
-        else:
+        elif self.cost_class_type == 'ce_cost':
             # Compute the classification cost. Contrary to the loss, we don't use the NLL,
             # but approximate it in 1 - proba[target class].
             # The 1 is a constant that doesn't change the matching, it can be ommitted.

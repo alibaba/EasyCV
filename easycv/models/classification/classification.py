@@ -128,8 +128,9 @@ class Classification(BaseModel):
                     strict=False,
                     logger=logger)
             else:
-                print_log('load model from init weights')
-                self.backbone.init_weights()
+                raise ValueError(
+                    'default_pretrained_model_path for {} not found'.format(
+                        self.backbone.__class__.__name__))
         else:
             print_log('load model from init weights')
             self.backbone.init_weights()
