@@ -7,3 +7,4 @@ from .generator import MlvlPointGenerator
 from .matcher import HungarianMatcher
 from .misc import (accuracy, filter_scores_and_topk, fp16_clamp, interpolate,
                    inverse_sigmoid, output_postprocess, select_single_mlvl)
+from .set_criterion import SetCriterion
