@@ -49,7 +49,7 @@ CLASSES = [
 
 # dataset settings
 # data_root = 'data/coco/'
-data_root = '/apsarapangu/disk5/zxy/data/coco/'
+data_root = '/root/database/coco/'
 # data_root = '/mnt/data/nas/data/detection/coco/'
 # data_root = '/cpfs01/shared/public/dataset/coco2017/'
 
@@ -123,7 +123,7 @@ val_dataset = dict(
     label_padding=False)
 
 data = dict(
-    imgs_per_gpu=16, workers_per_gpu=4, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=8, workers_per_gpu=4, train=train_dataset, val=val_dataset)
 
 # additional hooks
 interval = 10
@@ -167,7 +167,7 @@ checkpoint_config = dict(interval=interval)
 
 # optimizer
 optimizer = dict(
-    type='SGD', lr=0.02, momentum=0.9, weight_decay=5e-4, nesterov=True)
+    type='SGD', lr=0.005, momentum=0.9, weight_decay=5e-4, nesterov=True)
 optimizer_config = {}
 
 # learning policy
