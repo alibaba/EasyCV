@@ -6,6 +6,7 @@ import torch
 from mmcv.runner import Hook
 from torch.utils.data import DataLoader
 
+from easycv.datasets.loader.loader_wrapper import TorchaccLoaderWrapper
 from easycv.hooks.tensorboard import TensorboardLoggerHookV2
 from easycv.hooks.wandb import WandbLoggerHookV2
 
@@ -32,8 +33,9 @@ class EvalHook(Hook):
                  **eval_kwargs):
 
         if torch.cuda.is_available():
-            if not isinstance(dataloader, DataLoader) and not isinstance(
-                    dataloader, DaliLoaderWrapper):
+            if not isinstance(
+                    dataloader,
+                (DataLoader, DaliLoaderWrapper, TorchaccLoaderWrapper)):
                 raise TypeError(
                     'dataloader must be a pytorch DataLoader, but got'
                     f' {type(dataloader)}')
@@ -95,11 +97,11 @@ class EvalHook(Hook):
                 self.add_visualization_info(runner, results)
                 break
 
-        if isinstance(self.dataloader, DataLoader):
-            eval_res = self.dataloader.dataset.evaluate(
+        if isinstance(self.dataloader, DaliLoaderWrapper):
+            eval_res = self.dataloader.evaluate(
                 results, logger=runner.logger, **self.eval_kwargs)
         else:
-            eval_res = self.dataloader.evaluate(
+            eval_res = self.dataloader.dataset.evaluate(
                 results, logger=runner.logger, **self.eval_kwargs)
 
         for name, val in eval_res.items():
@@ -143,23 +145,16 @@ class DistEvalHook(EvalHook):
                  gpu_collect=False,
                  flush_buffer=True,
                  **eval_kwargs):
-        if not isinstance(dataloader, DataLoader) and not isinstance(
-                dataloader, DaliLoaderWrapper):
-            raise TypeError('dataloader must be a pytorch DataLoader, but got'
-                            f' {type(dataloader)}')
-        self.dataloader = dataloader
-        self.interval = interval
-        self.mode = mode
-        self.eval_kwargs = eval_kwargs
-        self.initial = initial
-        self.flush_buffer = flush_buffer
-        # hook.evaluate runs every interval epoch or iter, popped at init
-        self.vis_config = self.eval_kwargs.pop('visualization_config', {})
-        self.gpu_collect = self.eval_kwargs.pop('gpu_collect', gpu_collect)
 
-    def before_run(self, runner):
-        if self.initial:
-            self.after_train_epoch(runner)
+        super(DistEvalHook, self).__init__(
+            dataloader=dataloader,
+            initial=initial,
+            interval=interval,
+            mode=mode,
+            flush_buffer=flush_buffer,
+            **eval_kwargs)
+
+        self.gpu_collect = self.eval_kwargs.pop('gpu_collect', gpu_collect)
 
     def after_train_epoch(self, runner):
         if not self.every_n_epochs(runner, self.interval):
