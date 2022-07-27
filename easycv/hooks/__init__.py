@@ -6,11 +6,13 @@ import torch
 from .best_ckpt_saver_hook import BestCkptSaverHook
 from .builder import build_hook
 from .byol_hook import BYOLHook
+from .collate_hook import MixupCollateHook
 from .dino_hook import DINOHook
 from .ema_hook import EMAHook
 from .eval_hook import DistEvalHook, EvalHook
 from .export_hook import ExportHook
 from .extractor import Extractor
+from .logger import PreLoggerHook
 from .lr_update_hook import StepFixCosineAnnealingLrUpdaterHook
 from .optimizer_hook import OptimizerHook
 from .oss_sync_hook import OSSSyncHook
@@ -30,8 +32,8 @@ __all__ = [
     'DistEvalHook', 'EvalHook', 'ExportHook', 'Extractor', 'OptimizerHook',
     'OSSSyncHook', 'HOOKS', 'TIMEHook', 'SWAVHook', 'SyncNormHook',
     'SyncRandomSizeHook', 'TensorboardLoggerHookV2', 'WandbLoggerHookV2',
-    'YOLOXLrUpdaterHook', 'YOLOXModeSwitchHook', 'ThroughputHook',
-    'StepFixCosineAnnealingLrUpdaterHook'
+    'YOLOXLrUpdaterHook', 'YOLOXModeSwitchHook', 'MixupCollateHook',
+    'PreLoggerHook', 'StepFixCosineAnnealingLrUpdaterHook', 'ThroughputHook'
 ]
 
 if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
