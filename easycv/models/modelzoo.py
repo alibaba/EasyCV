@@ -85,6 +85,15 @@ resnest = {
     'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnest/resnest269.pth',
 }
 
+efficientformer = {
+    'EfficientFormer_l1':
+    'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/efficientformer/efficientformer_l1_1000d.pth',
+    'EfficientFormer_l3':
+    'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/efficientformer/efficientformer_l3_300d.pth',
+    'EfficientFormer_l7':
+    'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/efficientformer/efficientformer_l7_300d.pth',
+}
+
 timm_models = {
     'vit_base_patch16_224':
     'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/timm/vit/B_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.01-res_224.npz',

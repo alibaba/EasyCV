@@ -1,8 +1,7 @@
 # model settings
 model = dict(
     type='Detection',
-    pretrained=
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/torchvision/resnet50.pth',
+    pretrained=True,
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -32,14 +31,13 @@ model = dict(
         in_channels=2048,
         embed_dims=256,
         eos_coef=0.1,
-        cost_dict={
-            'cost_class': 1,
-            'cost_bbox': 5,
-            'cost_giou': 2,
-        },
-        weight_dict={
-            'loss_ce': 1,
-            'loss_bbox': 5,
-            'loss_giou': 2
-        },
-    ))
+        cost_dict=dict(
+            cost_class=1,
+            cost_bbox=5,
+            cost_giou=2,
+        ),
+        weight_dict=dict(
+            loss_ce=1,
+            loss_bbox=5,
+            loss_giou=2,
+        )))

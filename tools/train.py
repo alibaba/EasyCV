@@ -14,6 +14,12 @@ sys.path.append(
     os.path.abspath(
         osp.join(os.path.dirname(os.path.dirname(__file__)), '../')))
 
+# adapt to torchacc, init before some torch imports
+from easycv.utils.torchacc_util import is_torchacc_enabled
+if is_torchacc_enabled():
+    from easycv.toolkit.torchacc import torchacc_init
+    torchacc_init()
+
 import time
 import requests
 import torch
@@ -26,7 +32,6 @@ from easycv.datasets.utils import is_dali_dataset_type
 from easycv.file import io
 from easycv.models import build_model
 from easycv.utils.collect_env import collect_env
-from easycv.utils.flops_counter import get_model_info
 from easycv.utils.logger import get_root_logger
 from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.config_tools import traverse_replace
@@ -162,16 +167,18 @@ def main():
     if cfg.get('oss_io_config', None) is not None:
         io.access_oss(**cfg.oss_io_config)
     # init distributed env first, since logger depends on the dist info.
-    if args.launcher == 'none':
-        distributed = False
-        assert cfg.model.type not in \
-            ['DeepCluster', 'MOCO', 'SimCLR', 'ODC', 'NPID'], \
-            '{} does not support non-dist training.'.format(cfg.model.type)
-    else:
-        distributed = True
-        if args.launcher == 'slurm':
-            cfg.dist_params['port'] = args.port
-        init_dist(args.launcher, **cfg.dist_params)
+    if not is_torchacc_enabled():
+        if args.launcher == 'none':
+            assert cfg.model.type not in \
+                ['DeepCluster', 'MOCO', 'SimCLR', 'ODC', 'NPID'], \
+                '{} does not support non-dist training.'.format(cfg.model.type)
+        else:
+            if args.launcher == 'slurm':
+                cfg.dist_params['port'] = args.port
+            init_dist(args.launcher, **cfg.dist_params)
+
+    distributed = torch.cuda.is_available(
+    ) and torch.distributed.is_initialized()
 
     # create work_dir
     if not io.exists(cfg.work_dir):
@@ -200,6 +207,9 @@ def main():
     logger.info('GPU INFO : {}'.format(torch.cuda.get_device_name(0)))
 
     # set random seeds
+    if is_torchacc_enabled():
+        assert args.seed is not None, 'Must provide `seed` to sync model initializer if use torchacc!'
+
     if args.seed is not None:
         logger.info('Set random seed to {}, deterministic: {}'.format(
             args.seed, args.deterministic))
@@ -214,6 +224,7 @@ def main():
     print(model)
 
     if 'stage' in cfg.model and cfg.model['stage'] == 'EDGE':
+        from easycv.utils.flops_counter import get_model_info
         get_model_info(model, cfg.img_scale, cfg.model, logger)
 
     assert len(cfg.workflow) == 1, 'Validation is called by hook.'
@@ -252,7 +263,8 @@ def main():
                 seed=cfg.seed,
                 drop_last=getattr(cfg.data, 'drop_last', False),
                 reuse_worker_cache=cfg.data.get('reuse_worker_cache', False),
-                persistent_workers=cfg.data.get('persistent_workers', False))
+                persistent_workers=cfg.data.get('persistent_workers', False),
+                collate_hooks=cfg.data.get('train_collate_hooks', []))
             for ds in datasets
         ]
     else:

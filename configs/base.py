@@ -3,7 +3,7 @@ test_cfg = {}
 optimizer_config = dict()  # grad_clip, coalesce, bucket_size_mb
 # yapf:disable
 log_config = dict(
-    interval=10,
+    interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')
