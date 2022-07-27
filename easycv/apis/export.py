@@ -490,7 +490,7 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
             image = image.permute(2, 0, 1)
 
             # rgb2bgr
-            image = image[[2, 1, 0], :, :]
+            image = image[torch.tensor([2, 1, 0]), :, :]
 
             image = torch.unsqueeze(image, 0)
             ori_h, ori_w = image.shape[-2:]
