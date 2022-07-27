@@ -76,9 +76,9 @@ EasyCV support multi-gpu and multi worker training. EasyCV use DALI to accelerat
 - Classification support EfficientFormer algorithm ([#128](https://github.com/alibaba/EasyCV/pull/128))
 - Detection support FCOS、DETR、DAB-DETR and DN-DETR algorithm (([#100](https://github.com/alibaba/EasyCV/pull/100)) ([#104](https://github.com/alibaba/EasyCV/pull/104)) ([#119](https://github.com/alibaba/EasyCV/pull/119)))
 - Segmentation support UperNet algorithm ([#118](https://github.com/alibaba/EasyCV/pull/118))
+- Support use torchacc to speed up training ([#105](https://github.com/alibaba/EasyCV/pull/105))
 
 ## New Features
-- Support use torchacc to speed up training ([#105](https://github.com/alibaba/EasyCV/pull/105))
 - Support use analyze tools ([#133](https://github.com/alibaba/EasyCV/pull/133))
 
 ## Bug Fixes

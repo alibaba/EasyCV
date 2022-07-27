@@ -88,7 +88,7 @@ Please refer to [data_hub.md](https://github.com/alibaba/EasyCV/blob/master/docs
     * Classification support EfficientFormer algorithm
     * Detection support FCOS、DETR、DAB-DETR and DN-DETR algorithm
     * Segmentation support UperNet algorithm
-    * Support use torchacc to speed up training
+    * Support use [torchacc](https://github.com/alibaba/EasyCV/blob/master/docs/source/tutorials/torchacc.md) to speed up training
     * Support use analyze tools
 
 * 23/06/2022 EasyCV v0.4.0 was released.
