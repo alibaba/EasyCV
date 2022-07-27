@@ -70,6 +70,14 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 ## 变更日志
 
+* 28/07/2022 EasyCV v0.5.0 版本发布。
+    * 自监督学习增加了ConvMAE算法
+    * 图像分类增加EfficientFormer
+    * 目标检测增加FCOS、DETR、DAB-DETR和DN-DETR算法
+    * 语义分割增加了UperNet算法
+    * 支持使用[torchacc](https://github.com/alibaba/EasyCV/blob/master/docs/source/tutorials/torchacc.md)加快训练速度
+    * 增加模型分析工具
+
 * 23/06/2022 EasyCV v0.4.0 版本发布。
     * 增加语义分割模块， 支持FCN算法
     * 扩充分类算法 model zoo
