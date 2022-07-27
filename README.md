@@ -42,7 +42,6 @@ EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focus o
 - **Efficiency**
 
   EasyCV support multi-gpu and multi worker training. EasyCV use [DALI](https://github.com/NVIDIA/DALI) to accelerate data io and preprocessing process, and use [TorchAccelerator](https://github.com/alibaba/EasyCV/tree/master/docs/source/tutorials/torchacc.md) and fp16 to accelerate training process. For inference optimization, EasyCV export model using jit script, which can be optimized by [PAI-Blade](https://help.aliyun.com/document_detail/205134.html)
-'''''
 
 
 ## Installation
