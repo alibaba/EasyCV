@@ -6,8 +6,7 @@ import torch.nn as nn
 from easycv.models.backbones.darknet import CSPDarknet
 from easycv.models.backbones.efficientrep import EfficientRep
 from easycv.models.backbones.network_blocks import BaseConv, CSPLayer, DWConv, GSConv, VoVGSCSP
-from .attention import SE, CBAM, ECA
-# from .ASFF import ASFF
+from torchsummaryX import summary
 import math
 
 
@@ -37,8 +36,8 @@ class YOLOPAFPN(nn.Module):
         use_expand=True,
         spp_type='spp',
         backbone = "CSPDarknet",
-        neck = 'yolo',
-        neck_mode = 'all'
+        neck = 'gsconv',
+        neck_mode = 'part',
     ):
         super().__init__()
         # self.backbone = CSPDarknet(depth, width, depthwise=depthwise, act=act,spp_type=spp_type)
@@ -68,6 +67,7 @@ class YOLOPAFPN(nn.Module):
 
         self.neck = neck
         self.neck_mode = neck_mode
+
         if neck =='yolo':
             self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
             self.lateral_conv0 = BaseConv(
@@ -177,11 +177,12 @@ class YOLOPAFPN(nn.Module):
                     act=act
                 )
                 self.vovGSCSP2 = VoVGSCSP(
-                    int(2 * in_channels[0] * width),
+                    int(2*in_channels[0] * width),
                     int(in_channels[0] * width),
                     round(3 * depth),
                     False,
                 )
+
 
                 self.vovGSCSP3 = VoVGSCSP(
                     int(2 * in_channels[0] * width),
@@ -229,34 +230,6 @@ class YOLOPAFPN(nn.Module):
                     depthwise=depthwise,
                     act=act)
 
-        self.use_att=use_att
-
-        if self.use_att!=None and self.use_att!='ASFF' and self.use_att!='ASFF_sim':
-            # add attention layer
-            if self.use_att=="CBAM":
-                ATT = CBAM
-            elif self.use_att=="SE":
-                ATT = SE
-            elif self.use_att=="ECA":
-                ATT = ECA
-            else:
-                assert "Unknown Attention Layer!"
-
-            self.att_1 = ATT(int(in_channels[2] * width))  # 对应dark5输出的1024维度通道
-            self.att_2 = ATT(int(in_channels[1] * width))  # 对应dark4输出的512维度通道
-            self.att_3 = ATT(int(in_channels[0] * width))  # 对应dark3输出的256维度通道
-
-        if self.use_att=='ASFF' or self.use_att=='ASFF_sim':
-            if self.use_att=='ASFF':
-                from .ASFF import ASFF
-                self.asff_1 = ASFF(level=0, multiplier=width, asff_channel=asff_channel, act=act)
-                self.asff_2 = ASFF(level=1, multiplier=width, asff_channel=asff_channel, act=act)
-                self.asff_3 = ASFF(level=2, multiplier=width, asff_channel=asff_channel, act=act)
-            else:
-                from .ASFF_sim import ASFF
-                self.asff_1 = ASFF(level=0, multiplier=width, asff_channel=asff_channel, act=act,expand_kernel=expand_kernel, down_rate = down_rate, use_dconv = use_dconv, use_expand = use_expand)
-                self.asff_2 = ASFF(level=1, multiplier=width, asff_channel=asff_channel, act=act,expand_kernel=expand_kernel, down_rate = down_rate, use_dconv = use_dconv, use_expand = use_expand)
-                self.asff_3 = ASFF(level=2, multiplier=width, asff_channel=asff_channel, act=act,expand_kernel=expand_kernel, down_rate = down_rate, use_dconv = use_dconv, use_expand = use_expand)
 
 
     def forward(self, input):
@@ -273,20 +246,7 @@ class YOLOPAFPN(nn.Module):
         # features = [out_features[f] for f in self.in_features]
         # [x2, x1, x0] = features
         #  backbone
-        if self.backbone_name == "CSPDarknet":
-            out_features = self.backbone(input)
-            features = [out_features[f] for f in self.in_features]
-            [x2, x1, x0] = features
-        else:
-            features = self.backbone(input)
-            [x2, x1, x0] = features
-
-        # add attention
-        if self.use_att!=None and self.use_att!='ASFF' and self.use_att!='ASFF_sim':
-            x0 = self.att_1(x0)
-            x1 = self.att_2(x1)
-            x2 = self.att_3(x2)
-
+        x2,x1,x0 = x
         if self.neck =='yolo':
             fpn_out0 = self.lateral_conv0(x0)  # 1024->512/32
             f_out0 = self.upsample(fpn_out0)  # 512/16
@@ -306,11 +266,12 @@ class YOLOPAFPN(nn.Module):
             p_out0 = torch.cat([p_out0, fpn_out0], 1)  # 512->1024/32
             pan_out0 = self.C3_n4(p_out0)  # 1024->1024/32
         else:
+            print('in')
             # gsconv
             fpn_out0 = self.gsconv1(x0)  # 1024->512/32
             f_out0 = self.upsample(fpn_out0)  # 512/16
             f_out0 = torch.cat([f_out0, x1], 1)  # 512->1024/16
-            if self.neck_mode == 'all':
+            if self.neck_mode =='all':
                 f_out0 = self.vovGSCSP1(f_out0)  # 1024->512/16
             else:
                 f_out0 = self.C3_p4(f_out0)
@@ -318,11 +279,12 @@ class YOLOPAFPN(nn.Module):
             fpn_out1 = self.gsconv2(f_out0)  # 512->256/16
             f_out1 = self.upsample(fpn_out1)  # 256/8
             f_out1 = torch.cat([f_out1, x2], 1)  # 256->512/8
-            if self.neck_mode == 'all':
+            if self.neck_mode =='all':
                 f_out1 = self.gsconv3(f_out1)
                 pan_out2 = self.vovGSCSP2(f_out1)  # 512->256/8
             else:
                 pan_out2 = self.C3_p3(f_out1)  # 512->256/8
+
 
             p_out1 = self.gsconv4(pan_out2)  # 256->256/16
             p_out1 = torch.cat([p_out1, fpn_out1], 1)  # 256->512/16
@@ -340,10 +302,9 @@ class YOLOPAFPN(nn.Module):
 
         outputs = (pan_out2, pan_out1, pan_out0)
 
-        if self.use_att == 'ASFF' or self.use_att=='ASFF_sim':
-            pan_out0 = self.asff_1(outputs)
-            pan_out1 = self.asff_2(outputs)
-            pan_out2 = self.asff_3(outputs)
-            outputs = (pan_out2, pan_out1, pan_out0)
-
         return outputs
+
+if __name__=='__main__':
+    x = (torch.randn(1,128,80,80).cuda(),torch.randn(1,256,40,40).cuda(),torch.randn(1,512,20,20).cuda())
+    model = YOLOPAFPN(depth=0.33, width=0.5).cuda()
+    summary(model,x)

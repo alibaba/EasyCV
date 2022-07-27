@@ -9,14 +9,28 @@ def autopad(k, p=None):  # kernel, padding
         p = k // 2 if isinstance(k, int) else [x // 2 for x in k]  # auto-pad
     return p
 
+def get_activation(name='silu', inplace=True):
+    if name == 'silu':
+        # @ to do nn.SiLU 1.7.0
+        # module = nn.SiLU(inplace=inplace)
+        module = SiLU(inplace=inplace)
+    elif name == 'relu':
+        module = nn.ReLU(inplace=inplace)
+    elif name == 'lrelu':
+        module = nn.LeakyReLU(0.1, inplace=inplace)
+    else:
+        raise AttributeError('Unsupported act type: {}'.format(name))
+    return module
+
 
 class Conv(nn.Module):
     # Standard convolution
-    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, act=True):  # ch_in, ch_out, kernel, stride, padding, groups
+    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, act='silu'):  # ch_in, ch_out, kernel, stride, padding, groups
         super(Conv, self).__init__()
         self.conv = nn.Conv2d(c1, c2, k, s, autopad(k, p), groups=g, bias=False)
         self.bn = nn.BatchNorm2d(c2)
-        self.act = SiLU() if act is True else (act if isinstance(act, nn.Module) else nn.Identity())
+        # self.act = SiLU() if act is True else (act if isinstance(act, nn.Module) else nn.Identity())
+        self.act = get_activation(act, inplace=True)
 
     def forward(self, x):
         return self.act(self.bn(self.conv(x)))
@@ -26,7 +40,7 @@ class Conv(nn.Module):
 
 
 class ASFF(nn.Module):
-    def __init__(self, level, multiplier=1, rfb=False, vis=False, act_cfg=True):
+    def __init__(self, level, multiplier=1, asff_channel=16, rfb=False, vis=False, act='silu'):
         """
         multiplier should be 1, 0.5
         which means, the channel of ASFF can be
@@ -40,39 +54,43 @@ class ASFF(nn.Module):
                     int(256 * multiplier)]
         # print(self.dim)
 
+        # print(act, asff_channel)
+
         self.inter_dim = self.dim[self.level]
         if level == 0:
-            self.stride_level_1 = Conv(int(512 * multiplier), self.inter_dim, 3, 2)
+            self.stride_level_1 = Conv(int(512 * multiplier), self.inter_dim, 3, 2,act=act)
 
-            self.stride_level_2 = Conv(int(256 * multiplier), self.inter_dim, 3, 2)
+            self.stride_level_2 = Conv(int(256 * multiplier), self.inter_dim, 3, 2,act=act)
 
             self.expand = Conv(self.inter_dim, int(
-                1024 * multiplier), 3, 1)
+                1024 * multiplier), 3, 1, act=act)
         elif level == 1:
             self.compress_level_0 = Conv(
-                int(1024 * multiplier), self.inter_dim, 1, 1)
+                int(1024 * multiplier), self.inter_dim, 1, 1,act=act)
             self.stride_level_2 = Conv(
-                int(256 * multiplier), self.inter_dim, 3, 2)
-            self.expand = Conv(self.inter_dim, int(512 * multiplier), 3, 1)
+                int(256 * multiplier), self.inter_dim, 3, 2,act=act)
+            self.expand = Conv(self.inter_dim, int(512 * multiplier), 3, 1,act=act)
         elif level == 2:
             self.compress_level_0 = Conv(
-                int(1024 * multiplier), self.inter_dim, 1, 1)
+                int(1024 * multiplier), self.inter_dim, 1, 1,act=act)
             self.compress_level_1 = Conv(
-                int(512 * multiplier), self.inter_dim, 1, 1)
+                int(512 * multiplier), self.inter_dim, 1, 1,act=act)
             self.expand = Conv(self.inter_dim, int(
-                256 * multiplier), 3, 1)
+                256 * multiplier), 3, 1,act=act)
 
         # when adding rfb, we use half number of channels to save memory
-        compress_c = 8 if rfb else 16
+        # compress_c = 8 if rfb else 16
+        compress_c = asff_channel
+
         self.weight_level_0 = Conv(
-            self.inter_dim, compress_c, 1, 1)
+            self.inter_dim, compress_c, 1, 1,act=act)
         self.weight_level_1 = Conv(
-            self.inter_dim, compress_c, 1, 1)
+            self.inter_dim, compress_c, 1, 1,act=act)
         self.weight_level_2 = Conv(
-            self.inter_dim, compress_c, 1, 1)
+            self.inter_dim, compress_c, 1, 1,act=act)
 
         self.weight_levels = Conv(
-            compress_c * 3, 3, 1, 1)
+            compress_c * 3, 3, 1, 1,act=act)
         self.vis = vis
 
     def forward(self, x):  # l,m,s
@@ -81,9 +99,9 @@ class ASFF(nn.Module):
         256, 512, 1024
         from small -> large
         """
-        x_level_0 = x[2]  # 最大特征层
-        x_level_1 = x[1]  # 中间特征层
-        x_level_2 = x[0]  # 最小特征层
+        x_level_0 = x[2]  # 最大特征层 [512,20,20]
+        x_level_1 = x[1]  # 中间特征层 [256,40,40]
+        x_level_2 = x[0]  # 最小特征层 [128,80,80]
 
         if self.level == 0:
             level_0_resized = x_level_0
@@ -125,4 +143,5 @@ class ASFF(nn.Module):
             return out, levels_weight, fused_out_reduced.sum(dim=1)
         else:
             return out
+
 

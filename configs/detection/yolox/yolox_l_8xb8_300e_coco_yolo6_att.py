@@ -1,4 +1,4 @@
-_base_ = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
+_base_ = 'configs/detection/yolox/yolox_yolo6_att.py'
 # _base_ = 'configs/detection/yolox/yolox_s_8xb16_300e_tal_asff_giou.py'
 
 # model settings

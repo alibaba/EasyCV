@@ -88,6 +88,7 @@ class EVRunner(EpochBasedRunner):
         time.sleep(2)  # Prevent possible deadlock during epoch transition
         for i, data_batch in enumerate(self.data_loader):
             self._inner_iter = i
+
             self.call_hook('before_train_iter')
             # only in amp from pytorch 1.6 or later, we should use amp.autocast
             if self.fp16_enable and LooseVersion(

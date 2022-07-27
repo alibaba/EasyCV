@@ -11,85 +11,29 @@ from easycv.models.backbones.network_blocks import BaseConv, DWConv
 from easycv.models.detection.utils import bboxes_iou
 from easycv.models.loss import IOUloss
 from easycv.models.loss import FocalLoss, VarifocalLoss
-from mmcv.cnn import ConvModule, normal_init
+from torchsummaryX import summary
 
 
-class TaskDecomposition(nn.Module):
-    """Task decomposition module in task-aligned predictor of TOOD.
+class ESEAttn(nn.Module):
+    def __init__(self, feat_channels, act='silu'):
+        super(ESEAttn, self).__init__()
+        self.fc = nn.Conv2d(feat_channels, feat_channels, 1)
+        self.sig = nn.Sigmoid()
+        self.conv = BaseConv(feat_channels, feat_channels, ksize=1, stride=1, act=act)
 
-    Args:
-        feat_channels (int): Number of feature channels in TOOD head.
-        stacked_convs (int): Number of conv layers in TOOD head.
-        la_down_rate (int): Downsample rate of layer attention.
-        conv_cfg (dict): Config dict for convolution layer.
-        norm_cfg (dict): Config dict for normalization layer.
-    """
+        self._init_weights()
 
+    def _init_weights(self):
+        nn.init.normal_(self.fc.weight, mean=0, std=0.001)
+
+    def forward(self, feat, avg_feat):
+        weight = self.sig(self.fc(avg_feat))
+        return self.conv(feat * weight)
+
+
+class PPYOLOEHead(nn.Module):
     def __init__(self,
-                 feat_channels,
-                 stacked_convs=6,
-                 la_down_rate=8,
-                 conv_cfg=None,
-                 norm_cfg=None):
-        super(TaskDecomposition, self).__init__()
-        self.feat_channels = feat_channels
-        self.stacked_convs = stacked_convs
-        self.in_channels = self.feat_channels * self.stacked_convs
-        self.norm_cfg = norm_cfg
-        self.layer_attention = nn.Sequential(
-            nn.Conv2d(self.in_channels, self.in_channels // la_down_rate, 1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(
-                self.in_channels // la_down_rate,
-                self.stacked_convs,
-                1,
-                padding=0), nn.Sigmoid())
-
-        self.reduction_conv = ConvModule(
-            self.in_channels,
-            self.feat_channels,
-            1,
-            stride=1,
-            padding=0,
-            conv_cfg=conv_cfg,
-            norm_cfg=norm_cfg,
-            bias=norm_cfg is None)
-
-    def init_weights(self):
-        for m in self.layer_attention.modules():
-            if isinstance(m, nn.Conv2d):
-                normal_init(m, std=0.001)
-        normal_init(self.reduction_conv.conv, std=0.01)
-
-    def forward(self, feat, avg_feat=None):
-        b, c, h, w = feat.shape
-        if avg_feat is None:
-            avg_feat = F.adaptive_avg_pool2d(feat, (1, 1))
-        weight = self.layer_attention(avg_feat)
-
-        # here we first compute the product between layer attention weight and
-        # conv weight, and then compute the convolution between new conv weight
-        # and feature map, in order to save memory and FLOPs.
-        conv_weight = weight.reshape(
-            b, 1, self.stacked_convs,
-            1) * self.reduction_conv.conv.weight.reshape(
-            1, self.feat_channels, self.stacked_convs, self.feat_channels)
-        conv_weight = conv_weight.reshape(b, self.feat_channels,
-                                          self.in_channels)
-        feat = feat.reshape(b, self.in_channels, h * w)
-        feat = torch.bmm(conv_weight, feat).reshape(b, self.feat_channels, h,
-                                                    w)
-        if self.norm_cfg is not None:
-            feat = self.reduction_conv.norm(feat)
-        feat = self.reduction_conv.activate(feat)
-
-        return feat
-
-
-class TOODHead(nn.Module):
-
-    def __init__(self,
-                 num_classes,
+                 num_classes=80,
                  width=1.0,
                  strides=[8, 16, 32],
                  in_channels=[256, 512, 1024],
@@ -97,13 +41,19 @@ class TOODHead(nn.Module):
                  depthwise=False,
                  stage='CLOUD',
                  obj_loss_type='l1',
-                 reg_loss_type='iou',
-                 stacked_convs=6,
-                 la_down_rate=8,
-                 conv_layers=2,
-                 conv_cfg=None,
-                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-                 ):
+                 reg_loss_type='l1',
+                 reg_max=16,
+                 static_assigner_epoch=4,
+                 use_varifocal_loss=True,
+                 eval_input_size=[],
+                 # static_assigner=ATSSAssigner(9, num_classes=80),
+                 # assigner=TaskAlignedAssigner(topk=13, alpha=1.0, beta=6.0),
+                 loss_weight={
+                     'class': 1.0,
+                     'iou': 2.5,
+                     'dfl': 0.5,
+                 },
+                 atss_topk=9):
         """
         Args:
             num_classes (int): detection class numbers.
@@ -116,146 +66,62 @@ class TOODHead(nn.Module):
             obj_loss_type (str): the loss function of the obj conf. Default value: l1.
             reg_loss_type (str): the loss function of the box prediction. Default value: l1.
         """
-        super().__init__()
 
+        super(PPYOLOEHead, self).__init__()
         self.n_anchors = 1
         self.num_classes = num_classes
         self.stage = stage
         self.decode_in_inference = True  # for deploy, set to False
+        self.in_channels = in_channels
 
-        self.stacked_convs = stacked_convs
-        self.conv_cfg = conv_cfg
-        self.norm_cfg = norm_cfg
-        self.feat_channels = int(256 * width)
+        self.reg_max = reg_max
+        self.loss_weight = loss_weight
+        self.use_varifocal_loss = use_varifocal_loss
+        self.varifocal_loss = VarifocalLoss().cuda()
+        self.focal_loss = FocalLoss().cuda()
 
-        self.cls_convs = nn.ModuleList()
-        self.reg_convs = nn.ModuleList()
+        self.eval_input_size = eval_input_size
+        self.static_assigner_epoch = static_assigner_epoch
+
+        # stem
+        self.stem_cls = nn.ModuleList()
+        self.stem_reg = nn.ModuleList()
+
+        for in_c in self.in_channels:
+            self.stem_cls.append(ESEAttn(int(in_c * width), act=act))
+            self.stem_reg.append(ESEAttn(int(in_c * width), act=act))
+
+        # pred head
         self.cls_preds = nn.ModuleList()
         self.reg_preds = nn.ModuleList()
-        self.obj_preds = nn.ModuleList()
-        self.cls_decomps = nn.ModuleList()
-        self.reg_decomps = nn.ModuleList()
-        self.stems = nn.ModuleList()
 
-        self.inter_convs = nn.ModuleList()
-
-        Conv = DWConv if depthwise else BaseConv
-
-        for i in range(len(in_channels)):
-            self.stems.append(
-                BaseConv(
-                    in_channels=int(in_channels[i] * width),
-                    out_channels=int(256 * width),
-                    ksize=1,
-                    stride=1,
-                    act=act,
-                ))
-
-            if conv_layers==2:
-                self.cls_convs.append(
-                    nn.Sequential(*[
-                        Conv(
-                            in_channels=int(256 * width),
-                            out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
-                            act=act,
-                        ),
-                        Conv(
-                            in_channels=int(256 * width),
-                            out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
-                            act=act,
-                        ),
-                    ]))
-                self.reg_convs.append(
-                    nn.Sequential(*[
-                        Conv(
-                            in_channels=int(256 * width),
-                            out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
-                            act=act,
-                        ),
-                        Conv(
-                            in_channels=int(256 * width),
-                            out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
-                            act=act,
-                        ),
-                    ]))
-            elif conv_layers==1:
-                self.cls_convs.append(
-                    nn.Sequential(*[
-                        Conv(
-                            in_channels=int(256 * width),
-                            out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
-                            act=act,
-                        )
-                    ]))
-                self.reg_convs.append(
-                    nn.Sequential(*[
-                        Conv(
-                            in_channels=int(256 * width),
-                            out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
-                            act=act,
-                        )
-                    ]))
-
+        for in_c in self.in_channels:
             self.cls_preds.append(
                 nn.Conv2d(
-                    in_channels=int(256 * width),
+                    in_channels=int(in_c * width),
                     out_channels=self.n_anchors * self.num_classes,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                ))
-            self.reg_preds.append(
-                nn.Conv2d(
-                    in_channels=int(256 * width),
-                    out_channels=4,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                ))
-            self.obj_preds.append(
-                nn.Conv2d(
-                    in_channels=int(256 * width),
-                    out_channels=self.n_anchors * 1,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                ))
-            self.cls_decomps.append(
-                TaskDecomposition(self.feat_channels,
-                                  self.stacked_convs,
-                                  self.stacked_convs * la_down_rate,
-                                  self.conv_cfg, self.norm_cfg))
-            self.reg_decomps.append(
-                TaskDecomposition(self.feat_channels,
-                                  self.stacked_convs,
-                                  self.stacked_convs * la_down_rate,
-                                  self.conv_cfg, self.norm_cfg)
-            )
-
-        for i in range(self.stacked_convs):
-            conv_cfg = self.conv_cfg
-            chn = self.feat_channels
-            self.inter_convs.append(
-                ConvModule(
-                    chn,
-                    self.feat_channels,
-                    3,
+                    kernel_size=3,
                     stride=1,
                     padding=1,
-                    conv_cfg=conv_cfg,
-                    norm_cfg=self.norm_cfg))
+                )
+            )
+            self.reg_preds.append(
+                nn.Conv2d(
+                    in_channels=int(in_c * width),
+                    out_channels=4 * (self.reg_max + 1),
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                )
+            )
+        # projection conv
+        self.proj_conv = nn.Conv2d(self.reg_max + 1, 1, 1, bias=False)
+        self._init_weights()
+
+        # ATSS para
+        # self.atss_topk = atss_topk
+        # self.atss_assign = static_assigner
+        # self.assigner = assigner
 
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction='none')
 
@@ -278,49 +144,65 @@ class TOODHead(nn.Module):
         self.strides = strides
         self.grids = [torch.zeros(1)] * len(in_channels)
 
+    def _init_weights(self, prior_prob=0.01):
+        for conv in self.cls_preds:
+            b = conv.bias.view(-1, )
+            b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
+            conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
+            w = conv.weight
+            w.data.fill_(0.)
+            conv.weight = torch.nn.Parameter(w, requires_grad=True)
+
+        for conv in self.reg_preds:
+            b = conv.bias.view(-1, )
+            b.data.fill_(1.0)
+            conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
+            w = conv.weight
+            w.data.fill_(0.)
+            conv.weight = torch.nn.Parameter(w, requires_grad=True)
+
+        self.proj = nn.Parameter(torch.linspace(0, self.reg_max, self.reg_max + 1), requires_grad=False)
+        self.proj_conv.weight = torch.nn.Parameter(self.proj.view([1, self.reg_max + 1, 1, 1]).clone().detach(),
+                                                   requires_grad=False)
+
+        if self.eval_input_size:
+            anchor_points, stride_tensor = self._generate_anchors()
+            self.register_buffer('anchor_points', anchor_points)
+            self.register_buffer('stride_tensor', stride_tensor)
+
     def initialize_biases(self, prior_prob):
         for conv in self.cls_preds:
             b = conv.bias.view(self.n_anchors, -1)
             b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
             conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
-        for conv in self.obj_preds:
+        for conv in self.reg_preds:
             b = conv.bias.view(self.n_anchors, -1)
             b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
             conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
     def forward(self, xin, labels=None, imgs=None):
         outputs = []
+        reg_outputs = [] # to compute the box loss
         origin_preds = []
         x_shifts = []
         y_shifts = []
         expanded_strides = []
 
-        for k, (cls_decomp, reg_decomp, cls_conv, reg_conv, stride_this_level, x) in enumerate(
-                zip(self.cls_decomps, self.reg_decomps, self.cls_convs, self.reg_convs, self.strides, xin)):
-            x = self.stems[k](x)
+        for k, (stride_this_level, x) in enumerate(
+                zip(self.strides, xin)):
+            avg_feat = F.adaptive_avg_pool2d(x, (1, 1))
+            cls_output = self.cls_preds[k](self.stem_cls[k](x, avg_feat) + x)
+            reg_output = self.reg_preds[k](self.stem_reg[k](x, avg_feat))
 
-            inter_feats = []
-            for inter_conv in self.inter_convs:
-                x = inter_conv(x)
-                inter_feats.append(x)
-            feat = torch.cat(inter_feats, 1)
-
-            avg_feat = F.adaptive_avg_pool2d(feat, (1, 1))
-            cls_x = cls_decomp(feat, avg_feat)
-            reg_x = reg_decomp(feat, avg_feat)
-
-            cls_feat = cls_conv(cls_x)
-            cls_output = self.cls_preds[k](cls_feat)
-
-            reg_feat = reg_conv(reg_x)
-            reg_output = self.reg_preds[k](reg_feat)
-            obj_output = self.obj_preds[k](reg_feat)
+            reg_outputs.append(reg_output)
 
             if self.training:
-                output = torch.cat([reg_output, obj_output, cls_output], 1)
+                output = torch.cat([reg_output, cls_output], 1)
+                # decode the output to c_x, c_y, w, h
                 output, grid = self.get_output_and_grid(
                     output, k, stride_this_level, xin[0].type())
+
                 x_shifts.append(grid[:, :, 0])
                 y_shifts.append(grid[:, :, 1])
                 expanded_strides.append(
@@ -329,14 +211,31 @@ class TOODHead(nn.Module):
                         xin[0]))
                 if self.use_l1:
                     batch_size = reg_output.shape[0]
+
                     hsize, wsize = reg_output.shape[-2:]
                     reg_output = reg_output.view(batch_size, self.n_anchors, 4,
                                                  hsize, wsize)
                     reg_output = reg_output.permute(0, 1, 3, 4, 2).reshape(
                         batch_size, -1, 4)
+                    reg_output = F.softmax(
+                        reg_output.view(batch_size, self.n_anchors * hsize * wsize, 4, self.reg_max + 1),
+                        dim=-1).matmul(self.proj)
                     origin_preds.append(reg_output.clone())
 
             else:
+                # merge reg_output and set obj_output as torch.ones
+                batch_size = reg_output.shape[0]
+                hsize, wsize = reg_output.shape[-2:]
+
+                reg_output = reg_output.view(batch_size, self.n_anchors, 4,
+                                             hsize, wsize)
+                reg_output = reg_output.permute(0, 1, 3, 4, 2).reshape(
+                    batch_size, -1, 4)
+                reg_output = F.softmax(reg_output.view(batch_size, self.n_anchors * hsize * wsize, 4, self.reg_max + 1),
+                                dim=-1).matmul(self.proj)
+
+                obj_output = torch.ones((reg_output.shape[0], reg_output.shape[1], 1), device=reg_output.device,
+                                        dtype=reg_output.dtype)
                 if self.stage == 'EDGE':
                     m = nn.Hardsigmoid()
                     output = torch.cat(
@@ -378,22 +277,33 @@ class TOODHead(nn.Module):
         grid = self.grids[k]
 
         batch_size = output.shape[0]
+        n_ch_distri = 4*(1+self.reg_max) + self.num_classes
         n_ch = 5 + self.num_classes
         hsize, wsize = output.shape[-2:]
+
         if grid.shape[2:4] != output.shape[2:4]:
             yv, xv = torch.meshgrid([torch.arange(hsize), torch.arange(wsize)])
             grid = torch.stack((xv, yv), 2).view(1, 1, hsize, wsize,
                                                  2).type(dtype)
             self.grids[k] = grid
 
-        output = output.view(batch_size, self.n_anchors, n_ch, hsize, wsize)
+        output = output.view(batch_size, self.n_anchors, n_ch_distri, hsize, wsize)
         output = output.permute(0, 1, 3, 4,
                                 2).reshape(batch_size,
                                            self.n_anchors * hsize * wsize, -1)
+        reg_output = output[:, :, :4 * (1 + self.reg_max)]
+        cls_output = output[:, :, 4 * (1 + self.reg_max):]
+
+        pred_dist = F.softmax(reg_output.view(batch_size, self.n_anchors * hsize * wsize, 4, self.reg_max + 1), dim=-1).matmul(self.proj)
+
         grid = grid.view(1, -1, 2)
-        output[..., :2] = (output[..., :2] + grid) * stride
-        output[..., 2:4] = torch.exp(output[..., 2:4]) * stride
-        return output, grid
+        output_pred = torch.ones(batch_size, self.n_anchors * hsize * wsize, n_ch).cuda()
+
+        output_pred[..., :2] = (pred_dist[..., :2] + grid) * stride
+        output_pred[..., 2:4] = torch.exp(pred_dist[..., 2:4]) * stride
+        output_pred[..., 5:] = cls_output
+
+        return output_pred, grid
 
     def decode_outputs(self, outputs, dtype):
         grids = []
@@ -424,7 +334,7 @@ class TOODHead(nn.Module):
             dtype,
     ):
         bbox_preds = outputs[:, :, :4]  # [batch, n_anchors_all, 4]
-        obj_preds = outputs[:, :, 4].unsqueeze(-1)  # [batch, n_anchors_all, 1]
+        # obj_preds = outputs[:, :, 4].unsqueeze(-1)  # [batch, n_anchors_all, 1]
         cls_preds = outputs[:, :, 5:]  # [batch, n_anchors_all, n_cls]
 
         # calculate targets
@@ -462,28 +372,54 @@ class TOODHead(nn.Module):
                 bboxes_preds_per_image = bbox_preds[batch_idx]
 
                 try:
-                    (
-                        gt_matched_classes,
-                        fg_mask,
-                        pred_ious_this_matching,
-                        matched_gt_inds,
-                        num_fg_img,
-                    ) = self.get_assignments(  # noqa
-                        batch_idx,
-                        num_gt,
-                        total_num_anchors,
-                        gt_bboxes_per_image,
-                        gt_classes,
-                        bboxes_preds_per_image,
-                        expanded_strides,
-                        x_shifts,
-                        y_shifts,
-                        cls_preds,
-                        bbox_preds,
-                        obj_preds,
-                        labels,
-                        imgs,
-                    )
+                    if 1:
+                        # atss
+                        (
+                            gt_matched_classes,
+                            fg_mask,
+                            pred_ious_this_matching,
+                            matched_gt_inds,
+                            num_fg_img,
+                        ) = self.get_assignments_atss(  # noqa
+                            batch_idx,
+                            num_gt,
+                            total_num_anchors,
+                            gt_bboxes_per_image,
+                            gt_classes,
+                            bboxes_preds_per_image,
+                            expanded_strides,
+                            x_shifts,
+                            y_shifts,
+                            cls_preds,
+                            bbox_preds,
+                            # obj_preds,
+                            labels,
+                            imgs,
+                        )
+                    else:
+                        # tal
+                        (
+                            gt_matched_classes,
+                            fg_mask,
+                            pred_ious_this_matching,
+                            matched_gt_inds,
+                            num_fg_img,
+                        ) = self.get_assignments_atss(  # noqa
+                            batch_idx,
+                            num_gt,
+                            total_num_anchors,
+                            gt_bboxes_per_image,
+                            gt_classes,
+                            bboxes_preds_per_image,
+                            expanded_strides,
+                            x_shifts,
+                            y_shifts,
+                            cls_preds,
+                            bbox_preds,
+                            # obj_preds,
+                            labels,
+                            imgs,
+                        )
 
                 except RuntimeError:
                     logging.error(
@@ -509,7 +445,7 @@ class TOODHead(nn.Module):
                         y_shifts,
                         cls_preds,
                         bbox_preds,
-                        obj_preds,
+                        # obj_preds,
                         labels,
                         imgs,
                         'cpu',
@@ -553,13 +489,16 @@ class TOODHead(nn.Module):
         loss_iou = (self.iou_loss(
             bbox_preds.view(-1, 4)[fg_masks], reg_targets)).sum() / num_fg
 
-        if self.obj_loss_type == 'focal':
-            loss_obj = (
-                           self.focal_loss(obj_preds.sigmoid().view(-1, 1), obj_targets)
-                       ).sum() / num_fg
-        else:
-            loss_obj = (self.obj_loss(obj_preds.view(-1, 1),
-                                      obj_targets)).sum() / num_fg
+        # if self.obj_loss_type == 'focal':
+        #     loss_obj = (
+        #                    self.focal_loss(obj_preds.sigmoid().view(-1, 1), obj_targets)
+        #                ).sum() / num_fg
+        # else:
+        #     loss_obj = (self.obj_loss(obj_preds.view(-1, 1),
+        #                               obj_targets)).sum() / num_fg
+
+        loss_obj = 0.0
+
         loss_cls = (self.bcewithlog_loss(
             cls_preds.view(-1, self.num_classes)[fg_masks],
             cls_targets)).sum() / num_fg
@@ -602,6 +541,144 @@ class TOODHead(nn.Module):
         l1_target[:, 2] = torch.log(gt[:, 2] / stride + eps)
         l1_target[:, 3] = torch.log(gt[:, 3] / stride + eps)
         return l1_target
+
+    @torch.no_grad()
+    def get_assignments_atss(
+            self,
+            batch_idx,
+            num_gt,
+            total_num_anchors,
+            gt_bboxes_per_image,
+            gt_classes,
+            bboxes_preds_per_image,
+            expanded_strides,
+            x_shifts,
+            y_shifts,
+            cls_preds,
+            bbox_preds,
+            obj_preds,
+            labels,
+            imgs,
+            mode='gpu',
+    ):
+
+        if mode == 'cpu':
+            print('------------CPU Mode for This Batch-------------')
+            gt_bboxes_per_image = gt_bboxes_per_image.cpu().float()
+            bboxes_preds_per_image = bboxes_preds_per_image.cpu().float()
+            gt_classes = gt_classes.cpu().float()
+            expanded_strides = expanded_strides.cpu().float()
+            x_shifts = x_shifts.cpu()
+            y_shifts = y_shifts.cpu()
+
+        # fg_mask, is_in_boxes_and_center = self.get_in_boxes_info(
+        #     gt_bboxes_per_image,
+        #     expanded_strides,
+        #     x_shifts,
+        #     y_shifts,
+        #     total_num_anchors,
+        #     num_gt,
+        # )
+        # reference to: https://github.com/Megvii-BaseDetection/YOLOX/pull/811
+        # NOTE: Fix `selected index k out of range`
+        # npa: int = fg_mask.sum().item()  # number of positive anchors
+        #
+        # if npa == 0:
+        #     gt_matched_classes = torch.zeros(0, device=fg_mask.device).long()
+        #     pred_ious_this_matching = torch.rand(0, device=fg_mask.device)
+        #     matched_gt_inds = gt_matched_classes
+        #     num_fg = npa
+        #
+        #     if mode == 'cpu':
+        #         gt_matched_classes = gt_matched_classes.cuda()
+        #         fg_mask = fg_mask.cuda()
+        #         pred_ious_this_matching = pred_ious_this_matching.cuda()
+        #         matched_gt_inds = matched_gt_inds.cuda()
+        #         num_fg = num_fg.cuda()
+        #
+        #     return (
+        #         gt_matched_classes,
+        #         fg_mask,
+        #         pred_ious_this_matching,
+        #         matched_gt_inds,
+        #         num_fg,
+        #     )
+
+        bboxes_preds_per_image = bboxes_preds_per_image
+        cls_preds_ = cls_preds[batch_idx]
+        # obj_preds_ = obj_preds[batch_idx]
+        num_in_boxes_anchor = bboxes_preds_per_image.shape[0]
+
+        if mode == 'cpu':
+            gt_bboxes_per_image = gt_bboxes_per_image.cpu()
+            bboxes_preds_per_image = bboxes_preds_per_image.cpu()
+
+        # cal
+        pair_wise_ious = bboxes_iou(gt_bboxes_per_image,
+                                    bboxes_preds_per_image, False)
+
+        if (torch.isnan(pair_wise_ious.max())):
+            pair_wise_ious = bboxes_iou(gt_bboxes_per_image,
+                                        bboxes_preds_per_image, False)
+
+        gt_cls_per_image = (
+            F.one_hot(gt_classes.to(torch.int64),
+                      self.num_classes).float().unsqueeze(1).repeat(
+                1, num_in_boxes_anchor, 1))
+        pair_wise_ious_loss = -torch.log(pair_wise_ious + 1e-8)
+
+        if mode == 'cpu':
+            cls_preds_, obj_preds_ = cls_preds_.cpu(), obj_preds_.cpu()
+
+        if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
+            with torch.cuda.amp.autocast(enabled=False):
+                cls_preds_ = (
+                        cls_preds_.float().unsqueeze(0).repeat(num_gt, 1,
+                                                               1).sigmoid_() *
+                        obj_preds_.float().unsqueeze(0).repeat(num_gt, 1,
+                                                               1).sigmoid_())
+                pair_wise_cls_loss = F.binary_cross_entropy(
+                    cls_preds_.sqrt_(), gt_cls_per_image,
+                    reduction='none').sum(-1)
+        else:
+            cls_preds_ = (
+                    cls_preds_.float().unsqueeze(0).repeat(num_gt, 1,
+                                                           1).sigmoid_() *
+                    obj_preds_.float().unsqueeze(0).repeat(num_gt, 1,
+                                                           1).sigmoid_())
+            pair_wise_cls_loss = F.binary_cross_entropy(
+                cls_preds_.sqrt_(), gt_cls_per_image, reduction='none').sum(-1)
+
+        del cls_preds_
+
+        cost = (
+                pair_wise_cls_loss + 3.0 * pair_wise_ious_loss + 100000.0 *
+                (~is_in_boxes_and_center))
+
+        (
+            num_fg,
+            gt_matched_classes,
+            pred_ious_this_matching,
+            matched_gt_inds,
+        ) = self.dynamic_k_matching(cost, pair_wise_ious, gt_classes, num_gt,
+                                    fg_mask)
+
+        del pair_wise_cls_loss, cost, pair_wise_ious, pair_wise_ious_loss
+
+        if mode == 'cpu':
+            gt_matched_classes = gt_matched_classes.cuda()
+            fg_mask = fg_mask.cuda()
+            pred_ious_this_matching = pred_ious_this_matching.cuda()
+            matched_gt_inds = matched_gt_inds.cuda()
+
+        return (
+            gt_matched_classes,
+            fg_mask,
+            pred_ious_this_matching,
+            matched_gt_inds,
+            num_fg,
+        )
+
 
     @torch.no_grad()
     def get_assignments(
@@ -859,3 +936,11 @@ class TOODHead(nn.Module):
                                    pair_wise_ious).sum(0)[fg_mask_inboxes]
 
         return num_fg, gt_matched_classes, pred_ious_this_matching, matched_gt_inds
+
+
+if __name__ == '__main__':
+    head = PPYOLOEHead(80, 0.5, in_channels=[256, 512, 1024], ).cuda()
+    head.training = False
+    fpn_out = (
+        torch.randn(1, 128, 80, 80).cuda(), torch.randn(1, 256, 40, 40).cuda(), torch.randn(1, 512, 20, 20).cuda())
+    summary(head, fpn_out)

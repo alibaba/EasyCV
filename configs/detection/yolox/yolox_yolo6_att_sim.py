@@ -1,10 +1,34 @@
-# _base_ = './yolox_s_8xb16_300e_coco.py'
-# _base_ = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
-# _base_ = 'configs/detection/yolox/yolox_s_8xb16_300e_tal_asff_giou.py'
-_base_ = 'configs/detection/yolox/yolox_yolo6_att.py'
+_base_ = '../../base.py'
 
-# model settings
-model = dict(model_type='tiny')
+# model settings s m l x
+model = dict(
+    type='YOLOX',
+    backbone='EfficientRep',
+    num_classes=80,
+    model_type='s',  # s m l x tiny nano
+    test_conf=0.01,
+    nms_thre=0.65,
+    use_att='ASFF_sim',
+    asff_channel=2,
+    obj_loss_type='BCE',
+    reg_loss_type='giou',
+    head_type='tood',
+    la_down_rate=32,
+    expand_kernel=3,
+    down_rate=None,
+    use_dconv=False,
+    use_expand=True,
+    )
+
+# s m l x
+img_scale = (640, 640)
+random_size = (14, 26)
+scale_ratio = (0.1, 2)
+
+# tiny nano without mixup
+# img_scale = (416, 416)
+# random_size = (10, 20)
+# scale_ratio = (0.5, 1.5)
 
 CLASSES = [
     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
@@ -22,9 +46,13 @@ CLASSES = [
     'hair drier', 'toothbrush'
 ]
 
-img_scale = (416, 416)
-random_size = (10, 20)
-scale_ratio = (0.5, 1.5)
+# dataset settings
+# data_root = 'data/coco/'
+# data_root = '/apsarapangu/disk5/zxy/data/coco/'
+data_root = '/mnt/data/nas/data/detection/coco/'
+# data_root = '/cpfs01/shared/public/dataset/coco2017/'
+
+
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -60,10 +88,6 @@ test_pipeline = [
     dict(type='Collect', keys=['img'])
 ]
 
-# data_root = 'data/coco/'
-data_root = '/apsarapangu/disk5/zxy/data/coco/'
-
-
 train_dataset = dict(
     type='DetImagesMixDataset',
     data_source=dict(
@@ -75,7 +99,7 @@ train_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         classes=CLASSES,
-        filter_empty_gt=True,
+        filter_empty_gt=False,
         iscrowd=False),
     pipeline=train_pipeline,
     dynamic_scale=img_scale)
@@ -122,6 +146,15 @@ custom_hooks = [
         priority=48)
 ]
 
+# evaluation
+eval_config = dict(
+    interval=10,
+    gpu_collect=False,
+    visualization_config=dict(
+        vis_num=10,
+        score_thr=0.5,
+    )  # show by TensorboardLoggerHookV2 and WandbLoggerHookV2
+)
 eval_pipelines = [
     dict(
         mode='test',
@@ -129,3 +162,38 @@ eval_pipelines = [
         evaluators=[dict(type='CocoDetectionEvaluator', classes=CLASSES)],
     )
 ]
+
+checkpoint_config = dict(interval=interval)
+
+# optimizer
+optimizer = dict(
+    type='SGD', lr=0.02, momentum=0.9, weight_decay=5e-4, nesterov=True)
+optimizer_config = {}
+
+# learning policy
+lr_config = dict(
+    policy='YOLOX',
+    warmup='exp',
+    by_epoch=False,
+    warmup_by_epoch=True,
+    warmup_ratio=1,
+    warmup_iters=5,  # 5 epoch
+    num_last_epochs=15,
+    min_lr_ratio=0.05)
+
+# exponetial model average
+ema = dict(decay=0.9998)
+
+# runtime settings
+total_epochs = 300
+
+# yapf:disable
+log_config = dict(
+    interval=100,
+    hooks=[
+        dict(type='TextLoggerHook'),
+        dict(type='TensorboardLoggerHookV2'),
+        # dict(type='WandbLoggerHookV2'),
+    ])
+
+export = dict(use_jit=False, export_blade=False, end2end=False)

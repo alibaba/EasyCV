@@ -41,6 +41,7 @@ CLASSES = [
 # dataset settings
 data_root = '/apsarapangu/disk5/zxy/data/coco/'
 # data_root = '/mnt/data/nas/data/detection/coco/'
+# data_root = '/cpfs01/shared/public/dataset/coco2017/'
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -88,7 +89,7 @@ train_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         classes=CLASSES,
-        filter_empty_gt=False,
+        filter_empty_gt=True,
         iscrowd=False),
     pipeline=train_pipeline,
     dynamic_scale=img_scale)
@@ -106,14 +107,14 @@ val_dataset = dict(
         ],
         classes=CLASSES,
         filter_empty_gt=True,
-        test_mode = True,
+        test_mode=True,
         iscrowd=True),
     pipeline=test_pipeline,
     dynamic_scale=None,
     label_padding=False)
 
 data = dict(
-    imgs_per_gpu=16, workers_per_gpu=4, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=8, workers_per_gpu=4, train=train_dataset, val=val_dataset)
 
 # additional hooks
 interval = 10

@@ -9,6 +9,7 @@ from torch import Tensor
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
 from easycv.models.detection.utils import postprocess
+# from .ppyoloe_head import PPYOLOEHead
 from .yolo_head import YOLOXHead
 from .yolo_pafpn import YOLOPAFPN
 from .tood_head import TOODHead
@@ -19,6 +20,13 @@ def init_yolo(M):
         if isinstance(m, nn.BatchNorm2d):
             m.eps = 1e-3
             m.momentum = 0.03
+
+def cxcywh2xyxy(bboxes):
+    bboxes[..., 0] = bboxes[..., 0] - bboxes[..., 2] * 0.5   # x1
+    bboxes[..., 1] = bboxes[..., 1] - bboxes[..., 3] * 0.5
+    bboxes[..., 2] = bboxes[..., 0] + bboxes[..., 2]
+    bboxes[..., 3] = bboxes[..., 1] + bboxes[..., 3]
+    return bboxes
 
 
 @MODELS.register_module
@@ -50,6 +58,18 @@ class YOLOX(BaseModel):
                  reg_loss_type: str = 'l1',
                  spp_type: str = 'spp',
                  head_type: str = 'yolox',
+                 neck: str = 'yolo',
+                 neck_mode: str = 'all',
+                 act: str = 'silu',
+                 asff_channel: int = 16,
+                 stacked_convs: int = 6,
+                 la_down_rate: int = 8,
+                 conv_layers: int = 2,
+                 backbone="CSPDarknet",
+                 expand_kernel=3,
+                 down_rate=32,
+                 use_dconv=False,
+                 use_expand=True,
                  pretrained: str = None):
         super(YOLOX, self).__init__()
         assert model_type in self.param_map, f'invalid model_type for yolox {model_type}, valid ones are {list(self.param_map.keys())}'
@@ -58,20 +78,43 @@ class YOLOX(BaseModel):
         depth = self.param_map[model_type][0]
         width = self.param_map[model_type][1]
 
-        self.backbone = YOLOPAFPN(depth, width, in_channels=in_channels, use_att=use_att, spp_type=spp_type)
+        self.backbone = YOLOPAFPN(depth, width, in_channels=in_channels, asff_channel=asff_channel, act=act, use_att=use_att, spp_type=spp_type, backbone = backbone, neck = neck, neck_mode=neck_mode, expand_kernel=expand_kernel, down_rate = down_rate, use_dconv = use_dconv, use_expand = use_expand)
 
-        if head_type=='yolox':
-            self.head = YOLOXHead(num_classes, width, in_channels=in_channels, obj_loss_type=obj_loss_type, reg_loss_type=reg_loss_type)
-        elif head_type=='tood':
-            self.head = TOODHead(num_classes, width, in_channels=in_channels, obj_loss_type=obj_loss_type, reg_loss_type=reg_loss_type)
+        self.head_type = head_type
+        if head_type == 'yolox':
+            self.head = YOLOXHead(num_classes, width, in_channels=in_channels, act=act, obj_loss_type=obj_loss_type, reg_loss_type=reg_loss_type)
+            self.head.initialize_biases(1e-2)
+        elif head_type == 'tood':
+            self.head = TOODHead(num_classes, width, in_channels=in_channels, act=act, obj_loss_type=obj_loss_type, reg_loss_type=reg_loss_type, stacked_convs=stacked_convs,
+                 la_down_rate=la_down_rate,
+                 conv_layers=conv_layers)
+            self.head.initialize_biases(1e-2)
+        elif head_type == 'ppyoloe':
+            self.head = PPYOLOEHead(
+                in_channels=in_channels,
+                width=width,
+                strides=[8, 16, 32],
+                static_assigner_epoch=4,
+                use_varifocal_loss=True,
+                # eval_input_size=self.test_size,
+                eval_input_size=None,
+                loss_weight={
+                    'class': 1.0,
+                    'iou': 2.5,
+                    'dfl': 0.5
+                },
+                # static_assigner=ATSSAssigner(self.atss_topk, num_classes=self.num_classes),
+                # assigner=TaskAlignedAssigner(topk=self.tal_topk, alpha=1.0, beta=6.0)
+            )
 
         self.apply(init_yolo)  # init_yolo(self)
-        self.head.initialize_biases(1e-2)
+
 
         self.num_classes = num_classes
         self.test_conf = test_conf
         self.nms_thre = nms_thre
         self.test_size = test_size
+        self.epoch_counter = 0
 
     def forward_train(self,
                       img: Tensor,
@@ -94,26 +137,52 @@ class YOLOX(BaseModel):
         targets = torch.cat([gt_labels, gt_bboxes], dim=2)
 
 
+        if self.head_type!='ppyoloe':
+            loss, iou_loss, conf_loss, cls_loss, l1_loss, num_fg = self.head(
+                fpn_outs, targets, img)
 
-        loss, iou_loss, conf_loss, cls_loss, l1_loss, num_fg = self.head(
-            fpn_outs, targets, img)
+            outputs = {
+                'total_loss':
+                    loss,
+                'iou_l':
+                    iou_loss,
+                'conf_l':
+                    conf_loss,
+                'cls_l':
+                    cls_loss,
+                'img_h':
+                    torch.tensor(img_metas[0]['img_shape'][0],
+                                 device=loss.device).float(),
+                'img_w':
+                    torch.tensor(img_metas[0]['img_shape'][1],
+                                 device=loss.device).float()
+            }
 
-        outputs = {
-            'total_loss':
-            loss,
-            'iou_l':
-            iou_loss,
-            'conf_l':
-            conf_loss,
-            'cls_l':
-            cls_loss,
-            'img_h':
-            torch.tensor(img_metas[0]['img_shape'][0],
-                         device=loss.device).float(),
-            'img_w':
-            torch.tensor(img_metas[0]['img_shape'][1],
-                         device=loss.device).float()
-        }
+        else:
+            targets[..., 1:] = cxcywh2xyxy(targets[..., 1:])
+            extra_info = {}
+            extra_info['epoch'] = self.epoch_counter
+
+            print(extra_info['epoch'])
+            yolo_losses = self.head(fpn_outs, targets, extra_info)
+
+            outputs = {
+                'total_loss':
+                    yolo_losses['total_loss'],
+                'iou_l':
+                    yolo_losses['loss_iou'],
+                'conf_l':
+                    yolo_losses['loss_dfl'],
+                'cls_l':
+                    yolo_losses['loss_cls'],
+                'img_h':
+                    torch.tensor(img_metas[0]['img_shape'][0],
+                                 device=yolo_losses['total_loss'].device).float(),
+                'img_w':
+                    torch.tensor(img_metas[0]['img_shape'][1],
+                                 device=yolo_losses['total_loss'].device).float()
+            }
+
         return outputs
 
     def forward_test(self, img: Tensor, img_metas=None) -> Tensor:

@@ -97,6 +97,8 @@ def train_model(model,
 
     # SyncBatchNorm
     open_sync_bn = cfg.get('sync_bn', False)
+    print("!!Sync_bn",open_sync_bn)
+
     if open_sync_bn:
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to('cuda')
         logger.info('Using SyncBatchNorm()')
