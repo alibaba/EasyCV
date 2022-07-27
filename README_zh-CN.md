@@ -40,7 +40,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 - **高性能**
 
-  EasyCV支持多机多卡训练，同时支持fp16进行训练加速。在数据读取和预处理方面，EasyCV使用[DALI](https://github.com/NVIDIA/DALI)进行加速。对于模型推理优化，EasyCV支持使用jit script导出模型，使用[PAI-Blade](https://help.aliyun.com/document_detail/205134.html)进行模型优化。
+  EasyCV支持多机多卡训练，同时支持[TorchAccelerator](https://github.com/alibaba/EasyCV/tree/master/docs/source/tutorials/torchacc.md)和fp16进行训练加速。在数据读取和预处理方面，EasyCV使用[DALI](https://github.com/NVIDIA/DALI)进行加速。对于模型推理优化，EasyCV支持使用jit script导出模型，使用[PAI-Blade](https://help.aliyun.com/document_detail/205134.html)进行模型优化。
 
 
 
