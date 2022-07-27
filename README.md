@@ -58,6 +58,7 @@ Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We
 * [object detection with yolox](docs/source/tutorials/yolox.md)
 * [model compression with yolox](docs/source/tutorials/compression.md)
 * [metric learning](docs/source/tutorials/metric_learning.md)
+* [torchacc](https://github.com/alibaba/EasyCV/blob/master/docs/source/tutorials/torchacc.md)
 
 notebook
 * [self-supervised learning](docs/source/tutorials/EasyCV图像自监督训练-MAE.ipynb)
