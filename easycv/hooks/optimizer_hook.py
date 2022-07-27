@@ -3,9 +3,11 @@ import logging
 from distutils.version import LooseVersion
 
 import torch
+from mmcv.parallel import is_module_wrapper
 from mmcv.runner import OptimizerHook as _OptimizerHook
 
 from easycv.utils.dist_utils import get_dist_info
+from easycv.utils.torchacc_util import is_torchacc_enabled
 
 if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
     from torch.cuda import amp
@@ -49,24 +51,47 @@ class OptimizerHook(_OptimizerHook):
     def before_run(self, runner):
         runner.optimizer.zero_grad()
 
+    def _get_module(self, runner):
+        module = runner.model
+        if is_module_wrapper(module):
+            module = module.module
+        return module
+
+    def skip_ignore_key(self, runner):
+        module = self._get_module(runner)
+        for name, p in module.named_parameters():
+            for k, epoch in zip(self.ignore_key, self.ignore_key_epoch):
+                if k in name and runner.epoch < epoch:
+                    p.grad = None
+
+    def multiply_grad(self, runner):
+        module = self._get_module(runner)
+        for name, p in module.named_parameters():
+            for k, ratio in zip(self.multiply_key, self.multiply_rate):
+                if k in name:
+                    p.grad = p.grad * ratio
+
+    def adapt_torchacc(self, runner):
+        import torchacc.torch_xla.core.xla_model as xm
+        gradients = xm._fetch_gradients(runner.optimizer)
+        xm.all_reduce(
+            xm.REDUCE_SUM, gradients, scale=1.0 / xm.xrt_world_size())
+
     def after_train_iter(self, runner):
         if not torch.isnan(runner.outputs['loss']):
             runner.outputs['loss'] /= self.update_interval
             runner.outputs['loss'].backward()
 
-            for name, p in runner.model.module.named_parameters():
-                for k, epoch in zip(self.ignore_key, self.ignore_key_epoch):
-                    if k in name and runner.epoch < epoch:
-                        p.grad = None
-
-            for name, p in runner.model.module.named_parameters():
-                for k, ratio in zip(self.multiply_key, self.multiply_rate):
-                    if k in name:
-                        p.grad = p.grad * ratio
+            self.skip_ignore_key(runner)
+            self.multiply_grad(runner)
 
             if self.every_n_iters(runner, self.update_interval):
+                if is_torchacc_enabled():
+                    self.adapt_torchacc(runner)
+
                 if self.grad_clip is not None:
                     self.clip_grads(runner.model.parameters())
+
                 runner.optimizer.step()
                 runner.optimizer.zero_grad()
         else:
@@ -131,19 +156,22 @@ class AMPFP16OptimizerHook(OptimizerHook):
 
     def after_train_iter(self, runner):
         loss = runner.outputs['loss'] / self.update_interval
-        _, world_size = get_dist_info()
 
         if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
             self.scaler.scale(loss).backward()
-            for name, p in runner.model.module.named_parameters():
-                for k, epoch in zip(self.ignore_key, self.ignore_key_epoch):
-                    if k in name and runner.epoch < epoch:
-                        p.grad = None
+
+            self.skip_ignore_key(runner)
 
             if self.every_n_iters(runner, self.update_interval):
+
+                # gradients allreduce must before scaler.unscale_
+                if is_torchacc_enabled():
+                    self.adapt_torchacc(runner)
+
                 self.scaler.unscale_(runner.optimizer)
                 if self.grad_clip is not None:
                     self.clip_grads(runner.model.parameters())
+
                 self.scaler.step(runner.optimizer)
                 self.scaler.update(self._scale_update_param)
                 runner.optimizer.zero_grad()
@@ -151,10 +179,7 @@ class AMPFP16OptimizerHook(OptimizerHook):
             with amp.scale_loss(loss, runner.optimizer) as scaled_loss:
                 scaled_loss.backward()
 
-            for name, p in runner.model.module.named_parameters():
-                for k, epoch in zip(self.ignore_key, self.ignore_key_epoch):
-                    if k in name and runner.epoch < epoch:
-                        p.grad = None
+            self.skip_ignore_key(runner)
 
             if self.every_n_iters(runner, self.update_interval):
                 if self.grad_clip is not None:

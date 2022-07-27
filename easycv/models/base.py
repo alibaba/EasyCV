@@ -137,9 +137,10 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
                 if dist.is_available() and dist.is_initialized():
                     loss_value = loss_value.data.clone()
                     dist.all_reduce(loss_value.div_(dist.get_world_size()))
-                log_vars[loss_name] = loss_value.item()
-            else:
-                log_vars[loss_name] = loss_value
+            # for adapt torchacc, returns the original tensor value, because value.item() is very time-consuming,
+            # value.item() operation will be executed every log internal frequency,
+            # so the bigger the log internal, the better.
+            log_vars[loss_name] = loss_value
 
         return loss, log_vars
 
