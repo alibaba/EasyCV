@@ -101,7 +101,7 @@ class DistributedMPSampler(_DistributedSampler):
         self.calculate_this_label_list()
         if self.rank == 0:
             print('Before original dataset length is  %d' %
-                  self.dataset.data_source.get_length())
+                  len(self.dataset.data_source))
             print('After  MPRefine dataset length is  %d' % (self.length))
             print('Total %d Label in %s' %
                   (len(self.label_list), type(self.dataset)))
@@ -124,8 +124,8 @@ class DistributedMPSampler(_DistributedSampler):
                                                 this_label_list_size]
             m_per_class = self.dataset.m_per_class
             self.buckets_num = int(
-                int(self.dataset.data_source.get_length() / self.num_replicas)
-                / (m_per_class * this_label_list_size)) + 1
+                int(len(self.dataset.data_source) / self.num_replicas) /
+                (m_per_class * this_label_list_size)) + 1
             self.length = self.buckets_num * m_per_class * int(
                 1 +
                 len(self.label_list) / self.num_replicas)  # self.num_replicas
@@ -136,7 +136,8 @@ class DistributedMPSampler(_DistributedSampler):
 
             # this is a huge bug for split situation
             buckets_num = torch.Tensor([
-                int(self.dataset.data_source.get_length() /
+                int(
+                    len(self.dataset.data_source) /
                     (m_per_class * this_label_list_size))
             ]).to(self.local_rank)
             torch.distributed.all_reduce(buckets_num,
