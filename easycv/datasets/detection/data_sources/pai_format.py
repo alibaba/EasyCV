@@ -116,6 +116,9 @@ def parser_manifest_row_str(row_str, classes):
                 gt_labels.append(classes.index(class_name))
         break
 
+    if len(bboxes) == 0:
+        bboxes = np.zeros((0, 4), dtype=np.float32)
+
     parse_results['filename'] = img_url
     parse_results['gt_bboxes'] = np.array(bboxes, dtype=np.float32)
     parse_results['gt_labels'] = np.array(gt_labels, dtype=np.int64)

@@ -71,7 +71,7 @@ model = dict(
         instance_on=True,
         max_per_image=100,
     ),
-    pretrained='https://download.pytorch.org/models/resnet50-19c8e357.pth',
+    pretrained=True,
 )
 # dataset settings
 data_root = 'database/coco/'

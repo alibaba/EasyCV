@@ -42,7 +42,8 @@ class ClassificationTest(unittest.TestCase):
             batch_size = 1
             a = torch.rand(batch_size, 3, 224, 224).to('cuda')
 
-            model = Classification(backbone=backbone, head=head).to('cuda')
+            model = Classification(
+                backbone=backbone, head=head, pretrained=False).to('cuda')
             model.eval()
             model_jit = torch.jit.script(model)
 

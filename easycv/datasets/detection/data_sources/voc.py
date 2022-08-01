@@ -43,7 +43,7 @@ def parse_xml(source_item, classes):
             gt_labels.append(cls_id)
 
     if len(gt_bboxes) == 0:
-        gt_bboxes = np.zeros((0, 5), dtype=np.float32)
+        gt_bboxes = np.zeros((0, 4), dtype=np.float32)
 
     img_info = {
         'gt_bboxes': np.array(gt_bboxes, dtype=np.float32),

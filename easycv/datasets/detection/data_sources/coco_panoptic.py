@@ -422,6 +422,18 @@ class DetSourceCocoPanoptic(DetSourceCoco):
         return result_files
 
     def get_gt_json(self, result_files):
+        """get input for coco panptic evaluation
+
+        Args:
+            result_files (dict): path of predict result
+
+        Returns:
+            gt_json (dict): gt label
+            gt_folder (str): path of gt file
+            pred_json(dict): predict result
+            pred_folder(str): path of pred file
+            categories(dict): panoptic categories
+        """
 
         imgs = self.coco_pan.imgs
         gt_json = self.coco_pan.imgToAnns

@@ -61,7 +61,7 @@
 
 5. Install pai_nni and blade_compressin
 
-    When you use model quantize and prune, you need to install pai_nni and blade_compressin with the following command:
+    When you use model quantize and prune, you need to install pai_nni and blade_compression with the following command:
 
     ```shell
     # install torch >= 1.8.0
@@ -88,7 +88,7 @@
     from easycv.apis import *
     ```
 
-    You can also verify your installation using follwing quick-start examples
+    You can also verify your installation using following quick-start examples
 
 
 ## Examples

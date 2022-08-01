@@ -16,7 +16,6 @@ model = dict(
         transformer=dict(
             type='DABDetrTransformer',
             in_channels=2048,
-            num_queries=300,
             d_model=256,
             nhead=8,
             num_encoder_layers=6,
@@ -27,8 +26,6 @@ model = dict(
             normalize_before=False,
             return_intermediate_dec=True,
             query_dim=4,
-            random_refpoints_xy=False,
-            num_patterns=0,
             keep_query_pos=False,
             query_scale_type='cond_elewise',
             modulate_hw_attn=True,
@@ -40,16 +37,18 @@ model = dict(
         embed_dims=256,
         query_dim=4,
         iter_update=True,
+        num_queries=300,
         num_select=300,
+        random_refpoints_xy=False,
+        num_patterns=0,
         bbox_embed_diff_each_layer=False,
-        cost_dict={
-            'cost_class': 2,
-            'cost_bbox': 5,
-            'cost_giou': 2,
-        },
-        weight_dict={
-            'loss_ce': 1,
-            'loss_bbox': 5,
-            'loss_giou': 2
-        },
-    ))
+        cost_dict=dict(
+            cost_class=2,
+            cost_bbox=5,
+            cost_giou=2,
+        ),
+        weight_dict=dict(
+            loss_ce=1,
+            loss_bbox=5,
+            loss_giou=2,
+        )))

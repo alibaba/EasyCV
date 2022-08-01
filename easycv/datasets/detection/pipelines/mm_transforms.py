@@ -799,44 +799,6 @@ class MMPhotoMetricDistortion:
         return repr_str
 
 
-@PIPELINES.register_module()
-class MMSegRescale:
-    """Rescale semantic segmentation maps.
-
-    Args:
-        scale_factor (float): The scale factor of the final output.
-        backend (str): Image rescale backend, choices are 'cv2' and 'pillow'.
-            These two backends generates slightly different results. Defaults
-            to 'cv2'.
-    """
-
-    def __init__(self, scale_factor=1, backend='cv2'):
-        self.scale_factor = scale_factor
-        self.backend = backend
-
-    def __call__(self, results):
-        """Call function to scale the semantic segmentation map.
-
-        Args:
-            results (dict): Result dict from loading pipeline.
-
-        Returns:
-            dict: Result dict with semantic segmentation map scaled.
-        """
-
-        for key in results.get('seg_fields', []):
-            if self.scale_factor != 1:
-                results[key] = mmcv.imrescale(
-                    results[key],
-                    self.scale_factor,
-                    interpolation='nearest',
-                    backend=self.backend)
-        return results
-
-    def __repr__(self):
-        return self.__class__.__name__ + f'(scale_factor={self.scale_factor})'
-
-
 @PIPELINES.register_module
 class MMResize:
     """Resize images & bbox & mask.

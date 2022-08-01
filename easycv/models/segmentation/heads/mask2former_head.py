@@ -20,7 +20,7 @@ class Mask2FormerHead(nn.Module):
         # extra parameters
         transformer_in_feature: str = 'multi_scale_pixel_decoder',
     ):
-        """_summary_
+        """
 
         Args:
             pixel_decoder (cfg): config to build pixel decoder
@@ -37,7 +37,7 @@ class Mask2FormerHead(nn.Module):
         self.common_stride = 4
         self.loss_weight = loss_weight
         self.pixel_decoder = MSDeformAttnPixelDecoder(**pixel_decoder)
-        self.predictor = MultiScaleMaskedTransformerDecoder(
+        self.transformer_decoder = MultiScaleMaskedTransformerDecoder(
             **transformer_decoder)
         self.transformer_in_feature = transformer_in_feature
 
@@ -51,18 +51,18 @@ class Mask2FormerHead(nn.Module):
         mask_features, transformer_encoder_features, multi_scale_features = self.pixel_decoder.forward_features(
             features)
         if self.transformer_in_feature == 'multi_scale_pixel_decoder':
-            predictions = self.predictor(multi_scale_features, mask_features,
-                                         mask)
+            predictions = self.transformer_decoder(multi_scale_features,
+                                                   mask_features, mask)
         else:
             if self.transformer_in_feature == 'transformer_encoder':
                 assert (transformer_encoder_features is not None
                         ), 'Please use the TransformerEncoderPixelDecoder.'
-                predictions = self.predictor(transformer_encoder_features,
-                                             mask_features, mask)
+                predictions = self.transformer_decoder(
+                    transformer_encoder_features, mask_features, mask)
             elif self.transformer_in_feature == 'pixel_embedding':
-                predictions = self.predictor(mask_features, mask_features,
-                                             mask)
+                predictions = self.transformer_decoder(mask_features,
+                                                       mask_features, mask)
             else:
-                predictions = self.predictor(
+                predictions = self.transformer_decoder(
                     features[self.transformer_in_feature], mask_features, mask)
         return predictions
