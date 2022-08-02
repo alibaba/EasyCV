@@ -1,5 +1,6 @@
 # Copyright (c) 2022 IDEA. All Rights Reserved.
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import copy
 import math
 
 import numpy as np
@@ -15,39 +16,60 @@ from .cdn_components import dn_post_process, prepare_for_dn
 
 
 @HEADS.register_module()
-class DABDETRHead(nn.Module):
-    """Implements the DETR transformer head.
-    See `paper: End-to-End Object Detection with Transformers
-    <https://arxiv.org/pdf/2005.12872>`_ for details.
-    Args:
-        num_classes (int): Number of categories excluding the background.
+class DINOHead(nn.Module):
+    """ Initializes the DINO Head.
+    See `paper: DINO: DETR with Improved DeNoising Anchor Boxes for End-to-End Object Detection
+    <https://arxiv.org/abs/2203.03605>`_ for details.
+    Parameters:
+        backbone: torch module of the backbone to be used. See backbone.py
+        transformer: torch module of the transformer architecture. See transformer.py
+        num_classes: number of object classes
+        num_queries: number of object queries, ie detection slot. This is the maximal number of objects
+                        Conditional DETR can detect in a single image. For COCO, we recommend 100 queries.
+        aux_loss: True if auxiliary decoding losses (loss at each decoder layer) are to be used.
+
+        fix_refpoints_hw: -1(default): learn w and h for each box seperately
+                            >0 : given fixed number
+                            -2 : learn a shared w and h
     """
 
-    def __init__(self,
-                 num_classes,
-                 embed_dims,
-                 query_dim=4,
-                 iter_update=True,
-                 num_queries=300,
-                 num_select=300,
-                 random_refpoints_xy=False,
-                 num_patterns=0,
-                 bbox_embed_diff_each_layer=False,
-                 dn_components=None,
-                 transformer=None,
-                 cost_dict={
-                     'cost_class': 1,
-                     'cost_bbox': 5,
-                     'cost_giou': 2,
-                 },
-                 weight_dict={
-                     'loss_ce': 1,
-                     'loss_bbox': 5,
-                     'loss_giou': 2
-                 },
-                 **kwargs):
+    def __init__(
+            self,
+            num_classes,
+            embed_dims,
+            in_channels=[256, 512, 1024, 2048],
+            query_dim=4,
+            iter_update=True,
+            num_queries=300,
+            num_select=300,
+            random_refpoints_xy=False,
+            num_patterns=0,
+            bbox_embed_diff_each_layer=False,
+            dn_components=None,
+            transformer=None,
+            fix_refpoints_hw=-1,
+            num_feature_levels=1,
+            # two stage
+            two_stage_type='no',  # ['no', 'standard']
+            two_stage_add_query_num=0,
+            dec_pred_class_embed_share=True,
+            dec_pred_bbox_embed_share=True,
+            two_stage_class_embed_share=True,
+            two_stage_bbox_embed_share=True,
+            decoder_sa_type='sa',
+            cost_dict={
+                'cost_class': 1,
+                'cost_bbox': 5,
+                'cost_giou': 2,
+            },
+            weight_dict={
+                'loss_ce': 1,
+                'loss_bbox': 5,
+                'loss_giou': 2
+            },
+            **kwargs):
 
-        super(DABDETRHead, self).__init__()
+        super(DINOHead, self).__init__()
 
         self.matcher = HungarianMatcher(
             cost_dict=cost_dict, cost_class_type='focal_loss_cost')
@@ -79,41 +101,171 @@ class DABDETRHead(nn.Module):
 
         self.query_embed = nn.Embedding(num_queries, query_dim)
         self.random_refpoints_xy = random_refpoints_xy
-        if random_refpoints_xy:
-            self.query_embed.weight.data[:, :2].uniform_(0, 1)
-            self.query_embed.weight.data[:, :2] = inverse_sigmoid(
-                self.query_embed.weight.data[:, :2])
-            self.query_embed.weight.data[:, :2].requires_grad = False
 
-        self.num_patterns = num_patterns
-        if not isinstance(num_patterns, int):
-            Warning('num_patterns should be int but {}'.format(
-                type(num_patterns)))
-            self.num_patterns = 0
-        if self.num_patterns > 0:
-            self.patterns = nn.Embedding(self.num_patterns, embed_dims)
+        # for dn training
+        self.dn_number = self.dn_components['dn_number']
+        self.dn_box_noise_scale = self.dn_components['dn_box_noise_scale']
+        self.dn_label_noise_ratio = self.dn_components['dn_label_noise_ratio']
+        self.dn_labelbook_size = self.dn_components['dn_labelbook_size']
+        self.label_enc = nn.Embedding(self.dn_labelbook_size + 1, embed_dims)
 
-        if self.dn_components:
-            # leave one dim for indicator
-            self.label_enc = nn.Embedding(num_classes + 1, embed_dims - 1)
+        # prepare input projection layers
+        if num_feature_levels > 1:
+            num_backbone_outs = len(in_channels)
+            input_proj_list = []
+            for i in range(num_backbone_outs):
+                in_channels_i = in_channels[i]
+                input_proj_list.append(
+                    nn.Sequential(
+                        nn.Conv2d(in_channels_i, embed_dims, kernel_size=1),
+                        nn.GroupNorm(32, embed_dims),
+                    ))
+            for _ in range(num_feature_levels - num_backbone_outs):
+                input_proj_list.append(
+                    nn.Sequential(
+                        nn.Conv2d(
+                            in_channels_i,
+                            embed_dims,
+                            kernel_size=3,
+                            stride=2,
+                            padding=1),
+                        nn.GroupNorm(32, embed_dims),
+                    ))
+                in_channels_i = embed_dims
+            self.input_proj = nn.ModuleList(input_proj_list)
+        else:
+            assert two_stage_type == 'no', 'two_stage_type should be no if num_feature_levels=1 !!!'
+            self.input_proj = nn.ModuleList([
+                nn.Sequential(
+                    nn.Conv2d(in_channels[-1], embed_dims, kernel_size=1),
+                    nn.GroupNorm(32, embed_dims),
+                )
+            ])
+
+        # prepare pred layers
+        self.dec_pred_class_embed_share = dec_pred_class_embed_share
+        self.dec_pred_bbox_embed_share = dec_pred_bbox_embed_share
+        # prepare class & box embed
+        _class_embed = nn.Linear(embed_dims, num_classes)
+        _bbox_embed = MLP(embed_dims, embed_dims, 4, 3)
+
+        if dec_pred_bbox_embed_share:
+            box_embed_layerlist = [
+                _bbox_embed for i in range(transformer.num_decoder_layers)
+            ]
+        else:
+            box_embed_layerlist = [
+                copy.deepcopy(_bbox_embed)
+                for i in range(transformer.num_decoder_layers)
+            ]
+        if dec_pred_class_embed_share:
+            class_embed_layerlist = [
+                _class_embed for i in range(transformer.num_decoder_layers)
+            ]
+        else:
+            class_embed_layerlist = [
+                copy.deepcopy(_class_embed)
+                for i in range(transformer.num_decoder_layers)
+            ]
+        self.bbox_embed = nn.ModuleList(box_embed_layerlist)
+        self.class_embed = nn.ModuleList(class_embed_layerlist)
+        self.transformer.decoder.bbox_embed = self.bbox_embed
+        self.transformer.decoder.class_embed = self.class_embed
+
+        # two stage
+        self.two_stage_type = two_stage_type
+        self.two_stage_add_query_num = two_stage_add_query_num
+        assert two_stage_type in [
+            'no', 'standard'
+        ], 'unknown param {} of two_stage_type'.format(two_stage_type)
+        if two_stage_type != 'no':
+            if two_stage_bbox_embed_share:
+                assert dec_pred_class_embed_share and dec_pred_bbox_embed_share
+                self.transformer.enc_out_bbox_embed = _bbox_embed
+            else:
+                self.transformer.enc_out_bbox_embed = copy.deepcopy(
+                    _bbox_embed)
+
+            if two_stage_class_embed_share:
+                assert dec_pred_class_embed_share and dec_pred_bbox_embed_share
+                self.transformer.enc_out_class_embed = _class_embed
+            else:
+                self.transformer.enc_out_class_embed = copy.deepcopy(
+                    _class_embed)
+
+            self.refpoint_embed = None
+            if self.two_stage_add_query_num > 0:
+                self.init_ref_points(two_stage_add_query_num)
+
+        self.decoder_sa_type = decoder_sa_type
+        assert decoder_sa_type in ['sa', 'ca_label', 'ca_content']
+        # self.replace_sa_with_double_ca = replace_sa_with_double_ca
+        if decoder_sa_type == 'ca_label':
+            self.label_embedding = nn.Embedding(num_classes, embed_dims)
+            for layer in self.transformer.decoder.layers:
+                layer.label_embedding = self.label_embedding
+        else:
+            for layer in self.transformer.decoder.layers:
+                layer.label_embedding = None
+            self.label_embedding = None
 
     def init_weights(self):
         self.transformer.init_weights()
 
+        for proj in self.input_proj:
+            nn.init.xavier_uniform_(proj[0].weight, gain=1)
+            nn.init.constant_(proj[0].bias, 0)
+
         # init prior_prob setting for focal loss
         prior_prob = 0.01
         bias_value = -math.log((1 - prior_prob) / prior_prob)
-        self.class_embed.bias.data = torch.ones(self.num_classes) * bias_value
 
         # import ipdb; ipdb.set_trace()
-        # init bbox_embed
+        # init class_embed and init bbox_embed
         if self.bbox_embed_diff_each_layer:
             for bbox_embed in self.bbox_embed:
                 nn.init.constant_(bbox_embed.layers[-1].weight.data, 0)
                 nn.init.constant_(bbox_embed.layers[-1].bias.data, 0)
+            for class_embed in self.class_embed:
+                class_embed.bias.data = torch.ones(
+                    self.num_classes) * bias_value
         else:
             nn.init.constant_(self.bbox_embed.layers[-1].weight.data, 0)
             nn.init.constant_(self.bbox_embed.layers[-1].bias.data, 0)
+            self.class_embed.bias.data = torch.ones(
+                self.num_classes) * bias_value
+
+    def init_ref_points(self, use_num_queries):
+        self.refpoint_embed = nn.Embedding(use_num_queries, self.query_dim)
+
+        if self.random_refpoints_xy:
+            # import ipdb; ipdb.set_trace()
+            self.refpoint_embed.weight.data[:, :2].uniform_(0, 1)
+            self.refpoint_embed.weight.data[:, :2] = inverse_sigmoid(
+                self.refpoint_embed.weight.data[:, :2])
+            self.refpoint_embed.weight.data[:, :2].requires_grad = False
+
+        if self.fix_refpoints_hw > 0:
+            print('fix_refpoints_hw: {}'.format(self.fix_refpoints_hw))
+            assert self.random_refpoints_xy
+            self.refpoint_embed.weight.data[:, 2:] = self.fix_refpoints_hw
+            self.refpoint_embed.weight.data[:, 2:] = inverse_sigmoid(
+                self.refpoint_embed.weight.data[:, 2:])
+            self.refpoint_embed.weight.data[:, 2:].requires_grad = False
+        elif int(self.fix_refpoints_hw) == -1:
+            pass
+        elif int(self.fix_refpoints_hw) == -2:
+            print('learn a shared h and w')
+            assert self.random_refpoints_xy
+            self.refpoint_embed = nn.Embedding(use_num_queries, 2)
+            self.refpoint_embed.weight.data[:, :2].uniform_(0, 1)
+            self.refpoint_embed.weight.data[:, :2] = inverse_sigmoid(
+                self.refpoint_embed.weight.data[:, :2])
+            self.refpoint_embed.weight.data[:, :2].requires_grad = False
+            self.hw_embed = nn.Embedding(1, 1)
+        else:
+            raise NotImplementedError('Unknown fix_refpoints_hw {}'.format(
+                self.fix_refpoints_hw))
 
     def prepare(self, feats, targets=None, mode='train'):
         bs = feats[0].shape[0]
