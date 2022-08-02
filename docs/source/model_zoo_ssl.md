@@ -25,7 +25,7 @@ Pretrained on **ImageNet** dataset.
 
 | Config                                                       | Backbone  | Params<br/>(backbone/total) | inference time(V100)<br/>(ms/img) | Epochs | Download                                                     |
 | ------------------------------------------------------------ | --------- | --------------------------- | --------------------------------- | ------ | ------------------------------------------------------------ |
-| [dino_deit_small_p16_8xb32_100e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/dino/dino_deit_small_p16_8xb32_100e_tfrecord.py) | DeiT-S/16 | 21M/88M                     | 6.17                              | 100    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/dino_deit_small/epoch_100.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/dino_deit_small/log.txt) |
+| [dino_deit_small_p16_8xb32_100e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/dino/dino_deit_small_p16_8xb32_100e_tfrecord.py) | DeiT-S/16 | 21M/88M                     | 6.17                              | 100    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/dino_deit_small/epoch_100.pth) |
 
 ### MoBY
 
@@ -42,7 +42,7 @@ Pretrained on **ImageNet** dataset.
 
 | Config                                                       | Backbone | Params<br/>(backbone/total) | Flops | inference time(V100)<br/>(ms/img) | Epochs | Download                                                     |
 | ------------------------------------------------------------ | -------- | --------------------------- | ----- | --------------------------------- | ------ | ------------------------------------------------------------ |
-| [mocov2_resnet50_8xb32_200e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/mocov2/mocov2_rn50_8xb32_200e_tfrecord.py) | ResNet50 | 23M/28M                     | 8.2G  | 8.59                              | 200    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mocov2_r50/epoch_200.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mocov2_r50/log.txt) |
+| [mocov2_resnet50_8xb32_200e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/mocov2/mocov2_rn50_8xb32_200e_tfrecord.py) | ResNet50 | 23M/28M                     | 8.2G  | 8.59                              | 200    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mocov2_r50/epoch_200.pth) |
 
 ### SwAV
 
