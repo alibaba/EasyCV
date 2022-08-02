@@ -84,13 +84,17 @@ class Attention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
-    def forward(self, x):
+    def forward(self, x, rel_pos_bias=None):
         B, N, C = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads,
                                   C // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
 
         attn = (q @ k.transpose(-2, -1)) * self.scale
+
+        if rel_pos_bias is not None:
+            attn = attn + rel_pos_bias
+
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
 
@@ -132,8 +136,8 @@ class Block(nn.Module):
             act_layer=act_layer,
             drop=drop)
 
-    def forward(self, x, return_attention=False):
-        y, attn = self.attn(self.norm1(x))
+    def forward(self, x, return_attention=False, rel_pos_bias=None):
+        y, attn = self.attn(self.norm1(x), rel_pos_bias=rel_pos_bias)
         if return_attention:
             return attn
         x = x + self.drop_path(y)

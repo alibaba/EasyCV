@@ -68,3 +68,24 @@ EasyCV support multi-gpu and multi worker training. EasyCV use DALI to accelerat
 - Add moby swin-tiny pretrained model and benchmark ([#72](https://github.com/alibaba/EasyCV/pull/72))
 - Update prepare_data.md, add more details ([#69](https://github.com/alibaba/EasyCV/pull/69))
 - Optimize quantize code and support to export MNN model ([#44](https://github.com/alibaba/EasyCV/pull/44))
+
+# v 0.5.0 (28/07/2022)
+
+## Highlights
+- Self-Supervised support ConvMAE algorithm (([#101](https://github.com/alibaba/EasyCV/pull/101)) ([#121](https://github.com/alibaba/EasyCV/pull/121)))
+- Classification support EfficientFormer algorithm ([#128](https://github.com/alibaba/EasyCV/pull/128))
+- Detection support FCOS、DETR、DAB-DETR and DN-DETR algorithm (([#100](https://github.com/alibaba/EasyCV/pull/100)) ([#104](https://github.com/alibaba/EasyCV/pull/104)) ([#119](https://github.com/alibaba/EasyCV/pull/119)))
+- Segmentation support UperNet algorithm ([#118](https://github.com/alibaba/EasyCV/pull/118))
+- Support use torchacc to speed up training ([#105](https://github.com/alibaba/EasyCV/pull/105))
+
+## New Features
+- Support use analyze tools ([#133](https://github.com/alibaba/EasyCV/pull/133))
+
+## Bug Fixes
+- Update yolox config template and fix bugs ([#134](https://github.com/alibaba/EasyCV/pull/134))
+- Fix yolox detector prediction export error ([#125](https://github.com/alibaba/EasyCV/pull/125))
+- Fix common_io url error ([#126](https://github.com/alibaba/EasyCV/pull/126))
+
+## Improvements
+- Add ViTDet visualization ([#102](https://github.com/alibaba/EasyCV/pull/102))
+- Refactor detection pipline ([#104](https://github.com/alibaba/EasyCV/pull/104))
