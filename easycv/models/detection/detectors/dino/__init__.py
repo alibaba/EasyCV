@@ -1,2 +1,2 @@
-from .dab_detr_head import DABDETRHead
-from .dab_detr_transformer import DABDetrTransformer
+from .deformable_transformer import DeformableTransformer
+from .dino_head import DINO
