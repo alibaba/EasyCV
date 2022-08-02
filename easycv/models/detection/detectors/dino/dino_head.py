@@ -6,13 +6,15 @@ import math
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from easycv.models.builder import HEADS, build_neck
 from easycv.models.detection.utils import (HungarianMatcher, SetCriterion,
                                            box_cxcywh_to_xyxy,
                                            box_xyxy_to_cxcywh, inverse_sigmoid)
 from easycv.models.utils import MLP
-from .cdn_components import dn_post_process, prepare_for_dn
+from ..dab_detr.dab_detr_transformer import PositionEmbeddingSineHW
+from .cdn_components import cdn_post_process, prepare_for_cdn
 
 
 @HEADS.register_module()
@@ -57,6 +59,8 @@ class DINOHead(nn.Module):
             two_stage_class_embed_share=True,
             two_stage_bbox_embed_share=True,
             decoder_sa_type='sa',
+            temperatureH=20,
+            temperatureW=20,
             cost_dict={
                 'cost_class': 1,
                 'cost_bbox': 5,
@@ -83,6 +87,12 @@ class DINOHead(nn.Module):
         self.postprocess = PostProcess(num_select=num_select)
         self.transformer = build_neck(transformer)
 
+        self.positional_encoding = PositionEmbeddingSineHW(
+            embed_dims // 2,
+            temperatureH=temperatureH,
+            temperatureW=temperatureW,
+            normalize=True)
+
         self.class_embed = nn.Linear(embed_dims, num_classes)
         if bbox_embed_diff_each_layer:
             self.bbox_embed = nn.ModuleList(
@@ -99,7 +109,6 @@ class DINOHead(nn.Module):
         self.bbox_embed_diff_each_layer = bbox_embed_diff_each_layer
         self.dn_components = dn_components
 
-        self.query_embed = nn.Embedding(num_queries, query_dim)
         self.random_refpoints_xy = random_refpoints_xy
 
         # for dn training
@@ -267,37 +276,18 @@ class DINOHead(nn.Module):
             raise NotImplementedError('Unknown fix_refpoints_hw {}'.format(
                 self.fix_refpoints_hw))
 
-    def prepare(self, feats, targets=None, mode='train'):
-        bs = feats[0].shape[0]
-        query_embed = self.query_embed.weight
-        if self.dn_components:
-            # default pipeline
-            self.dn_components['num_patterns'] = self.num_patterns
-            self.dn_components['targets'] = targets
-            # prepare for dn
-            tgt, query_embed, attn_mask, mask_dict = prepare_for_dn(
-                mode, self.dn_components, query_embed, bs, self.num_queries,
-                self.num_classes, self.embed_dims, self.label_enc)
-            if self.num_patterns > 0:
-                l = tgt.shape[0]
-                tgt[l - self.num_queries * self.num_patterns:] += \
-                    self.patterns.weight[:, None, None, :].repeat(1, self.num_queries, bs, 1).flatten(0, 1)
-            return query_embed, tgt, attn_mask, mask_dict
+    def prepare(self, features, targets=None, mode='train'):
+
+        if self.dn_number > 0 or targets is not None:
+            input_query_label, input_query_bbox, attn_mask, dn_meta =\
+                prepare_for_cdn(dn_args=(targets, self.dn_number, self.dn_label_noise_ratio, self.dn_box_noise_scale),
+                                training=self.training, num_queries=self.num_queries, num_classes=self.num_classes,
+                                hidden_dim=self.embed_dims, label_enc=self.label_enc)
         else:
-            query_embed = query_embed.unsqueeze(1).repeat(1, bs, 1)
-            if self.num_patterns == 0:
-                tgt = torch.zeros(
-                    self.num_queries,
-                    bs,
-                    self.embed_dims,
-                    device=query_embed.device)
-            else:
-                tgt = self.patterns.weight[:, None, None, :].repeat(
-                    1, self.num_queries, bs,
-                    1).flatten(0, 1)  # n_q*n_pat, bs, d_model
-                query_embed = query_embed.repeat(self.num_patterns, 1,
-                                                 1)  # n_q*n_pat, bs, d_model
-        return query_embed, tgt, None, None
+            assert targets is None
+            input_query_bbox = input_query_label = attn_mask = dn_meta = None
+
+        return input_query_bbox, input_query_label, attn_mask, dn_meta
 
     def forward(self,
                 feats,
@@ -305,7 +295,7 @@ class DINOHead(nn.Module):
                 query_embed=None,
                 tgt=None,
                 attn_mask=None,
-                mask_dict=None):
+                dn_meta=None):
         """Forward function.
         Args:
             feats (tuple[Tensor]): Features from the upstream network, each is
@@ -322,37 +312,109 @@ class DINOHead(nn.Module):
                     normalized coordinate format (cx, cy, w, h) and shape \
                     [nb_dec, bs, num_query, 4].
         """
+        # construct binary masks which used for the transformer.
+        # NOTE following the official DETR repo, non-zero values representing
+        # ignored positions, while zero values means valid positions.
+        bs = feats[0].size(0)
+        input_img_h, input_img_w = img_metas[0]['batch_input_shape']
+        ori_mask = feats[0].new_ones((bs, input_img_h, input_img_w))
+        for img_id in range(bs):
+            img_h, img_w, _ = img_metas[img_id]['img_shape']
+            ori_mask[img_id, :img_h, :img_w] = 0
 
-        feats = self.transformer(
-            feats, img_metas, query_embed, tgt, attn_mask=attn_mask)
+        srcs = []
+        masks = []
+        poss = []
+        for l, src in enumerate(feats):
+            mask = F.interpolate(
+                ori_mask.unsqueeze(1),
+                size=src.shape[-2:]).to(torch.bool).squeeze(1)
+            # position encoding
+            pos_embed = self.positional_encoding(mask)  # [bs, embed_dim, h, w]
+            srcs.append(self.input_proj[l](src))
+            masks.append(mask)
+            poss.append(pos_embed)
+            assert mask is not None
 
-        hs, reference = feats
-        outputs_class = self.class_embed(hs)
-        if not self.bbox_embed_diff_each_layer:
-            reference_before_sigmoid = inverse_sigmoid(reference)
-            tmp = self.bbox_embed(hs)
-            tmp[..., :self.query_dim] += reference_before_sigmoid
-            outputs_coord = tmp.sigmoid()
-        else:
-            reference_before_sigmoid = inverse_sigmoid(reference)
-            outputs_coords = []
-            for lvl in range(hs.shape[0]):
-                tmp = self.bbox_embed[lvl](hs[lvl])
-                tmp[..., :self.query_dim] += reference_before_sigmoid[lvl]
-                outputs_coord = tmp.sigmoid()
-                outputs_coords.append(outputs_coord)
-            outputs_coord = torch.stack(outputs_coords)
+        hs, reference, hs_enc, ref_enc, init_box_proposal = self.transformer(
+            srcs, masks, query_embed, poss, tgt, attn_mask)
+        # In case num object=0
+        hs[0] += self.label_enc.weight[0, 0] * 0.0
 
-        if mask_dict is not None:
-            # dn post process
-            outputs_class, outputs_coord = dn_post_process(
-                outputs_class, outputs_coord, mask_dict)
+        # deformable-detr-like anchor update
+        # reference_before_sigmoid = inverse_sigmoid(reference[:-1]) # n_dec, bs, nq, 4
+        outputs_coord_list = []
+        for dec_lid, (layer_ref_sig, layer_bbox_embed, layer_hs) in enumerate(
+                zip(reference[:-1], self.bbox_embed, hs)):
+            layer_delta_unsig = layer_bbox_embed(layer_hs)
+            layer_outputs_unsig = layer_delta_unsig + inverse_sigmoid(
+                layer_ref_sig)
+            layer_outputs_unsig = layer_outputs_unsig.sigmoid()
+            outputs_coord_list.append(layer_outputs_unsig)
+        outputs_coord_list = torch.stack(outputs_coord_list)
+
+        # outputs_class = self.class_embed(hs)
+        outputs_class = torch.stack([
+            layer_cls_embed(layer_hs)
+            for layer_cls_embed, layer_hs in zip(self.class_embed, hs)
+        ])
+        if self.dn_number > 0 and dn_meta is not None:
+            outputs_class, outputs_coord_list = cdn_post_process(
+                outputs_class, outputs_coord_list, dn_meta, self.aux_loss,
+                self._set_aux_loss)
         out = {
             'pred_logits': outputs_class[-1],
-            'pred_boxes': outputs_coord[-1]
+            'pred_boxes': outputs_coord_list[-1]
         }
+        if self.aux_loss:
+            out['aux_outputs'] = self._set_aux_loss(outputs_class,
+                                                    outputs_coord_list)
 
-        out['aux_outputs'] = self._set_aux_loss(outputs_class, outputs_coord)
+        # for encoder output
+        if hs_enc is not None:
+            # prepare intermediate outputs
+            interm_coord = ref_enc[-1]
+            interm_class = self.transformer.enc_out_class_embed(hs_enc[-1])
+            out['interm_outputs'] = {
+                'pred_logits': interm_class,
+                'pred_boxes': interm_coord
+            }
+            out['interm_outputs_for_matching_pre'] = {
+                'pred_logits': interm_class,
+                'pred_boxes': init_box_proposal
+            }
+
+            # prepare enc outputs
+            # import ipdb; ipdb.set_trace()
+            if hs_enc.shape[0] > 1:
+                enc_outputs_coord = []
+                enc_outputs_class = []
+                for layer_id, (layer_box_embed, layer_class_embed,
+                               layer_hs_enc, layer_ref_enc) in enumerate(
+                                   zip(self.enc_bbox_embed,
+                                       self.enc_class_embed, hs_enc[:-1],
+                                       ref_enc[:-1])):
+                    layer_enc_delta_unsig = layer_box_embed(layer_hs_enc)
+                    layer_enc_outputs_coord_unsig = layer_enc_delta_unsig + inverse_sigmoid(
+                        layer_ref_enc)
+                    layer_enc_outputs_coord = layer_enc_outputs_coord_unsig.sigmoid(
+                    )
+
+                    layer_enc_outputs_class = layer_class_embed(layer_hs_enc)
+                    enc_outputs_coord.append(layer_enc_outputs_coord)
+                    enc_outputs_class.append(layer_enc_outputs_class)
+
+                # enc_delta_unsig = self.enc_bbox_embed(hs_enc[:-1])
+                # enc_outputs_unsig = enc_delta_unsig + ref_enc[:-1]
+                # enc_outputs_coord = enc_outputs_unsig.sigmoid()
+                # enc_outputs_class = self.enc_class_embed(hs_enc[:-1])
+                out['enc_outputs'] = [{
+                    'pred_logits': a,
+                    'pred_boxes': b
+                } for a, b in zip(enc_outputs_class, enc_outputs_coord)]
+
+        out['dn_meta'] = dn_meta
+
         return out
 
     @torch.jit.unused
@@ -397,8 +459,8 @@ class DINOHead(nn.Module):
         for gt_label, gt_bbox in zip(gt_labels, gt_bboxes):
             targets.append({'labels': gt_label, 'boxes': gt_bbox})
 
-        query_embed, tgt, attn_mask, mask_dict = self.prepare(
-            x, targets=targets, mode='train')
+        query_embed, tgt, attn_mask, dn_meta = self.prepare(
+            x, img_metas, targets=targets, mode='train')
 
         outputs = self.forward(
             x,
@@ -406,14 +468,14 @@ class DINOHead(nn.Module):
             query_embed=query_embed,
             tgt=tgt,
             attn_mask=attn_mask,
-            mask_dict=mask_dict)
+            dn_meta=dn_meta)
 
-        losses = self.criterion(outputs, targets, mask_dict)
+        losses = self.criterion(outputs, targets, dn_meta)
 
         return losses
 
     def forward_test(self, x, img_metas):
-        query_embed, tgt, attn_mask, mask_dict = self.prepare(x, mode='test')
+        query_embed, tgt, attn_mask, dn_meta = self.prepare(x, mode='test')
 
         outputs = self.forward(
             x,
@@ -421,7 +483,7 @@ class DINOHead(nn.Module):
             query_embed=query_embed,
             tgt=tgt,
             attn_mask=attn_mask,
-            mask_dict=mask_dict)
+            dn_meta=dn_meta)
 
         ori_shape_list = []
         for i in range(len(img_metas)):
