@@ -28,8 +28,7 @@ class SSLSourceImageListTest(unittest.TestCase):
             self.assertEqual(img.mode, 'RGB')
             img.close()
 
-        length = data_source.get_length()
-        self.assertEqual(length, 200)
+        self.assertEqual(len(data_source), 200)
 
 
 if __name__ == '__main__':

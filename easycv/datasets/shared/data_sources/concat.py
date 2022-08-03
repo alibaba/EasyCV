@@ -24,11 +24,8 @@ class SourceConcat(object):
         ]
         self.cumsum_length_list = self.cumsum_length()
 
-    def get_length(self):
-        return self.cumsum_length_list[-1]
-
     def __len__(self):
-        return self.get_length()
+        return self.cumsum_length_list[-1]
 
     def get_sample(self, idx):
         dataset_idx = bisect.bisect_right(self.cumsum_length_list, idx)
@@ -42,7 +39,7 @@ class SourceConcat(object):
     def cumsum_length(self):
         len_cumsum_list, idx = [], 0
         for ds in self.data_sources:
-            ds_l = ds.get_length()
+            ds_l = len(ds)
             len_cumsum_list.append(ds_l + idx)
             idx += ds_l
         return len_cumsum_list

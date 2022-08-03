@@ -24,9 +24,6 @@ if __name__ == '__main__':
         image_type=['url'])
     # a = OdpsReader(table_name=table_name, odps_config=odps_config, random_start=False)
 
-    print(a.get_length())
-    # print(a.url_image_idx)
-    # print(a.base64_image_idx)
     for i in range(10):
         # if i% 100 == 0 or i % 100 == 1:
         print(i, a.get_sample(i))

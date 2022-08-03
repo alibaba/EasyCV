@@ -34,7 +34,7 @@ class ClsSourceImageListByClassTest(unittest.TestCase):
             self.assertIn(label_list[0], list(range(1000)))
             for img in img_list:
                 img.close()
-            self.assertEqual(data_source.get_length(), 2)
+            self.assertEqual(len(data_source), 2)
 
 
 if __name__ == '__main__':

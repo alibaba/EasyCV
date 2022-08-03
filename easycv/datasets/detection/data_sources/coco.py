@@ -62,10 +62,6 @@ class DetSourceCoco(object):
         """Total number of samples of data."""
         return len(self.data_infos)
 
-    def get_length(self):
-        """Total number of samples of data."""
-        return len(self.data_infos)
-
     def load_annotations(self, ann_file):
         """Load annotation from COCO style annotation file.
         Args:

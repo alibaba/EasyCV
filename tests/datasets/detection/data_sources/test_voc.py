@@ -33,7 +33,7 @@ class DetSourceVOCTest(unittest.TestCase):
             self.assertGreaterEqual(len(data['gt_labels']), 1)
             self.assertEqual(data['img'].shape[-1], 3)
 
-        length = data_source.get_length()
+        length = len(data_source)
         self.assertEqual(length, 20)
 
         exists = False
