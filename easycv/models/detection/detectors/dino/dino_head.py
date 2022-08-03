@@ -158,6 +158,12 @@ class DINOHead(nn.Module):
         # prepare class & box embed
         _class_embed = nn.Linear(embed_dims, num_classes)
         _bbox_embed = MLP(embed_dims, embed_dims, 4, 3)
+        # init the two embed layers
+        prior_prob = 0.01
+        bias_value = -math.log((1 - prior_prob) / prior_prob)
+        _class_embed.bias.data = torch.ones(self.num_classes) * bias_value
+        nn.init.constant_(_bbox_embed.layers[-1].weight.data, 0)
+        nn.init.constant_(_bbox_embed.layers[-1].bias.data, 0)
 
         if dec_pred_bbox_embed_share:
             box_embed_layerlist = [
@@ -220,23 +226,10 @@ class DINOHead(nn.Module):
             self.label_embedding = None
 
     def init_weights(self):
-        self.transformer.init_weights()
-
+        # init input_proj
         for proj in self.input_proj:
             nn.init.xavier_uniform_(proj[0].weight, gain=1)
             nn.init.constant_(proj[0].bias, 0)
-
-        # init prior_prob setting for focal loss
-        prior_prob = 0.01
-        bias_value = -math.log((1 - prior_prob) / prior_prob)
-
-        # import ipdb; ipdb.set_trace()
-        # init class_embed and init bbox_embed
-        for bbox_embed in self.bbox_embed:
-            nn.init.constant_(bbox_embed.layers[-1].weight.data, 0)
-            nn.init.constant_(bbox_embed.layers[-1].bias.data, 0)
-        for class_embed in self.class_embed:
-            class_embed.bias.data = torch.ones(self.num_classes) * bias_value
 
     def init_ref_points(self, use_num_queries):
         self.refpoint_embed = nn.Embedding(use_num_queries, self.query_dim)

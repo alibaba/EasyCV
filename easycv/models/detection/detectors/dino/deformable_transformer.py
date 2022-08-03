@@ -244,6 +244,8 @@ class DeformableTransformer(nn.Module):
                 assert dec_layer_number[
                     0] == num_queries * num_patterns, f'dec_layer_number[0]({dec_layer_number[0]}) != num_queries({num_queries}) * num_patterns({num_patterns})'
 
+        self._reset_parameters()
+
         self.rm_self_attn_layers = rm_self_attn_layers
         if rm_self_attn_layers is not None:
             # assert len(rm_self_attn_layers) == num_decoder_layers
@@ -259,7 +261,7 @@ class DeformableTransformer(nn.Module):
             assert any([i in ['enc_ref', 'enc_tgt', 'dec'] for i in rm_detach])
         self.decoder.rm_detach = rm_detach
 
-    def init_weights(self):
+    def _reset_parameters(self):
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
