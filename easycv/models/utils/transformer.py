@@ -110,8 +110,11 @@ class TransformerEncoderLayer(nn.Module):
         return src
 
 
-def _get_clones(module, N):
-    return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
+def _get_clones(module, N, layer_share=False):
+    if layer_share:
+        return nn.ModuleList([module for i in range(N)])
+    else:
+        return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
 
 
 def _get_activation_fn(activation):
