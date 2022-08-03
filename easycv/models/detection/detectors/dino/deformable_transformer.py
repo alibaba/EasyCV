@@ -17,9 +17,10 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 from easycv.models.builder import NECKS
-from easycv.models.utils import (MLP, _get_activation_fn, _get_clones,
-                                 gen_encoder_output_proposals,
-                                 gen_sineembed_for_position, inverse_sigmoid)
+from easycv.models.detection.utils import (gen_encoder_output_proposals,
+                                           gen_sineembed_for_position,
+                                           inverse_sigmoid)
+from easycv.models.utils import MLP, _get_activation_fn, _get_clones
 from .ops.modules import MSDeformAttn
 
 
