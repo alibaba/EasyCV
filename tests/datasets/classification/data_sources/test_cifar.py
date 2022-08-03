@@ -26,7 +26,7 @@ class ClsSourceCifarTest(unittest.TestCase):
             self.assertIn(label, list(range(10)))
             img.close()
 
-        length = data_source.get_length()
+        length = len(data_source)
         self.assertEqual(length, 50000)
 
     def test_cifar100(self):
@@ -44,8 +44,7 @@ class ClsSourceCifarTest(unittest.TestCase):
             self.assertIn(label, list(range(100)))
             img.close()
 
-        length = data_source.get_length()
-        self.assertEqual(length, 50000)
+        self.assertEqual(len(data_source), 50000)
 
 
 if __name__ == '__main__':

@@ -30,7 +30,7 @@ class ImageNpyTest(unittest.TestCase):
             self.assertEqual(img.mode, 'RGB')
             img.close()
             self.assertIn(label, list(range(1000)))
-            self.assertEqual(data_source.get_length(), 100)
+            self.assertEqual(len(data_source), 100)
 
     def test_oss(self):
         io.access_oss()
@@ -52,7 +52,7 @@ class ImageNpyTest(unittest.TestCase):
             self.assertEqual(img.mode, 'RGB')
             img.close()
             self.assertIn(label, list(range(1000)))
-            self.assertEqual(data_source.get_length(), 100)
+            self.assertEqual(len(data_source), 100)
 
         io.remove(work_dir)
 

@@ -24,7 +24,7 @@ class SegDataset(BaseDataset):
 
         super(SegDataset, self).__init__(
             data_source, pipeline, profiling=profiling)
-        self.num_samples = self.data_source.get_length()
+        self.num_samples = len(self.data_source)
 
         if isinstance(self.data_source, SourceConcat):
             self.classes = self.data_source.data_sources[0].classes

@@ -170,7 +170,7 @@ class OdpsReader(object):
         delattr(self, 'reader')
         return
 
-    def get_length(self):
+    def __len__(self):
         return self.length * self.world_size
 
     def reset_reader(self, dataloader_workid, dataloader_worknum):

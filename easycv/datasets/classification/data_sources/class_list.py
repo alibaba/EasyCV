@@ -75,7 +75,7 @@ class ClsSourceImageListByClass(object):
         self.initialized = False
         self.max_try = max_try
 
-    def get_length(self):
+    def __len__(self):
         return len(self.fns_by_labels)
 
     def get_sample(self, idx):
