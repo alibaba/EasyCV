@@ -1,52 +1,48 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from PIL import Image
-from torchvision.datasets import CIFAR10, CIFAR100
+from torchvision.datasets.cifar import CIFAR10, CIFAR100
 
 from easycv.datasets.registry import DATASOURCES
 
 
 @DATASOURCES.register_module
-class ClsSourceCifar10(object):
+class ClsSourceCifar10(CIFAR10):
 
     CLASSES = [
         'airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog',
         'horse', 'ship', 'truck'
     ]
+    url = 'https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz'
 
-    def __init__(self, root, split):
+    def __init__(self, root, split, download=False):
         assert split in ['train', 'test']
-        self.cifar = CIFAR10(
-            root=root, train=(split == 'train'), download=False)
-        self.labels = self.cifar.targets
-
-    def get_length(self):
-        return len(self.cifar)
+        super(ClsSourceCifar10, self).__init__(
+            root=root, train=(split == 'train'), download=download)
+        self.labels = self.targets
 
     def get_sample(self, idx):
-        img = Image.fromarray(self.cifar.data[idx])
+        img = Image.fromarray(self.data[idx])
         label = self.labels[idx]  # img: HWC, RGB
         result_dict = {'img': img, 'gt_labels': label}
         return result_dict
 
 
 @DATASOURCES.register_module
-class ClsSourceCifar100(object):
+class ClsSourceCifar100(CIFAR100):
 
     CLASSES = None
+    url = 'https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz'
 
-    def __init__(self, root, split):
+    def __init__(self, root, split, download=False):
         assert split in ['train', 'test']
 
-        self.cifar = CIFAR100(
-            root=root, train=(split == 'train'), download=False)
+        super(ClsSourceCifar100, self).__init__(
+            root=root, train=(split == 'train'), download=download)
 
-        self.labels = self.cifar.targets
-
-    def get_length(self):
-        return len(self.cifar)
+        self.labels = self.targets
 
     def get_sample(self, idx):
-        img = Image.fromarray(self.cifar.data[idx])
+        img = Image.fromarray(self.data[idx])
         label = self.labels[idx]  # img: HWC, RGB
         result_dict = {'img': img, 'gt_labels': label}
         return result_dict
