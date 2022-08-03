@@ -197,7 +197,10 @@ class SetCriterion(nn.Module):
         losses = {}
         for loss in self.losses:
             l_dict = self.get_loss(loss, outputs, targets, indices, num_boxes)
-            l_dict = {k: v * self.weight_dict[k] for k, v in l_dict.items()}
+            l_dict = {
+                k: v * self.weight_dict[k] if k in self.weight_dict else 1.0
+                for k, v in l_dict.items()
+            }
             losses.update(l_dict)
 
         # In case of auxiliary losses, we repeat this process with the output of each intermediate layer.
@@ -217,7 +220,8 @@ class SetCriterion(nn.Module):
                     l_dict = self.get_loss(loss, aux_outputs, targets, indices,
                                            num_boxes, **kwargs)
                     l_dict = {
-                        k + f'_{i}': v * self.weight_dict[k]
+                        k + f'_{i}': v *
+                        self.weight_dict[k] if k in self.weight_dict else 1.0
                         for k, v in l_dict.items()
                     }
                     losses.update(l_dict)
@@ -239,7 +243,8 @@ class SetCriterion(nn.Module):
                 l_dict = self.get_loss(loss, interm_outputs, targets, indices,
                                        num_boxes, **kwargs)
                 l_dict = {
-                    k + '_interm': v * self.weight_dict[k + '_interm']
+                    k + '_interm': v * self.weight_dict[k + '_interm'] if
+                    (k + '_interm') in self.weight_dict else 1.0
                     for k, v in l_dict.items()
                 }
                 losses.update(l_dict)
@@ -294,7 +299,8 @@ class SetCriterion(nn.Module):
                                           num_boxes * scalar, **kwargs))
 
                     l_dict = {
-                        k + '_dn': v * self.weight_dict[k]
+                        k + '_dn': v *
+                        self.weight_dict[k] if k in self.weight_dict else 1.0
                         for k, v in l_dict.items()
                     }
                     losses.update(l_dict)
@@ -326,6 +332,7 @@ class SetCriterion(nn.Module):
 
                         l_dict = {
                             k + f'_dn_{i}': v * self.weight_dict[k]
+                            if k in self.weight_dict else 1.0
                             for k, v in l_dict.items()
                         }
                         losses.update(l_dict)
@@ -474,14 +481,16 @@ class DNCriterion(nn.Module):
             l_dict = self.tgt_loss_labels(output_known_class[-1], known_labels,
                                           num_tgt, focal_alpha)
             l_dict = {
-                k + '_dn': v * self.weight_dict[k]
+                k + '_dn':
+                v * self.weight_dict[k] if k in self.weight_dict else 1.0
                 for k, v in l_dict.items()
             }
             losses.update(l_dict)
             l_dict = self.tgt_loss_boxes(output_known_coord[-1], known_bboxs,
                                          num_tgt)
             l_dict = {
-                k + '_dn': v * self.weight_dict[k]
+                k + '_dn':
+                v * self.weight_dict[k] if k in self.weight_dict else 1.0
                 for k, v in l_dict.items()
             }
             losses.update(l_dict)
@@ -499,14 +508,16 @@ class DNCriterion(nn.Module):
                                                   known_labels, num_tgt,
                                                   focal_alpha)
                     l_dict = {
-                        k + f'_dn_{i}': v * self.weight_dict[k]
+                        k + f'_dn_{i}': v *
+                        self.weight_dict[k] if k in self.weight_dict else 1.0
                         for k, v in l_dict.items()
                     }
                     losses.update(l_dict)
                     l_dict = self.tgt_loss_boxes(output_known_coord[i],
                                                  known_bboxs, num_tgt)
                     l_dict = {
-                        k + f'_dn_{i}': v * self.weight_dict[k]
+                        k + f'_dn_{i}': v *
+                        self.weight_dict[k] if k in self.weight_dict else 1.0
                         for k, v in l_dict.items()
                     }
                     losses.update(l_dict)
