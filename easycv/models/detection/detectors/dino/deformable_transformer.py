@@ -39,20 +39,20 @@ class DeformableTransformer(nn.Module):
         dropout=0.0,
         activation='relu',
         normalize_before=False,
-        return_intermediate_dec=False,
+        return_intermediate_dec=True,
         query_dim=4,
         num_patterns=0,
         modulate_hw_attn=False,
         # for deformable encoder
-        deformable_encoder=False,
-        deformable_decoder=False,
+        deformable_encoder=True,
+        deformable_decoder=True,
         num_feature_levels=1,
         enc_n_points=4,
         dec_n_points=4,
         use_deformable_box_attn=False,
         box_attn_type='roi_align',
         # init query
-        learnable_tgt_init=False,
+        learnable_tgt_init=True,
         decoder_query_perturber=None,
         add_channel_attention=False,
         add_pos_value=False,
@@ -73,7 +73,7 @@ class DeformableTransformer(nn.Module):
         layer_share_type=None,
         # for detach
         rm_detach=None,
-        decoder_sa_type='ca',
+        decoder_sa_type='sa',
         module_seq=['sa', 'ca', 'ffn'],
         # for dn
         embed_init_tgt=False,
@@ -943,7 +943,7 @@ class DeformableTransformerEncoderLayer(nn.Module):
 
         # ffn
         self.linear1 = nn.Linear(d_model, d_ffn)
-        self.activation = _get_activation_fn(activation, d_model=d_ffn)
+        self.activation = _get_activation_fn(activation)
         self.dropout2 = nn.Dropout(dropout)
         self.linear2 = nn.Linear(d_ffn, d_model)
         self.dropout3 = nn.Dropout(dropout)
@@ -952,7 +952,7 @@ class DeformableTransformerEncoderLayer(nn.Module):
         # channel attention
         self.add_channel_attention = add_channel_attention
         if add_channel_attention:
-            self.activ_channel = _get_activation_fn('dyrelu', d_model=d_model)
+            self.activ_channel = _get_activation_fn('dyrelu')
             self.norm_channel = nn.LayerNorm(d_model)
 
     @staticmethod
@@ -1024,8 +1024,7 @@ class DeformableTransformerDecoderLayer(nn.Module):
 
         # ffn
         self.linear1 = nn.Linear(d_model, d_ffn)
-        self.activation = _get_activation_fn(
-            activation, d_model=d_ffn, batch_dim=1)
+        self.activation = _get_activation_fn(activation)
         self.dropout3 = nn.Dropout(dropout)
         self.linear2 = nn.Linear(d_ffn, d_model)
         self.dropout4 = nn.Dropout(dropout)

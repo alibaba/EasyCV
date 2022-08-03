@@ -39,7 +39,7 @@ class DINOHead(nn.Module):
             self,
             num_classes,
             embed_dims,
-            in_channels=[256, 512, 1024, 2048],
+            in_channels=[512, 1024, 2048],
             query_dim=4,
             iter_update=True,
             num_queries=300,
@@ -119,6 +119,7 @@ class DINOHead(nn.Module):
         self.label_enc = nn.Embedding(self.dn_labelbook_size + 1, embed_dims)
 
         # prepare input projection layers
+        self.num_feature_levels = num_feature_levels
         if num_feature_levels > 1:
             num_backbone_outs = len(in_channels)
             input_proj_list = []
@@ -231,18 +232,11 @@ class DINOHead(nn.Module):
 
         # import ipdb; ipdb.set_trace()
         # init class_embed and init bbox_embed
-        if self.bbox_embed_diff_each_layer:
-            for bbox_embed in self.bbox_embed:
-                nn.init.constant_(bbox_embed.layers[-1].weight.data, 0)
-                nn.init.constant_(bbox_embed.layers[-1].bias.data, 0)
-            for class_embed in self.class_embed:
-                class_embed.bias.data = torch.ones(
-                    self.num_classes) * bias_value
-        else:
-            nn.init.constant_(self.bbox_embed.layers[-1].weight.data, 0)
-            nn.init.constant_(self.bbox_embed.layers[-1].bias.data, 0)
-            self.class_embed.bias.data = torch.ones(
-                self.num_classes) * bias_value
+        for bbox_embed in self.bbox_embed:
+            nn.init.constant_(bbox_embed.layers[-1].weight.data, 0)
+            nn.init.constant_(bbox_embed.layers[-1].bias.data, 0)
+        for class_embed in self.class_embed:
+            class_embed.bias.data = torch.ones(self.num_classes) * bias_value
 
     def init_ref_points(self, use_num_queries):
         self.refpoint_embed = nn.Embedding(use_num_queries, self.query_dim)
@@ -330,11 +324,26 @@ class DINOHead(nn.Module):
                 ori_mask.unsqueeze(1),
                 size=src.shape[-2:]).to(torch.bool).squeeze(1)
             # position encoding
-            pos_embed = self.positional_encoding(mask)  # [bs, embed_dim, h, w]
+            pos_l = self.positional_encoding(mask)  # [bs, embed_dim, h, w]
             srcs.append(self.input_proj[l](src))
             masks.append(mask)
-            poss.append(pos_embed)
+            poss.append(pos_l)
             assert mask is not None
+        if self.num_feature_levels > len(srcs):
+            _len_srcs = len(srcs)
+            for l in range(_len_srcs, self.num_feature_levels):
+                if l == _len_srcs:
+                    src = self.input_proj[l](feats[-1])
+                else:
+                    src = self.input_proj[l](srcs[-1])
+                mask = F.interpolate(
+                    ori_mask.unsqueeze(1),
+                    size=src.shape[-2:]).to(torch.bool).squeeze(1)
+                # position encoding
+                pos_l = self.positional_encoding(mask)  # [bs, embed_dim, h, w]
+                srcs.append(src)
+                masks.append(mask)
+                poss.append(pos_l)
 
         hs, reference, hs_enc, ref_enc, init_box_proposal = self.transformer(
             srcs, masks, query_embed, poss, tgt, attn_mask)
@@ -460,7 +469,7 @@ class DINOHead(nn.Module):
             targets.append({'labels': gt_label, 'boxes': gt_bbox})
 
         query_embed, tgt, attn_mask, dn_meta = self.prepare(
-            x, img_metas, targets=targets, mode='train')
+            x, targets=targets, mode='train')
 
         outputs = self.forward(
             x,
