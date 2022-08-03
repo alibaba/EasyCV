@@ -52,7 +52,7 @@ class DINOHead(nn.Module):
             fix_refpoints_hw=-1,
             num_feature_levels=1,
             # two stage
-            two_stage_type='no',  # ['no', 'standard']
+            two_stage_type='standard',  # ['no', 'standard']
             two_stage_add_query_num=0,
             dec_pred_class_embed_share=True,
             dec_pred_bbox_embed_share=True,
@@ -83,7 +83,7 @@ class DINOHead(nn.Module):
             weight_dict=weight_dict,
             losses=['labels', 'boxes'],
             loss_class_type='focal_loss',
-            dn_components=dn_components)
+            dn_components=dn_components['dn_type'])
         self.postprocess = PostProcess(num_select=num_select)
         self.transformer = build_neck(transformer)
 
@@ -369,15 +369,14 @@ class DINOHead(nn.Module):
         ])
         if self.dn_number > 0 and dn_meta is not None:
             outputs_class, outputs_coord_list = cdn_post_process(
-                outputs_class, outputs_coord_list, dn_meta, self.aux_loss,
-                self._set_aux_loss)
+                outputs_class, outputs_coord_list, dn_meta, self._set_aux_loss)
         out = {
             'pred_logits': outputs_class[-1],
             'pred_boxes': outputs_coord_list[-1]
         }
-        if self.aux_loss:
-            out['aux_outputs'] = self._set_aux_loss(outputs_class,
-                                                    outputs_coord_list)
+
+        out['aux_outputs'] = self._set_aux_loss(outputs_class,
+                                                outputs_coord_list)
 
         # for encoder output
         if hs_enc is not None:

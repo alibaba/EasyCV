@@ -66,6 +66,7 @@ model = dict(
             embed_init_tgt=True,
             use_detached_boxes_dec_out=False),
         dn_components=dict(
+            dn_type='cdn',
             dn_number=100,
             dn_label_noise_ratio=0.5,
             dn_box_noise_scale=1.0,
@@ -84,7 +85,7 @@ model = dict(
         fix_refpoints_hw=-1,
         num_feature_levels=4,
         # two stage
-        two_stage_type='no',  # ['no', 'standard']
+        two_stage_type='standard',  # ['no', 'standard']
         two_stage_add_query_num=0,
         dec_pred_class_embed_share=True,
         dec_pred_bbox_embed_share=True,

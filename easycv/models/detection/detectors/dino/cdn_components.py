@@ -149,8 +149,7 @@ def prepare_for_cdn(dn_args, training, num_queries, num_classes, hidden_dim,
     return input_query_label, input_query_bbox, attn_mask, dn_meta
 
 
-def cdn_post_process(outputs_class, outputs_coord, dn_meta, aux_loss,
-                     _set_aux_loss):
+def cdn_post_process(outputs_class, outputs_coord, dn_meta, _set_aux_loss):
     """
         post process of dn after output from the transformer
         put the dn part in the dn_meta
@@ -164,8 +163,7 @@ def cdn_post_process(outputs_class, outputs_coord, dn_meta, aux_loss,
             'pred_logits': output_known_class[-1],
             'pred_boxes': output_known_coord[-1]
         }
-        if aux_loss:
-            out['aux_outputs'] = _set_aux_loss(output_known_class,
-                                               output_known_coord)
+        out['aux_outputs'] = _set_aux_loss(output_known_class,
+                                           output_known_coord)
         dn_meta['output_known_lbs_bboxes'] = out
     return outputs_class, outputs_coord

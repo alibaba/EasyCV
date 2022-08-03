@@ -158,6 +158,14 @@ class SetCriterion(nn.Module):
         assert loss in loss_map, f'do you really want to compute {loss} loss?'
         return loss_map[loss](outputs, targets, indices, num_boxes, **kwargs)
 
+    def prep_for_dn(self, dn_meta):
+        output_known_lbs_bboxes = dn_meta['output_known_lbs_bboxes']
+        num_dn_groups, pad_size = dn_meta['num_dn_group'], dn_meta['pad_size']
+        assert pad_size % num_dn_groups == 0
+        single_pad = pad_size // num_dn_groups
+
+        return output_known_lbs_bboxes, single_pad, num_dn_groups
+
     def forward(self, outputs, targets, mask_dict=None, return_indices=False):
         """ This performs the loss computation.
         Parameters:
