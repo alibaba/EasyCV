@@ -48,7 +48,7 @@ model = dict(
             'standard',  # ['no', 'standard', 'early', 'combine', 'enceachlayer', 'enclayer1']
             two_stage_pat_embed=0,
             two_stage_add_query_num=0,
-            two_stage_learn_wh=0.05,
+            two_stage_learn_wh=False,
             two_stage_keep_all_tokens=False,
             # evo of #anchors
             dec_layer_number=None,
@@ -103,4 +103,6 @@ model = dict(
             loss_ce=1,
             loss_bbox=5,
             loss_giou=2,
-        )))
+            loss_ce_interm=1,
+            loss_bbox_interm=1,
+            loss_giou_interm=1)))

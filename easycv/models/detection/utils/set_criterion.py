@@ -83,8 +83,7 @@ class SetCriterion(nn.Module):
                 alpha=0.25,
                 gamma=2,
                 reduction='none').mean(1).sum() / num_boxes
-            loss_ce = loss_ce * src_logits.shape[1] * self.weight_dict[
-                'loss_ce']
+            loss_ce = loss_ce * src_logits.shape[1]
         losses = {'loss_ce': loss_ce}
 
         if log:
@@ -123,15 +122,13 @@ class SetCriterion(nn.Module):
         loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction='none')
 
         losses = {}
-        losses['loss_bbox'] = loss_bbox.sum(
-        ) / num_boxes * self.weight_dict['loss_bbox']
+        losses['loss_bbox'] = loss_bbox.sum() / num_boxes
 
         loss_giou = 1 - torch.diag(
             generalized_box_iou(
                 box_cxcywh_to_xyxy(src_boxes),
                 box_cxcywh_to_xyxy(target_boxes)))
-        losses['loss_giou'] = loss_giou.sum(
-        ) / num_boxes * self.weight_dict['loss_giou']
+        losses['loss_giou'] = loss_giou.sum() / num_boxes
 
         return losses
 
@@ -199,8 +196,9 @@ class SetCriterion(nn.Module):
         # Compute all the requested losses
         losses = {}
         for loss in self.losses:
-            losses.update(
-                self.get_loss(loss, outputs, targets, indices, num_boxes))
+            l_dict = self.get_loss(loss, outputs, targets, indices, num_boxes)
+            l_dict = {k: v * self.weight_dict[k] for k, v in l_dict.items()}
+            losses.update(l_dict)
 
         # In case of auxiliary losses, we repeat this process with the output of each intermediate layer.
         if 'aux_outputs' in outputs:
@@ -218,7 +216,10 @@ class SetCriterion(nn.Module):
                         kwargs = {'log': False}
                     l_dict = self.get_loss(loss, aux_outputs, targets, indices,
                                            num_boxes, **kwargs)
-                    l_dict = {k + f'_{i}': v for k, v in l_dict.items()}
+                    l_dict = {
+                        k + f'_{i}': v * self.weight_dict[k]
+                        for k, v in l_dict.items()
+                    }
                     losses.update(l_dict)
 
         # interm_outputs loss
@@ -237,27 +238,11 @@ class SetCriterion(nn.Module):
                     kwargs = {'log': False}
                 l_dict = self.get_loss(loss, interm_outputs, targets, indices,
                                        num_boxes, **kwargs)
-                l_dict = {k + '_interm': v for k, v in l_dict.items()}
+                l_dict = {
+                    k + '_interm': v * self.weight_dict[k + '_interm']
+                    for k, v in l_dict.items()
+                }
                 losses.update(l_dict)
-
-        # enc output loss
-        if 'enc_outputs' in outputs:
-            for i, enc_outputs in enumerate(outputs['enc_outputs']):
-                indices = self.matcher(enc_outputs, targets)
-                if return_indices:
-                    indices_list.append(indices)
-                for loss in self.losses:
-                    if loss == 'masks':
-                        # Intermediate masks losses are too costly to compute, we ignore them.
-                        continue
-                    kwargs = {}
-                    if loss == 'labels':
-                        # Logging is enabled only for the last layer
-                        kwargs = {'log': False}
-                    l_dict = self.get_loss(loss, enc_outputs, targets, indices,
-                                           num_boxes, **kwargs)
-                    l_dict = {k + f'_enc_{i}': v for k, v in l_dict.items()}
-                    losses.update(l_dict)
 
         if mask_dict is not None:
             aux_num = 0
@@ -308,7 +293,10 @@ class SetCriterion(nn.Module):
                                           targets, dn_pos_idx,
                                           num_boxes * scalar, **kwargs))
 
-                    l_dict = {k + '_dn': v for k, v in l_dict.items()}
+                    l_dict = {
+                        k + '_dn': v * self.weight_dict[k]
+                        for k, v in l_dict.items()
+                    }
                     losses.update(l_dict)
                 else:
                     l_dict = dict()
@@ -336,7 +324,10 @@ class SetCriterion(nn.Module):
                                               dn_pos_idx, num_boxes * scalar,
                                               **kwargs))
 
-                        l_dict = {k + f'_dn_{i}': v for k, v in l_dict.items()}
+                        l_dict = {
+                            k + f'_dn_{i}': v * self.weight_dict[k]
+                            for k, v in l_dict.items()
+                        }
                         losses.update(l_dict)
                     else:
                         l_dict = dict()
@@ -347,7 +338,10 @@ class SetCriterion(nn.Module):
                         l_dict['loss_hw_dn'] = torch.as_tensor(0.).to('cuda')
                         l_dict['cardinality_error_dn'] = torch.as_tensor(
                             0.).to('cuda')
-                        l_dict = {k + f'_{i}': v for k, v in l_dict.items()}
+                        l_dict = {
+                            k + f'_{i}': v * self.weight_dict[k]
+                            for k, v in l_dict.items()
+                        }
                         losses.update(l_dict)
 
         if return_indices:
@@ -410,21 +404,19 @@ class DNCriterion(nn.Module):
         """
         if len(tgt_boxes) == 0:
             return {
-                'tgt_loss_bbox': torch.as_tensor(0.).to('cuda'),
-                'tgt_loss_giou': torch.as_tensor(0.).to('cuda'),
+                'loss_bbox': torch.as_tensor(0.).to('cuda'),
+                'loss_giou': torch.as_tensor(0.).to('cuda'),
             }
 
         loss_bbox = F.l1_loss(src_boxes, tgt_boxes, reduction='none')
 
         losses = {}
-        losses['tgt_loss_bbox'] = loss_bbox.sum(
-        ) / num_tgt * self.weight_dict['loss_bbox']
+        losses['loss_bbox'] = loss_bbox.sum() / num_tgt
 
         loss_giou = 1 - torch.diag(
             generalized_box_iou(
                 box_cxcywh_to_xyxy(src_boxes), box_cxcywh_to_xyxy(tgt_boxes)))
-        losses['tgt_loss_giou'] = loss_giou.sum(
-        ) / num_tgt * self.weight_dict['loss_giou']
+        losses['loss_giou'] = loss_giou.sum() / num_tgt
         return losses
 
     def tgt_loss_labels(self,
@@ -438,8 +430,8 @@ class DNCriterion(nn.Module):
         """
         if len(tgt_labels_) == 0:
             return {
-                'tgt_loss_ce': torch.as_tensor(0.).to('cuda'),
-                'tgt_class_error': torch.as_tensor(0.).to('cuda'),
+                'loss_ce': torch.as_tensor(0.).to('cuda'),
+                'class_error': torch.as_tensor(0.).to('cuda'),
             }
 
         src_logits, tgt_labels = src_logits_.unsqueeze(
@@ -459,13 +451,11 @@ class DNCriterion(nn.Module):
             target_classes_onehot.long(),
             alpha=focal_alpha,
             gamma=2,
-            reduction='none').mean(1).sum(
-            ) / num_tgt * src_logits.shape[1] * self.weight_dict['loss_ce']
+            reduction='none').mean(1).sum() / num_tgt * src_logits.shape[1]
 
-        losses = {'tgt_loss_ce': loss_ce}
+        losses = {'loss_ce': loss_ce}
         if log:
-            losses['tgt_class_error'] = 100 - accuracy(src_logits_,
-                                                       tgt_labels_)[0]
+            losses['class_error'] = 100 - accuracy(src_logits_, tgt_labels_)[0]
         return losses
 
     def forward(self, mask_dict, training, aux_num, focal_alpha):
@@ -481,17 +471,25 @@ class DNCriterion(nn.Module):
         if training and 'output_known_lbs_bboxes' in mask_dict:
             known_labels, known_bboxs, output_known_class, output_known_coord, num_tgt = self.prepare_for_loss(
                 mask_dict)
-            losses.update(
-                self.tgt_loss_labels(output_known_class[-1], known_labels,
-                                     num_tgt, focal_alpha))
-            losses.update(
-                self.tgt_loss_boxes(output_known_coord[-1], known_bboxs,
-                                    num_tgt))
+            l_dict = self.tgt_loss_labels(output_known_class[-1], known_labels,
+                                          num_tgt, focal_alpha)
+            l_dict = {
+                k + '_dn': v * self.weight_dict[k]
+                for k, v in l_dict.items()
+            }
+            losses.update(l_dict)
+            l_dict = self.tgt_loss_boxes(output_known_coord[-1], known_bboxs,
+                                         num_tgt)
+            l_dict = {
+                k + '_dn': v * self.weight_dict[k]
+                for k, v in l_dict.items()
+            }
+            losses.update(l_dict)
         else:
-            losses['tgt_loss_bbox'] = torch.as_tensor(0.).to('cuda')
-            losses['tgt_loss_giou'] = torch.as_tensor(0.).to('cuda')
-            losses['tgt_loss_ce'] = torch.as_tensor(0.).to('cuda')
-            losses['tgt_class_error'] = torch.as_tensor(0.).to('cuda')
+            losses['loss_bbox_dn'] = torch.as_tensor(0.).to('cuda')
+            losses['loss_giou_dn'] = torch.as_tensor(0.).to('cuda')
+            losses['loss_ce_dn'] = torch.as_tensor(0.).to('cuda')
+            losses['class_error_dn'] = torch.as_tensor(0.).to('cuda')
 
         if aux_num:
             for i in range(aux_num):
@@ -500,18 +498,27 @@ class DNCriterion(nn.Module):
                     l_dict = self.tgt_loss_labels(output_known_class[i],
                                                   known_labels, num_tgt,
                                                   focal_alpha)
-                    l_dict = {k + f'_{i}': v for k, v in l_dict.items()}
+                    l_dict = {
+                        k + f'_dn_{i}': v * self.weight_dict[k]
+                        for k, v in l_dict.items()
+                    }
                     losses.update(l_dict)
                     l_dict = self.tgt_loss_boxes(output_known_coord[i],
                                                  known_bboxs, num_tgt)
-                    l_dict = {k + f'_{i}': v for k, v in l_dict.items()}
+                    l_dict = {
+                        k + f'_dn_{i}': v * self.weight_dict[k]
+                        for k, v in l_dict.items()
+                    }
                     losses.update(l_dict)
                 else:
                     l_dict = dict()
-                    l_dict['tgt_loss_bbox'] = torch.as_tensor(0.).to('cuda')
-                    l_dict['tgt_class_error'] = torch.as_tensor(0.).to('cuda')
-                    l_dict['tgt_loss_giou'] = torch.as_tensor(0.).to('cuda')
-                    l_dict['tgt_loss_ce'] = torch.as_tensor(0.).to('cuda')
-                    l_dict = {k + f'_{i}': v for k, v in l_dict.items()}
+                    l_dict['loss_bbox_dn'] = torch.as_tensor(0.).to('cuda')
+                    l_dict['class_error_dn'] = torch.as_tensor(0.).to('cuda')
+                    l_dict['loss_giou_dn'] = torch.as_tensor(0.).to('cuda')
+                    l_dict['loss_ce_dn'] = torch.as_tensor(0.).to('cuda')
+                    l_dict = {
+                        k + f'_dn_{i}': v * self.weight_dict[k]
+                        for k, v in l_dict.items()
+                    }
                     losses.update(l_dict)
         return losses

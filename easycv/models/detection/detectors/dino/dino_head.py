@@ -392,35 +392,6 @@ class DINOHead(nn.Module):
                 'pred_boxes': init_box_proposal
             }
 
-            # prepare enc outputs
-            # import ipdb; ipdb.set_trace()
-            if hs_enc.shape[0] > 1:
-                enc_outputs_coord = []
-                enc_outputs_class = []
-                for layer_id, (layer_box_embed, layer_class_embed,
-                               layer_hs_enc, layer_ref_enc) in enumerate(
-                                   zip(self.enc_bbox_embed,
-                                       self.enc_class_embed, hs_enc[:-1],
-                                       ref_enc[:-1])):
-                    layer_enc_delta_unsig = layer_box_embed(layer_hs_enc)
-                    layer_enc_outputs_coord_unsig = layer_enc_delta_unsig + inverse_sigmoid(
-                        layer_ref_enc)
-                    layer_enc_outputs_coord = layer_enc_outputs_coord_unsig.sigmoid(
-                    )
-
-                    layer_enc_outputs_class = layer_class_embed(layer_hs_enc)
-                    enc_outputs_coord.append(layer_enc_outputs_coord)
-                    enc_outputs_class.append(layer_enc_outputs_class)
-
-                # enc_delta_unsig = self.enc_bbox_embed(hs_enc[:-1])
-                # enc_outputs_unsig = enc_delta_unsig + ref_enc[:-1]
-                # enc_outputs_coord = enc_outputs_unsig.sigmoid()
-                # enc_outputs_class = self.enc_class_embed(hs_enc[:-1])
-                out['enc_outputs'] = [{
-                    'pred_logits': a,
-                    'pred_boxes': b
-                } for a, b in zip(enc_outputs_class, enc_outputs_coord)]
-
         out['dn_meta'] = dn_meta
 
         return out
