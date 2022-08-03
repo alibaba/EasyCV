@@ -41,12 +41,10 @@ class DINOHead(nn.Module):
             embed_dims,
             in_channels=[512, 1024, 2048],
             query_dim=4,
-            iter_update=True,
             num_queries=300,
             num_select=300,
             random_refpoints_xy=False,
             num_patterns=0,
-            bbox_embed_diff_each_layer=False,
             dn_components=None,
             transformer=None,
             fix_refpoints_hw=-1,
@@ -93,20 +91,10 @@ class DINOHead(nn.Module):
             temperatureW=temperatureW,
             normalize=True)
 
-        self.class_embed = nn.Linear(embed_dims, num_classes)
-        if bbox_embed_diff_each_layer:
-            self.bbox_embed = nn.ModuleList(
-                [MLP(embed_dims, embed_dims, 4, 3) for i in range(6)])
-        else:
-            self.bbox_embed = MLP(embed_dims, embed_dims, 4, 3)
-        if iter_update:
-            self.transformer.decoder.bbox_embed = self.bbox_embed
-
         self.num_classes = num_classes
         self.num_queries = num_queries
         self.embed_dims = embed_dims
         self.query_dim = query_dim
-        self.bbox_embed_diff_each_layer = bbox_embed_diff_each_layer
         self.dn_components = dn_components
 
         self.random_refpoints_xy = random_refpoints_xy

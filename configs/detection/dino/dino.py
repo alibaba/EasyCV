@@ -76,12 +76,10 @@ model = dict(
         in_channels=[512, 1024, 2048],
         embed_dims=256,
         query_dim=4,
-        iter_update=True,
         num_queries=900,
         num_select=300,
         random_refpoints_xy=False,
         num_patterns=0,
-        bbox_embed_diff_each_layer=False,
         fix_refpoints_hw=-1,
         num_feature_levels=4,
         # two stage
