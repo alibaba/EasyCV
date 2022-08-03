@@ -309,10 +309,6 @@ class SetCriterion(nn.Module):
                     l_dict['loss_bbox_dn'] = torch.as_tensor(0.).to('cuda')
                     l_dict['loss_giou_dn'] = torch.as_tensor(0.).to('cuda')
                     l_dict['loss_ce_dn'] = torch.as_tensor(0.).to('cuda')
-                    l_dict['loss_xy_dn'] = torch.as_tensor(0.).to('cuda')
-                    l_dict['loss_hw_dn'] = torch.as_tensor(0.).to('cuda')
-                    l_dict['cardinality_error_dn'] = torch.as_tensor(0.).to(
-                        'cuda')
                     losses.update(l_dict)
 
                 for i in range(aux_num):
@@ -341,10 +337,6 @@ class SetCriterion(nn.Module):
                         l_dict['loss_bbox_dn'] = torch.as_tensor(0.).to('cuda')
                         l_dict['loss_giou_dn'] = torch.as_tensor(0.).to('cuda')
                         l_dict['loss_ce_dn'] = torch.as_tensor(0.).to('cuda')
-                        l_dict['loss_xy_dn'] = torch.as_tensor(0.).to('cuda')
-                        l_dict['loss_hw_dn'] = torch.as_tensor(0.).to('cuda')
-                        l_dict['cardinality_error_dn'] = torch.as_tensor(
-                            0.).to('cuda')
                         l_dict = {
                             k + f'_{i}': v * (self.weight_dict[k] if k
                                               in self.weight_dict else 1.0)
