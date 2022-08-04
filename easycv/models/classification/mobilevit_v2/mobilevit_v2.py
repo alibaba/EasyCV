@@ -254,8 +254,6 @@ class MobileViTv2(BaseEncoder):
 def MobileViTv2_postprocess(out):
     activate_fn = nn.Softmax(dim=1)
     out = activate_fn(out)
-    pred, classes = out.topk(1, 1, True, True)
     result = {}
-    result['prob'] = pred.cpu()
-    result['class'] = classes.cpu()
+    result['neck'] = out.cpu()
     return result

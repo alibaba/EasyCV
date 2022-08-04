@@ -1,0 +1,1 @@
+from .ssd_mobilevit_v2 import SingleShotMaskDetector

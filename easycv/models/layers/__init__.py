@@ -8,6 +8,7 @@ import importlib
 import inspect
 import os
 
+from .adaptive_pool import AdaptiveAvgPool2d
 from .base_layer import BaseLayer
 from .conv_layer import (ConvLayer, ConvLayer3d, NormActLayer, SeparableConv,
                          TransposeConvLayer)
