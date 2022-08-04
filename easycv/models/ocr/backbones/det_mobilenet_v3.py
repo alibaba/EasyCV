@@ -1,9 +1,49 @@
-import os, sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from easycv.models.registry import BACKBONES
+
+class Hswish(nn.Module):
+    def __init__(self, inplace=True):
+        super(Hswish, self).__init__()
+        self.inplace = inplace
+
+    def forward(self, x):
+        return x * F.relu6(x + 3., inplace=self.inplace) / 6.
+
+# out = max(0, min(1, slop*x+offset))
+# paddle.fluid.layers.hard_sigmoid(x, slope=0.2, offset=0.5, name=None)
+class Hsigmoid(nn.Module):
+    def __init__(self, inplace=True):
+        super(Hsigmoid, self).__init__()
+        self.inplace = inplace
+
+    def forward(self, x):
+        # torch: F.relu6(x + 3., inplace=self.inplace) / 6.
+        # paddle: F.relu6(1.2 * x + 3., inplace=self.inplace) / 6.
+        return F.relu6(1.2 * x + 3., inplace=self.inplace) / 6.
+
+class GELU(nn.Module):
+    def __init__(self, inplace=True):
+        super(GELU, self).__init__()
+        self.inplace = inplace
+
+    def forward(self, x):
+        return torch.nn.functional.gelu(x)
+
+
+class Swish(nn.Module):
+    def __init__(self, inplace=True):
+        super(Swish, self).__init__()
+        self.inplace = inplace
+
+    def forward(self, x):
+        if self.inplace:
+            x.mul_(torch.sigmoid(x))
+            return x
+        else:
+            return x*torch.sigmoid(x)
+
 
 class Activation(nn.Module):
     def __init__(self, act_type, inplace=True):
@@ -31,7 +71,7 @@ class Activation(nn.Module):
     def forward(self, inputs):
         return self.act(inputs)
     
-    
+
 def make_divisible(v, divisor=8, min_value=None):
     if min_value is None:
         min_value = divisor
@@ -164,8 +204,7 @@ class ResidualUnit(nn.Module):
         return x
 
 
-@BACKBONES.register_module()
-class MobileNetV3_det(nn.Module):
+class MobileNetV3(nn.Module):
     def __init__(self,
                  in_channels=3,
                  model_name='large',

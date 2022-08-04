@@ -1,14 +1,10 @@
-import os, sys
-import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from .det_mobilenet_v3 import ResidualUnit, ConvBNLayer, make_divisible, Activation
-from easycv.models.registry import BACKBONES
 
-
-@BACKBONES.register_module()
-class MobileNetV3_rec(nn.Module):
+class MobileNetV3(nn.Module):
+    """mobilenetv3 backbone for ocr recognition
+    """
     def __init__(self,
                  in_channels=3,
                  model_name='small',
