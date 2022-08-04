@@ -28,7 +28,7 @@ model = dict(
             return_intermediate_dec=True,
             query_dim=4,
             num_patterns=0,
-            modulate_hw_attn=False,
+            modulate_hw_attn=True,
             # for deformable encoder
             deformable_encoder=True,
             deformable_decoder=True,
