@@ -43,8 +43,7 @@ class DetSourceCocoTest(unittest.TestCase):
             self.assertEqual(data['img'].shape[-1], 3)
             self.assertEqual(len(data['img_shape']), 3)
 
-        length = data_source.get_length()
-        self.assertEqual(length, 256)
+        self.assertEqual(len(data_source), 256)
 
     def test_concat_diff_source(self):
         raw_data_root = DET_DATA_RAW_LOCAL
@@ -77,8 +76,7 @@ class DetSourceCocoTest(unittest.TestCase):
             self.assertEqual(data['img'].shape[-1], 3)
             self.assertEqual(len(data['img_shape']), 3)
 
-        length = data_source.get_length()
-        self.assertEqual(length, 148)
+        self.assertEqual(len(data_source), 148)
 
 
 if __name__ == '__main__':

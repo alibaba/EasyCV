@@ -96,7 +96,7 @@ class ClsSourceImageList(object):
 
         return fns, labels
 
-    def get_length(self):
+    def __len__(self):
         return len(self.fns)
 
     def get_sample(self, idx):

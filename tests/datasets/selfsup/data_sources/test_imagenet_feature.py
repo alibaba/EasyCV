@@ -26,8 +26,7 @@ class SSLSourceImageNetFeatureTest(unittest.TestCase):
             self.assertEqual(feat.shape, (2048, ))
             self.assertIn(label, list(range(1000)))
 
-        length = data_source.get_length()
-        self.assertEqual(length, 3215)
+        self.assertEqual(len(data_source), 3215)
 
     def test_imagenet_feature(self):
 
@@ -42,8 +41,7 @@ class SSLSourceImageNetFeatureTest(unittest.TestCase):
             self.assertEqual(feat.shape, (2048, ))
             self.assertIn(label, list(range(1000)))
 
-        length = data_source.get_length()
-        self.assertEqual(length, 3215)
+        self.assertEqual(len(data_source), 3215)
 
 
 if __name__ == '__main__':

@@ -81,7 +81,7 @@ class DetSourceBase(object):
         )
         self.samples_list = self.build_samples(
             source_iter, process_fn=process_fn)
-        self.num_samples = self.get_length()
+        self.num_samples = len(self.samples_list)
         # An error will be raised if failed to load _max_retry_num times in a row
         self._max_retry_num = self.num_samples
         self._retry_count = 0
@@ -106,11 +106,8 @@ class DetSourceBase(object):
 
         return samples_list
 
-    def get_length(self):
-        return len(self.samples_list)
-
     def __len__(self):
-        return self.get_length()
+        return len(self.samples_list)
 
     def get_ann_info(self, idx):
         """

@@ -19,7 +19,7 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         self.pipeline = Compose(pipeline, profiling=profiling)
 
     def __len__(self):
-        return self.data_source.get_length()
+        return len(self.data_source)
 
     @abstractmethod
     def __getitem__(self, idx):
