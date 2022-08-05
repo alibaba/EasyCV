@@ -68,7 +68,7 @@ class PoseTopDownSourceTest(unittest.TestCase):
 
             break
 
-        self.assertEqual(data_source.get_length(), 420)
+        self.assertEqual(len(data_source), 420)
 
 
 if __name__ == '__main__':

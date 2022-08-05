@@ -25,7 +25,7 @@ class DetDataset(BaseDataset):
 
         super(DetDataset, self).__init__(
             data_source, pipeline, profiling=profiling)
-        self.num_samples = self.data_source.get_length()
+        self.num_samples = len(self.data_source)
 
     def __len__(self):
         return self.num_samples
