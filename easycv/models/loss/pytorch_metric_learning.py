@@ -282,9 +282,7 @@ class BinaryCrossEntropyWithLogitsLoss(nn.Module):
         self.bce = nn.BCEWithLogitsLoss()
 
     def forward(self, x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        # print("*******************************:", x)
         target = target.gt(0.0).type(target.dtype)
         loss = self.bce(x, target)
         return loss
-
 
