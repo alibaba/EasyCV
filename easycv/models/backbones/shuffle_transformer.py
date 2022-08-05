@@ -7,6 +7,7 @@ from einops import rearrange
 from timm.models.layers import DropPath, trunc_normal_
 from torch import nn
 
+from easycv.framework.errors import NotImplementedError
 from ..registry import BACKBONES
 
 

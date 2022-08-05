@@ -11,6 +11,7 @@ from mmcv.cnn import (ConvModule, DepthwiseSeparableConvModule,
                       normal_init)
 from torch.nn.modules.batchnorm import _BatchNorm
 
+from easycv.framework.errors import ValueError
 from easycv.models.registry import BACKBONES
 
 

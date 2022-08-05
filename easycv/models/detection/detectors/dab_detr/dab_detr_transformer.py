@@ -14,6 +14,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
+from easycv.framework.errors import NotImplementedError, ValueError
 from easycv.models.builder import NECKS
 from easycv.models.utils import (MLP, TransformerEncoder,
                                  TransformerEncoderLayer, _get_activation_fn,

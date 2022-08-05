@@ -8,6 +8,7 @@ from mmcv.runner import EpochBasedRunner
 from mmcv.runner.log_buffer import LogBuffer
 
 from easycv.file import io
+from easycv.framework.errors import RuntimeError, TypeError
 from easycv.utils.checkpoint import load_checkpoint, save_checkpoint
 
 if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):

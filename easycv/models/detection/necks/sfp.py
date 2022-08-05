@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule
 
+from easycv.framework.errors import NotImplementedError
 from easycv.models.builder import NECKS
 
 

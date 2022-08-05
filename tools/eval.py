@@ -31,6 +31,7 @@ from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
 from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.setup_env import setup_multi_processes
+from easycv.framework.errors import ValueError, NotImplementedError
 
 
 def parse_args():
@@ -244,8 +245,7 @@ def main():
                 eval_kwargs.update(args.options)
 
             if args.inference_only:
-                raise RuntimeError('not implemented')
-                dataset.format_results(outputs, **eval_kwargs)
+                raise NotImplementedError('not implemented')
             if args.eval:
                 for t in eval_pipe.evaluators:
                     if 'metric_type' in t:

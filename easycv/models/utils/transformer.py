@@ -5,6 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 
+from easycv.framework.errors import RuntimeError
+
 
 class MLP(nn.Module):
     """ Very simple multi-layer perceptron (also called FFN)"""

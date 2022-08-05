@@ -12,6 +12,7 @@ from mmcv.runner import get_dist_info
 from timm.models.layers import drop_path, to_2tuple, trunc_normal_
 from torch.nn.modules.batchnorm import _BatchNorm
 
+from easycv.framework.errors import TypeError
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 from ..registry import BACKBONES

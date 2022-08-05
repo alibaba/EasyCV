@@ -7,6 +7,7 @@ import torch.nn as nn
 from mmcv.runner import get_dist_info
 from timm.data.mixup import Mixup
 
+from easycv.framework.errors import KeyError, NotImplementedError, ValueError
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger, print_log
 from easycv.utils.preprocess_function import (bninceptionPre, gaussianBlur,
@@ -304,4 +305,4 @@ class Classification(BaseModel):
                 rv['gt_labels'] = gt_labels.cpu()
             return rv
         else:
-            raise Exception('No such mode: {}'.format(mode))
+            raise KeyError('No such mode: {}'.format(mode))

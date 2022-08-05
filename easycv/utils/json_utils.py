@@ -23,6 +23,8 @@ from json import encoder
 
 import numpy as np
 
+from easycv.framework.errors import ValueError
+
 # python 3.5 and newer version does not have json.encoder.FLOAT_REPR
 needs_class_hack = sys.version_info >= (3, 5)
 

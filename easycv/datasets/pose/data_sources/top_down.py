@@ -12,6 +12,7 @@ from mmcv.utils.path import is_filepath
 from xtcocotools.coco import COCO
 
 from easycv.datasets.registry import DATASOURCES
+from easycv.framework.errors import ValueError
 
 
 class DatasetInfo:

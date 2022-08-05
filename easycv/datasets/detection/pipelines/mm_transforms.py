@@ -12,6 +12,7 @@ from torchvision.transforms import functional as F
 
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.shared.pipelines.transforms import Compose
+from easycv.framework.errors import KeyError, NotImplementedError, TypeError
 
 
 @PIPELINES.register_module()
@@ -1116,8 +1117,8 @@ class MMRandomFlip:
         elif flip_ratio is None:
             pass
         else:
-            raise ValueError('flip_ratios must be None, float, '
-                             'or list of float')
+            raise TypeError('flip_ratios must be None, float, '
+                            'or list of float')
         self.flip_ratio = flip_ratio
 
         valid_directions = ['horizontal', 'vertical', 'diagonal']
@@ -1127,7 +1128,7 @@ class MMRandomFlip:
             assert mmcv.is_list_of(direction, str)
             assert set(direction).issubset(set(valid_directions))
         else:
-            raise ValueError('direction must be either str or list of str')
+            raise TypeError('direction must be either str or list of str')
         self.direction = direction
 
         if isinstance(flip_ratio, list):
@@ -1162,7 +1163,7 @@ class MMRandomFlip:
             flipped[..., 2::4] = w - bboxes[..., 0::4]
             flipped[..., 3::4] = h - bboxes[..., 1::4]
         else:
-            raise ValueError(f"Invalid flipping direction '{direction}'")
+            raise KeyError(f"Invalid flipping direction '{direction}'")
         return flipped
 
     def __call__(self, results):
@@ -1268,7 +1269,7 @@ class MMRandomCrop:
         if crop_type not in [
                 'relative_range', 'relative', 'absolute', 'absolute_range'
         ]:
-            raise ValueError(f'Invalid crop_type {crop_type}.')
+            raise KeyError(f'Invalid crop_type {crop_type}.')
         if crop_type in ['absolute', 'absolute_range']:
             assert crop_size[0] > 0 and crop_size[1] > 0
             assert isinstance(crop_size[0], int) and isinstance(

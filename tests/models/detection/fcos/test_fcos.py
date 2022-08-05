@@ -9,6 +9,7 @@ from torchvision.transforms import Compose
 
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.utils import replace_ImageToTensor
+from easycv.framework.errors import TypeError
 from easycv.models import build_model
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile

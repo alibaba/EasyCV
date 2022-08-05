@@ -6,6 +6,7 @@ import torch.nn as nn
 from mmcv.cnn import constant_init, kaiming_init
 from torch.nn.modules.batchnorm import _BatchNorm
 
+from easycv.framework.errors import KeyError
 from ..registry import BACKBONES
 from ..utils import build_conv_layer, build_norm_layer
 

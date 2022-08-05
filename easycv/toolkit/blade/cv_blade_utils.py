@@ -17,6 +17,8 @@ import torch_blade.tensorrt
 import torchvision
 from torch_blade import optimize
 
+from easycv.framework.errors import RuntimeError
+
 os.environ['DISC_ENABLE_STITCH'] = os.environ.get('DISC_ENABLE_STITCH', 'true')
 os.environ['DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE'] = os.environ.get(
     'DISC_EXPERIMENTAL_SPECULATION_TLP_ENHANCE', 'true')
@@ -102,13 +104,13 @@ def opt_trt_config(input_config=dict(enable_fp16=True)):
 def cu_prof_start():
     ret = _cudart.cudaProfilerStart()
     if ret != 0:
-        raise Exception('cudaProfilerStart() returned %d' % ret)
+        raise RuntimeError('cudaProfilerStart() returned %d' % ret)
 
 
 def cu_prof_stop():
     ret = _cudart.cudaProfilerStop()
     if ret != 0:
-        raise Exception('cudaProfilerStop() returned %d' % ret)
+        raise RuntimeError('cudaProfilerStop() returned %d' % ret)
 
 
 @contextmanager

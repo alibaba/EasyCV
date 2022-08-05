@@ -7,6 +7,7 @@ from mmcv.runner import Hook
 from torch.utils.data import DataLoader
 
 from easycv.datasets.loader.loader_wrapper import TorchaccLoaderWrapper
+from easycv.framework.errors import TypeError
 from easycv.hooks.tensorboard import TensorboardLoggerHookV2
 from easycv.hooks.wandb import WandbLoggerHookV2
 

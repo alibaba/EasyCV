@@ -7,6 +7,7 @@ from easycv.datasets.builder import build_datasource
 from easycv.datasets.registry import DATASETS, PIPELINES
 from easycv.datasets.shared.base import BaseDataset
 from easycv.datasets.shared.pipelines.transforms import Compose
+from easycv.framework.errors import NotImplementedError
 from easycv.utils.registry import build_from_cfg
 
 

@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from easycv.datasets.registry import DATASOURCES
 from easycv.file.image import load_image as _load_img
+from easycv.framework.errors import NotImplementedError, ValueError
 
 
 def load_image(img_path):

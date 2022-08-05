@@ -10,6 +10,8 @@ import torchacc.torch_xla.core.xla_model as xm
 from prettytable import PrettyTable
 from torch.distributed import ReduceOp
 
+from easycv.framework.errors import ValueError
+
 DEFAULT_TAG = 'EasyCV-default-barrier-tag'
 
 OpSpec = namedtuple('OpSpec', ['module', 'name', 'value'])

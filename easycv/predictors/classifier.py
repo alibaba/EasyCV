@@ -4,6 +4,7 @@ import math
 import numpy as np
 import torch
 
+from easycv.framework.errors import ValueError
 from .base import Predictor
 from .builder import PREDICTORS
 
@@ -30,7 +31,7 @@ class TorchClassifier(PredictorInterface):
     """
         self.predictor = Predictor(model_path)
         if 'class_list' not in self.predictor.cfg and label_map_path is None:
-            raise Exception(
+            raise ValueError(
                 "label_map_path need to be set, when ckpt doesn't contain class_list"
             )
 

@@ -2,6 +2,7 @@
 import torch
 import torch.nn as nn
 
+from easycv.framework.errors import KeyError
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 from .. import builder
@@ -97,4 +98,4 @@ class BYOL(BaseModel):
         elif mode == 'extract':
             return self.backbone(img)
         else:
-            raise Exception('No such mode: {}'.format(mode))
+            raise KeyError('No such mode: {}'.format(mode))

@@ -1,11 +1,17 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-UNIMPLEMENTED = '0x4818004000000001'
-INTERNAL = '0x4818004000000002'
-PERMISSION_DENIED = '0x4818004000000003'
-NOT_FOUND = '0x4818004000000004'
-INVALID_ARGUMENT = '0x4818004000000005'
-TIMEOUT = '0x4818004000000006'
+OK = '0x5818004000000000'
+RUNTIME = '0x4818004000000001'
+UNIMPLEMENTED = '0x4818004000000002'
+INVALID_ARGUMENT = '0x4818004000000003'
+INVALID_VALUE = '0x4818004000000004'
+INVALID_KEY = '0x4818004000000005'
+INVALID_TYPE = '0x4818004000000006'
+MODULE_NOT_FOUND = '0x4818004000000007'
+FILE_NOT_FOUND = '0x4818004000000008'
+IO_FAILED = '0x4818004000000009'
+PERMISSION_DENIED = '0x481800400000000a'
+TIMEOUT = '0x481800400000000b'
 
 
 class BaseError(Exception):
@@ -13,7 +19,7 @@ class BaseError(Exception):
   """
     code = None
 
-    def __init__(self, message, details=None, op=None):
+    def __init__(self, message='', details=None, op=None):
         """Creates a new `OpError` indicating that a particular op failed.
 
       Args:
@@ -54,14 +60,14 @@ class BaseError(Exception):
         return self.message
 
 
-class UnimplementedError(BaseError):
+class NotImplementedError(BaseError):
     """Raised when an operation has not been implemented."""
     code = UNIMPLEMENTED
 
 
-class InternalError(BaseError):
+class RuntimeError(BaseError):
     """Raised when the system experiences an internal error."""
-    code = INTERNAL
+    code = RUNTIME
 
 
 class PermissionDeniedError(BaseError):
@@ -69,9 +75,14 @@ class PermissionDeniedError(BaseError):
     code = PERMISSION_DENIED
 
 
-class NotFoundError(BaseError):
+class FileNotFoundError(BaseError):
     """Raised when a requested entity was not found."""
-    code = NOT_FOUND
+    code = FILE_NOT_FOUND
+
+
+class ModuleNotFoundError(BaseError):
+    """Raised when a module could not be located."""
+    code = MODULE_NOT_FOUND
 
 
 class InvalidArgumentError(BaseError):
@@ -80,5 +91,25 @@ class InvalidArgumentError(BaseError):
 
 
 class TimeoutError(BaseError):
-    """Raised when an operation takes longer than a predetermined time."""
+    """Raised when an operation timed out."""
     code = TIMEOUT
+
+
+class IOError(BaseError):
+    """Raised when an operation returns a system-related error, including I/O failures."""
+    code = IO_FAILED
+
+
+class ValueError(BaseError):
+    """Raised when an operation receives an invalid value."""
+    code = INVALID_VALUE
+
+
+class KeyError(BaseError):
+    """Raised when a mapping (dictionary) key is not found in the set of existing keys."""
+    code = INVALID_KEY
+
+
+class TypeError(BaseError):
+    """Raised when an operation or function is applied to an object of inappropriate type."""
+    code = INVALID_TYPE

@@ -4,6 +4,8 @@ import math
 import torch
 from torch.optim.optimizer import Optimizer
 
+from easycv.framework.errors import ValueError
+
 
 def centralized_gradient(x, use_gc=True, gc_conv_only=False):
     '''credit - https://github.com/Yonghongwei/Gradient-Centralization '''

@@ -12,6 +12,7 @@ from PIL import Image
 
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.shared.pipelines import Compose
+from easycv.framework.errors import TypeError
 
 # Default hyperparameters for all Ops
 _HPARAMS_DEFAULT = dict(pad_val=128)

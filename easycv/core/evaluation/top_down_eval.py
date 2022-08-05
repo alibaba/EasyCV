@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 
 from easycv.core.post_processing import transform_preds
+from easycv.framework.errors import ValueError
 
 
 def _calc_distances(preds, targets, mask, normalize):

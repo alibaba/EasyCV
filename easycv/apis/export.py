@@ -11,6 +11,7 @@ import torchvision.transforms.functional as t_f
 from mmcv.utils import Config
 
 from easycv.file import io
+from easycv.framework.errors import ValueError
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
                            build_model)
 from easycv.utils.bbox_util import scale_coords

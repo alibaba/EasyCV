@@ -3,6 +3,7 @@ import time
 from collections.abc import Sequence
 
 from easycv.datasets.registry import PIPELINES
+from easycv.framework.errors import TypeError
 from easycv.utils.registry import build_from_cfg
 
 

@@ -3,6 +3,7 @@ from PIL import Image
 
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
+from easycv.framework.errors import NotImplementedError
 
 
 @DATASETS.register_module
