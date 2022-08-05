@@ -1,4 +1,4 @@
-_base_ = './deitiii_base_patch16_LS.py'
+_base_ = './deitiii_base_patch16_192.py'
 # model settings
 model = dict(
     backbone=dict(
