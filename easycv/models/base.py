@@ -12,6 +12,12 @@ from torch import Tensor
 class BaseModel(nn.Module, metaclass=ABCMeta):
     ''' base class for model. '''
 
+    def __init__(self):
+        super(BaseModel, self).__init__()
+
+    def init_weights(self):
+        pass
+
     @abstractmethod
     def forward_train(self, img: Tensor, **kwargs) -> Dict[str, Tensor]:
         """ Abstract interface for model forward in training
@@ -113,6 +119,17 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
         loss = sum(_value for _key, _value in log_vars.items()
                    if 'loss' in _key)
 
+        # If the loss_vars has different length, raise assertion error
+        # to prevent GPUs from infinite waiting.
+        if dist.is_available() and dist.is_initialized():
+            log_var_length = torch.tensor(len(log_vars), device=loss.device)
+            dist.all_reduce(log_var_length)
+            message = (f'rank {dist.get_rank()}' +
+                       f' len(log_vars): {len(log_vars)}' + ' keys: ' +
+                       ','.join(log_vars.keys()) + '\n')
+            assert log_var_length == len(log_vars) * dist.get_world_size(), \
+                'loss log variables are different across GPUs!\n' + message
+
         log_vars['loss'] = loss
         for loss_name, loss_value in log_vars.items():
             # reduce loss when distributed training
@@ -120,9 +137,10 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
                 if dist.is_available() and dist.is_initialized():
                     loss_value = loss_value.data.clone()
                     dist.all_reduce(loss_value.div_(dist.get_world_size()))
-                log_vars[loss_name] = loss_value.item()
-            else:
-                log_vars[loss_name] = loss_value
+            # for adapt torchacc, returns the original tensor value, because value.item() is very time-consuming,
+            # value.item() operation will be executed every log internal frequency,
+            # so the bigger the log internal, the better.
+            log_vars[loss_name] = loss_value
 
         return loss, log_vars
 

@@ -2,6 +2,8 @@
 """
 isort:skip_file
 """
+import time
+import json
 import argparse
 import os
 import os.path as osp
@@ -18,7 +20,6 @@ from mmcv import DictAction
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, init_dist
 
-# from easycv.core import wrap_fp16_model
 from easycv import datasets
 from easycv.apis import multi_gpu_test, single_gpu_test
 from easycv.core.evaluation.builder import build_evaluator
@@ -30,16 +31,17 @@ from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
 from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 
-# from tools.fuse_conv_bn import fuse_module
-
-# from mmcv import Config
 from mmcv.runner.checkpoint import _load_checkpoint
+from easycv.utils.setup_env import setup_multi_processes
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description='EasyCV test (and eval) a model')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
+    parser.add_argument(
+        '--work_dir', help='the directory to save evaluation logs')
     parser.add_argument('--out', help='output result file in pickle format')
     # parser.add_argument(
     #     '--fuse-conv-bn',
@@ -144,6 +146,9 @@ def main():
     if cfg.get('oss_io_config', None) is not None:
         io.access_oss(**cfg.oss_io_config)
 
+    # set multi-process settings
+    setup_multi_processes(cfg)
+
     # dynamic adapt mmdet models
     dynamic_adapt_for_mmlab(cfg)
 
@@ -166,6 +171,14 @@ def main():
     else:
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
+
+    rank, _ = get_dist_info()
+
+    if args.work_dir is not None and rank == 0:
+        if not io.exists(args.work_dir):
+            io.makedirs(args.work_dir)
+        timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+        log_file = osp.join(args.work_dir, 'eval_{}.json'.format(timestamp))
 
     # build the model and load checkpoint
     model = build_model(cfg.model)
@@ -200,7 +213,7 @@ def main():
 
     assert 'eval_pipelines' in cfg, 'eval_pipelines is needed for testting'
     for eval_pipe in cfg.eval_pipelines:
-        eval_data = eval_pipe.data
+        eval_data = eval_pipe.get('data', None) or cfg.data.val
         # build the dataloader
         if eval_data.get('dali', False):
             data_loader = datasets.build_dali_dataset(
@@ -233,7 +246,6 @@ def main():
                 gpu_collect=args.gpu_collect,
                 use_fp16=args.fp16)
 
-        rank, _ = get_dist_info()
         if rank == 0:
             if args.out:
                 print(f'\nwriting results to {args.out}')
@@ -252,6 +264,9 @@ def main():
                 evaluators = build_evaluator(eval_pipe.evaluators)
                 eval_result = dataset.evaluate(outputs, evaluators=evaluators)
                 print(f'\n eval_result {eval_result}')
+                if args.work_dir is not None:
+                    with io.open(log_file, 'w') as f:
+                        json.dump(eval_result, f)
 
 
 if __name__ == '__main__':

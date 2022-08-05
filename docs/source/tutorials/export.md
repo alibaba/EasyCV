@@ -1,6 +1,24 @@
 # Export tutorial
 
-We support three kinds of the export model, the original model, the script model, and the blade model. Script (Jit) and Blade are used to accelerate the inference process. We also support the end2end export mode to wrapper the preprocess and postprocess  with the model.
+We support the following ways to export models.
+
+**Original**
+
+Original model saves the state dict of model. One should build model in advance and then load the model state dict.
+
+**torch.jit**
+
+Torch.jit is used to save the TorchScript model. It can be used independently from Python. It is convenient to be deployed in various environments and has little dependency on hardware. It can also reduce the inference time. For more details, you can refer to the official tutorial: https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html
+
+**Blade**
+
+Blade Model is used to greatly accelerate the inference process. It combines the technology of computational graph optimization, TensorRT/oneDNN,  AI compiler optimization, etc. For more details, you can refer to the official tutorial: https://help.aliyun.com/document_detail/205129.html
+
+**End2end**
+
+End2end model wraps the preprocess and postprocess process along with the model. Therefore, given an input image, the model can be directly used for inference.
+
+
 
 ### Export model
 
@@ -67,23 +85,24 @@ Eport the model in the end2end mode by setting ''end2end=True'' in the export co
 export = dict(use_jit=True, export_blade=True, end2end=True)
 ```
 
-You should define your own preprocess and postprocess as below or the default test pipeline will be used.
+You should define your own preprocess and postprocess as below (please refer to: https://pytorch.org/docs/stable/jit.html?highlight=jit#module-torch.jit ) or the default test pipeline will be used.
 
 ```python
 @torch.jit.script
-class PreProcess:
-    """Process the data input to model."""
-		def __init__(self, args):
-				pass
-    def __call__(self, image: torch.Tensor
-        ) -> Output Type:
+def preprocess_fn(image, traget_size=(640, 640)):
+		"""Process the data input to model."""
+    pass
 
 @torch.jit.script
-class PostProcess:
-    """Process output values of detection models."""
-    def __init__(self, args):
-				pass
-    def __call__(self, args) -> Output Type:
+def postprocess_fn(output):
+		"""Process output values of the model."""
+    pass
+
+# define your own export wrapper
+End2endModelExportWrapper(
+    model,
+    preprocess_fn=preprocess_fn,
+    postprocess_fn=postprocess_fn)
 ```
 
 
@@ -93,7 +112,23 @@ class PostProcess:
 #### Non-End2end model
 
 ```python
-input_data_list = [np.asarray(Image.open(img))]
+image_path = 'data/demo.jpg'
+input_data_list =[np.asarray(Image.open(image_path))]
+
+# define the preprocess function
+test_pipeline = [
+    dict(type='MMResize', img_scale=img_scale, keep_ratio=True),
+    dict(type='MMPad', pad_to_square=True, pad_val=(114.0, 114.0, 114.0)),
+    dict(type='MMNormalize', **img_norm_cfg),
+    dict(type='DefaultFormatBundle'),
+    dict(type='Collect', keys=['img'])
+]
+
+def preprocess(img):
+  	pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
+    transform = Compose(pipeline)
+    return transform(img)['img']
+
 
 with io.open(jit_model_path, 'rb') as infile:
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -112,7 +147,8 @@ with io.open(jit_model_path, 'rb') as infile:
 
 
 ```python
-input_data_list = [np.asarray(Image.open(img))]
+image_path = 'data/demo.jpg'
+input_data_list =[np.asarray(Image.open(image_path))]
 
 with io.open(jit_model_path, 'rb') as infile:
     device = 'cuda' if torch.cuda.is_available() else 'cpu'

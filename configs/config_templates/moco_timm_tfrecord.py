@@ -3,7 +3,6 @@ _base_ = 'configs/base.py'
 
 model = dict(
     type='MOCO',
-    pretrained=None,
     train_preprocess=['randomGrayScale', 'gaussianBlur'],
     queue_len=65536,
     feat_dim=128,
@@ -21,7 +20,6 @@ model = dict(
         # model_name='xcit_medium_24_p8',  #384
         model_name='xcit_large_24_p8',  # 768
         num_classes=0,
-        pretrained=True,
     ),
     neck=dict(
         type='NonLinearNeckV1',

@@ -2,7 +2,6 @@
 import itertools
 import os.path as osp
 import pickle
-import shutil
 import tempfile
 import time
 from io import BytesIO
@@ -11,12 +10,12 @@ import mmcv
 import numpy as np
 import torch
 import torch.distributed as dist
-from mmcv import tensor2imgs
 from mmcv.parallel import (MMDataParallel, MMDistributedDataParallel,
                            scatter_kwargs)
 from mmcv.runner import get_dist_info
 
 from easycv.file import io
+from easycv.utils.torchacc_util import is_torchacc_enabled
 
 
 def single_cpu_test(model,
@@ -103,8 +102,9 @@ def single_gpu_test(model, data_loader, mode='test', use_fp16=False, **kwargs):
     results = {}
     for i, data in enumerate(data_loader):
         # use scatter_kwargs to unpack DataContainer data for raw torch.nn.module
-        if not isinstance(model, MMDistributedDataParallel) and not isinstance(
-                model, MMDataParallel):
+        if not isinstance(model,
+                          (MMDistributedDataParallel,
+                           MMDataParallel)) and not is_torchacc_enabled():
             input_args, kwargs = scatter_kwargs(None, data,
                                                 [torch.cuda.current_device()])
             with torch.no_grad():
@@ -213,7 +213,10 @@ def multi_gpu_test(model,
 
         if rank == 0:
             if 'img_metas' in data:
-                batch_size = len(data['img_metas'].data[0])
+                if isinstance(data['img_metas'], list):
+                    batch_size = len(data['img_metas'][0].data[0])
+                else:
+                    batch_size = len(data['img_metas'].data[0])
             else:
                 batch_size = data['img'].size(0)
             # on DLC test bar while print too much log
@@ -318,6 +321,11 @@ def collect_results_gpu(result_part, size):
     ]
     # gather all result part
     dist.all_gather(part_recv_list, part_send)
+
+    # execute the graph of torchacc to prevent hang
+    if is_torchacc_enabled():
+        from torchacc.torch_xla.core import xla_model as xm
+        xm.mark_step()
 
     if rank == 0:
         part_dict = {}

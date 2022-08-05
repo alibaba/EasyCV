@@ -2,7 +2,8 @@
 import torch
 import torch.nn as nn
 
-from easycv.utils.logger import print_log
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger
 from .. import builder
 from ..base import BaseModel
 from ..registry import MODELS
@@ -21,6 +22,8 @@ class BYOL(BaseModel):
                  base_momentum=0.996,
                  **kwargs):
         super(BYOL, self).__init__()
+
+        self.pretrained = pretrained
         self.online_net = nn.Sequential(
             builder.build_backbone(backbone), builder.build_neck(neck))
         self.target_net = nn.Sequential(
@@ -29,15 +32,21 @@ class BYOL(BaseModel):
         for param in self.target_net.parameters():
             param.requires_grad = False
         self.head = builder.build_head(head)
-        self.init_weights(pretrained=pretrained)
+        self.init_weights()
 
         self.base_momentum = base_momentum
         self.momentum = base_momentum
 
-    def init_weights(self, pretrained=None):
-        if pretrained is not None:
-            print_log('load model from: {}'.format(pretrained), logger='root')
-        self.online_net[0].init_weights(pretrained=pretrained)  # backbone
+    def init_weights(self):
+        if isinstance(self.pretrained, str):
+            logger = get_root_logger()
+            load_checkpoint(
+                self.online_net[0],
+                self.pretrained,
+                strict=False,
+                logger=logger)
+        else:
+            self.online_net[0].init_weights()
         self.online_net[1].init_weights(init_linear='kaiming')  # projection
         for param_ol, param_tgt in zip(self.online_net.parameters(),
                                        self.target_net.parameters()):

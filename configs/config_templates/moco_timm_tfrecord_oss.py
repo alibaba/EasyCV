@@ -13,7 +13,6 @@ work_dir = 'oss://path/to/work_dirs/moco_timm_oss/'
 
 model = dict(
     type='MOCO',
-    pretrained=None,
     train_preprocess=['randomGrayScale', 'gaussianBlur'],
     queue_len=65536,
     feat_dim=128,
@@ -29,7 +28,6 @@ model = dict(
         # model_name = 'resnet50',
         model_name='xcit_small_12_p8',
         num_classes=0,
-        pretrained=True,
     ),
     neck=dict(
         type='NonLinearNeckV1',

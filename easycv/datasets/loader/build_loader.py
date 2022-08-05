@@ -11,6 +11,8 @@ from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader, RandomSampler
 
 from easycv.datasets.shared.odps_reader import set_dataloader_workid
+from easycv.utils.torchacc_util import is_torchacc_enabled
+from .collate import CollateWrapper
 from .sampler import DistributedMPSampler, DistributedSampler
 
 if platform.system() != 'Windows':
@@ -31,12 +33,11 @@ def build_dataloader(dataset,
                      reuse_worker_cache=False,
                      odps_config=None,
                      persistent_workers=False,
+                     collate_hooks=None,
                      **kwargs):
     """Build PyTorch DataLoader.
-
     In distributed training, each GPU/process has a dataloader.
     In non-distributed training, there is only one dataloader for all GPUs.
-
     Args:
         dataset (Dataset): A PyTorch dataset.
         imgs_per_gpu (int): Number of images on each GPU, i.e., batch size of
@@ -54,7 +55,6 @@ def build_dataloader(dataset,
         persistent_workers (bool) : After pytorch1.7, could use persistent_workers=True to
             avoid reconstruct dataworker before each epoch, speed up before epoch
         kwargs: any keyword argument to be used to initialize DataLoader
-
     Returns:
         DataLoader: A PyTorch dataloader.
     """
@@ -98,6 +98,9 @@ def build_dataloader(dataset,
         dataset, 'collate_fn') else partial(
             collate, samples_per_gpu=imgs_per_gpu)
 
+    if collate_hooks:
+        collate_fn = CollateWrapper(collate_fn, collate_hooks)
+
     if not reuse_worker_cache:
         if LooseVersion(torch.__version__) < LooseVersion('1.7.0'):
             print(
@@ -135,6 +138,10 @@ def build_dataloader(dataset,
             worker_init_fn=init_fn,
             **kwargs)
 
+    if is_torchacc_enabled():
+        from .loader_wrapper import TorchaccLoaderWrapper
+        data_loader = TorchaccLoaderWrapper(data_loader)
+
     return data_loader
 
 
@@ -143,6 +150,7 @@ def worker_init_fn(worker_id, seed=None, odps_config=None):
         worker_seed = worker_id + seed
         np.random.seed(worker_seed)
         random.seed(worker_seed)
+        torch.manual_seed(worker_seed)
 
     if odps_config is not None:
         # for odps to set correct offset in multi-process pytorch dataloader
@@ -153,7 +161,6 @@ def worker_init_fn(worker_id, seed=None, odps_config=None):
 
 class InfiniteDataLoader(torch.utils.data.dataloader.DataLoader):
     """ Dataloader that reuses workers. https://github.com/pytorch/pytorch/issues/15849
-
     Uses same syntax as vanilla DataLoader.
     """
 
@@ -173,7 +180,6 @@ class InfiniteDataLoader(torch.utils.data.dataloader.DataLoader):
 
 class _RepeatSampler(object):
     """ Sampler that repeats forever.
-
     Args:
         sampler (Sampler)
     """

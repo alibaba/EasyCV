@@ -43,25 +43,14 @@ class MaskedAutoencoderViT(nn.Module):
     ):
         super().__init__()
 
+        self.patch_size = patch_size
         self.patch_embed = PatchEmbed(img_size, patch_size, in_chans,
                                       embed_dim)
-        w = self.patch_embed.proj.weight.data
-        torch.nn.init.xavier_uniform_(w.view([w.shape[0], -1]))
         self.num_patches = self.patch_embed.num_patches
-
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-        torch.nn.init.normal_(self.cls_token, std=.02)
-
         self.pos_embed = nn.Parameter(
             torch.zeros(1, self.num_patches + 1, embed_dim),
             requires_grad=False)  # fixed sin-cos embedding
-        pos_embed = get_2d_sincos_pos_embed(
-            self.pos_embed.shape[-1],
-            int(self.patch_embed.num_patches**.5),
-            cls_token=True)
-        self.pos_embed.data.copy_(
-            torch.from_numpy(pos_embed).float().unsqueeze(0))
-
         self.blocks = nn.ModuleList([
             Block(
                 embed_dim,
@@ -73,17 +62,26 @@ class MaskedAutoencoderViT(nn.Module):
         ])
         self.norm = norm_layer(embed_dim)
 
-        self.apply(self._init_weights)
+    def init_weights(self):
+        w = self.patch_embed.proj.weight.data
+        torch.nn.init.xavier_uniform_(w.view([w.shape[0], -1]))
+        torch.nn.init.normal_(self.cls_token, std=.02)
+        pos_embed = get_2d_sincos_pos_embed(
+            self.pos_embed.shape[-1],
+            int(self.patch_embed.num_patches**.5),
+            cls_token=True)
+        self.pos_embed.data.copy_(
+            torch.from_numpy(pos_embed).float().unsqueeze(0))
 
-    def _init_weights(self, m):
-        if isinstance(m, nn.Linear):
-            # we use xavier_uniform following official JAX ViT:
-            torch.nn.init.xavier_uniform_(m.weight)
-            if isinstance(m, nn.Linear) and m.bias is not None:
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                # we use xavier_uniform following official JAX ViT:
+                torch.nn.init.xavier_uniform_(m.weight)
+                if isinstance(m, nn.Linear) and m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.LayerNorm):
                 nn.init.constant_(m.bias, 0)
-        elif isinstance(m, nn.LayerNorm):
-            nn.init.constant_(m.bias, 0)
-            nn.init.constant_(m.weight, 1.0)
+                nn.init.constant_(m.weight, 1.0)
 
     def random_masking(self, x, mask_ratio):
         """

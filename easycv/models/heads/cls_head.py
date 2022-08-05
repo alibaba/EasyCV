@@ -3,15 +3,12 @@ from typing import Dict, List
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from mmcv.cnn import kaiming_init, normal_init
-from torch.autograd import Variable
+from mmcv.cnn.utils.weight_init import initialize
 
-from easycv.utils.checkpoint import load_checkpoint
+from easycv.core.evaluation.metrics import accuracy
 from easycv.utils.logger import get_root_logger
 from easycv.utils.registry import build_from_cfg
 from ..registry import HEADS, LOSSES
-from ..utils import accuracy
 
 
 @HEADS.register_module
@@ -29,7 +26,9 @@ class ClsHead(nn.Module):
                  loss_config={
                      'type': 'CrossEntropyLossWithLabelSmooth',
                  },
-                 input_feature_index=[0]):
+                 input_feature_index=[0],
+                 init_cfg=dict(
+                     type='Normal', layer='Linear', std=0.01, bias=0.)):
 
         super(ClsHead, self).__init__()
         self.with_avg_pool = with_avg_pool
@@ -38,6 +37,7 @@ class ClsHead(nn.Module):
         self.label_smooth = label_smooth
         self.with_fc = with_fc
         self.input_feature_index = input_feature_index
+        self.init_cfg = init_cfg
 
         logger = get_root_logger()
 
@@ -56,25 +56,8 @@ class ClsHead(nn.Module):
         if self.with_fc:
             self.fc_cls = nn.Linear(in_channels, num_classes)
 
-    def init_weights(self,
-                     pretrained=None,
-                     init_linear='normal',
-                     std=0.01,
-                     bias=0.):
-        assert init_linear in ['normal', 'kaiming'], \
-            'Undefined init_linear: {}'.format(init_linear)
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                if init_linear == 'normal':
-                    normal_init(m, std=std, bias=bias)
-                else:
-                    kaiming_init(m, mode='fan_in', nonlinearity='relu')
-            elif isinstance(m,
-                            (nn.BatchNorm2d, nn.GroupNorm, nn.SyncBatchNorm)):
-                if m.weight is not None:
-                    nn.init.constant_(m.weight, 1)
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
+    def init_weights(self):
+        initialize(self, self.init_cfg)
 
     def forward(self, x: List[torch.Tensor]) -> List[torch.Tensor]:
 

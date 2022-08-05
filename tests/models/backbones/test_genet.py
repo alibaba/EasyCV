@@ -56,14 +56,11 @@ class PlainNetTest(unittest.TestCase):
                 original_weight = copy.deepcopy(
                     original_weight.cpu().data.numpy())
 
-                net.init_weights(net.pretrained)
+                net.init_weights()
                 load_weight = net.module_list[0].netblock.weight.cpu(
                 ).data.numpy()
 
                 self.assertFalse(np.allclose(original_weight, load_weight))
-
-                self.assertTrue(net.pretrained == modelzoo.genet['PlainNet' +
-                                                                 struct])
 
 
 if __name__ == '__main__':

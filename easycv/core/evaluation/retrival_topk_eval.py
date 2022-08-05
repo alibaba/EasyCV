@@ -1,5 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from collections import OrderedDict
 from pathlib import Path
 
 import numpy as np

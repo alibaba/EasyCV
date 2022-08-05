@@ -458,20 +458,14 @@ class MAENeck(nn.Module):
                  norm_layer=partial(nn.LayerNorm, eps=1e-6)):
         super().__init__()
 
+        self.num_patches = num_patches
         self.decoder_embed = nn.Linear(embed_dim, decoder_embed_dim, bias=True)
 
         self.mask_token = nn.Parameter(torch.zeros(1, 1, decoder_embed_dim))
-        torch.nn.init.normal_(self.mask_token, std=.02)
 
         self.decoder_pos_embed = nn.Parameter(
             torch.zeros(1, num_patches + 1, decoder_embed_dim),
             requires_grad=False)
-        decoder_pos_embed = get_2d_sincos_pos_embed(
-            self.decoder_pos_embed.shape[-1],
-            int(num_patches**.5),
-            cls_token=True)
-        self.decoder_pos_embed.data.copy_(
-            torch.from_numpy(decoder_pos_embed).float().unsqueeze(0))
 
         self.decoder_blocks = nn.ModuleList([
             Block(
@@ -480,12 +474,21 @@ class MAENeck(nn.Module):
                 mlp_ratio,
                 qkv_bias=True,
                 qk_scale=None,
-                norm_layer=norm_layer) for i in range(decoder_depth)
+                norm_layer=norm_layer) for _ in range(decoder_depth)
         ])
 
         self.decoder_norm = norm_layer(decoder_embed_dim)
         self.decoder_pred = nn.Linear(
             decoder_embed_dim, patch_size**2 * in_chans, bias=True)
+
+    def init_weights(self):
+        torch.nn.init.normal_(self.mask_token, std=.02)
+        decoder_pos_embed = get_2d_sincos_pos_embed(
+            self.decoder_pos_embed.shape[-1],
+            int(self.num_patches**.5),
+            cls_token=True)
+        self.decoder_pos_embed.data.copy_(
+            torch.from_numpy(decoder_pos_embed).float().unsqueeze(0))
 
         # initialize nn.Linear and nn.LayerNorm
         self.apply(self._init_weights)
@@ -527,5 +530,95 @@ class MAENeck(nn.Module):
 
         # remove cls token
         x = x[:, 1:, :]
+
+        return x
+
+
+@NECKS.register_module
+class FastConvMAENeck(MAENeck):
+    """Fast ConvMAE decoder, refer to: https://github.com/Alpha-VL/FastConvMAE
+
+    Args:
+        num_patches (int): number of patches from encoder
+        embed_dim (int): encoder embedding dimension
+        patch_size (int): encoder patch size
+        in_channels (int): input image channels
+        decoder_embed_dim (int): decoder embedding dimension
+        decoder_depth (int): number of decoder layers
+        decoder_num_heads (int): Parallel attention heads
+        mlp_ratio (float): mlp ratio
+        norm_layer: type of normalization layer
+    """
+
+    def __init__(self,
+                 num_patches,
+                 embed_dim=768,
+                 patch_size=16,
+                 in_channels=3,
+                 decoder_embed_dim=512,
+                 decoder_depth=8,
+                 decoder_num_heads=16,
+                 mlp_ratio=4.,
+                 norm_layer=partial(nn.LayerNorm, eps=1e-6)):
+        super().__init__(
+            num_patches=num_patches,
+            embed_dim=embed_dim,
+            patch_size=patch_size,
+            in_chans=in_channels,
+            decoder_embed_dim=decoder_embed_dim,
+            decoder_depth=decoder_depth,
+            decoder_num_heads=decoder_num_heads,
+            mlp_ratio=mlp_ratio,
+            norm_layer=norm_layer)
+        self.decoder_pos_embed = nn.Parameter(
+            torch.zeros(1, num_patches, decoder_embed_dim),
+            requires_grad=False)
+
+    def init_weights(self):
+        decoder_pos_embed = get_2d_sincos_pos_embed(
+            self.decoder_pos_embed.shape[-1],
+            int(self.num_patches**.5),
+            cls_token=False)
+        self.decoder_pos_embed.data.copy_(
+            torch.from_numpy(decoder_pos_embed).float().unsqueeze(0))
+
+        torch.nn.init.normal_(self.mask_token, std=.02)
+
+        # initialize nn.Linear and nn.LayerNorm
+        self.apply(super()._init_weights)
+
+    def forward(self, x, ids_restore):
+        # embed tokens
+        x = self.decoder_embed(x)
+
+        # append mask tokens to sequence
+        mask_tokens = self.mask_token.repeat(x.shape[0],
+                                             ids_restore.shape[1] - x.shape[1],
+                                             1)
+        x_ = torch.cat([x, mask_tokens], dim=1)  # no cls token
+        B, L, C = x_.shape
+        x_split1 = x_[:B // 4, :, :]
+        x_split2 = torch.roll(x_[B // 4:B // 4 * 2, :, :], 49, 1)
+        x_split3 = torch.roll(x_[B // 4 * 2:B // 4 * 3, :, :], 49 * 2, 1)
+        x_split4 = torch.roll(x_[B // 4 * 3:, :, :], 49 * 3, 1)
+        x_ = torch.cat([x_split1, x_split2, x_split3, x_split4])
+        ids_restore = torch.cat(
+            [ids_restore, ids_restore, ids_restore, ids_restore])
+        x = torch.gather(
+            x_,
+            dim=1,
+            index=ids_restore.unsqueeze(-1).repeat(1, 1,
+                                                   x.shape[2]))  # unshuffle
+
+        # add pos embed
+        x = x + self.decoder_pos_embed
+
+        # apply Transformer blocks
+        for blk in self.decoder_blocks:
+            x = blk(x)
+        x = self.decoder_norm(x)
+
+        # predictor projection
+        x = self.decoder_pred(x)
 
         return x

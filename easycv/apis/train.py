@@ -14,6 +14,7 @@ from easycv.apis.train_misc import build_yolo_optimizer
 from easycv.core import optimizer
 from easycv.core.evaluation.builder import build_evaluator
 from easycv.core.evaluation.metric_registry import METRICS
+from easycv.core.optimizer import build_optimizer_constructor
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.datasets.utils import is_dali_dataset_type
 from easycv.hooks import (BestCkptSaverHook, DistEvalHook, EMAHook, EvalHook,
@@ -22,6 +23,7 @@ from easycv.hooks.optimizer_hook import AMPFP16OptimizerHook
 from easycv.runner import EVRunner
 from easycv.utils.eval_utils import generate_best_metric_name
 from easycv.utils.logger import get_root_logger, print_log
+from easycv.utils.torchacc_util import is_torchacc_enabled
 
 
 def set_random_seed(seed, deterministic=False):
@@ -43,18 +45,6 @@ def set_random_seed(seed, deterministic=False):
             torch._set_deterministic(True)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
-
-
-def _is_selfsup_model(model_name):
-    from easycv.models import selfsup
-    models = []
-    for m in dir(selfsup):
-        if m.startswith('__'):
-            continue
-        if model_name == m:
-            return True
-
-    return False
 
 
 def train_model(model,
@@ -83,6 +73,9 @@ def train_model(model,
     logger = get_root_logger(cfg.log_level)
     print('GPU INFO : ', torch.cuda.get_device_name(0))
 
+    # model.cuda() must be before build_optimizer in torchacc mode
+    model = model.cuda()
+
     if cfg.model.type == 'YOLOX':
         optimizer = build_yolo_optimizer(model, cfg.optimizer)
     else:
@@ -92,25 +85,27 @@ def train_model(model,
     # so  we need to inialize amp here. In torch 1.6 or later, we do not need this
     if use_fp16 and LooseVersion(torch.__version__) < LooseVersion('1.6.0'):
         from apex import amp
-        model, optimizer = amp.initialize(
-            model.to('cuda'), optimizer, opt_level='O1')
+        model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
 
     # SyncBatchNorm
     open_sync_bn = cfg.get('sync_bn', False)
     print("!!Sync_bn",open_sync_bn)
 
     if open_sync_bn:
-        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to('cuda')
+        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
         logger.info('Using SyncBatchNorm()')
 
-    if distributed:
-        model = MMDistributedDataParallel(
-            model.cuda(),
-            find_unused_parameters=True,
-            device_ids=[torch.cuda.current_device()],
-            broadcast_buffers=False)
-    else:
-        model = MMDataParallel(model, device_ids=range(cfg.gpus)).cuda()
+    # the functions of torchacc DDP split into OptimizerHook and TorchaccLoaderWrapper
+    if not is_torchacc_enabled():
+        if distributed:
+            find_unused_parameters = cfg.get('find_unused_parameters', False)
+            model = MMDistributedDataParallel(
+                model,
+                find_unused_parameters=find_unused_parameters,
+                device_ids=[torch.cuda.current_device()],
+                broadcast_buffers=False)
+        else:
+            model = MMDataParallel(model, device_ids=range(cfg.gpus))
 
     # build runner
     runner = EVRunner(
@@ -118,7 +113,8 @@ def train_model(model,
         optimizer=optimizer,
         work_dir=cfg.work_dir,
         logger=logger,
-        meta=meta)
+        meta=meta,
+        fp16_enable=use_fp16)
     runner.data_loader = data_loaders
 
     # an ugly walkaround to make the .log and .log.json filenames the same
@@ -131,6 +127,9 @@ def train_model(model,
     else:
         optimizer_config = OptimizerHook(**cfg.optimizer_config)
 
+    # process tensor type, convert to numpy for dump logs
+    if len(cfg.log_config.get('hooks', [])) > 0:
+        cfg.log_config.hooks.insert(0, dict(type='PreLoggerHook'))
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
 
@@ -384,11 +383,22 @@ def build_optimizer(model, optimizer_cfg):
         optimizer_cls = getattr(optimizer, optimizer_cfg.pop('type'))
         return optimizer_cls(parameters, **optimizer_cfg)
 
+    constructor_type = optimizer_cfg.pop('constructor', None)
     optimizer_cfg = optimizer_cfg.copy()
     paramwise_options = optimizer_cfg.pop('paramwise_options', None)
     # if no paramwise option is specified, just use the global setting
 
-    if paramwise_options is None:
+    if constructor_type is not None:
+        optimizer_cls = getattr(optimizer, optimizer_cfg.pop('type'))
+        optim_constructor = build_optimizer_constructor(
+            dict(
+                type=constructor_type,
+                optimizer_cfg=optimizer_cfg,
+                paramwise_cfg=paramwise_options))
+        params = []
+        optim_constructor.add_params(params, model)
+        return optimizer_cls(params, **optimizer_cfg)
+    elif paramwise_options is None:
         return obj_from_dict(optimizer_cfg, optimizer,
                              dict(params=model.parameters()))
     else:

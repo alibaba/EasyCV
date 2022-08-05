@@ -12,11 +12,7 @@ from functools import partial
 
 import torch
 import torch.nn as nn
-# from utils import trunc_normal_
 from timm.models.layers import trunc_normal_
-
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
 
 
 def drop_path(x, drop_prob: float = 0., training: bool = False):
@@ -88,13 +84,17 @@ class Attention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
-    def forward(self, x):
+    def forward(self, x, rel_pos_bias=None):
         B, N, C = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads,
                                   C // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
 
         attn = (q @ k.transpose(-2, -1)) * self.scale
+
+        if rel_pos_bias is not None:
+            attn = attn + rel_pos_bias
+
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
 
@@ -136,8 +136,8 @@ class Block(nn.Module):
             act_layer=act_layer,
             drop=drop)
 
-    def forward(self, x, return_attention=False):
-        y, attn = self.attn(self.norm1(x))
+    def forward(self, x, return_attention=False, rel_pos_bias=None):
+        y, attn = self.attn(self.norm1(x), rel_pos_bias=rel_pos_bias)
         if return_attention:
             return attn
         x = x + self.drop_path(y)
@@ -241,30 +241,16 @@ class VisionTransformer(nn.Module):
 
         trunc_normal_(self.pos_embed, std=.02)
         trunc_normal_(self.cls_token, std=.02)
-        self.apply(self._init_weights)
 
-    def _init_weights(self, m):
-        if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=.02)
-            if isinstance(m, nn.Linear) and m.bias is not None:
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                trunc_normal_(m.weight, std=.02)
+                if isinstance(m, nn.Linear) and m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.LayerNorm):
                 nn.init.constant_(m.bias, 0)
-        elif isinstance(m, nn.LayerNorm):
-            nn.init.constant_(m.bias, 0)
-            nn.init.constant_(m.weight, 1.0)
-
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str) or isinstance(pretrained, dict):
-            logger = get_root_logger()
-            load_checkpoint(
-                self,
-                pretrained,
-                map_location='cpu',
-                strict=False,
-                logger=logger)
-        elif pretrained is None:
-            self.apply(self._init_weights)
-        else:
-            raise TypeError('pretrained must be a str or None')
+                nn.init.constant_(m.weight, 1.0)
 
     def forward(self, x):
         # convert to list

@@ -14,11 +14,11 @@ pip install mmcv-full==1.4.4 -f https://download.openmmlab.com/mmcv/dist/{cu_ver
 ### install onnx and pai_nni
 ```shell
 pip install onnx
-pip install https://pai-nni.oss-cn-zhangjiakou.aliyuncs.com/release/2.5/pai_nni-2.5-py3-none-manylinux1_x86_64.whl
+pip install http://pai-nni.oss-cn-zhangjiakou.aliyuncs.com/release/2.6.1/pai_nni-2.6.1-py3-none-manylinux1_x86_64.whl
 ```
 ### install blade_compression
 ```shell
-pip install http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/third_party/blade_compression-0.0.1-py3-none-any.whl
+pip install http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/third_party/blade_compression-0.0.2-py3-none-any.whl
 ```
 
 ## Data preparation

@@ -6,10 +6,11 @@ h5py
 https://developer.download.nvidia.com/compute/redist/nvidia-dali-cuda100/nvidia_dali_cuda100-0.25.0-1535750-py3-none-manylinux2014_x86_64.whl
 json_tricks
 numpy
-opencv-python-headless==4.1.2.30
+opencv-python-headless
 oss2
 packaging
-Pillow<=6.2.2
+Pillow
+prettytable
 pycocotools
 pytorch_metric_learning==0.9.89
 scikit-image

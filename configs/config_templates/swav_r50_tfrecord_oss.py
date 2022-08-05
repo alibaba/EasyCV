@@ -15,7 +15,7 @@ num_crops = [2, 6]
 
 model = dict(
     type='SWAV',
-    pretrained=None,
+    pretrained=False,
     train_preprocess=['randomGrayScale', 'gaussianBlur'],
     backbone=dict(
         type='ResNet',

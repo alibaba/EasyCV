@@ -6,6 +6,17 @@ from easycv.file import io
 from easycv.utils import dist_utils
 
 
+def get_imagenet_dali_tfrecord_feature():
+    import nvidia.dali.tfrecord as tfrec
+
+    imagenet_feature = {
+        'image/encoded': tfrec.FixedLenFeature((), tfrec.string, ''),
+        'image/format': tfrec.FixedLenFeature((), tfrec.string, 'jpeg'),
+        'image/class/label': tfrec.FixedLenFeature([], tfrec.int64, -1),
+    }
+    return imagenet_feature
+
+
 def get_path_and_index(file_list_or_path):
     if type(file_list_or_path) == str:
         lines = io.open(file_list_or_path).readlines()
@@ -15,7 +26,7 @@ def get_path_and_index(file_list_or_path):
     index = []
     for i in lines:
         i = i.strip()
-        if i.endswith('.idx'):
+        if i.endswith('.idx') or i.endswith('.info'):
             pass
         else:
             path.append(i)
@@ -70,6 +81,7 @@ def download_tfrecord(file_list_or_path,
     all_data_list = [
         all_file_list[i] for i in range(len(all_file_list))
         if not all_file_list[i].endswith('.idx')
+        and not all_file_list[i].endswith('.info')
     ]
     all_index_list = [
         all_file_list[i] for i in range(len(all_file_list))

@@ -7,7 +7,6 @@ log_config = dict(
 # model settings
 model = dict(
     type='Classification',
-    pretrained=None,
     backbone=dict(type='HRNet', arch='w18', multi_scale_output=True),
     neck=dict(type='HRFuseScales', in_channels=(18, 36, 72, 144)),
     head=dict(

@@ -1,5 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import copy
+import glob
+import json
 import logging
 import os
 import sys
@@ -8,7 +10,8 @@ import unittest
 
 import torch
 from mmcv import Config
-from tests.ut_config import DET_DATA_MANIFEST_OSS, DET_DATA_SMALL_COCO_LOCAL
+from tests.ut_config import (DET_DATA_MANIFEST_OSS, DET_DATA_SMALL_COCO_LOCAL,
+                             PRETRAINED_MODEL_YOLOXS)
 
 from easycv.file import io
 from easycv.file.utils import get_oss_config
@@ -25,6 +28,8 @@ _COMMON_OPTIONS = {
     'eval_config.interval': 1,
     'total_epochs': 1,
     'data.imgs_per_gpu': 8,
+    'load_from': PRETRAINED_MODEL_YOLOXS,
+    'optimizer.lr': 0.0
 }
 
 TRAIN_CONFIGS = [
@@ -38,10 +43,6 @@ TRAIN_CONFIGS = [
             SMALL_COCO_ITAG_DATA_ROOT + 'train2017_20.manifest',
             'data.val.data_source.path':
             SMALL_COCO_ITAG_DATA_ROOT + 'val2017_20.manifest',
-            # not support visualization for oss path
-            'eval_config.visualization_config': {
-                'vis_num': 0
-            },
         }
     },
     {
@@ -68,6 +69,15 @@ class YOLOXTrainTest(unittest.TestCase):
     def tearDown(self):
         super().tearDown()
 
+    def check_metric(self, work_dir):
+        json_file = glob.glob(os.path.join(work_dir, '*.log.json'))
+        with io.open(json_file[0], 'r') as f:
+            content = f.readlines()
+            res = json.loads(content[1])
+            self.assertGreater(res['DetectionBoxes_Precision/mAP'], 0.4)
+            self.assertGreater(res['DetectionBoxes_Precision/mAP@.50IOU'], 0.5)
+            self.assertGreater(res['DetectionBoxes_Precision/mAP@.75IOU'], 0.4)
+
     def _base_train(self, train_cfgs, dist=False, dist_eval=False):
         cfg_file = train_cfgs.pop('config_file')
         cfg_options = train_cfgs.pop('cfg_options', None)
@@ -90,10 +100,10 @@ class YOLOXTrainTest(unittest.TestCase):
 
         if dist:
             nproc_per_node = 2
-            cmd = 'bash tools/dist_train.sh %s %s --launcher pytorch --work_dir=%s %s ' % (
+            cmd = 'bash tools/dist_train.sh %s %s --launcher pytorch --work_dir=%s %s --fp16' % (
                 tmp_cfg_file, nproc_per_node, work_dir, args_str)
         else:
-            cmd = 'python tools/train.py %s --work_dir=%s %s' % (
+            cmd = 'python tools/train.py %s --work_dir=%s %s --fp16' % (
                 tmp_cfg_file, work_dir, args_str)
 
         logging.info('run command: %s' % cmd)
@@ -101,6 +111,7 @@ class YOLOXTrainTest(unittest.TestCase):
 
         output_files = io.listdir(work_dir)
         self.assertIn('epoch_1.pth', output_files)
+        self.check_metric(work_dir)
 
         io.remove(work_dir)
         io.remove(tmp_cfg_file)

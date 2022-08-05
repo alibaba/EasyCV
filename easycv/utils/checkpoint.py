@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
-import time
 
 import torch
 from mmcv.parallel import is_module_wrapper

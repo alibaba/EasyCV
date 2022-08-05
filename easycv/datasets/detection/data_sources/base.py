@@ -2,40 +2,19 @@
 import copy
 import functools
 import logging
-import time
 from abc import abstractmethod
 from multiprocessing import Pool, cpu_count
 
-import cv2
 import numpy as np
 from mmcv.runner.dist_utils import get_dist_info
-from PIL import Image
 from tqdm import tqdm
 
-from easycv.file import io
-from easycv.utils.constant import MAX_READ_IMAGE_TRY_TIMES
+from easycv.file.image import load_image
 
 
-def load_image(img_path):
+def _load_image(img_path):
     result = {}
-    try_cnt = 0
-    img = None
-    while try_cnt < MAX_READ_IMAGE_TRY_TIMES:
-        try:
-            with io.open(img_path, 'rb') as infile:
-                # cv2.imdecode may corrupt when the img is broken
-                image = Image.open(infile)
-                img = cv2.cvtColor(
-                    np.asarray(image, dtype=np.uint8), cv2.COLOR_RGB2BGR)
-                assert img is not None, 'Image load error, try %s : %s' % (
-                    try_cnt, img_path)
-                break
-        except:
-            time.sleep(2)
-        try_cnt += 1
-
-    if img is None:
-        raise ValueError('Read Image Times Out: ' + img_path)
+    img = load_image(img_path, mode='BGR')
 
     result['img'] = img.astype(np.float32)
     result['img_shape'] = img.shape  # h, w, c
@@ -55,7 +34,7 @@ def build_sample(source_item, classes, parse_fn, load_img):
     result_dict = parse_fn(source_item, classes)
 
     if load_img:
-        result_dict.update(load_image(result_dict['filename']))
+        result_dict.update(_load_image(result_dict['filename']))
 
     return result_dict
 
@@ -160,12 +139,15 @@ class DetSourceBase(object):
 
         return result_dict
 
+    def _rand_another(self, idx):
+        return (idx + 1) % self.num_samples
+
     def get_sample(self, idx):
         result_dict = self.samples_list[idx]
         load_success = True
         try:
             if not self.cache_at_init and result_dict.get('img', None) is None:
-                result_dict.update(load_image(result_dict['filename']))
+                result_dict.update(_load_image(result_dict['filename']))
                 if self.cache_on_the_fly:
                     self.samples_list[idx] = result_dict
             # `post_process_fn` may modify the value of `self.samples_list`,
@@ -186,6 +168,6 @@ class DetSourceBase(object):
             if self._retry_count >= self._max_retry_num:
                 raise ValueError('All samples failed to load!')
 
-            result_dict = self.get_sample((idx + 1) % self.num_samples)
+            result_dict = self.get_sample(self._rand_another(idx))
 
         return result_dict

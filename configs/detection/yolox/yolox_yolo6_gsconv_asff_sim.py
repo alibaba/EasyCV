@@ -21,6 +21,7 @@ model = dict(
 
     )
 
+find_unused_parameters=True
 # s m l x
 img_scale = (640, 640)
 random_size = (14, 26)
