@@ -251,19 +251,3 @@ class RepVGGBlock(nn.Module):
             self.__delattr__('id_tensor')
         self.deploy = True
 
-
-# class DetectBackend(nn.Module):
-#     def __init__(self, weights='yolov6s.pt', device=None, dnn=True):
-#
-#         super().__init__()
-#         assert isinstance(weights, str) and Path(weights).suffix == '.pt', f'{Path(weights).suffix} format is not supported.'
-#         # from yolov6.utils.checkpoint import load_checkpoint
-#         # model = load_checkpoint(weights, map_location=device)
-#         stride = int(model.stride.max())
-#         self.__dict__.update(locals())  # assign all variables to self
-#
-#     def forward(self, im, val=False):
-#         y = self.model(im)
-#         if isinstance(y, np.ndarray):
-#             y = torch.tensor(y, device=self.device)
-#         return y

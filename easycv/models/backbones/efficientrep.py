@@ -1,13 +1,9 @@
 from torch import nn
 from easycv.models.backbones.yolo6_blocks import RepVGGBlock, RepBlock, SimSPPF
-from torchsummaryX import summary
 import math
 import torch
 
 
-def make_divisible(x, divisor):
-    # Upward revision the value x to make it evenly divisible by the divisor.
-    return math.ceil(x / divisor) * divisor
 
 
 class EfficientRep(nn.Module):
@@ -110,6 +106,9 @@ class EfficientRep(nn.Module):
         return tuple(outputs)
 
 if __name__=='__main__':
+
+    from torchsummaryX import summary
+
     depth_mul = 0.33
     width_mul = 0.5
     num_repeat_backbone = [1, 6, 12, 18, 6]
@@ -121,6 +120,10 @@ if __name__=='__main__':
 
     num_repeat = [(max(round(i * depth_mul), 1) if i > 1 else i) for i in
                   (num_repeat_backbone + num_repeat_neck)]
+
+    def make_divisible(x, divisor):
+        # Upward revision the value x to make it evenly divisible by the divisor.
+        return math.ceil(x / divisor) * divisor
 
     channels_list = [make_divisible(i * width_mul, 8) for i in (channels_list_backbone + channels_list_neck)]
     model = EfficientRep(in_channels=channels, channels_list=channels_list, num_repeats=num_repeat)

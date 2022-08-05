@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from easycv.models.backbones.network_blocks import SiLU
 from easycv.models.backbones.network_blocks import DWConv
-from torchsummaryX import summary
 
 
 def autopad(k, p=None):  # kernel, padding
@@ -285,6 +284,8 @@ if __name__=="__main__":
     # input = torch.randn(1, 3, 640, 640).cuda()
     # flops, params = profile(asff_1, inputs=(input,))
     # print('flops: {}, params: {}'.format(flops, params))
+    
+    from torchsummaryX import summary
 
     summary(asff_1, input)
     summary(asff_2, input)
