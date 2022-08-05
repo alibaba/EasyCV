@@ -1,13 +1,11 @@
 # Copyright (c) 2014-2021 Megvii Inc And Alibaba PAI-Teams. All rights reserved.
-
+import logging
 import torch
 import torch.nn as nn
 
 from easycv.models.backbones.darknet import CSPDarknet
-from easycv.models.backbones.efficientrep import EfficientRep
+from easycv.models.backbones.repvgg_yolox_backbone import RepVGGYOLOX
 from easycv.models.backbones.network_blocks import BaseConv, CSPLayer, DWConv, GSConv, VoVGSCSP
-from .attention import SE, CBAM, ECA
-# from .ASFF import ASFF
 import math
 
 
@@ -35,40 +33,32 @@ class YOLOPAFPN(nn.Module):
         down_rate=32,
         use_dconv=False,
         use_expand=True,
-        spp_type='spp',
         backbone = "CSPDarknet",
         neck = 'yolo',
         neck_mode = 'all'
     ):
         super().__init__()
-        # self.backbone = CSPDarknet(depth, width, depthwise=depthwise, act=act,spp_type=spp_type)
-        self.backbone_name = backbone
+        # build backbone
         if backbone == "CSPDarknet":
             self.backbone = CSPDarknet(depth, width, depthwise=depthwise, act=act)
+        elif backbone == "RepVGGYOLOX":
+            self.backbone = RepVGGYOLOX(in_channels=channels,depth=depth, width=width)
         else:
-            depth_mul = depth
-            width_mul = width
-            num_repeat_backbone = [1, 6, 12, 18, 6]
-            channels_list_backbone = [64, 128, 256, 512, 1024]
-            num_repeat_neck = [12, 12, 12, 12]
-            channels_list_neck = [256, 128, 128, 256, 256, 512]
+            logging.warning('YOLOX-PAI backbone must in [CSPDarknet, RepVGGYOLOX], otherwise we use RepVGGYOLOX as default')
+            self.backbone = RepVGGYOLOX(in_channels=channels,depth=depth, width=width)
+        self.backbone_name = backbone
 
-            channels = 3
-
-            num_repeat = [(max(round(i * depth_mul), 1) if i > 1 else i) for i in
-                          (num_repeat_backbone + num_repeat_neck)]
-
-            channels_list = [make_divisible(i * width_mul, 8) for i in (channels_list_backbone + channels_list_neck)]
-            self.backbone = EfficientRep(in_channels=channels, channels_list=channels_list, num_repeats=num_repeat)
-
-
+        # build neck
         self.in_features = in_features
         self.in_channels = in_channels
         Conv = DWConv if depthwise else BaseConv
-
         self.neck = neck
         self.neck_mode = neck_mode
-        if neck =='yolo':
+        if neck = 'gsconv':
+            if neck != 'yolo':
+                logging.warning('YOLOX-PAI backbone must in [yolo, gsconv], otherwise we use yolo as default')
+            self.neck = 'yolo'
+            
             self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
             self.lateral_conv0 = BaseConv(
                 int(in_channels[2] * width),
@@ -128,7 +118,6 @@ class YOLOPAFPN(nn.Module):
                 depthwise=depthwise,
                 act=act)
         else:
-            # gsconv
             self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
             self.gsconv1 = GSConv(
                 int(in_channels[2] * width),
@@ -229,22 +218,11 @@ class YOLOPAFPN(nn.Module):
                     depthwise=depthwise,
                     act=act)
 
+        # build attention after PAN
         self.use_att=use_att
-
-        if self.use_att!=None and self.use_att!='ASFF' and self.use_att!='ASFF_sim':
-            # add attention layer
-            if self.use_att=="CBAM":
-                ATT = CBAM
-            elif self.use_att=="SE":
-                ATT = SE
-            elif self.use_att=="ECA":
-                ATT = ECA
-            else:
-                assert "Unknown Attention Layer!"
-
-            self.att_1 = ATT(int(in_channels[2] * width))  # 对应dark5输出的1024维度通道
-            self.att_2 = ATT(int(in_channels[1] * width))  # 对应dark4输出的512维度通道
-            self.att_3 = ATT(int(in_channels[0] * width))  # 对应dark3输出的256维度通道
+        default_attention_list = ['ASFF', 'ASFF_sim']
+        if use_att is not None and use_att not in default_attention_list:
+            logging.warning('YOLOX-PAI backbone must in [ASFF, ASFF_sim], otherwise we use ASFF as default')
 
         if self.use_att=='ASFF' or self.use_att=='ASFF_sim':
             if self.use_att=='ASFF':
@@ -268,11 +246,6 @@ class YOLOPAFPN(nn.Module):
             Tuple[Tensor]: FPN feature.
         """
 
-        #  backbone
-        # out_features = self.backbone(input)
-        # features = [out_features[f] for f in self.in_features]
-        # [x2, x1, x0] = features
-        #  backbone
         if self.backbone_name == "CSPDarknet":
             out_features = self.backbone(input)
             features = [out_features[f] for f in self.in_features]
@@ -280,12 +253,6 @@ class YOLOPAFPN(nn.Module):
         else:
             features = self.backbone(input)
             [x2, x1, x0] = features
-
-        # add attention
-        if self.use_att!=None and self.use_att!='ASFF' and self.use_att!='ASFF_sim':
-            x0 = self.att_1(x0)
-            x1 = self.att_2(x1)
-            x2 = self.att_3(x2)
 
         if self.neck =='yolo':
             fpn_out0 = self.lateral_conv0(x0)  # 1024->512/32
@@ -340,6 +307,7 @@ class YOLOPAFPN(nn.Module):
 
         outputs = (pan_out2, pan_out1, pan_out0)
 
+        # forward for attention
         if self.use_att == 'ASFF' or self.use_att=='ASFF_sim':
             pan_out0 = self.asff_1(outputs)
             pan_out1 = self.asff_2(outputs)

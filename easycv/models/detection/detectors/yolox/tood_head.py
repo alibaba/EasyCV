@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from easycv.models.backbone.repvgg_yolox_backbone import RepVGGBlock
 from easycv.models.backbones.network_blocks import BaseConv, DWConv
 from easycv.models.detection.utils import bboxes_iou
 from easycv.models.loss import IOUloss
@@ -93,8 +94,8 @@ class TOODHead(nn.Module):
                  width=1.0,
                  strides=[8, 16, 32],
                  in_channels=[256, 512, 1024],
+                 conv_type='conv',
                  act='silu',
-                 depthwise=False,
                  stage='CLOUD',
                  obj_loss_type='l1',
                  reg_loss_type='iou',
@@ -139,7 +140,17 @@ class TOODHead(nn.Module):
 
         self.inter_convs = nn.ModuleList()
 
-        Conv = DWConv if depthwise else BaseConv
+        default_conv_type_list = ['conv', 'dwconv', 'repconv']
+        # Conv = DWConv if depthwise else BaseConv
+        if conv_type not in    default_conv_type_list:
+            logging.warning('YOLOX-PAI tood head conv_type must in [conv, dwconv, repconv], otherwise we use repconv as default')
+            conv_type = repconv
+        if conv_type == 'conv':
+            Conv = BaseConv
+        if conv_type == 'dwconv':
+            Conv = DWConv
+        if conv_type == 'repconv':
+            Conv = RepVGGBlock
 
         for i in range(len(in_channels)):
             self.stems.append(
@@ -150,7 +161,6 @@ class TOODHead(nn.Module):
                     stride=1,
                     act=act,
                 ))
-
             if conv_layers==2:
                 self.cls_convs.append(
                     nn.Sequential(*[
@@ -269,7 +279,6 @@ class TOODHead(nn.Module):
             self.obj_loss = nn.BCEWithLogitsLoss(reduction='none')
         elif obj_loss_type == 'focal':
             self.obj_loss = FocalLoss(reduction='none')
-
         elif obj_loss_type == 'v_focal':
             self.obj_loss = VarifocalLoss(reduction='none')
         else:

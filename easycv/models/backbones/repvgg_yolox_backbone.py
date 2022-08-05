@@ -200,10 +200,19 @@ class RepVGGYOLOX(nn.Module):
     def __init__(
         self,
         in_channels=3,
-        channels_list=None,
-        num_repeats=None
+        depth=1.0,
+        width=1.0,
     ):
         super().__init__()
+
+        num_repeat_backbone = [1, 6, 12, 18, 6]
+        channels_list_backbone = [64, 128, 256, 512, 1024]
+        num_repeat_neck = [12, 12, 12, 12]
+        channels_list_neck = [256, 128, 128, 256, 256, 512]
+        num_repeats = [(max(round(i * depth), 1) if i > 1 else i) for i in
+                        (num_repeat_backbone + num_repeat_neck)]
+
+        channels_list = [make_divisible(i * width, 8) for i in (channels_list_backbone + channels_list_neck)]
 
         assert channels_list is not None
         assert num_repeats is not None
@@ -301,6 +310,7 @@ class RepVGGYOLOX(nn.Module):
         outputs.append(x)
         return tuple(outputs)
 
+
 if __name__=='__main__':
 
     from torchsummaryX import summary
@@ -323,7 +333,8 @@ if __name__=='__main__':
     channels_list = [make_divisible(i * width_mul, 8) for i in (channels_list_backbone + channels_list_neck)]
     # from easycv.models.backbones.efficientrep import EfficientRep
     # model = EfficientRep(in_channels=channels, channels_list=channels_list, num_repeats=num_repeat)
-    model = RepVGGYOLOX(in_channels=channels, channels_list=channels_list, num_repeats=num_repeat)
+    # model = RepVGGYOLOX(in_channels=channels, channels_list=channels_list, num_repeats=num_repeat)
+    model = RepVGGYOLOX(in_channels=channels, depth=depth_mul, width=width_mul)
     for layer in model.modules():
         if isinstance(layer, RepVGGBlock):
             layer.switch_to_deploy()

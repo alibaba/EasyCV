@@ -11,8 +11,6 @@ def autopad(k, p=None):  # kernel, padding
 
 def get_activation(name='silu', inplace=True):
     if name == 'silu':
-        # @ to do nn.SiLU 1.7.0
-        # module = nn.SiLU(inplace=inplace)
         module = SiLU(inplace=inplace)
     elif name == 'relu':
         module = nn.ReLU(inplace=inplace)
@@ -29,7 +27,6 @@ class Conv(nn.Module):
         super(Conv, self).__init__()
         self.conv = nn.Conv2d(c1, c2, k, s, autopad(k, p), groups=g, bias=False)
         self.bn = nn.BatchNorm2d(c2)
-        # self.act = SiLU() if act is True else (act if isinstance(act, nn.Module) else nn.Identity())
         self.act = get_activation(act, inplace=True)
 
     def forward(self, x):
@@ -52,9 +49,7 @@ class ASFF(nn.Module):
         self.level = level
         self.dim = [int(1024 * multiplier), int(512 * multiplier),
                     int(256 * multiplier)]
-        # print(self.dim)
 
-        # print(act, asff_channel)
 
         self.inter_dim = self.dim[self.level]
         if level == 0:
@@ -99,9 +94,9 @@ class ASFF(nn.Module):
         256, 512, 1024
         from small -> large
         """
-        x_level_0 = x[2]  # 最大特征层 [512,20,20]
-        x_level_1 = x[1]  # 中间特征层 [256,40,40]
-        x_level_2 = x[0]  # 最小特征层 [128,80,80]
+        x_level_0 = x[2]  # max feature level [512,20,20]
+        x_level_1 = x[1]  # mid feature level [256,40,40]
+        x_level_2 = x[0]  # min feature level [128,80,80]
 
         if self.level == 0:
             level_0_resized = x_level_0
