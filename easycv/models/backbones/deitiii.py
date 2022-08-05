@@ -172,11 +172,6 @@ class Layer_scale_init_Block(nn.Module):
         self.gamma_1 = nn.Parameter(init_values * torch.ones((dim)),requires_grad=True)
         self.gamma_2 = nn.Parameter(init_values * torch.ones((dim)),requires_grad=True)
 
-    # def forward(self, x):
-    #     x = x + self.drop_path(self.gamma_1 * self.attn(self.norm1(x)))
-    #     x = x + self.drop_path(self.gamma_2 * self.mlp(self.norm2(x)))
-    #     return x
-
     def forward(self, x, return_attention=False):
         y, attn = self.attn(self.norm1(x))
         if return_attention:
