@@ -162,15 +162,12 @@ rand_increasing_policies = [
 three_augment_policies = [
     [
         dict(type='gaussianblur', prob=1.0, radius_min=0.1, radius_max=2.),
-        # dict(type='color_jitter', brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1, prob=1.0)
     ],
     [
         dict(type='solarization', prob=1.0),
-        # dict(type='color_jitter', brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1, prob=1.0)
     ],
     [
         dict(type='gray_scale', prob=1.0),
-        # dict(type='color_jitter', brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1, prob=1.0)
     ]
 ]
 
@@ -1097,9 +1094,7 @@ class Cutout(object):
 
 @PIPELINES.register_module()
 class gaussianblur(object):
-    """
-    Apply Gaussian Blur to the PIL image.
-    """
+    
     def __init__(self, prob=0.1, radius_min=0.1, radius_max=2.):
         assert 0 <= prob <= 1.0, 'The prob should be in range [0,1], ' \
             f'got {prob} instead.'
@@ -1117,15 +1112,12 @@ class gaussianblur(object):
             return results
 
         for key in results.get('img_fields', ['img']):
-            img = np.array(results[key])
-            img = Image.fromarray(img)
-            img = img.filter(
+            img = results[key].filter(
                 ImageFilter.GaussianBlur(
                     radius=random.uniform(self.radius_min, self.radius_max)
                 )
             )
-            img = np.array(img)
-            results[key] = Image.fromarray(img.astype(np.uint8))
+            results[key] = img
         return results
 
     def __repr__(self):
@@ -1138,9 +1130,7 @@ class gaussianblur(object):
 
 @PIPELINES.register_module()
 class solarization(object):
-    """
-    Apply Solarization to the PIL image.
-    """
+    
     def __init__(self, prob=0.2):
         assert 0 <= prob <= 1.0, 'The prob should be in range [0,1], ' \
             f'got {prob} instead.'
@@ -1152,11 +1142,8 @@ class solarization(object):
             return results
 
         for key in results.get('img_fields', ['img']):
-            img = np.array(results[key])
-            img = Image.fromarray(img)
-            img = ImageOps.solarize(img)
-            img = np.array(img)
-            results[key] = Image.fromarray(img.astype(np.uint8))
+            img = ImageOps.solarize(results[key])
+            results[key] = img
         return results
 
     def __repr__(self):
@@ -1164,36 +1151,10 @@ class solarization(object):
         repr_str += f'(prob={self.prob})'
         return repr_str
 
-# @PIPELINES.register_module
-# class solarization(object):
-
-#     def __init__(self, threshold=128, prob=0.5):
-#         self.threshold = threshold
-#         self.prob = prob
-
-#     def __call__(self, results):
-#         if np.random.rand() > self.prob:
-#             return results
-
-#         for key in results.get('img_fields', ['img']):
-#             img = results[key]
-#             img = np.array(img)
-#             img = np.where(img < self.threshold, img, 255 - img)
-#             results[key] = Image.fromarray(img.astype(np.uint8))
-
-#         return results
-
-#     def __repr__(self):
-#         repr_str = self.__class__.__name__
-#         repr_str += f'(threshold={self.threshold})'
-#         repr_str += f'(prob={self.prob})'
-#         return repr_str
-
-
 
 @PIPELINES.register_module()
 class gray_scale(object):
-
+    
     def __init__(self, prob=0.2):
         assert 0 <= prob <= 1.0, 'The prob should be in range [0,1], ' \
             f'got {prob} instead.'
@@ -1206,11 +1167,8 @@ class gray_scale(object):
             return results
 
         for key in results.get('img_fields', ['img']):
-            img = np.array(results[key])
-            img = Image.fromarray(img)
-            img = self.transf(img)
-            img = np.array(img)
-            results[key] = Image.fromarray(img.astype(np.uint8))
+            img = self.transf(results[key])
+            results[key] = img
         return results
 
     def __repr__(self):
@@ -1218,48 +1176,3 @@ class gray_scale(object):
         repr_str += f'(prob={self.prob})'
         return repr_str
  
-
-# @PIPELINES.register_module()
-# class color_jitter(object):
-
-#     def __init__(self, brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1, prob=0.5):
-#         assert 0 <= brightness <= 1.0, 'The brightness should be in range [0,1], ' \
-#             f'got {brightness} instead.'
-#         assert 0 <= contrast <= 1.0, 'The contrast should be in range [0,1], ' \
-#             f'got {contrast} instead.'
-#         assert 0 <= saturation <= 1.0, 'The saturation should be in range [0,1], ' \
-#             f'got {saturation} instead.'
-#         assert 0 <= hue <= 1.0, 'The hue should be in range [0,1], ' \
-#             f'got {hue} instead.'
-#         assert 0 <= prob <= 1.0, 'The prob should be in range [0,1], ' \
-#             f'got {prob} instead.'
-
-#         self.brightness = brightness
-#         self.contrast = contrast
-#         self.saturation = saturation
-#         self.hue = hue
-#         self.prob = prob
-#         self.transf = transforms.ColorJitter(brightness, contrast, saturation, hue)
- 
-#     def __call__(self, results):
-#         if np.random.rand() > self.prob:
-#             return results
-
-#         for key in results.get('img_fields', ['img']):
-#             img = np.array(results[key])
-#             img = Image.fromarray(img)
-#             img = self.transf(img)
-#             img = np.array(img)
-#             results[key] = Image.fromarray(img.astype(np.uint8))
-#         return results
-
-#     def __repr__(self):
-#         repr_str = self.__class__.__name__
-#         repr_str += f'(brightness={self.brightness})'
-#         repr_str += f'(contrast={self.contrast})'
-#         repr_str += f'(saturation={self.saturation})'
-#         repr_str += f'(hue={self.hue})'
-#         repr_str += f'(prob={self.prob})'
-#         return repr_str
- 
-
