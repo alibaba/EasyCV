@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from easycv.models.backbone.repvgg_yolox_backbone import RepVGGBlock
+from easycv.models.backbones.repvgg_yolox_backbone import RepVGGBlock
 from easycv.models.backbones.network_blocks import BaseConv, DWConv
 from easycv.models.detection.utils import bboxes_iou
 from easycv.models.loss import IOUloss

@@ -42,10 +42,10 @@ class YOLOPAFPN(nn.Module):
         if backbone == "CSPDarknet":
             self.backbone = CSPDarknet(depth, width, depthwise=depthwise, act=act)
         elif backbone == "RepVGGYOLOX":
-            self.backbone = RepVGGYOLOX(in_channels=channels,depth=depth, width=width)
+            self.backbone = RepVGGYOLOX(in_channels=3,depth=depth, width=width)
         else:
             logging.warning('YOLOX-PAI backbone must in [CSPDarknet, RepVGGYOLOX], otherwise we use RepVGGYOLOX as default')
-            self.backbone = RepVGGYOLOX(in_channels=channels,depth=depth, width=width)
+            self.backbone = RepVGGYOLOX(in_channels=3,depth=depth, width=width)
         self.backbone_name = backbone
 
         # build neck
@@ -54,7 +54,7 @@ class YOLOPAFPN(nn.Module):
         Conv = DWConv if depthwise else BaseConv
         self.neck = neck
         self.neck_mode = neck_mode
-        if neck = 'gsconv':
+        if neck == 'gsconv':
             if neck != 'yolo':
                 logging.warning('YOLOX-PAI backbone must in [yolo, gsconv], otherwise we use yolo as default')
             self.neck = 'yolo'

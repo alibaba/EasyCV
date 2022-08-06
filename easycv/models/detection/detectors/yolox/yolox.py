@@ -78,7 +78,7 @@ class YOLOX(BaseModel):
         depth = self.param_map[model_type][0]
         width = self.param_map[model_type][1]
 
-        self.backbone = YOLOPAFPN(depth, width, in_channels=in_channels, asff_channel=asff_channel, act=act, use_att=use_att, spp_type=spp_type, backbone = backbone, neck = neck, neck_mode=neck_mode, expand_kernel=expand_kernel, down_rate = down_rate, use_dconv = use_dconv, use_expand = use_expand)
+        self.backbone = YOLOPAFPN(depth, width, in_channels=in_channels, asff_channel=asff_channel, act=act, use_att=use_att, backbone = backbone, neck = neck, neck_mode=neck_mode, expand_kernel=expand_kernel, down_rate = down_rate, use_dconv = use_dconv, use_expand = use_expand)
 
         self.head_type = head_type
         if head_type == 'yolox':

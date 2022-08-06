@@ -4,7 +4,11 @@ import numpy as np
 import torch
 import copy
 import warnings
+import math
 
+def make_divisible(x, divisor):
+    # Upward revision the value x to make it evenly divisible by the divisor.
+    return math.ceil(x / divisor) * divisor
 
 def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):
     '''Basic cell for rep-style block, including conv and bn'''
