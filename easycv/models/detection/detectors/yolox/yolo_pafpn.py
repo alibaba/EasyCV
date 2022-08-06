@@ -54,7 +54,7 @@ class YOLOPAFPN(nn.Module):
         Conv = DWConv if depthwise else BaseConv
         self.neck = neck
         self.neck_mode = neck_mode
-        if neck == 'gsconv':
+        if neck != 'gsconv':
             if neck != 'yolo':
                 logging.warning('YOLOX-PAI backbone must in [yolo, gsconv], otherwise we use yolo as default')
             self.neck = 'yolo'
