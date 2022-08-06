@@ -94,7 +94,7 @@ class TOODHead(nn.Module):
                  width=1.0,
                  strides=[8, 16, 32],
                  in_channels=[256, 512, 1024],
-                 conv_type='conv',
+                 conv_type='repconv',
                  act='silu',
                  stage='CLOUD',
                  obj_loss_type='l1',
@@ -167,16 +167,17 @@ class TOODHead(nn.Module):
                         Conv(
                             in_channels=int(256 * width),
                             out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
                             act=act,
+                            # ksize=3,
+                            # stride=1,
                         ),
                         Conv(
                             in_channels=int(256 * width),
                             out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
                             act=act,
+                            # ksize=3,
+                            # stride=1,
+                            # act=act,
                         ),
                     ]))
                 self.reg_convs.append(
@@ -184,16 +185,18 @@ class TOODHead(nn.Module):
                         Conv(
                             in_channels=int(256 * width),
                             out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
                             act=act,
+                            # ksize=3,
+                            # stride=1,
+                            # act=act,
                         ),
                         Conv(
                             in_channels=int(256 * width),
                             out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
                             act=act,
+                            # ksize=3,
+                            # stride=1,
+                            # act=act,
                         ),
                     ]))
             elif conv_layers==1:

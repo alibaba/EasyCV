@@ -20,7 +20,7 @@ def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):
 
 class RepVGGBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3,
-                 stride=1, padding=1, dilation=1, groups=1, padding_mode='zeros', deploy=False, use_se=False):
+                 stride=1, padding=1, dilation=1, groups=1, padding_mode='zeros', deploy=False, use_se=False, act=None):
         super(RepVGGBlock, self).__init__()
         self.deploy = deploy
         self.groups = groups
