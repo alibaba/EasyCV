@@ -10,7 +10,7 @@ assignees: ''
 **Describe the feature**
 Feature description
 
-**Motivation** 
+**Motivation**
 A clear and concise description of the motivation of the feature. Ex1. It is inconvenient when [....]. Ex2. There is a recent paper [....], which is very helpful for [....].
 
 **Related resources**
