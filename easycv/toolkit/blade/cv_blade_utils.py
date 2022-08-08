@@ -74,7 +74,7 @@ def opt_trt_config(input_config=dict(enable_fp16=True)):
         optimization_pipeline='TensorRT',
         enable_fp16=True,
         customize_op_black_list=[
-            # 'aten::select', 'aten::index', 'aten::slice', 'aten::view'
+             #'aten::select', 'aten::index', 'aten::slice', 'aten::view', 'aten::upsample'
         ],
         fp16_fallback_op_ratio=0.1,
     )
@@ -114,7 +114,8 @@ def cu_prof_stop():
 @contextmanager
 def opt_blade_mixprec():
     try:
-        dummy = torch.classes.torch_blade.MixPrecision(True)
+        #dummy = torch.classes.torch_blade.MixPrecision(True)
+        dummy = torch.cuda.amp.autocast(True)
         yield
     finally:
         pass
@@ -235,21 +236,31 @@ def check_results(results0, results1):
     except Exception as err:
         logging.error(err)
 
-
 def blade_optimize(script_model,
                    model,
                    inputs,
                    blade_config=dict(enable_fp16=True),
                    backend='TensorRT',
                    batch=1,
-                   compute_cost=False):
+                   compute_cost=True,
+                   static_opt=True):
 
-    with opt_trt_config(blade_config):
-        opt_model = optimize(
-            model,
-            allow_tracing=True,
-            model_inputs=tuple(inputs),
-        )
+    if not static_opt:
+        with opt_trt_config(blade_config):
+            opt_model = optimize(
+                model,
+                allow_tracing=True,
+                model_inputs=tuple(inputs),
+            )
+    else:
+        print("GTY: use static shape optimization")
+        from torch_blade.optimization import _static_optimize
+        with opt_trt_config(blade_config):
+            opt_model = _static_optimize(
+                model,
+                allow_tracing=True,
+                model_inputs=tuple(inputs),
+            )
 
     if compute_cost:
         results = []
@@ -269,14 +280,44 @@ def blade_optimize(script_model,
         summary = pd.DataFrame(results)
         logging.warning(summary.to_markdown())
 
-    output = model(*inputs)
-    cu_prof_start()
-    if blade_config.get('enable_fp16', True):
-        with opt_blade_mixprec():
-            test_result = model(*inputs)
-    else:
+    print(opt_model.forward.code)
+    print(opt_model.forward.graph)
+    torch.cuda.empty_cache()
+    # warm-up
+    for k in range(10):
         test_result = opt_model(*inputs)
+        torch.cuda.synchronize()
+
+    # output = model(*inputs)
+    # if blade_config.get('enable_fp16', True):
+    #     with opt_blade_mixprec():
+    #         test_result = model(*inputs)
+    # else:
+    # test_result = opt_model(*inputs)
+    # test_result = opt_model(*inputs)
+    print("GTY: do nv profiling")
+    torch.cuda.synchronize()
+    cu_prof_start()
+    for k in range(10):
+        test_result = opt_model(*inputs)
+        torch.cuda.synchronize()
     cu_prof_stop()
-    check_results(output, test_result)
+
+    print("GTY: do torch profiling")
+    import torch.autograd.profiler as profiler
+    with profiler.profile(use_cuda=True) as prof:
+        for k in range(10):
+            test_result = opt_model(*inputs)
+            torch.cuda.synchronize()
+
+    with profiler.profile(use_cuda=True) as prof:
+        for k in range(10):
+            test_result = opt_model(*inputs)
+            torch.cuda.synchronize()
+ 
+    prof_str = prof.key_averages().table(sort_by="cuda_time_total")
+    print(f"{prof_str}")
+
+    # check_results(output, test_result)
 
     return opt_model
