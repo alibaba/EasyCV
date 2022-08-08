@@ -53,8 +53,8 @@ batch_sigmoid_ce_loss_jit = torch.jit.script(
 
 
 # Modified from https://github.com/facebookresearch/detr/blob/master/models/matcher.py
-class HungarianMatcher(nn.Module):
-    """This class computes an assignment between the targets and the predictions of the network
+class MaskHungarianMatcher(nn.Module):
+    """This class computes an assignment between the targets and the predictions of the network for segmentation
 
     For efficiency reasons, the targets don't include the no_object. Because of this, in general,
     there are more predictions than targets. In this case, we do a 1-to-1 matching of the best predictions,

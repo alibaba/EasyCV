@@ -8,7 +8,7 @@ from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
 from easycv.models.segmentation.utils.criterion import SetCriterion
-from easycv.models.segmentation.utils.matcher import HungarianMatcher
+from easycv.models.segmentation.utils.matcher import MaskHungarianMatcher
 from easycv.models.segmentation.utils.panoptic_gt_processing import (
     multi_apply, preprocess_panoptic_gt)
 from easycv.utils.checkpoint import load_checkpoint
@@ -50,7 +50,7 @@ class Mask2Former(BaseModel):
         self.num_things_classes = head.num_things_classes
         self.num_stuff_classes = head.num_stuff_classes
 
-        matcher = HungarianMatcher(
+        matcher = MaskHungarianMatcher(
             cost_class=train_cfg.class_weight,
             cost_mask=train_cfg.mask_weight,
             cost_dice=train_cfg.dice_weight,
