@@ -12,7 +12,6 @@ class Mask2FormerHead(nn.Module):
         self,
         pixel_decoder,
         transformer_decoder,
-        *,
         num_things_classes: int,
         num_stuff_classes: int,
         loss_weight: float = 1.0,
