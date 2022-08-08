@@ -1,5 +1,6 @@
 # Copyright (c) 2014-2021 Megvii Inc And Alibaba PAI-Teams. All rights reserved.
 from typing import Dict
+import logging
 
 import numpy as np
 import torch
