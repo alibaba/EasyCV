@@ -65,6 +65,7 @@ class YOLOX(BaseModel):
                  stacked_convs: int = 6,
                  la_down_rate: int = 8,
                  conv_layers: int = 2,
+                 decode_in_inference: bool = True,
                  backbone="CSPDarknet",
                  expand_kernel=3,
                  down_rate=32,
@@ -87,7 +88,8 @@ class YOLOX(BaseModel):
         elif head_type == 'tood':
             self.head = TOODHead(num_classes, width, in_channels=in_channels, act=act, obj_loss_type=obj_loss_type, reg_loss_type=reg_loss_type, stacked_convs=stacked_convs,
                  la_down_rate=la_down_rate,
-                 conv_layers=conv_layers)
+                 conv_layers=conv_layers,
+                 decode_in_inference=decode_in_inference)
             self.head.initialize_biases(1e-2)
         elif head_type == 'ppyoloe':
             self.head = PPYOLOEHead(
@@ -107,9 +109,13 @@ class YOLOX(BaseModel):
                 # assigner=TaskAlignedAssigner(topk=self.tal_topk, alpha=1.0, beta=6.0)
             )
 
+
+        self.decode_in_inference = decode_in_inference
+            
+        if not self.decode_in_inference:
+            logging.warning('YOLOX-PAI head decode_in_inference close for speed test, post process will be close at same time!')
+        
         self.apply(init_yolo)  # init_yolo(self)
-
-
         self.num_classes = num_classes
         self.test_conf = test_conf
         self.nms_thre = nms_thre
@@ -251,7 +257,8 @@ class YOLOX(BaseModel):
             fpn_outs = self.backbone(img)
             outputs = self.head(fpn_outs)
 
-            outputs = postprocess(outputs, self.num_classes, self.test_conf,
+            if self.decode_in_inference:
+                outputs = postprocess(outputs, self.num_classes, self.test_conf,
                                   self.nms_thre)
 
         return outputs

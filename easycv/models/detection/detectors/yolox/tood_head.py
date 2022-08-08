@@ -102,6 +102,7 @@ class TOODHead(nn.Module):
                  stacked_convs=6,
                  la_down_rate=8,
                  conv_layers=2,
+                 decode_in_inference=True,
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  ):
@@ -122,7 +123,7 @@ class TOODHead(nn.Module):
         self.n_anchors = 1
         self.num_classes = num_classes
         self.stage = stage
-        self.decode_in_inference = True  # for deploy, set to False
+        self.decode_in_inference = decode_in_inference  # for deploy, set to False
 
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
