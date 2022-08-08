@@ -74,9 +74,9 @@ def opt_trt_config(input_config=dict(enable_fp16=True)):
         optimization_pipeline='TensorRT',
         enable_fp16=True,
         customize_op_black_list=[
-            'aten::select', 'aten::index', 'aten::slice', 'aten::view'
+            # 'aten::select', 'aten::index', 'aten::slice', 'aten::view'
         ],
-        fp16_fallback_op_ratio=0.3,
+        fp16_fallback_op_ratio=0.1,
     )
     BLADE_CONFIG_KEYS = list(BLADE_CONFIG_DEFAULT.keys())
 
