@@ -30,7 +30,7 @@ class DetSourceCoco(object):
                 boxes of the dataset's classes will be filtered out. This option
                 only works when `test_mode=False`, i.e., we never filter images
                 during tests.
-            iscrowd: when traing setted as False, when val setted as Tre
+            iscrowd: when traing setted as False, when val setted as True
         """
         self.ann_file = ann_file
         self.img_prefix = img_prefix
