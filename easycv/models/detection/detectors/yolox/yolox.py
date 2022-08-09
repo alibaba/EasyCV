@@ -112,10 +112,15 @@ class YOLOX(BaseModel):
 
 
         self.decode_in_inference = decode_in_inference
-            
+        # use decode, we will use post process as default
         if not self.decode_in_inference:
             logging.warning('YOLOX-PAI head decode_in_inference close for speed test, post process will be close at same time!')
-        
+            self.ignore_postprocess = True
+            logging.warning('YOLOX-PAI ignore_postprocess set to be True')
+        else:
+            self.ignore_postprocess = False
+
+
         self.apply(init_yolo)  # init_yolo(self)
         self.num_classes = num_classes
         self.test_conf = test_conf

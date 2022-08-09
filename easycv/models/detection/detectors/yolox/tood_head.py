@@ -155,13 +155,15 @@ class TOODHead(nn.Module):
 
         for i in range(len(in_channels)):
             self.stems.append(
-                BaseConv(
+                # BaseConv(
+                Conv(
                     in_channels=int(in_channels[i] * width),
                     out_channels=int(256 * width),
                     ksize=1,
                     stride=1,
                     act=act,
-                ))
+                )
+            )
             if conv_layers==2:
                 self.cls_convs.append(
                     nn.Sequential(*[
@@ -187,17 +189,11 @@ class TOODHead(nn.Module):
                             in_channels=int(256 * width),
                             out_channels=int(256 * width),
                             act=act,
-                            # ksize=3,
-                            # stride=1,
-                            # act=act,
                         ),
                         Conv(
                             in_channels=int(256 * width),
                             out_channels=int(256 * width),
                             act=act,
-                            # ksize=3,
-                            # stride=1,
-                            # act=act,
                         ),
                     ]))
             elif conv_layers==1:
@@ -206,8 +202,6 @@ class TOODHead(nn.Module):
                         Conv(
                             in_channels=int(256 * width),
                             out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
                             act=act,
                         )
                     ]))
@@ -216,8 +210,6 @@ class TOODHead(nn.Module):
                         Conv(
                             in_channels=int(256 * width),
                             out_channels=int(256 * width),
-                            ksize=3,
-                            stride=1,
                             act=act,
                         )
                     ]))

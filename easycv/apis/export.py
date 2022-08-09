@@ -13,6 +13,8 @@ from mmcv.utils import Config
 from easycv.file import io
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
                            build_model)
+from easycv.models.backbones.repvgg_yolox_backbone import RepVGGBlock
+
 from easycv.utils.bbox_util import scale_coords
 from easycv.utils.checkpoint import load_checkpoint
 
@@ -34,6 +36,14 @@ def export(cfg, ckpt_path, filename):
         load_checkpoint(model, ckpt_path, map_location='cpu')
     else:
         cfg.model.backbone.pretrained = False
+
+    num=0
+    for layer in model.modules():
+        num+=1
+        if isinstance(layer, RepVGGBlock):
+            print('switch to deploy')
+            layer.switch_to_deploy()
+    logging.info('export : PAI-RepVGGBlock switch to deploy with {} blocks'.format(num))
 
     if isinstance(model, MOCO) or isinstance(model, DINO):
         _export_moco(model, cfg, filename)
@@ -170,8 +180,9 @@ def _export_yolox(model, cfg, filename):
         if LooseVersion(torch.__version__) < LooseVersion('1.7.0') and end2end:
             raise ValueError('`end2end` only support torch1.7.0 and later!')
 
-        #batch_size = cfg.export.get('batch_size', 32)
-        batch_size = cfg.export.get('batch_size', 1)
+        batch_size = cfg.export.get('batch_size', 32)
+        # batch_size = cfg.export.get('batch_size', 1)
+        static_opt = cfg.export.get('static_opt', True)
         img_scale = cfg.get('img_scale', (640, 640))
         assert (
             len(img_scale) == 2
@@ -195,7 +206,6 @@ def _export_yolox(model, cfg, filename):
         # use trace is a litter bit faster than script. But it is not supported in an end2end model.
         if end2end:
             yolox_trace = torch.jit.script(model_export)
-
         else:
             yolox_trace = torch.jit.trace(model_export, input.to(device))
 
@@ -208,13 +218,18 @@ def _export_yolox(model, cfg, filename):
             assert blade_env_assert()
 
             if end2end:
-                input = 255 * torch.rand(img_scale + (3, ))
+                if batch_size == 1:
+                    input = 255 * torch.rand(img_scale + (3, ))
+                else:
+                    input = 255 * torch.rand(img_scale + (3, batch_size))
+
 
             yolox_blade = blade_optimize(
                 script_model=model,
                 model=yolox_trace,
                 inputs=(input.to(device), ),
-                blade_config=blade_config)
+                blade_config=blade_config,
+                static_opt=static_opt)
 
             with io.open(filename + '.blade', 'wb') as ofile:
                 torch.jit.save(yolox_blade, ofile)
@@ -645,7 +660,12 @@ class End2endModelExportWrapper(torch.nn.Module):
 
         self.example_inputs = example_inputs
         self.preprocess_fn = preprocess_fn
-        self.postprocess_fn = postprocess_fn
+        self.ignore_postprocess = getattr(self.model, 'ignore_postprocess', False) 
+        if not self.ignore_postprocess:
+            self.postprocess_fn = postprocess_fn
+        else:
+            self.postprocess_fn = None
+        logging.warning("Model {} ignore_postprocess set to be {} during export !".format(type(model), self.ignore_postprocess))
         self.trace_model = trace_model
         if self.trace_model:
             self.trace_module()
@@ -670,7 +690,6 @@ class End2endModelExportWrapper(torch.nn.Module):
                     image = output
 
             model_output = self.model.forward_export(image)
-
             if self.postprocess_fn is not None:
                 model_output = self.postprocess_fn(model_output,
                                                    *preprocess_outputs)

@@ -208,7 +208,6 @@ class RepVGGYOLOX(nn.Module):
         width=1.0,
     ):
         super().__init__()
-
         num_repeat_backbone = [1, 6, 12, 18, 6]
         channels_list_backbone = [64, 128, 256, 512, 1024]
         num_repeat_neck = [12, 12, 12, 12]

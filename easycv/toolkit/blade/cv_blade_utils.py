@@ -76,7 +76,7 @@ def opt_trt_config(input_config=dict(enable_fp16=True)):
         customize_op_black_list=[
              #'aten::select', 'aten::index', 'aten::slice', 'aten::view', 'aten::upsample'
         ],
-        fp16_fallback_op_ratio=0.1,
+        fp16_fallback_op_ratio=0.05,
     )
     BLADE_CONFIG_KEYS = list(BLADE_CONFIG_DEFAULT.keys())
 
@@ -246,6 +246,7 @@ def blade_optimize(script_model,
                    static_opt=True):
 
     if not static_opt:
+        logging.info('PAI-Blade use dynamic optimize for input model, export model is build for dynamic shape input')
         with opt_trt_config(blade_config):
             opt_model = optimize(
                 model,
@@ -253,7 +254,7 @@ def blade_optimize(script_model,
                 model_inputs=tuple(inputs),
             )
     else:
-        print("GTY: use static shape optimization")
+        logging.info('PAI-Blade use static optimize for input model, export model must be used as static shape input')
         from torch_blade.optimization import _static_optimize
         with opt_trt_config(blade_config):
             opt_model = _static_optimize(
@@ -295,15 +296,13 @@ def blade_optimize(script_model,
     # else:
     # test_result = opt_model(*inputs)
     # test_result = opt_model(*inputs)
-    print("GTY: do nv profiling")
+    
     torch.cuda.synchronize()
     cu_prof_start()
     for k in range(10):
         test_result = opt_model(*inputs)
         torch.cuda.synchronize()
     cu_prof_stop()
-
-    print("GTY: do torch profiling")
     import torch.autograd.profiler as profiler
     with profiler.profile(use_cuda=True) as prof:
         for k in range(10):
