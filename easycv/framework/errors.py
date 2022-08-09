@@ -57,7 +57,13 @@ class BaseError(Exception):
         return self.code
 
     def __str__(self):
-        return self.message
+        print_str = 'ErrorCode: ' + self.error_code
+        if self.op is not None:
+            print_str += '\n' + 'Operation: ' + str(self.op)
+        print_str += '\n' + 'Message: ' + self.message
+        if self.details is not None:
+            print_str += '\n' + 'Details: ' + self.details
+        return print_str
 
 
 class NotImplementedError(BaseError):

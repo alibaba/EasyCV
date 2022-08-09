@@ -8,6 +8,7 @@ from tests.ut_config import DET_DATA_SMALL_VOC_LOCAL, VOC_CLASSES
 
 from easycv.datasets.detection.data_sources.voc import DetSourceVOC
 from easycv.file import io
+from easycv.framework.errors import ValueError
 
 
 class DetSourceVOCTest(unittest.TestCase):
@@ -107,7 +108,7 @@ class DetSourceVOCTest(unittest.TestCase):
 
         self.assertEqual(num_samples, 20)
         self.assertEqual(data_source._retry_count, 2)
-        self.assertEqual(exception.args[0], 'All samples failed to load!')
+        self.assertEqual(exception.message, 'All samples failed to load!')
 
 
 if __name__ == '__main__':
