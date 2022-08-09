@@ -1,7 +1,11 @@
 _base_ = './yolox_s_8xb16_300e_coco.py'
 
-# model settings
-model = dict(model_type='tiny')
+# oss io config
+oss_io_config = dict(
+    ak_id='your oss ak id',
+    ak_secret='your oss ak secret',
+    hosts='oss-cn-zhangjiakou.aliyuncs.com',  # your oss hosts
+    buckets=['your_bucket'])  # your oss buckets
 
 CLASSES = [
     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
@@ -19,9 +23,10 @@ CLASSES = [
     'hair drier', 'toothbrush'
 ]
 
-img_scale = (416, 416)
-random_size = (10, 20)
-scale_ratio = (0.5, 1.5)
+img_scale = (640, 640)
+random_size = (14, 26)
+scale_ratio = (0.1, 2)
+
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -57,21 +62,14 @@ test_pipeline = [
     dict(type='Collect', keys=['img'])
 ]
 
-data_root = 'data/coco/'
-
+# dataset settings
+img_size = 640
 train_dataset = dict(
     type='DetImagesMixDataset',
     data_source=dict(
-        type='DetSourceCoco',
-        ann_file=data_root + 'annotations/instances_train2017.json',
-        img_prefix=data_root + 'train2017/',
-        pipeline=[
-            dict(type='LoadImageFromFile', to_float32=True),
-            dict(type='LoadAnnotations', with_bbox=True)
-        ],
-        classes=CLASSES,
-        filter_empty_gt=False,
-        iscrowd=False),
+        type='DetSourcePAI',
+        path='data/coco/train2017.manifest',
+        classes=CLASSES),
     pipeline=train_pipeline,
     dynamic_scale=img_scale)
 
@@ -79,43 +77,15 @@ val_dataset = dict(
     type='DetImagesMixDataset',
     imgs_per_gpu=2,
     data_source=dict(
-        type='DetSourceCoco',
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
-        pipeline=[
-            dict(type='LoadImageFromFile', to_float32=True),
-            dict(type='LoadAnnotations', with_bbox=True)
-        ],
-        classes=CLASSES,
-        filter_empty_gt=False,
-        iscrowd=True),
+        type='DetSourcePAI',
+        path='data/coco/val2017.manifest',
+        classes=CLASSES),
     pipeline=test_pipeline,
     dynamic_scale=None,
     label_padding=False)
 
 data = dict(
     imgs_per_gpu=16, workers_per_gpu=4, train=train_dataset, val=val_dataset)
-
-# additional hooks
-interval = 10
-custom_hooks = [
-    dict(
-        type='YOLOXModeSwitchHook',
-        no_aug_epochs=15,
-        skip_type_keys=('MMMosaic', 'MMRandomAffine', 'MMMixUp'),
-        priority=48),
-    dict(
-        type='SyncRandomSizeHook',
-        ratio_range=random_size,
-        img_scale=img_scale,
-        interval=interval,
-        priority=48),
-    dict(
-        type='SyncNormHook',
-        num_last_epochs=15,
-        interval=interval,
-        priority=48)
-]
 
 eval_pipelines = [
     dict(
