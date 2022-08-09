@@ -33,10 +33,10 @@ model = dict(
         },
         with_fc=False))
 
-data_train_list = '../../../../dev/imagenet1k/ILSVRC2012_img_val_2/imagenet/train.txt'
-data_train_root = '../../../../dev/shm/imagenet1K/ILSVRC2012_img_train/'
-data_test_list = '../../../../dev/imagenet1k/ILSVRC2012_img_val_2/imagenet/val.txt'
-data_test_root = '../../../../dev/imagenet1k/ILSVRC2012_img_val_2/imagenet/'
+data_train_list = '/dev/imagenet1k/train.txt'
+data_train_root = '/dev/imagenet1k/ILSVRC2012_img_train/ILSVRC2012_img_train/'
+data_test_list = '/dev/imagenet1k/val.txt'
+data_test_root = '/dev/imagenet1k/ILSVRC2012_img_val/ILSVRC2012_img_val_2/imagenet/'
 # data_all_list = 'imagenet_raw/meta/all_labeled.txt'
 # data_root = 'imagenet_raw/'
 
@@ -104,145 +104,10 @@ optimizer = dict(
     paramwise_options={
         'cls_token': dict(weight_decay=0.),
         'pos_embed': dict(weight_decay=0.),
-
-        'patch_embed.proj.bias': dict(weight_decay=0.),
-
-        'blocks.0.gamma_1': dict(weight_decay=0.),
-        'blocks.0.gamma_2': dict(weight_decay=0.),
-        'blocks.0.norm1.weight': dict(weight_decay=0.),
-        'blocks.0.norm1.bias': dict(weight_decay=0.),
-        'blocks.0.attn.qkv.bias': dict(weight_decay=0.),
-        'blocks.0.attn.proj.bias': dict(weight_decay=0.),
-        'blocks.0.norm2.weight': dict(weight_decay=0.),
-        'blocks.0.norm2.bias': dict(weight_decay=0.),
-        'blocks.0.mlp.fc1.bias': dict(weight_decay=0.),
-        'blocks.0.mlp.fc2.bias': dict(weight_decay=0.),
-
-        'blocks.1.gamma_1': dict(weight_decay=0.),
-        'blocks.1.gamma_2': dict(weight_decay=0.),
-        'blocks.1.norm1.weight': dict(weight_decay=0.),
-        'blocks.1.norm1.bias': dict(weight_decay=0.),
-        'blocks.1.attn.qkv.bias': dict(weight_decay=0.),
-        'blocks.1.attn.proj.bias': dict(weight_decay=0.),
-        'blocks.1.norm2.weight': dict(weight_decay=0.),
-        'blocks.1.norm2.bias': dict(weight_decay=0.),
-        'blocks.1.mlp.fc1.bias': dict(weight_decay=0.),
-        'blocks.1.mlp.fc2.bias': dict(weight_decay=0.),
-
-        'blocks.2.gamma_1': dict(weight_decay=0.),
-        'blocks.2.gamma_2': dict(weight_decay=0.),
-        'blocks.2.norm1.weight': dict(weight_decay=0.),
-        'blocks.2.norm1.bias': dict(weight_decay=0.),
-        'blocks.2.attn.qkv.bias': dict(weight_decay=0.),
-        'blocks.2.attn.proj.bias': dict(weight_decay=0.),
-        'blocks.2.norm2.weight': dict(weight_decay=0.),
-        'blocks.2.norm2.bias': dict(weight_decay=0.),
-        'blocks.2.mlp.fc1.bias': dict(weight_decay=0.),
-        'blocks.2.mlp.fc2.bias': dict(weight_decay=0.),
-
-        'blocks.3.gamma_1': dict(weight_decay=0.),
-        'blocks.3.gamma_2': dict(weight_decay=0.),
-        'blocks.3.norm1.weight': dict(weight_decay=0.),
-        'blocks.3.norm1.bias': dict(weight_decay=0.),
-        'blocks.3.attn.qkv.bias': dict(weight_decay=0.),
-        'blocks.3.attn.proj.bias': dict(weight_decay=0.),
-        'blocks.3.norm2.weight': dict(weight_decay=0.),
-        'blocks.3.norm2.bias': dict(weight_decay=0.),
-        'blocks.3.mlp.fc1.bias': dict(weight_decay=0.),
-        'blocks.3.mlp.fc2.bias': dict(weight_decay=0.),
-
-        'blocks.4.gamma_1': dict(weight_decay=0.),
-        'blocks.4.gamma_2': dict(weight_decay=0.),
-        'blocks.4.norm1.weight': dict(weight_decay=0.),
-        'blocks.4.norm1.bias': dict(weight_decay=0.),
-        'blocks.4.attn.qkv.bias': dict(weight_decay=0.),
-        'blocks.4.attn.proj.bias': dict(weight_decay=0.),
-        'blocks.4.norm2.weight': dict(weight_decay=0.),
-        'blocks.4.norm2.bias': dict(weight_decay=0.),
-        'blocks.4.mlp.fc1.bias': dict(weight_decay=0.),
-        'blocks.4.mlp.fc2.bias': dict(weight_decay=0.),
-
-        'blocks.5.gamma_1': dict(weight_decay=0.),
-        'blocks.5.gamma_2': dict(weight_decay=0.),
-        'blocks.5.norm1.weight': dict(weight_decay=0.),
-        'blocks.5.norm1.bias': dict(weight_decay=0.),
-        'blocks.5.attn.qkv.bias': dict(weight_decay=0.),
-        'blocks.5.attn.proj.bias': dict(weight_decay=0.),
-        'blocks.5.norm2.weight': dict(weight_decay=0.),
-        'blocks.5.norm2.bias': dict(weight_decay=0.),
-        'blocks.5.mlp.fc1.bias': dict(weight_decay=0.),
-        'blocks.5.mlp.fc2.bias': dict(weight_decay=0.),
-
-        'blocks.6.gamma_1': dict(weight_decay=0.),
-        'blocks.6.gamma_2': dict(weight_decay=0.),
-        'blocks.6.norm1.weight': dict(weight_decay=0.),
-        'blocks.6.norm1.bias': dict(weight_decay=0.),
-        'blocks.6.attn.qkv.bias': dict(weight_decay=0.),
-        'blocks.6.attn.proj.bias': dict(weight_decay=0.),
-        'blocks.6.norm2.weight': dict(weight_decay=0.),
-        'blocks.6.norm2.bias': dict(weight_decay=0.),
-        'blocks.6.mlp.fc1.bias': dict(weight_decay=0.),
-        'blocks.6.mlp.fc2.bias': dict(weight_decay=0.),
-
-        'blocks.7.gamma_1': dict(weight_decay=0.),
-        'blocks.7.gamma_2': dict(weight_decay=0.),
-        'blocks.7.norm1.weight': dict(weight_decay=0.),
-        'blocks.7.norm1.bias': dict(weight_decay=0.),
-        'blocks.7.attn.qkv.bias': dict(weight_decay=0.),
-        'blocks.7.attn.proj.bias': dict(weight_decay=0.),
-        'blocks.7.norm2.weight': dict(weight_decay=0.),
-        'blocks.7.norm2.bias': dict(weight_decay=0.),
-        'blocks.7.mlp.fc1.bias': dict(weight_decay=0.),
-        'blocks.7.mlp.fc2.bias': dict(weight_decay=0.),
-
-        'blocks.8.gamma_1': dict(weight_decay=0.),
-        'blocks.8.gamma_2': dict(weight_decay=0.),
-        'blocks.8.norm1.weight': dict(weight_decay=0.),
-        'blocks.8.norm1.bias': dict(weight_decay=0.),
-        'blocks.8.attn.qkv.bias': dict(weight_decay=0.),
-        'blocks.8.attn.proj.bias': dict(weight_decay=0.),
-        'blocks.8.norm2.weight': dict(weight_decay=0.),
-        'blocks.8.norm2.bias': dict(weight_decay=0.),
-        'blocks.8.mlp.fc1.bias': dict(weight_decay=0.),
-        'blocks.8.mlp.fc2.bias': dict(weight_decay=0.),
-
-        'blocks.9.gamma_1': dict(weight_decay=0.),
-        'blocks.9.gamma_2': dict(weight_decay=0.),
-        'blocks.9.norm1.weight': dict(weight_decay=0.),
-        'blocks.9.norm1.bias': dict(weight_decay=0.),
-        'blocks.9.attn.qkv.bias': dict(weight_decay=0.),
-        'blocks.9.attn.proj.bias': dict(weight_decay=0.),
-        'blocks.9.norm2.weight': dict(weight_decay=0.),
-        'blocks.9.norm2.bias': dict(weight_decay=0.),
-        'blocks.9.mlp.fc1.bias': dict(weight_decay=0.),
-        'blocks.9.mlp.fc2.bias': dict(weight_decay=0.),
-
-        'blocks.10.gamma_1': dict(weight_decay=0.),
-        'blocks.10.gamma_2': dict(weight_decay=0.),
-        'blocks.10.norm1.weight': dict(weight_decay=0.),
-        'blocks.10.norm1.bias': dict(weight_decay=0.),
-        'blocks.10.attn.qkv.bias': dict(weight_decay=0.),
-        'blocks.10.attn.proj.bias': dict(weight_decay=0.),
-        'blocks.10.norm2.weight': dict(weight_decay=0.),
-        'blocks.10.norm2.bias': dict(weight_decay=0.),
-        'blocks.10.mlp.fc1.bias': dict(weight_decay=0.),
-        'blocks.10.mlp.fc2.bias': dict(weight_decay=0.),
-
-        'blocks.11.gamma_1': dict(weight_decay=0.),
-        'blocks.11.gamma_2': dict(weight_decay=0.),
-        'blocks.11.norm1.weight': dict(weight_decay=0.),
-        'blocks.11.norm1.bias': dict(weight_decay=0.),
-        'blocks.11.attn.qkv.bias': dict(weight_decay=0.),
-        'blocks.11.attn.proj.bias': dict(weight_decay=0.),
-        'blocks.11.norm2.weight': dict(weight_decay=0.),
-        'blocks.11.norm2.bias': dict(weight_decay=0.),
-        'blocks.11.mlp.fc1.bias': dict(weight_decay=0.),
-        'blocks.11.mlp.fc2.bias': dict(weight_decay=0.),
-
-        'norm.weight': dict(weight_decay=0.),
-        'norm.bias': dict(weight_decay=0.),
-
-        'head.bias': dict(weight_decay=0.),
+        'bias': dict(weight_decay=0.),
+        'norm': dict(weight_decay=0.),
+        'gamma_1': dict(weight_decay=0.),
+        'gamma_2': dict(weight_decay=0.),
     })
 optimizer_config = dict(grad_clip=None, update_interval=1)
 
