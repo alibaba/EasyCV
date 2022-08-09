@@ -77,6 +77,7 @@ class DBNet(BaseModel):
         else:
             y["head_out"] = x
         return y
+    
     def forward_train(self, img):
         pass
     

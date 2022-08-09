@@ -1,0 +1,1 @@
+from .det import OCRDetSource
