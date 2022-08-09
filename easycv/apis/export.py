@@ -22,6 +22,20 @@ __all__ = [
     'export', 'PreProcess', 'DetPostProcess', 'End2endModelExportWrapper'
 ]
 
+def reparameterize_models(model):
+    """ reparameterize model for inference, especially for 
+            1. rep conv block : merge 3x3 weight 1x1 weights
+        call module switch_to_deploy recursively
+    Args:
+        model: nn.Module
+    """
+    reparameterize_count=0
+    for layer in model.modules():
+        reparameterize_count+=1
+        if isinstance(layer, RepVGGBlock):
+            layer.switch_to_deploy()
+    logging.info('export : PAI-export reparameterize_count(RepVGGBlock, ) switch to deploy with {} blocks'.format(reparameterize_count))
+    return model
 
 def export(cfg, ckpt_path, filename):
     """ export model for inference
@@ -36,14 +50,7 @@ def export(cfg, ckpt_path, filename):
         load_checkpoint(model, ckpt_path, map_location='cpu')
     else:
         cfg.model.backbone.pretrained = False
-
-    num=0
-    for layer in model.modules():
-        num+=1
-        if isinstance(layer, RepVGGBlock):
-            print('switch to deploy')
-            layer.switch_to_deploy()
-    logging.info('export : PAI-RepVGGBlock switch to deploy with {} blocks'.format(num))
+    model = reparameterize_models(model)
 
     if isinstance(model, MOCO) or isinstance(model, DINO):
         _export_moco(model, cfg, filename)
