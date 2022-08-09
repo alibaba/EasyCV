@@ -18,7 +18,7 @@ class DetSourceRawTest(unittest.TestCase):
         for cache_file in io.glob(os.path.join(data_root, 'labels/*.cache')):
             io.remove(cache_file)
 
-    def _base_test(self, data_source):
+    def _base_test(self, data_source, cache_at_init, cache_on_the_fly):
         index_list = random.choices(list(range(20)), k=3)
         for idx in index_list:
             data = data_source.get_sample(idx)
@@ -33,13 +33,19 @@ class DetSourceRawTest(unittest.TestCase):
             self.assertEqual(data['img'].shape[-1], 3)
 
         exclude_idx = [i for i in list(range(20)) if i not in index_list]
-        for i in range(3):
+        if cache_at_init:
+            for i in range(20):
+                self.assertIn('img', data_source.samples_list[i])
 
-            if data_source.cache_at_init:
-                self.assertIn('img', data_source.samples_list[exclude_idx[i]])
-            if data_source.cache_on_the_fly:
-                self.assertNotIn('img',
-                                 data_source.samples_list[exclude_idx[i]])
+        if not cache_at_init and cache_on_the_fly:
+            for i in index_list:
+                self.assertIn('img', data_source.samples_list[i])
+            for j in exclude_idx:
+                self.assertNotIn('img', data_source.samples_list[j])
+
+        if not cache_at_init and not cache_on_the_fly:
+            for i in range(20):
+                self.assertNotIn('img', data_source.samples_list[i])
 
         length = len(data_source)
         self.assertEqual(length, 128)
@@ -63,31 +69,38 @@ class DetSourceRawTest(unittest.TestCase):
 
     def test_default(self):
         data_root = DET_DATA_RAW_LOCAL
+        cache_on_the_fly = True
+        cache_at_init = False
         data_source = DetSourceRaw(
             img_root_path=os.path.join(data_root, 'images/train2017'),
             label_root_path=os.path.join(data_root, 'labels/train2017'),
-        )
-        self._base_test(data_source)
+            cache_on_the_fly=cache_on_the_fly,
+            cache_at_init=cache_at_init)
+        self._base_test(data_source, cache_at_init, cache_on_the_fly)
 
     def test_cache_on_the_fly(self):
         data_root = DET_DATA_RAW_LOCAL
+        cache_on_the_fly = True
+        cache_at_init = False
         data_source = DetSourceRaw(
             img_root_path=os.path.join(data_root, 'images/train2017'),
             label_root_path=os.path.join(data_root, 'labels/train2017'),
-            cache_on_the_fly=True,
-            cache_at_init=False,
+            cache_on_the_fly=cache_on_the_fly,
+            cache_at_init=cache_at_init,
         )
-        self._base_test(data_source)
+        self._base_test(data_source, cache_at_init, cache_on_the_fly)
 
     def test_cache_at_init(self):
         data_root = DET_DATA_RAW_LOCAL
+        cache_on_the_fly = False
+        cache_at_init = True
         data_source = DetSourceRaw(
             img_root_path=os.path.join(data_root, 'images/train2017'),
             label_root_path=os.path.join(data_root, 'labels/train2017'),
-            cache_on_the_fly=False,
-            cache_at_init=True,
+            cache_on_the_fly=cache_on_the_fly,
+            cache_at_init=cache_at_init,
         )
-        self._base_test(data_source)
+        self._base_test(data_source, cache_at_init, cache_on_the_fly)
 
 
 if __name__ == '__main__':

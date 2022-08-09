@@ -143,6 +143,10 @@ class DetSourceBase(object):
         result_dict = self.samples_list[idx]
         load_success = True
         try:
+            # avoid data cache from taking up too much memory
+            if not self.cache_at_init and not self.cache_on_the_fly:
+                result_dict = copy.deepcopy(result_dict)
+
             if not self.cache_at_init and result_dict.get('img', None) is None:
                 result_dict.update(_load_image(result_dict['filename']))
                 if self.cache_on_the_fly:
