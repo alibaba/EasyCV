@@ -155,8 +155,7 @@ class TOODHead(nn.Module):
 
         for i in range(len(in_channels)):
             self.stems.append(
-                # BaseConv(
-                Conv(
+                BaseConv(
                     in_channels=int(in_channels[i] * width),
                     out_channels=int(256 * width),
                     ksize=1,
@@ -254,14 +253,21 @@ class TOODHead(nn.Module):
             conv_cfg = self.conv_cfg
             chn = self.feat_channels
             self.inter_convs.append(
-                ConvModule(
-                    chn,
-                    self.feat_channels,
-                    3,
-                    stride=1,
-                    padding=1,
-                    conv_cfg=conv_cfg,
-                    norm_cfg=self.norm_cfg))
+                Conv(
+                    in_channels=chn,
+                    out_channels=chn,
+                    act=act,
+                )
+            )
+            # self.inter_convs.append(
+            #     ConvModule(
+            #         chn,
+            #         self.feat_channels,
+            #         3,
+            #         stride=1,
+            #         padding=1,
+            #         conv_cfg=conv_cfg,
+            #         norm_cfg=self.norm_cfg))
 
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction='none')
 
