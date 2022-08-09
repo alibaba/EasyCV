@@ -6,7 +6,6 @@ from easycv.models.detection.detectors.dab_detr import (DABDETRHead,
 from easycv.models.detection.detectors.detection import Detection
 from easycv.models.detection.detectors.detr import DETRHead, DetrTransformer
 from easycv.models.detection.detectors.fcos import FCOSHead
-from easycv.models.detection.detectors.yolox.yolox import YOLOX
 
 try:
     from easycv.models.detection.detectors.yolox.yolox import YOLOX

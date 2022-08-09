@@ -74,7 +74,7 @@ def opt_trt_config(input_config=dict(enable_fp16=True)):
         optimization_pipeline='TensorRT',
         enable_fp16=True,
         customize_op_black_list=[
-            #'aten::select', 'aten::index', 'aten::slice', 'aten::view', 'aten::upsample'
+            # 'aten::select', 'aten::index', 'aten::slice', 'aten::view', 'aten::upsample'
         ],
         fp16_fallback_op_ratio=0.05,
     )
@@ -114,7 +114,6 @@ def cu_prof_stop():
 @contextmanager
 def opt_blade_mixprec():
     try:
-        #dummy = torch.classes.torch_blade.MixPrecision(True)
         dummy = torch.cuda.amp.autocast(True)
         yield
     finally:

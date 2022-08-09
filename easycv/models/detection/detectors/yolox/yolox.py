@@ -119,23 +119,6 @@ class YOLOX(BaseModel):
                 conv_layers=conv_layers,
                 decode_in_inference=decode_in_inference)
             self.head.initialize_biases(1e-2)
-        elif head_type == 'ppyoloe':
-            self.head = PPYOLOEHead(
-                in_channels=in_channels,
-                width=width,
-                strides=[8, 16, 32],
-                static_assigner_epoch=4,
-                use_varifocal_loss=True,
-                # eval_input_size=self.test_size,
-                eval_input_size=None,
-                loss_weight={
-                    'class': 1.0,
-                    'iou': 2.5,
-                    'dfl': 0.5
-                },
-                # static_assigner=ATSSAssigner(self.atss_topk, num_classes=self.num_classes),
-                # assigner=TaskAlignedAssigner(topk=self.tal_topk, alpha=1.0, beta=6.0)
-            )
 
         self.decode_in_inference = decode_in_inference
         # use decode, we will use post process as default

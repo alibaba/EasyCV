@@ -1,16 +1,10 @@
 # borrow some code from https://github.com/DingXiaoH/RepVGG/repvgg.py MIT2.0
 import copy
-import math
 import warnings
 
 import numpy as np
 import torch
 import torch.nn as nn
-
-
-def make_divisible(x, divisor):
-    # Upward revision the value x to make it evenly divisible by the divisor.
-    return math.ceil(x / divisor) * divisor
 
 
 def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):
@@ -42,7 +36,6 @@ class RepVGGBlock(nn.Module):
                  groups=1,
                  padding_mode='zeros',
                  deploy=False,
-                 use_se=False,
                  act=None):
         super(RepVGGBlock, self).__init__()
         self.deploy = deploy
@@ -55,12 +48,7 @@ class RepVGGBlock(nn.Module):
         padding_11 = padding - kernel_size // 2
 
         self.nonlinearity = nn.ReLU()
-
-        if use_se:
-            self.se = SEBlock(
-                out_channels, internal_neurons=out_channels // 16)
-        else:
-            self.se = nn.Identity()
+        self.se = nn.Identity()
 
         if deploy:
             self.rbr_reparam = nn.Conv2d(
@@ -339,66 +327,6 @@ class RepVGGYOLOX(nn.Module):
         self.stage4 = self._make_stage(
             channels_list[3], channels_list[4], num_repeats[4], add_ppf=True)
 
-        # self.ERBlock_2 = nn.Sequential(
-        #     RepVGGBlock(
-        #         in_channels=channels_list[0],
-        #         out_channels=channels_list[1],
-        #         kernel_size=3,
-        #         stride=2
-        #     ),
-        #     RepBlock(
-        #         in_channels=channels_list[1],
-        #         out_channels=channels_list[1],
-        #         n=num_repeats[1]
-        #     )
-        # )
-
-        # self.ERBlock_3 = nn.Sequential(
-        #     RepVGGBlock(
-        #         in_channels=channels_list[1],
-        #         out_channels=channels_list[2],
-        #         kernel_size=3,
-        #         stride=2
-        #     ),
-        #     RepBlock(
-        #         in_channels=channels_list[2],
-        #         out_channels=channels_list[2],
-        #         n=num_repeats[2],
-        #     )
-        # )
-
-        # self.ERBlock_4 = nn.Sequential(
-        #     RepVGGBlock(
-        #         in_channels=channels_list[2],
-        #         out_channels=channels_list[3],
-        #         kernel_size=3,
-        #         stride=2
-        #     ),
-        #     RepBlock(
-        #         in_channels=channels_list[3],
-        #         out_channels=channels_list[3],
-        #         n=num_repeats[3]
-        #     )
-        # )
-        # self.ERBlock_5 = nn.Sequential(
-        #     RepVGGBlock(
-        #         in_channels=channels_list[3],
-        #         out_channels=channels_list[4],
-        #         kernel_size=3,
-        #         stride=2
-        #     ),
-        #     RepBlock(
-        #         in_channels=channels_list[4],
-        #         out_channels=channels_list[4],
-        #         n=num_repeats[4]
-        #     ),
-        #     SimSPPF(
-        #         in_channels=channels_list[4],
-        #         out_channels=channels_list[4],
-        #         kernel_size=5
-        #     )
-        # )
-
     def _make_stage(self,
                     in_channels,
                     out_channels,
@@ -452,8 +380,6 @@ if __name__ == '__main__':
         make_divisible(i * width_mul, 8)
         for i in (channels_list_backbone + channels_list_neck)
     ]
-    # from easycv.models.backbones.efficientrep import EfficientRep
-    # model = EfficientRep(in_channels=channels, channels_list=channels_list, num_repeats=num_repeat)
     # model = RepVGGYOLOX(in_channels=channels, channels_list=channels_list, num_repeats=num_repeat)
     model = RepVGGYOLOX(in_channels=channels, depth=depth_mul, width=width_mul)
     for layer in model.modules():
