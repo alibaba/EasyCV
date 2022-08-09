@@ -36,7 +36,7 @@ class ImageNpy(object):
 
         self.data = np.load(image_file, allow_pickle=True)
 
-    def get_length(self):
+    def __len__(self):
         return self.data.shape[0]
 
     def get_sample(self, idx):

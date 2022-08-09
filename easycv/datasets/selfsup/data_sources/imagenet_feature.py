@@ -89,5 +89,5 @@ class SSLSourceImageNetFeature(object):
         results = {'img': feature, 'gt_labels': label}
         return results
 
-    def get_length(self):
+    def __len__(self):
         return self.labels.shape[0]

@@ -31,8 +31,7 @@ class ClsSourceImageListTest(unittest.TestCase):
             self.assertIn(label, list(range(1000)))
             img.close()
 
-        length = data_source.get_length()
-        self.assertEqual(length, 200)
+        self.assertEqual(len(data_source), 200)
 
 
 if __name__ == '__main__':

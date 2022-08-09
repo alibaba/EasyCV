@@ -17,7 +17,9 @@ Pretrained on **ImageNet** dataset.
 
 | Config                                                       | Backbone        | Params<br/>(backbone/total) | Flops | inference time(V100)<br/>(ms/img) | Epochs | Download                                                     |
 | ------------------------------------------------------------ | --------------- | --------------------------- | ----- | --------------------------------- | ------ | ------------------------------------------------------------ |
-| [fast_convmae_vit_base_patch16_8xb64_50e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/fast_convmae/fast_convmae_vit_base_patch16_8xb64_50e.py) | ConvMAEViT-B/16 | 88M/115M                    | 45.1G | 6.88                              | 50     | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/FastConvMAE/pretrained/epoch_50.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/FastConvMAE/pretrained/20220617_110501.log.json) |
+| [fast_convmae_vit_base_patch16_8xb64_50e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/fast_convmae/fast_convmae_vit_base_patch16_8xb64_50e.py) | ConvViT-B/16 | 88M/115M                    | 45.1G | 6.88                              | 50     | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/FastConvMAE/pretrained/epoch_50.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/FastConvMAE/pretrained/20220617_110501.log.json) |
+
+> The flops of Fast ConvMAE is about four times of MAE, because the mask of MAE only retains 25% of the tokens each forward, but the mask of Fast ConvMAE adopts a complementary strategy, dividing the mask into four complementary parts with 25% token each part. This is equivalent to learning four samples at each forward, achieving 4 times the learning effect.
 
 ### DINO
 
@@ -25,7 +27,7 @@ Pretrained on **ImageNet** dataset.
 
 | Config                                                       | Backbone  | Params<br/>(backbone/total) | inference time(V100)<br/>(ms/img) | Epochs | Download                                                     |
 | ------------------------------------------------------------ | --------- | --------------------------- | --------------------------------- | ------ | ------------------------------------------------------------ |
-| [dino_deit_small_p16_8xb32_100e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/dino/dino_deit_small_p16_8xb32_100e_tfrecord.py) | DeiT-S/16 | 21M/88M                     | 6.17                              | 100    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/dino_deit_small/epoch_100.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/dino_deit_small/log.txt) |
+| [dino_deit_small_p16_8xb32_100e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/dino/dino_deit_small_p16_8xb32_100e_tfrecord.py) | DeiT-S/16 | 21M/88M                     | 6.17                              | 100    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/dino_deit_small/epoch_100.pth) |
 
 ### MoBY
 
@@ -42,7 +44,7 @@ Pretrained on **ImageNet** dataset.
 
 | Config                                                       | Backbone | Params<br/>(backbone/total) | Flops | inference time(V100)<br/>(ms/img) | Epochs | Download                                                     |
 | ------------------------------------------------------------ | -------- | --------------------------- | ----- | --------------------------------- | ------ | ------------------------------------------------------------ |
-| [mocov2_resnet50_8xb32_200e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/mocov2/mocov2_rn50_8xb32_200e_tfrecord.py) | ResNet50 | 23M/28M                     | 8.2G  | 8.59                              | 200    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mocov2_r50/epoch_200.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mocov2_r50/log.txt) |
+| [mocov2_resnet50_8xb32_200e](https://github.com/alibaba/EasyCV/tree/master/configs/selfsup/mocov2/mocov2_rn50_8xb32_200e_tfrecord.py) | ResNet50 | 23M/28M                     | 8.2G  | 8.59                              | 200    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mocov2_r50/epoch_200.pth) |
 
 ### SwAV
 
