@@ -148,7 +148,6 @@ class TOODHead(nn.Module):
                 'YOLOX-PAI tood head conv_type must in [conv, dwconv, repconv], otherwise we use repconv as default'
             )
             conv_type = 'repconv'
-            
         if conv_type == 'conv':
             Conv = BaseConv
         if conv_type == 'dwconv':

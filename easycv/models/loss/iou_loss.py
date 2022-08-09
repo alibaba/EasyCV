@@ -300,7 +300,11 @@ class IoULoss(nn.Module):
 @LOSSES.register_module()
 class GIoULoss(nn.Module):
 
-    def __init__(self, eps=1e-6, reduction='mean', loss_type='giou', loss_weight=1.0):
+    def __init__(self,
+                 eps=1e-6,
+                 reduction='mean',
+                 loss_type='giou',
+                 loss_weight=1.0):
         super(GIoULoss, self).__init__()
         self.eps = eps
         self.reduction = reduction
