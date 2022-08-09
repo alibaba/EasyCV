@@ -41,5 +41,5 @@ class YOLOXModeSwitchHook(Hook):
             runner.logger.info('Add additional L1 loss now!')
             model.head.use_l1 = True
 
-        if hasattr(runner.model.module,'epoch_counter'):
+        if hasattr(runner.model.module, 'epoch_counter'):
             runner.model.module.epoch_counter = epoch

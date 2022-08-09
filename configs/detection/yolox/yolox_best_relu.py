@@ -7,11 +7,11 @@ model = dict(
     model_type='s',  # s m l x tiny nano
     test_conf=0.01,
     nms_thre=0.65,
-    act = 'relu',
+    act='relu',
     use_att='ASFF',
     obj_loss_type='BCE',
     reg_loss_type='giou',
-    head_type ='tood' # yolox
+    head_type='tood'  # yolox
 )
 
 # s m l x

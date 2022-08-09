@@ -15,8 +15,7 @@ model = dict(
     asff_channel=16,
     stacked_convs=6,
     la_down_rate=16,
-    conv_layers=2
-)
+    conv_layers=2)
 
 # s m l x
 img_scale = (640, 640)

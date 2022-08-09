@@ -10,7 +10,7 @@ model = dict(
     use_att=None,
     obj_loss_type='BCE',
     reg_loss_type='iou',
-    head_type ='tood' # yolox
+    head_type='tood'  # yolox
 )
 
 # s m l x

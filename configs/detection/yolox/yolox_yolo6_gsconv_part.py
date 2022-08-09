@@ -10,9 +10,8 @@ model = dict(
     nms_thre=0.65,
     obj_loss_type='BCE',
     reg_loss_type='giou',
-    neck = 'gsconv',
-    neck_mode = 'part'
-    )
+    neck='gsconv',
+    neck_mode='part')
 
 # s m l x
 img_scale = (640, 640)

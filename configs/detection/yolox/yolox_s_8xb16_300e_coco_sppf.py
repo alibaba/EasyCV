@@ -10,8 +10,7 @@ model = dict(
     use_att=None,
     obj_loss_type='BCE',
     reg_loss_type='iou',
-    spp_type='sppf'
-)
+    spp_type='sppf')
 
 # s m l x
 img_scale = (640, 640)

@@ -74,7 +74,7 @@ def opt_trt_config(input_config=dict(enable_fp16=True)):
         optimization_pipeline='TensorRT',
         enable_fp16=True,
         customize_op_black_list=[
-             #'aten::select', 'aten::index', 'aten::slice', 'aten::view', 'aten::upsample'
+            #'aten::select', 'aten::index', 'aten::slice', 'aten::view', 'aten::upsample'
         ],
         fp16_fallback_op_ratio=0.05,
     )
@@ -236,6 +236,7 @@ def check_results(results0, results1):
     except Exception as err:
         logging.error(err)
 
+
 def blade_optimize(script_model,
                    model,
                    inputs,
@@ -246,7 +247,9 @@ def blade_optimize(script_model,
                    static_opt=True):
 
     if not static_opt:
-        logging.info('PAI-Blade use dynamic optimize for input model, export model is build for dynamic shape input')
+        logging.info(
+            'PAI-Blade use dynamic optimize for input model, export model is build for dynamic shape input'
+        )
         with opt_trt_config(blade_config):
             opt_model = optimize(
                 model,
@@ -254,7 +257,9 @@ def blade_optimize(script_model,
                 model_inputs=tuple(inputs),
             )
     else:
-        logging.info('PAI-Blade use static optimize for input model, export model must be used as static shape input')
+        logging.info(
+            'PAI-Blade use static optimize for input model, export model must be used as static shape input'
+        )
         from torch_blade.optimization import _static_optimize
         with opt_trt_config(blade_config):
             opt_model = _static_optimize(
@@ -296,7 +301,7 @@ def blade_optimize(script_model,
     # else:
     # test_result = opt_model(*inputs)
     # test_result = opt_model(*inputs)
-    
+
     torch.cuda.synchronize()
     cu_prof_start()
     for k in range(10):
@@ -313,9 +318,9 @@ def blade_optimize(script_model,
         for k in range(10):
             test_result = opt_model(*inputs)
             torch.cuda.synchronize()
- 
-    prof_str = prof.key_averages().table(sort_by="cuda_time_total")
-    print(f"{prof_str}")
+
+    prof_str = prof.key_averages().table(sort_by='cuda_time_total')
+    print(f'{prof_str}')
 
     # check_results(output, test_result)
 

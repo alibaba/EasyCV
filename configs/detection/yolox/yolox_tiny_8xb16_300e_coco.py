@@ -63,7 +63,6 @@ test_pipeline = [
 # data_root = 'data/coco/'
 data_root = '/apsarapangu/disk5/zxy/data/coco/'
 
-
 train_dataset = dict(
     type='DetImagesMixDataset',
     data_source=dict(

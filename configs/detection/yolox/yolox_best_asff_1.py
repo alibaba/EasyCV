@@ -11,7 +11,7 @@ model = dict(
     asff_channel=1,
     obj_loss_type='BCE',
     reg_loss_type='giou',
-    head_type ='tood' # yolox
+    head_type='tood'  # yolox
 )
 
 # s m l x

@@ -7,6 +7,7 @@ from mmcv.ops import sigmoid_focal_loss as _sigmoid_focal_loss
 from easycv.models.builder import LOSSES
 from easycv.models.loss.utils import weight_reduce_loss
 
+
 def reduce_loss(loss, reduction):
     """Reduce loss as specified.
     Args:

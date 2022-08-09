@@ -17,7 +17,7 @@ model = dict(
     down_rate=None,
     use_dconv=False,
     use_expand=True,
-    )
+)
 
 # s m l x
 img_scale = (640, 640)

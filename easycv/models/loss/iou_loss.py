@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import math
 import warnings
 
 import mmcv
@@ -9,7 +10,7 @@ import torch.nn as nn
 from easycv.models.detection.utils import bbox_overlaps
 from easycv.models.loss.utils import weighted_loss
 from ..registry import LOSSES
-import math
+
 
 @mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
@@ -99,28 +100,35 @@ class IOUloss(nn.Module):
         if self.loss_type == 'iou':
             loss = 1 - iou**2
 
-        elif self.loss_type == "siou":
+        elif self.loss_type == 'siou':
             # angle cost
-            c_h = torch.max(pred[:, 1], target[:, 1]) - torch.min(pred[:, 1], target[:, 1])
-            c_w = torch.max(pred[:, 0], target[:, 0]) - torch.min(pred[:, 0], target[:, 0])
-            sigma = torch.sqrt(((pred[:, :2] - target[:, :2]) ** 2).sum(dim=1))
+            c_h = torch.max(pred[:, 1], target[:, 1]) - torch.min(
+                pred[:, 1], target[:, 1])
+            c_w = torch.max(pred[:, 0], target[:, 0]) - torch.min(
+                pred[:, 0], target[:, 0])
+            sigma = torch.sqrt(((pred[:, :2] - target[:, :2])**2).sum(dim=1))
             # angle_cost = 1 - 2 * torch.pow(torch.sin(torch.arctan(c_h / c_w) - torch.tensor(math.pi / 4)),2)
-            angle_cost = 2*(c_h*c_w)/(sigma**2)
+            angle_cost = 2 * (c_h * c_w) / (sigma**2)
 
             # distance cost
             gamma = 2 - angle_cost
             # gamma = 1
-            c_dw = torch.max(pred[:, 0], target[:, 0]) - torch.min(pred[:, 0], target[:, 0]) + (pred[:, 2] + target[:, 2])/2
-            c_dh = torch.max(pred[:, 1], target[:, 1]) - torch.min(pred[:, 1], target[:, 1]) + (pred[:, 3] + target[:, 3])/2
-            p_x = ((target[:, 0] - pred[:, 0]) / c_dw) ** 2
-            p_y = ((target[:, 1] - pred[:, 1]) / c_dh) ** 2
+            c_dw = torch.max(pred[:, 0], target[:, 0]) - torch.min(
+                pred[:, 0], target[:, 0]) + (pred[:, 2] + target[:, 2]) / 2
+            c_dh = torch.max(pred[:, 1], target[:, 1]) - torch.min(
+                pred[:, 1], target[:, 1]) + (pred[:, 3] + target[:, 3]) / 2
+            p_x = ((target[:, 0] - pred[:, 0]) / c_dw)**2
+            p_y = ((target[:, 1] - pred[:, 1]) / c_dh)**2
             dist_cost = 2 - torch.exp(-gamma * p_x) - torch.exp(-gamma * p_y)
 
             # shape cost
             theta = 4
-            w_w = torch.abs(pred[:, 2] - target[:, 2]) / torch.max(pred[:, 2], target[:, 2])
-            w_h = torch.abs(pred[:, 3] - target[:, 3]) / torch.max(pred[:, 3], target[:, 3])
-            shape_cost = torch.pow((1 - torch.exp(-w_w)), theta) + torch.pow((1 - torch.exp(-w_h)), theta)
+            w_w = torch.abs(pred[:, 2] - target[:, 2]) / torch.max(
+                pred[:, 2], target[:, 2])
+            w_h = torch.abs(pred[:, 3] - target[:, 3]) / torch.max(
+                pred[:, 3], target[:, 3])
+            shape_cost = torch.pow((1 - torch.exp(-w_w)), theta) + torch.pow(
+                (1 - torch.exp(-w_h)), theta)
 
             loss = 1 - iou + (dist_cost + shape_cost) / 2
 
@@ -133,37 +141,41 @@ class IOUloss(nn.Module):
             giou = iou - (area_c - area_i) / area_c.clamp(1e-16)
             loss = 1 - giou.clamp(min=-1.0, max=1.0)
 
-        elif self.loss_type == "diou":
+        elif self.loss_type == 'diou':
             c_tl = torch.min(
-                (pred[:, :2] - pred[:, 2:] / 2), (target[:, :2] - target[:, 2:] / 2)  # 包围框的左上点
+                (pred[:, :2] - pred[:, 2:] / 2),
+                (target[:, :2] - target[:, 2:] / 2)  # 包围框的左上点
             )
             c_br = torch.max(
-                (pred[:, :2] + pred[:, 2:] / 2), (target[:, :2] + target[:, 2:] / 2)  # 包围框的右下点
+                (pred[:, :2] + pred[:, 2:] / 2),
+                (target[:, :2] + target[:, 2:] / 2)  # 包围框的右下点
             )
-            convex_dis = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + torch.pow(c_br[:, 1] - c_tl[:, 1],
-                                                                           2) + 1e-7  # convex diagonal squared
+            convex_dis = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + torch.pow(
+                c_br[:, 1] - c_tl[:, 1], 2) + 1e-7  # convex diagonal squared
 
-            center_dis = (torch.pow(pred[:, 0] - target[:, 0], 2) + torch.pow(pred[:, 1] - target[:, 1],
-                                                                              2))  # center diagonal squared
+            center_dis = (torch.pow(pred[:, 0] - target[:, 0], 2) +
+                          torch.pow(pred[:, 1] - target[:, 1], 2)
+                          )  # center diagonal squared
 
             diou = iou - (center_dis / convex_dis)
             loss = 1 - diou.clamp(min=-1.0, max=1.0)
 
-        elif self.loss_type == "ciou":
-            c_tl = torch.min(
-                (pred[:, :2] - pred[:, 2:] / 2), (target[:, :2] - target[:, 2:] / 2)
-            )
-            c_br = torch.max(
-                (pred[:, :2] + pred[:, 2:] / 2), (target[:, :2] + target[:, 2:] / 2)
-            )
-            convex_dis = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + torch.pow(c_br[:, 1] - c_tl[:, 1],
-                                                                           2) + 1e-7  # convex diagonal squared
+        elif self.loss_type == 'ciou':
+            c_tl = torch.min((pred[:, :2] - pred[:, 2:] / 2),
+                             (target[:, :2] - target[:, 2:] / 2))
+            c_br = torch.max((pred[:, :2] + pred[:, 2:] / 2),
+                             (target[:, :2] + target[:, 2:] / 2))
+            convex_dis = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + torch.pow(
+                c_br[:, 1] - c_tl[:, 1], 2) + 1e-7  # convex diagonal squared
 
-            center_dis = (torch.pow(pred[:, 0] - target[:, 0], 2) + torch.pow(pred[:, 1] - target[:, 1],
-                                                                              2))  # center diagonal squared
+            center_dis = (torch.pow(pred[:, 0] - target[:, 0], 2) +
+                          torch.pow(pred[:, 1] - target[:, 1], 2)
+                          )  # center diagonal squared
 
-            v = (4 / math.pi ** 2) * torch.pow(torch.atan(target[:, 2] / torch.clamp(target[:, 3], min=1e-7)) -
-                                               torch.atan(pred[:, 2] / torch.clamp(pred[:, 3], min=1e-7)), 2)
+            v = (4 / math.pi**2) * torch.pow(
+                torch.atan(target[:, 2] / torch.clamp(target[:, 3], min=1e-7))
+                - torch.atan(pred[:, 2] / torch.clamp(pred[:, 3], min=1e-7)),
+                2)
 
             with torch.no_grad():
                 alpha = v / ((1 + 1e-7) - iou + v)
@@ -172,19 +184,18 @@ class IOUloss(nn.Module):
 
             loss = 1 - ciou.clamp(min=-1.0, max=1.0)
 
-        elif self.loss_type == "eiou":
+        elif self.loss_type == 'eiou':
 
-            c_tl = torch.min(
-                (pred[:, :2] - pred[:, 2:] / 2), (target[:, :2] - target[:, 2:] / 2)
-            )
-            c_br = torch.max(
-                (pred[:, :2] + pred[:, 2:] / 2), (target[:, :2] + target[:, 2:] / 2)
-            )
-            convex_dis = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + torch.pow(c_br[:, 1] - c_tl[:, 1],
-                                                                           2) + 1e-7  # convex diagonal squared
+            c_tl = torch.min((pred[:, :2] - pred[:, 2:] / 2),
+                             (target[:, :2] - target[:, 2:] / 2))
+            c_br = torch.max((pred[:, :2] + pred[:, 2:] / 2),
+                             (target[:, :2] + target[:, 2:] / 2))
+            convex_dis = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + torch.pow(
+                c_br[:, 1] - c_tl[:, 1], 2) + 1e-7  # convex diagonal squared
 
-            center_dis = (torch.pow(pred[:, 0] - target[:, 0], 2) + torch.pow(pred[:, 1] - target[:, 1],
-                                                                              2))  # center diagonal squared
+            center_dis = (torch.pow(pred[:, 0] - target[:, 0], 2) +
+                          torch.pow(pred[:, 1] - target[:, 1], 2)
+                          )  # center diagonal squared
 
             dis_w = torch.pow(pred[:, 2] - target[:, 2], 2)  # 两个框的w欧式距离
             dis_h = torch.pow(pred[:, 3] - target[:, 3], 2)  # 两个框的h欧式距离
@@ -192,7 +203,8 @@ class IOUloss(nn.Module):
             C_w = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + 1e-7  # 包围框的w平方
             C_h = torch.pow(c_br[:, 1] - c_tl[:, 1], 2) + 1e-7  # 包围框的h平方
 
-            eiou = iou - (center_dis / convex_dis) - (dis_w / C_w) - (dis_h / C_h)
+            eiou = iou - (center_dis / convex_dis) - (dis_w / C_w) - (
+                dis_h / C_h)
 
             loss = 1 - eiou.clamp(min=-1.0, max=1.0)
 
@@ -202,6 +214,7 @@ class IOUloss(nn.Module):
             loss = loss.sum()
 
         return loss
+
 
 @LOSSES.register_module()
 class IoULoss(nn.Module):
@@ -314,28 +327,35 @@ class GIoULoss(nn.Module):
         if self.loss_type == 'iou':
             loss = 1 - iou**2
 
-        elif self.loss_type == "siou":
+        elif self.loss_type == 'siou':
             # angle cost
-            c_h = torch.max(pred[:, 1], target[:, 1]) - torch.min(pred[:, 1], target[:, 1])
-            c_w = torch.max(pred[:, 0], target[:, 0]) - torch.min(pred[:, 0], target[:, 0])
-            sigma = torch.sqrt(((pred[:, :2] - target[:, :2]) ** 2).sum(dim=1))
+            c_h = torch.max(pred[:, 1], target[:, 1]) - torch.min(
+                pred[:, 1], target[:, 1])
+            c_w = torch.max(pred[:, 0], target[:, 0]) - torch.min(
+                pred[:, 0], target[:, 0])
+            sigma = torch.sqrt(((pred[:, :2] - target[:, :2])**2).sum(dim=1))
             # angle_cost = 1 - 2 * torch.pow(torch.sin(torch.arctan(c_h / c_w) - torch.tensor(math.pi / 4)),2)
-            angle_cost = 2*(c_h*c_w)/(sigma**2)
+            angle_cost = 2 * (c_h * c_w) / (sigma**2)
 
             # distance cost
             gamma = 2 - angle_cost
             # gamma = 1
-            c_dw = torch.max(pred[:, 0], target[:, 0]) - torch.min(pred[:, 0], target[:, 0]) + (pred[:, 2] + target[:, 2])/2
-            c_dh = torch.max(pred[:, 1], target[:, 1]) - torch.min(pred[:, 1], target[:, 1]) + (pred[:, 3] + target[:, 3])/2
-            p_x = ((target[:, 0] - pred[:, 0]) / c_dw) ** 2
-            p_y = ((target[:, 1] - pred[:, 1]) / c_dh) ** 2
+            c_dw = torch.max(pred[:, 0], target[:, 0]) - torch.min(
+                pred[:, 0], target[:, 0]) + (pred[:, 2] + target[:, 2]) / 2
+            c_dh = torch.max(pred[:, 1], target[:, 1]) - torch.min(
+                pred[:, 1], target[:, 1]) + (pred[:, 3] + target[:, 3]) / 2
+            p_x = ((target[:, 0] - pred[:, 0]) / c_dw)**2
+            p_y = ((target[:, 1] - pred[:, 1]) / c_dh)**2
             dist_cost = 2 - torch.exp(-gamma * p_x) - torch.exp(-gamma * p_y)
 
             # shape cost
             theta = 4
-            w_w = torch.abs(pred[:, 2] - target[:, 2]) / torch.max(pred[:, 2], target[:, 2])
-            w_h = torch.abs(pred[:, 3] - target[:, 3]) / torch.max(pred[:, 3], target[:, 3])
-            shape_cost = torch.pow((1 - torch.exp(-w_w)), theta) + torch.pow((1 - torch.exp(-w_h)), theta)
+            w_w = torch.abs(pred[:, 2] - target[:, 2]) / torch.max(
+                pred[:, 2], target[:, 2])
+            w_h = torch.abs(pred[:, 3] - target[:, 3]) / torch.max(
+                pred[:, 3], target[:, 3])
+            shape_cost = torch.pow((1 - torch.exp(-w_w)), theta) + torch.pow(
+                (1 - torch.exp(-w_h)), theta)
 
             loss = 1 - iou + (dist_cost + shape_cost) / 2
 
@@ -348,37 +368,41 @@ class GIoULoss(nn.Module):
             giou = iou - (area_c - area_i) / area_c.clamp(1e-16)
             loss = 1 - giou.clamp(min=-1.0, max=1.0)
 
-        elif self.loss_type == "diou":
+        elif self.loss_type == 'diou':
             c_tl = torch.min(
-                (pred[:, :2] - pred[:, 2:] / 2), (target[:, :2] - target[:, 2:] / 2)  # 包围框的左上点
+                (pred[:, :2] - pred[:, 2:] / 2),
+                (target[:, :2] - target[:, 2:] / 2)  # 包围框的左上点
             )
             c_br = torch.max(
-                (pred[:, :2] + pred[:, 2:] / 2), (target[:, :2] + target[:, 2:] / 2)  # 包围框的右下点
+                (pred[:, :2] + pred[:, 2:] / 2),
+                (target[:, :2] + target[:, 2:] / 2)  # 包围框的右下点
             )
-            convex_dis = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + torch.pow(c_br[:, 1] - c_tl[:, 1],
-                                                                           2) + 1e-7  # convex diagonal squared
+            convex_dis = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + torch.pow(
+                c_br[:, 1] - c_tl[:, 1], 2) + 1e-7  # convex diagonal squared
 
-            center_dis = (torch.pow(pred[:, 0] - target[:, 0], 2) + torch.pow(pred[:, 1] - target[:, 1],
-                                                                              2))  # center diagonal squared
+            center_dis = (torch.pow(pred[:, 0] - target[:, 0], 2) +
+                          torch.pow(pred[:, 1] - target[:, 1], 2)
+                          )  # center diagonal squared
 
             diou = iou - (center_dis / convex_dis)
             loss = 1 - diou.clamp(min=-1.0, max=1.0)
 
-        elif self.loss_type == "ciou":
-            c_tl = torch.min(
-                (pred[:, :2] - pred[:, 2:] / 2), (target[:, :2] - target[:, 2:] / 2)
-            )
-            c_br = torch.max(
-                (pred[:, :2] + pred[:, 2:] / 2), (target[:, :2] + target[:, 2:] / 2)
-            )
-            convex_dis = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + torch.pow(c_br[:, 1] - c_tl[:, 1],
-                                                                           2) + 1e-7  # convex diagonal squared
+        elif self.loss_type == 'ciou':
+            c_tl = torch.min((pred[:, :2] - pred[:, 2:] / 2),
+                             (target[:, :2] - target[:, 2:] / 2))
+            c_br = torch.max((pred[:, :2] + pred[:, 2:] / 2),
+                             (target[:, :2] + target[:, 2:] / 2))
+            convex_dis = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + torch.pow(
+                c_br[:, 1] - c_tl[:, 1], 2) + 1e-7  # convex diagonal squared
 
-            center_dis = (torch.pow(pred[:, 0] - target[:, 0], 2) + torch.pow(pred[:, 1] - target[:, 1],
-                                                                              2))  # center diagonal squared
+            center_dis = (torch.pow(pred[:, 0] - target[:, 0], 2) +
+                          torch.pow(pred[:, 1] - target[:, 1], 2)
+                          )  # center diagonal squared
 
-            v = (4 / math.pi ** 2) * torch.pow(torch.atan(target[:, 2] / torch.clamp(target[:, 3], min=1e-7)) -
-                                               torch.atan(pred[:, 2] / torch.clamp(pred[:, 3], min=1e-7)), 2)
+            v = (4 / math.pi**2) * torch.pow(
+                torch.atan(target[:, 2] / torch.clamp(target[:, 3], min=1e-7))
+                - torch.atan(pred[:, 2] / torch.clamp(pred[:, 3], min=1e-7)),
+                2)
 
             with torch.no_grad():
                 alpha = v / ((1 + 1e-7) - iou + v)
@@ -387,19 +411,18 @@ class GIoULoss(nn.Module):
 
             loss = 1 - ciou.clamp(min=-1.0, max=1.0)
 
-        elif self.loss_type == "eiou":
+        elif self.loss_type == 'eiou':
 
-            c_tl = torch.min(
-                (pred[:, :2] - pred[:, 2:] / 2), (target[:, :2] - target[:, 2:] / 2)
-            )
-            c_br = torch.max(
-                (pred[:, :2] + pred[:, 2:] / 2), (target[:, :2] + target[:, 2:] / 2)
-            )
-            convex_dis = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + torch.pow(c_br[:, 1] - c_tl[:, 1],
-                                                                           2) + 1e-7  # convex diagonal squared
+            c_tl = torch.min((pred[:, :2] - pred[:, 2:] / 2),
+                             (target[:, :2] - target[:, 2:] / 2))
+            c_br = torch.max((pred[:, :2] + pred[:, 2:] / 2),
+                             (target[:, :2] + target[:, 2:] / 2))
+            convex_dis = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + torch.pow(
+                c_br[:, 1] - c_tl[:, 1], 2) + 1e-7  # convex diagonal squared
 
-            center_dis = (torch.pow(pred[:, 0] - target[:, 0], 2) + torch.pow(pred[:, 1] - target[:, 1],
-                                                                              2))  # center diagonal squared
+            center_dis = (torch.pow(pred[:, 0] - target[:, 0], 2) +
+                          torch.pow(pred[:, 1] - target[:, 1], 2)
+                          )  # center diagonal squared
 
             dis_w = torch.pow(pred[:, 2] - target[:, 2], 2)  # 两个框的w欧式距离
             dis_h = torch.pow(pred[:, 3] - target[:, 3], 2)  # 两个框的h欧式距离
@@ -407,7 +430,8 @@ class GIoULoss(nn.Module):
             C_w = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + 1e-7  # 包围框的w平方
             C_h = torch.pow(c_br[:, 1] - c_tl[:, 1], 2) + 1e-7  # 包围框的h平方
 
-            eiou = iou - (center_dis / convex_dis) - (dis_w / C_w) - (dis_h / C_h)
+            eiou = iou - (center_dis / convex_dis) - (dis_w / C_w) - (
+                dis_h / C_h)
 
             loss = 1 - eiou.clamp(min=-1.0, max=1.0)
 
@@ -445,5 +469,3 @@ class GIoULoss(nn.Module):
             avg_factor=avg_factor,
             **kwargs)
         return loss
-
-

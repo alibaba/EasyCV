@@ -65,7 +65,6 @@ train_pipeline = [
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
 ]
 
-
 test_pipeline = [
     dict(type='MMResize', img_scale=img_scale, keep_ratio=True),
     dict(type='MMPad', pad_to_square=True, pad_val=(114.0, 114.0, 114.0)),
@@ -109,10 +108,7 @@ val_dataset = dict(
     label_padding=False)
 
 data = dict(
-    imgs_per_gpu=16,
-    workers_per_gpu=4,
-    train=train_dataset,
-    val=val_dataset)
+    imgs_per_gpu=16, workers_per_gpu=4, train=train_dataset, val=val_dataset)
 
 # additional hooks
 interval = 10
@@ -149,12 +145,12 @@ checkpoint_config = dict(interval=interval)
 # optimizer
 # basic_lr_per_img = 0.01 / 64.0
 optimizer = dict(
-  type='SGD',
-  # lr=0.01,
-  lr=0.02,
-  momentum=0.9,
-  weight_decay=5e-4,
-  nesterov=True)
+    type='SGD',
+    # lr=0.01,
+    lr=0.02,
+    momentum=0.9,
+    weight_decay=5e-4,
+    nesterov=True)
 optimizer_config = {}
 
 # learning policy

@@ -165,7 +165,8 @@ class SPPFBottleneck(nn.Module):
         #     nn.MaxPool2d(kernel_size=ks, stride=1, padding=ks // 2)
         #     for ks in kernel_sizes
         # ])
-        self.m = nn.MaxPool2d(kernel_size=kernel_size, stride=1, padding=kernel_size // 2)
+        self.m = nn.MaxPool2d(
+            kernel_size=kernel_size, stride=1, padding=kernel_size // 2)
 
         conv2_channels = hidden_channels * 4
         self.conv2 = BaseConv(
@@ -285,6 +286,7 @@ class Focus(nn.Module):
         )
         return self.conv(x)
 
+
 class GSConv(nn.Module):
     # GSConv https://github.com/AlanLi1997/slim-neck-by-gsconv
     def __init__(self, c1, c2, k=1, s=1, g=1, act='silu'):
@@ -313,12 +315,10 @@ class GSBottleneck(nn.Module):
         c_ = c2 // 2
         # for lighting
         self.conv_lighting = nn.Sequential(
-            GSConv(c1, c_, 1, 1),
-            GSConv(c_, c2, 1, 1, act='identity'))
+            GSConv(c1, c_, 1, 1), GSConv(c_, c2, 1, 1, act='identity'))
         # for receptive field
         self.conv = nn.Sequential(
-            GSConv(c1, c_, 3, 1),
-            GSConv(c_, c2, 3, 1, act='identity'))
+            GSConv(c1, c_, 3, 1), GSConv(c_, c2, 3, 1, act='identity'))
         self.shortcut = nn.Identity()
 
     def forward(self, x):
@@ -331,7 +331,7 @@ class VoVGSCSP(nn.Module):
         super().__init__()
         c_ = int(c2 * e)
         self.cv1 = BaseConv(c1, c_, 1, 1)
-        self.cv2 = BaseConv(2 * c_, c2, 1,1)
+        self.cv2 = BaseConv(2 * c_, c2, 1, 1)
         self.m = nn.Sequential(*(GSBottleneck(c_, c_) for _ in range(n)))
 
     def forward(self, x):

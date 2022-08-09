@@ -14,7 +14,6 @@ from easycv.file import io
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
                            build_model)
 from easycv.models.backbones.repvgg_yolox_backbone import RepVGGBlock
-
 from easycv.utils.bbox_util import scale_coords
 from easycv.utils.checkpoint import load_checkpoint
 
@@ -22,20 +21,24 @@ __all__ = [
     'export', 'PreProcess', 'DetPostProcess', 'End2endModelExportWrapper'
 ]
 
+
 def reparameterize_models(model):
-    """ reparameterize model for inference, especially for 
+    """ reparameterize model for inference, especially for
             1. rep conv block : merge 3x3 weight 1x1 weights
         call module switch_to_deploy recursively
     Args:
         model: nn.Module
     """
-    reparameterize_count=0
+    reparameterize_count = 0
     for layer in model.modules():
-        reparameterize_count+=1
+        reparameterize_count += 1
         if isinstance(layer, RepVGGBlock):
             layer.switch_to_deploy()
-    logging.info('export : PAI-export reparameterize_count(RepVGGBlock, ) switch to deploy with {} blocks'.format(reparameterize_count))
+    logging.info(
+        'export : PAI-export reparameterize_count(RepVGGBlock, ) switch to deploy with {} blocks'
+        .format(reparameterize_count))
     return model
+
 
 def export(cfg, ckpt_path, filename):
     """ export model for inference
@@ -229,7 +232,6 @@ def _export_yolox(model, cfg, filename):
                     input = 255 * torch.rand(img_scale + (3, ))
                 else:
                     input = 255 * torch.rand(img_scale + (3, batch_size))
-
 
             yolox_blade = blade_optimize(
                 script_model=model,
@@ -667,12 +669,15 @@ class End2endModelExportWrapper(torch.nn.Module):
 
         self.example_inputs = example_inputs
         self.preprocess_fn = preprocess_fn
-        self.ignore_postprocess = getattr(self.model, 'ignore_postprocess', False) 
+        self.ignore_postprocess = getattr(self.model, 'ignore_postprocess',
+                                          False)
         if not self.ignore_postprocess:
             self.postprocess_fn = postprocess_fn
         else:
             self.postprocess_fn = None
-        logging.warning("Model {} ignore_postprocess set to be {} during export !".format(type(model), self.ignore_postprocess))
+        logging.warning(
+            'Model {} ignore_postprocess set to be {} during export !'.format(
+                type(model), self.ignore_postprocess))
         self.trace_model = trace_model
         if self.trace_model:
             self.trace_module()

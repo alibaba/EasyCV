@@ -9,8 +9,7 @@ model = dict(
     nms_thre=0.65,
     use_att=None,
     obj_loss_type='BCE',
-    reg_loss_type='giou'
-)
+    reg_loss_type='giou')
 
 # s m l x
 img_scale = (640, 640)

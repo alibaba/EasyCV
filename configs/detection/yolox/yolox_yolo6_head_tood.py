@@ -19,7 +19,7 @@ model = dict(
     use_dconv=False,
     use_expand=True,
     # norm_cfg = 'SyncBN'
-    )
+)
 
 # sync_bn = True
 
@@ -54,7 +54,6 @@ CLASSES = [
 data_root = '/apsarapangu/disk5/zxy/data/coco/'
 # data_root = '/mnt/data/nas/data/detection/coco/'
 # data_root = '/cpfs01/shared/public/dataset/coco2017/'
-
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)

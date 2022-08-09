@@ -10,7 +10,7 @@ model = dict(
     nms_thre=0.65,
     obj_loss_type='BCE',
     reg_loss_type='giou',
-    neck = 'gsconv',
+    neck='gsconv',
     use_att='ASFF_sim',
     asff_channel=2,
     la_down_rate=32,
@@ -18,10 +18,9 @@ model = dict(
     down_rate=None,
     use_dconv=False,
     use_expand=True,
+)
 
-    )
-
-find_unused_parameters=True
+find_unused_parameters = True
 # s m l x
 img_scale = (640, 640)
 random_size = (14, 26)

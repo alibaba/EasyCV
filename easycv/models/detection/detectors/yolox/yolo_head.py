@@ -9,8 +9,7 @@ import torch.nn.functional as F
 
 from easycv.models.backbones.network_blocks import BaseConv, DWConv
 from easycv.models.detection.utils import bboxes_iou
-from easycv.models.loss import IOUloss
-from easycv.models.loss import FocalLoss,VarifocalLoss
+from easycv.models.loss import FocalLoss, IOUloss, VarifocalLoss
 
 
 class YOLOXHead(nn.Module):
@@ -120,7 +119,6 @@ class YOLOXHead(nn.Module):
                     padding=0,
                 ))
 
-
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction='none')
 
         # if reg_loss_type=='l1':
@@ -129,7 +127,7 @@ class YOLOXHead(nn.Module):
         # else:
         #     self.use_l1 = False
 
-        self.iou_loss = IOUloss(reduction='none',loss_type=reg_loss_type)
+        self.iou_loss = IOUloss(reduction='none', loss_type=reg_loss_type)
 
         self.obj_loss_type = obj_loss_type
         if obj_loss_type == 'BCE':
@@ -140,7 +138,7 @@ class YOLOXHead(nn.Module):
         elif obj_loss_type == 'v_focal':
             self.obj_loss = VarifocalLoss(reduction='none')
         else:
-            assert "Undefined loss type: {}".format(obj_loss_type)
+            assert 'Undefined loss type: {}'.format(obj_loss_type)
 
         self.strides = strides
         self.grids = [torch.zeros(1)] * len(in_channels)
@@ -413,12 +411,11 @@ class YOLOXHead(nn.Module):
             bbox_preds.view(-1, 4)[fg_masks], reg_targets)).sum() / num_fg
 
         if self.obj_loss_type == 'focal':
-            loss_obj = (
-                           self.focal_loss(obj_preds.sigmoid().view(-1, 1), obj_targets)
-                       ).sum() / num_fg
+            loss_obj = (self.focal_loss(obj_preds.sigmoid().view(-1, 1),
+                                        obj_targets)).sum() / num_fg
         else:
             loss_obj = (self.obj_loss(obj_preds.view(-1, 1),
-                                             obj_targets)).sum() / num_fg
+                                      obj_targets)).sum() / num_fg
         loss_cls = (self.bcewithlog_loss(
             cls_preds.view(-1, self.num_classes)[fg_masks],
             cls_targets)).sum() / num_fg
@@ -444,11 +441,12 @@ class YOLOXHead(nn.Module):
     def focal_loss(self, pred, gt):
         pos_inds = gt.eq(1).float()
         neg_inds = gt.eq(0).float()
-        pos_loss = torch.log(pred + 1e-5) * torch.pow(1 - pred, 2) * pos_inds * 0.75
-        neg_loss = torch.log(1 - pred + 1e-5) * torch.pow(pred, 2) * neg_inds * 0.25
+        pos_loss = torch.log(pred + 1e-5) * torch.pow(1 - pred,
+                                                      2) * pos_inds * 0.75
+        neg_loss = torch.log(1 - pred + 1e-5) * torch.pow(pred,
+                                                          2) * neg_inds * 0.25
         loss = -(pos_loss + neg_loss)
         return loss
-
 
     def get_l1_target(self,
                       l1_target,
@@ -536,7 +534,6 @@ class YOLOXHead(nn.Module):
 
         pair_wise_ious = bboxes_iou(gt_bboxes_per_image,
                                     bboxes_preds_per_image, False)
-
 
         if (torch.isnan(pair_wise_ious.max())):
             pair_wise_ious = bboxes_iou(gt_bboxes_per_image,

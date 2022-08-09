@@ -1,7 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from torch import nn
 import torch
+from torch import nn
+
 from .network_blocks import (BaseConv, CSPLayer, DWConv, Focus, ResLayer,
                              SPPBottleneck, SPPFBottleneck)
 
@@ -10,14 +11,12 @@ class Darknet(nn.Module):
     # number of blocks from dark2 to dark5.
     depth2blocks = {21: [1, 2, 2, 1], 53: [2, 8, 8, 4]}
 
-    def __init__(
-            self,
-            depth,
-            in_channels=3,
-            stem_out_channels=32,
-            out_features=('dark3', 'dark4', 'dark5'),
-            spp_type = 'spp'
-    ):
+    def __init__(self,
+                 depth,
+                 in_channels=3,
+                 stem_out_channels=32,
+                 out_features=('dark3', 'dark4', 'dark5'),
+                 spp_type='spp'):
         """
         Args:
             depth (int): depth of darknet used in model, usually use [21, 53] for this param.
@@ -50,17 +49,17 @@ class Darknet(nn.Module):
             *self.make_group_layer(in_channels, num_blocks[2], stride=2))
         in_channels *= 2  # 512
 
-        if spp_type=='spp':
+        if spp_type == 'spp':
             self.dark5 = nn.Sequential(
                 *self.make_group_layer(in_channels, num_blocks[3], stride=2),
                 *self.make_spp_block([in_channels, in_channels * 2],
                                      in_channels * 2),
             )
-        elif spp_type=='sppf':
+        elif spp_type == 'sppf':
             self.dark5 = nn.Sequential(
                 *self.make_group_layer(in_channels, num_blocks[3], stride=2),
                 *self.make_sppf_block([in_channels, in_channels * 2],
-                                       in_channels * 2),
+                                      in_channels * 2),
             )
 
     def make_group_layer(self,
@@ -129,15 +128,13 @@ class Darknet(nn.Module):
 
 class CSPDarknet(nn.Module):
 
-    def __init__(
-        self,
-        dep_mul,
-        wid_mul,
-        out_features=('dark3', 'dark4', 'dark5'),
-        depthwise=False,
-        act='silu',
-        spp_type='spp'
-    ):
+    def __init__(self,
+                 dep_mul,
+                 wid_mul,
+                 out_features=('dark3', 'dark4', 'dark5'),
+                 depthwise=False,
+                 act='silu',
+                 spp_type='spp'):
         super().__init__()
         assert out_features, 'please provide output features of Darknet'
         self.out_features = out_features
@@ -186,7 +183,7 @@ class CSPDarknet(nn.Module):
         )
 
         # dark5
-        if spp_type=='spp':
+        if spp_type == 'spp':
             self.dark5 = nn.Sequential(
                 Conv(base_channels * 8, base_channels * 16, 3, 2, act=act),
                 SPPBottleneck(
@@ -201,7 +198,7 @@ class CSPDarknet(nn.Module):
                 ),
             )
 
-        elif spp_type=='sppf':
+        elif spp_type == 'sppf':
             self.dark5 = nn.Sequential(
                 Conv(base_channels * 8, base_channels * 16, 3, 2, act=act),
                 SPPFBottleneck(

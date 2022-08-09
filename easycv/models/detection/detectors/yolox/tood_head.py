@@ -6,13 +6,12 @@ from distutils.version import LooseVersion
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from easycv.models.backbones.repvgg_yolox_backbone import RepVGGBlock
-from easycv.models.backbones.network_blocks import BaseConv, DWConv
-from easycv.models.detection.utils import bboxes_iou
-from easycv.models.loss import IOUloss
-from easycv.models.loss import FocalLoss, VarifocalLoss
 from mmcv.cnn import ConvModule, normal_init
+
+from easycv.models.backbones.network_blocks import BaseConv, DWConv
+from easycv.models.backbones.repvgg_yolox_backbone import RepVGGBlock
+from easycv.models.detection.utils import bboxes_iou
+from easycv.models.loss import FocalLoss, IOUloss, VarifocalLoss
 
 
 class TaskDecomposition(nn.Module):
@@ -74,7 +73,7 @@ class TaskDecomposition(nn.Module):
         conv_weight = weight.reshape(
             b, 1, self.stacked_convs,
             1) * self.reduction_conv.conv.weight.reshape(
-            1, self.feat_channels, self.stacked_convs, self.feat_channels)
+                1, self.feat_channels, self.stacked_convs, self.feat_channels)
         conv_weight = conv_weight.reshape(b, self.feat_channels,
                                           self.in_channels)
         feat = feat.reshape(b, self.in_channels, h * w)
@@ -89,23 +88,24 @@ class TaskDecomposition(nn.Module):
 
 class TOODHead(nn.Module):
 
-    def __init__(self,
-                 num_classes,
-                 width=1.0,
-                 strides=[8, 16, 32],
-                 in_channels=[256, 512, 1024],
-                 conv_type='repconv',
-                 act='silu',
-                 stage='CLOUD',
-                 obj_loss_type='l1',
-                 reg_loss_type='iou',
-                 stacked_convs=6,
-                 la_down_rate=8,
-                 conv_layers=2,
-                 decode_in_inference=True,
-                 conv_cfg=None,
-                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-                 ):
+    def __init__(
+            self,
+            num_classes,
+            width=1.0,
+            strides=[8, 16, 32],
+            in_channels=[256, 512, 1024],
+            conv_type='repconv',
+            act='silu',
+            stage='CLOUD',
+            obj_loss_type='l1',
+            reg_loss_type='iou',
+            stacked_convs=6,
+            la_down_rate=8,
+            conv_layers=2,
+            decode_in_inference=True,
+            conv_cfg=None,
+            norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
+    ):
         """
         Args:
             num_classes (int): detection class numbers.
@@ -143,8 +143,10 @@ class TOODHead(nn.Module):
 
         default_conv_type_list = ['conv', 'dwconv', 'repconv']
         # Conv = DWConv if depthwise else BaseConv
-        if conv_type not in    default_conv_type_list:
-            logging.warning('YOLOX-PAI tood head conv_type must in [conv, dwconv, repconv], otherwise we use repconv as default')
+        if conv_type not in default_conv_type_list:
+            logging.warning(
+                'YOLOX-PAI tood head conv_type must in [conv, dwconv, repconv], otherwise we use repconv as default'
+            )
             conv_type = repconv
         if conv_type == 'conv':
             Conv = BaseConv
@@ -161,9 +163,8 @@ class TOODHead(nn.Module):
                     ksize=1,
                     stride=1,
                     act=act,
-                )
-            )
-            if conv_layers==2:
+                ))
+            if conv_layers == 2:
                 self.cls_convs.append(
                     nn.Sequential(*[
                         Conv(
@@ -195,7 +196,7 @@ class TOODHead(nn.Module):
                             act=act,
                         ),
                     ]))
-            elif conv_layers==1:
+            elif conv_layers == 1:
                 self.cls_convs.append(
                     nn.Sequential(*[
                         Conv(
@@ -238,16 +239,13 @@ class TOODHead(nn.Module):
                     padding=0,
                 ))
             self.cls_decomps.append(
-                TaskDecomposition(self.feat_channels,
-                                  self.stacked_convs,
+                TaskDecomposition(self.feat_channels, self.stacked_convs,
                                   self.stacked_convs * la_down_rate,
                                   self.conv_cfg, self.norm_cfg))
             self.reg_decomps.append(
-                TaskDecomposition(self.feat_channels,
-                                  self.stacked_convs,
+                TaskDecomposition(self.feat_channels, self.stacked_convs,
                                   self.stacked_convs * la_down_rate,
-                                  self.conv_cfg, self.norm_cfg)
-            )
+                                  self.conv_cfg, self.norm_cfg))
 
         for i in range(self.stacked_convs):
             conv_cfg = self.conv_cfg
@@ -257,8 +255,7 @@ class TOODHead(nn.Module):
                     in_channels=chn,
                     out_channels=chn,
                     act=act,
-                )
-            )
+                ))
             # self.inter_convs.append(
             #     ConvModule(
             #         chn,
@@ -284,7 +281,7 @@ class TOODHead(nn.Module):
         elif obj_loss_type == 'v_focal':
             self.obj_loss = VarifocalLoss(reduction='none')
         else:
-            assert "Undefined loss type: {}".format(obj_loss_type)
+            assert 'Undefined loss type: {}'.format(obj_loss_type)
 
         self.strides = strides
         self.grids = [torch.zeros(1)] * len(in_channels)
@@ -307,8 +304,10 @@ class TOODHead(nn.Module):
         y_shifts = []
         expanded_strides = []
 
-        for k, (cls_decomp, reg_decomp, cls_conv, reg_conv, stride_this_level, x) in enumerate(
-                zip(self.cls_decomps, self.reg_decomps, self.cls_convs, self.reg_convs, self.strides, xin)):
+        for k, (cls_decomp, reg_decomp, cls_conv, reg_conv, stride_this_level,
+                x) in enumerate(
+                    zip(self.cls_decomps, self.reg_decomps, self.cls_convs,
+                        self.reg_convs, self.strides, xin)):
             x = self.stems[k](x)
 
             inter_feats = []
@@ -337,7 +336,7 @@ class TOODHead(nn.Module):
                 expanded_strides.append(
                     torch.zeros(
                         1, grid.shape[1]).fill_(stride_this_level).type_as(
-                        xin[0]))
+                            xin[0]))
                 if self.use_l1:
                     batch_size = reg_output.shape[0]
                     hsize, wsize = reg_output.shape[-2:]
@@ -424,15 +423,15 @@ class TOODHead(nn.Module):
         return outputs
 
     def get_losses(
-            self,
-            imgs,
-            x_shifts,
-            y_shifts,
-            expanded_strides,
-            labels,
-            outputs,
-            origin_preds,
-            dtype,
+        self,
+        imgs,
+        x_shifts,
+        y_shifts,
+        expanded_strides,
+        labels,
+        outputs,
+        origin_preds,
+        dtype,
     ):
         bbox_preds = outputs[:, :, :4]  # [batch, n_anchors_all, 4]
         obj_preds = outputs[:, :, 4].unsqueeze(-1)  # [batch, n_anchors_all, 1]
@@ -565,9 +564,8 @@ class TOODHead(nn.Module):
             bbox_preds.view(-1, 4)[fg_masks], reg_targets)).sum() / num_fg
 
         if self.obj_loss_type == 'focal':
-            loss_obj = (
-                           self.focal_loss(obj_preds.sigmoid().view(-1, 1), obj_targets)
-                       ).sum() / num_fg
+            loss_obj = (self.focal_loss(obj_preds.sigmoid().view(-1, 1),
+                                        obj_targets)).sum() / num_fg
         else:
             loss_obj = (self.obj_loss(obj_preds.view(-1, 1),
                                       obj_targets)).sum() / num_fg
@@ -596,8 +594,10 @@ class TOODHead(nn.Module):
     def focal_loss(self, pred, gt):
         pos_inds = gt.eq(1).float()
         neg_inds = gt.eq(0).float()
-        pos_loss = torch.log(pred + 1e-5) * torch.pow(1 - pred, 2) * pos_inds * 0.75
-        neg_loss = torch.log(1 - pred + 1e-5) * torch.pow(pred, 2) * neg_inds * 0.25
+        pos_loss = torch.log(pred + 1e-5) * torch.pow(1 - pred,
+                                                      2) * pos_inds * 0.75
+        neg_loss = torch.log(1 - pred + 1e-5) * torch.pow(pred,
+                                                          2) * neg_inds * 0.25
         loss = -(pos_loss + neg_loss)
         return loss
 
@@ -616,22 +616,22 @@ class TOODHead(nn.Module):
 
     @torch.no_grad()
     def get_assignments(
-            self,
-            batch_idx,
-            num_gt,
-            total_num_anchors,
-            gt_bboxes_per_image,
-            gt_classes,
-            bboxes_preds_per_image,
-            expanded_strides,
-            x_shifts,
-            y_shifts,
-            cls_preds,
-            bbox_preds,
-            obj_preds,
-            labels,
-            imgs,
-            mode='gpu',
+        self,
+        batch_idx,
+        num_gt,
+        total_num_anchors,
+        gt_bboxes_per_image,
+        gt_classes,
+        bboxes_preds_per_image,
+        expanded_strides,
+        x_shifts,
+        y_shifts,
+        cls_preds,
+        bbox_preds,
+        obj_preds,
+        labels,
+        imgs,
+        mode='gpu',
     ):
 
         if mode == 'cpu':
@@ -695,7 +695,7 @@ class TOODHead(nn.Module):
         gt_cls_per_image = (
             F.one_hot(gt_classes.to(torch.int64),
                       self.num_classes).float().unsqueeze(1).repeat(
-                1, num_in_boxes_anchor, 1))
+                          1, num_in_boxes_anchor, 1))
         pair_wise_ious_loss = -torch.log(pair_wise_ious + 1e-8)
 
         if mode == 'cpu':
@@ -704,27 +704,27 @@ class TOODHead(nn.Module):
         if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
             with torch.cuda.amp.autocast(enabled=False):
                 cls_preds_ = (
-                        cls_preds_.float().unsqueeze(0).repeat(num_gt, 1,
-                                                               1).sigmoid_() *
-                        obj_preds_.float().unsqueeze(0).repeat(num_gt, 1,
-                                                               1).sigmoid_())
+                    cls_preds_.float().unsqueeze(0).repeat(num_gt, 1,
+                                                           1).sigmoid_() *
+                    obj_preds_.float().unsqueeze(0).repeat(num_gt, 1,
+                                                           1).sigmoid_())
                 pair_wise_cls_loss = F.binary_cross_entropy(
                     cls_preds_.sqrt_(), gt_cls_per_image,
                     reduction='none').sum(-1)
         else:
             cls_preds_ = (
-                    cls_preds_.float().unsqueeze(0).repeat(num_gt, 1,
-                                                           1).sigmoid_() *
-                    obj_preds_.float().unsqueeze(0).repeat(num_gt, 1,
-                                                           1).sigmoid_())
+                cls_preds_.float().unsqueeze(0).repeat(num_gt, 1,
+                                                       1).sigmoid_() *
+                obj_preds_.float().unsqueeze(0).repeat(num_gt, 1,
+                                                       1).sigmoid_())
             pair_wise_cls_loss = F.binary_cross_entropy(
                 cls_preds_.sqrt_(), gt_cls_per_image, reduction='none').sum(-1)
 
         del cls_preds_
 
         cost = (
-                pair_wise_cls_loss + 3.0 * pair_wise_ious_loss + 100000.0 *
-                (~is_in_boxes_and_center))
+            pair_wise_cls_loss + 3.0 * pair_wise_ious_loss + 100000.0 *
+            (~is_in_boxes_and_center))
 
         (
             num_fg,
@@ -751,13 +751,13 @@ class TOODHead(nn.Module):
         )
 
     def get_in_boxes_info(
-            self,
-            gt_bboxes_per_image,
-            expanded_strides,
-            x_shifts,
-            y_shifts,
-            total_num_anchors,
-            num_gt,
+        self,
+        gt_bboxes_per_image,
+        expanded_strides,
+        x_shifts,
+        y_shifts,
+        total_num_anchors,
+        num_gt,
     ):
         expanded_strides_per_image = expanded_strides[0]
         x_shifts_per_image = x_shifts[0] * expanded_strides_per_image
@@ -773,19 +773,19 @@ class TOODHead(nn.Module):
         gt_bboxes_per_image_l = (
             (gt_bboxes_per_image[:, 0] -
              0.5 * gt_bboxes_per_image[:, 2]).unsqueeze(1).repeat(
-                1, total_num_anchors))
+                 1, total_num_anchors))
         gt_bboxes_per_image_r = (
             (gt_bboxes_per_image[:, 0] +
              0.5 * gt_bboxes_per_image[:, 2]).unsqueeze(1).repeat(
-                1, total_num_anchors))
+                 1, total_num_anchors))
         gt_bboxes_per_image_t = (
             (gt_bboxes_per_image[:, 1] -
              0.5 * gt_bboxes_per_image[:, 3]).unsqueeze(1).repeat(
-                1, total_num_anchors))
+                 1, total_num_anchors))
         gt_bboxes_per_image_b = (
             (gt_bboxes_per_image[:, 1] +
              0.5 * gt_bboxes_per_image[:, 3]).unsqueeze(1).repeat(
-                1, total_num_anchors))
+                 1, total_num_anchors))
 
         b_l = x_centers_per_image - gt_bboxes_per_image_l
         b_r = gt_bboxes_per_image_r - x_centers_per_image
@@ -800,21 +800,21 @@ class TOODHead(nn.Module):
         center_radius = 2.5
 
         gt_bboxes_per_image_l = (
-                                    gt_bboxes_per_image[:, 0]).unsqueeze(1).repeat(
-            1, total_num_anchors
-        ) - center_radius * expanded_strides_per_image.unsqueeze(0)
+            gt_bboxes_per_image[:, 0]).unsqueeze(1).repeat(
+                1, total_num_anchors
+            ) - center_radius * expanded_strides_per_image.unsqueeze(0)
         gt_bboxes_per_image_r = (
-                                    gt_bboxes_per_image[:, 0]).unsqueeze(1).repeat(
-            1, total_num_anchors
-        ) + center_radius * expanded_strides_per_image.unsqueeze(0)
+            gt_bboxes_per_image[:, 0]).unsqueeze(1).repeat(
+                1, total_num_anchors
+            ) + center_radius * expanded_strides_per_image.unsqueeze(0)
         gt_bboxes_per_image_t = (
-                                    gt_bboxes_per_image[:, 1]).unsqueeze(1).repeat(
-            1, total_num_anchors
-        ) - center_radius * expanded_strides_per_image.unsqueeze(0)
+            gt_bboxes_per_image[:, 1]).unsqueeze(1).repeat(
+                1, total_num_anchors
+            ) - center_radius * expanded_strides_per_image.unsqueeze(0)
         gt_bboxes_per_image_b = (
-                                    gt_bboxes_per_image[:, 1]).unsqueeze(1).repeat(
-            1, total_num_anchors
-        ) + center_radius * expanded_strides_per_image.unsqueeze(0)
+            gt_bboxes_per_image[:, 1]).unsqueeze(1).repeat(
+                1, total_num_anchors
+            ) + center_radius * expanded_strides_per_image.unsqueeze(0)
 
         c_l = x_centers_per_image - gt_bboxes_per_image_l
         c_r = gt_bboxes_per_image_r - x_centers_per_image
@@ -828,8 +828,8 @@ class TOODHead(nn.Module):
         is_in_boxes_anchor = is_in_boxes_all | is_in_centers_all
 
         is_in_boxes_and_center = (
-                is_in_boxes[:, is_in_boxes_anchor]
-                & is_in_centers[:, is_in_boxes_anchor])
+            is_in_boxes[:, is_in_boxes_anchor]
+            & is_in_centers[:, is_in_boxes_anchor])
         return is_in_boxes_anchor, is_in_boxes_and_center
 
     def dynamic_k_matching(self, cost, pair_wise_ious, gt_classes, num_gt,

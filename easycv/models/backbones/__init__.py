@@ -12,11 +12,11 @@ from .mae_vit_transformer import *
 from .mnasnet import MNASNet
 from .mobilenetv2 import MobileNetV2
 from .pytorch_image_models_wrapper import *
+from .repvgg_yolox_backbone import RepVGGYOLOX
 from .resnest import ResNeSt
 from .resnet import ResNet
 from .resnet_jit import ResNetJIT
 from .resnext import ResNeXt
 from .shuffle_transformer import ShuffleTransformer
 from .swin_transformer_dynamic import SwinTransformer
-from .repvgg_yolox_backbone import RepVGGYOLOX
 from .vitdet import ViTDet
