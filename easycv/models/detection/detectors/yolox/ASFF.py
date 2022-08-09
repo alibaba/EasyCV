@@ -147,7 +147,11 @@ class ASFF(nn.Module):
         levels_weight = self.weight_levels(levels_weight_v)
         levels_weight = F.softmax(levels_weight, dim=1)
 
-        fused_out_reduced = level_0_resized * levels_weight[:, 0:1, :, :] + level_1_resized * levels_weight[:, 1:2, :, :] + level_2_resized * levels_weight[:, 2:, :, :]
+        fused_out_reduced = level_0_resized * levels_weight[:, 0:
+                                                            1, :, :] + level_1_resized * levels_weight[:,
+                                                                                                       1:
+                                                                                                       2, :, :] + level_2_resized * levels_weight[:,
+                                                                                                                                                  2:, :, :]
 
         out = self.expand(fused_out_reduced)
 
