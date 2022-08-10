@@ -67,7 +67,7 @@ class YOLOX(BaseModel):
                  stacked_convs: int = 6,
                  la_down_rate: int = 8,
                  conv_layers: int = 2,
-                 decode_in_inference: bool = True,
+                 decode_in_inference: bool = False,
                  backbone='CSPDarknet',
                  expand_kernel=3,
                  down_rate=32,

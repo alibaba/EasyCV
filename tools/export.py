@@ -25,7 +25,6 @@ from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
 from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 
-
 def parse_args():
     parser = argparse.ArgumentParser(description='export a model')
     parser.add_argument(
@@ -62,6 +61,8 @@ def main():
         args.config = CONFIG_TEMPLATE_ZOO[args.model_type]
 
     print(args.config)
+    
+    
 
     if args.config.startswith('http'):
 
