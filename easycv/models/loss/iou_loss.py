@@ -443,33 +443,3 @@ class GIoULoss(nn.Module):
             loss = loss.mean()
         elif self.reduction == 'sum':
             loss = loss.sum()
-
-    # def forward(self,
-    #             pred,
-    #             target,
-    #             weight=None,
-    #             avg_factor=None,
-    #             reduction_override=None,
-    #             **kwargs):
-    #     if weight is not None and not torch.any(weight > 0):
-    #         if pred.dim() == weight.dim() + 1:
-    #             weight = weight.unsqueeze(1)
-    #         return (pred * weight).sum()  # 0
-    #     assert reduction_override in (None, 'none', 'mean', 'sum')
-    #     reduction = (
-    #         reduction_override if reduction_override else self.reduction)
-    #     if weight is not None and weight.dim() > 1:
-    #         # TODO: remove this in the future
-    #         # reduce the weight of shape (n, 4) to (n,) to match the
-    #         # giou_loss of shape (n,)
-    #         assert weight.shape == pred.shape
-    #         weight = weight.mean(-1)
-    #     loss = self.loss_weight * giou_loss(
-    #         pred,
-    #         target,
-    #         weight,
-    #         eps=self.eps,
-    #         reduction=reduction,
-    #         avg_factor=avg_factor,
-    #         **kwargs)
-    #     return loss

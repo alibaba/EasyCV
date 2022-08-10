@@ -11,7 +11,6 @@ from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
 from easycv.models.detection.utils import postprocess
 from .tood_head import TOODHead
-# from .ppyoloe_head import PPYOLOEHead
 from .yolo_head import YOLOXHead
 from .yolo_pafpn import YOLOPAFPN
 

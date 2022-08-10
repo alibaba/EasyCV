@@ -293,14 +293,6 @@ def blade_optimize(script_model,
         test_result = opt_model(*inputs)
         torch.cuda.synchronize()
 
-    # output = model(*inputs)
-    # if blade_config.get('enable_fp16', True):
-    #     with opt_blade_mixprec():
-    #         test_result = model(*inputs)
-    # else:
-    # test_result = opt_model(*inputs)
-    # test_result = opt_model(*inputs)
-
     torch.cuda.synchronize()
     cu_prof_start()
     for k in range(10):

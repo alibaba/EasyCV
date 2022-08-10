@@ -190,8 +190,7 @@ def _export_yolox(model, cfg, filename):
         if LooseVersion(torch.__version__) < LooseVersion('1.7.0') and end2end:
             raise ValueError('`end2end` only support torch1.7.0 and later!')
 
-        batch_size = cfg.export.get('batch_size', 32)
-        # batch_size = cfg.export.get('batch_size', 1)
+        batch_size = cfg.export.get('batch_size', 1)
         static_opt = cfg.export.get('static_opt', True)
         img_scale = cfg.get('img_scale', (640, 640))
         assert (
