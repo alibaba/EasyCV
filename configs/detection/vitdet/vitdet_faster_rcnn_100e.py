@@ -50,15 +50,4 @@ lr_config = dict(
     step=[88, 96])
 total_epochs = 100
 
-# evaluation
-eval_config = dict(interval=1, gpu_collect=False)
-eval_pipelines = [
-    dict(
-        mode='test',
-        evaluators=[
-            dict(type='CocoDetectionEvaluator', classes=CLASSES),
-        ],
-    )
-]
-
 find_unused_parameters = False
