@@ -1,6 +1,6 @@
 # DataHub
 
-EasyCV summarized various datasets in different fields. At present, we support part of them, and we will gradually support remainings.
+EasyCV summarized various datasets in different fields. At present, we support part of them, and we will gradually support remainings. Before using dataset, please read the [LICENSE](docs/source/LICENSE) file to learn the usage and scope of the dataset.
 
 **For datasets we already support, please refer to: [prepare_data.md](https://github.com/alibaba/EasyCV/blob/master/docs/source/prepare_data.md).**
 
