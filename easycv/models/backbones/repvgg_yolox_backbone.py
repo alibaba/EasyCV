@@ -1,10 +1,15 @@
 # borrow some code from https://github.com/DingXiaoH/RepVGG/repvgg.py MIT2.0
 import copy
 import warnings
+import math
 
 import numpy as np
 import torch
 import torch.nn as nn
+
+def make_divisible(x, divisor):
+    # Upward revision the value x to make it evenly divisible by the divisor.
+    return math.ceil(x / divisor) * divisor
 
 
 def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):
@@ -360,7 +365,6 @@ class RepVGGYOLOX(nn.Module):
 if __name__ == '__main__':
 
     from torchsummaryX import summary
-    import math
 
     depth_mul = 0.33
     width_mul = 0.5
@@ -372,9 +376,6 @@ if __name__ == '__main__':
     num_repeat = [(max(round(i * depth_mul), 1) if i > 1 else i)
                   for i in (num_repeat_backbone + num_repeat_neck)]
 
-    def make_divisible(x, divisor):
-        # Upward revision the value x to make it evenly divisible by the divisor.
-        return math.ceil(x / divisor) * divisor
 
     channels_list = [
         make_divisible(i * width_mul, 8)
