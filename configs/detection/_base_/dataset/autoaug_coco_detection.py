@@ -90,13 +90,15 @@ train_dataset = dict(
         type='DetSourceCoco',
         ann_file=data_root + 'annotations/instances_train2017.json',
         img_prefix=data_root + 'train2017/',
+        # ann_file=data_root + 'annotations/instances_train2017_1.json',
+        # img_prefix=data_root + 'train2017/',
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         classes=CLASSES,
         test_mode=False,
-        filter_empty_gt=True,
+        filter_empty_gt=False,
         iscrowd=False),
     pipeline=train_pipeline)
 
@@ -120,7 +122,11 @@ val_dataset = dict(
     pipeline=test_pipeline)
 
 data = dict(
-    imgs_per_gpu=2, workers_per_gpu=2, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=2,
+    workers_per_gpu=2,
+    train=train_dataset,
+    val=val_dataset,
+    drop_last=True)
 
 # evaluation
 # eval_config = dict(initial=True, interval=1, gpu_collect=False)
