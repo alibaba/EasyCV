@@ -34,10 +34,8 @@ class OptimizerHook(_OptimizerHook):
         '''
             ignore_key: [str,...], ignore_key[i], name of parameters, which's gradient will be set to zero before every optimizer step when epoch < ignore_key_epoch[i]
             ignore_key_epoch: [int,...], epoch < ignore_key_epoch[i], ignore_key[i]'s gradient will be set to zero.
-
             multiply_key:[str,...] multiply_key[i], name of parameters, which will set different learning rate ratio by multipy_rate
             multiply_rate:[float,...] multiply_rate[i], different ratio
-
         '''
         self.grad_clip = grad_clip
         self.coalesce = coalesce
@@ -47,6 +45,9 @@ class OptimizerHook(_OptimizerHook):
         self.ignore_key_epoch = ignore_key_epoch
         self.multiply_key = multiply_key
         self.multiply_rate = multiply_rate
+
+    def before_run(self, runner):
+        runner.optimizer.zero_grad()
 
     def _get_module(self, runner):
         module = runner.model
@@ -124,14 +125,10 @@ class AMPFP16OptimizerHook(OptimizerHook):
         self.grad_clip = grad_clip
         self.coalesce = coalesce
         self.bucket_size_mb = bucket_size_mb
+        self.update_interval = update_interval
         self.ignore_key = ignore_key
         self.ignore_key_epoch = ignore_key_epoch
         self._scale_update_param = None
-
-        self.cumulative_iters = update_interval
-        self.divisible_iters = 0
-        self.remainder_iters = 0
-        self.initialized = False
 
         if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
             if isinstance(loss_scale, float):
@@ -144,27 +141,6 @@ class AMPFP16OptimizerHook(OptimizerHook):
                     '`loss_scale` type must be in [float, dict], but got {loss_scale}'
                 )
 
-    def _init(self, runner):
-        if runner.iter % self.cumulative_iters != 0:
-            runner.logger.warning(
-                'Resume iter number is not divisible by cumulative_iters in '
-                'GradientCumulativeOptimizerHook, which means the gradient of '
-                'some iters is lost and the result may be influenced slightly.'
-            )
-
-        if self.has_batch_norm(runner.model) and self.cumulative_iters > 1:
-            runner.logger.warning(
-                'GradientCumulativeOptimizerHook may slightly decrease '
-                'performance if the model has BatchNorm layers.')
-
-        residual_iters = runner.max_iters - runner.iter
-
-        self.divisible_iters = (
-            residual_iters // self.cumulative_iters * self.cumulative_iters)
-        self.remainder_iters = residual_iters - self.divisible_iters
-
-        self.initialized = True
-
     def before_run(self, runner):
         logging.info('open fp16')
 
@@ -174,17 +150,10 @@ class AMPFP16OptimizerHook(OptimizerHook):
             if hasattr(m, 'fp16_enabled'):
                 m.fp16_enabled = True
 
-        # runner.optimizer.zero_grad()
+        runner.optimizer.zero_grad()
 
     def after_train_iter(self, runner):
-        if not self.initialized:
-            self._init(runner)
-
-        if runner.iter < self.divisible_iters:
-            loss_factor = self.cumulative_iters
-        else:
-            loss_factor = self.remainder_iters
-        loss = runner.outputs['loss'] / loss_factor
+        loss = runner.outputs['loss'] / self.update_interval
 
         if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
             self.scaler.scale(loss).backward()
