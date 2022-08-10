@@ -35,7 +35,7 @@ class DetSourcePAITest(unittest.TestCase):
                 self.assertNotIn('img',
                                  data_source.samples_list[exclude_idx[i]])
 
-        length = data_source.get_length()
+        length = len(data_source)
         self.assertEqual(length, 20)
 
         exists = False

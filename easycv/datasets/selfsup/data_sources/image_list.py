@@ -61,7 +61,7 @@ class SSLSourceImageList(object):
 
         return fns
 
-    def get_length(self):
+    def __len__(self):
         return len(self.fns)
 
     def get_sample(self, idx):

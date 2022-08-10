@@ -40,7 +40,7 @@ class DetSourceCocoTest(unittest.TestCase):
             self.assertEqual(data['gt_bboxes'].shape[-1], 4)
             self.assertGreater(len(data['gt_labels']), 1)
 
-        length = data_source.get_length()
+        length = len(data_source)
         self.assertEqual(length, 20)
 
         exists = False

@@ -34,7 +34,7 @@ class SegSourceRawTest(unittest.TestCase):
             self.assertTrue(
                 len(np.unique(data['gt_semantic_seg'])) < len(VOC_CLASSES))
 
-        length = data_source.get_length()
+        length = len(data_source)
         self.assertEqual(length, 200)
         self.assertEqual(data_source.PALETTE.shape, (len(VOC_CLASSES), 3))
 

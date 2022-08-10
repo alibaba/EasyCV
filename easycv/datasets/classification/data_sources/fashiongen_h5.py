@@ -43,7 +43,7 @@ class FashionGenH5(object):
 
         self.label_list = H5_LABEL_LIST
 
-    def get_length(self):
+    def __len__(self):
         return h5py.File(self.h5file, 'r')[H5_KEYS[0]][:].shape[0]
 
     def get_sample(self, idx):

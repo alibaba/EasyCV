@@ -344,10 +344,6 @@ class PoseTopDownSource(object, metaclass=ABCMeta):
         img = mmcv.imread(image_file, 'color', 'rgb')
         return img
 
-    def get_length(self):
-        """Get the size of the dataset."""
-        return len(self.db)
-
     def get_sample(self, idx):
         results = copy.deepcopy(self.db[idx])
         # TODO: optimize fault tolerance for image load
@@ -357,7 +353,7 @@ class PoseTopDownSource(object, metaclass=ABCMeta):
         except:
             logging.warning('Fail to read %s%s, load next sample!' %
                             (idx, results['image_file']))
-            return self.get_sample((idx + 1) % self.get_length())
+            return self.get_sample((idx + 1) % len(self.db))
 
         results['ann_info'] = self.ann_info
 
