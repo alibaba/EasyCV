@@ -41,7 +41,7 @@ class SegDatasetTest(unittest.TestCase):
         data_source = build_datasource(data_source_cfg)
         gt_seg_maps = []
         for i in range(len(data_source)):
-            sample = data_source.get_sample(i)
+            sample = data_source[i]
             gt_seg_maps.append(sample['gt_semantic_seg'])
         results = {'seg_pred': gt_seg_maps}
 

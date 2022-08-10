@@ -39,7 +39,7 @@ class ImageNpy(object):
     def __len__(self):
         return self.data.shape[0]
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
 
         img = Image.fromarray(cv2.cvtColor(self.data[idx], cv2.COLOR_BGR2RGB))
 

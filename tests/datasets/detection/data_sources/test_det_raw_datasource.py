@@ -21,7 +21,7 @@ class DetSourceRawTest(unittest.TestCase):
     def _base_test(self, data_source, cache_at_init, cache_on_the_fly):
         index_list = random.choices(list(range(20)), k=3)
         for idx in index_list:
-            data = data_source.get_sample(idx)
+            data = data_source[idx]
             self.assertIn('img_shape', data)
             self.assertIn('ori_img_shape', data)
             self.assertEqual(len(data['img_shape']), 3)
@@ -52,7 +52,7 @@ class DetSourceRawTest(unittest.TestCase):
 
         exists = False
         for idx in range(length):
-            result = data_source.get_sample(idx)
+            result = data_source[idx]
             file_name = result.get('filename', '')
             if file_name.endswith('000000000086.jpg'):
                 exists = True

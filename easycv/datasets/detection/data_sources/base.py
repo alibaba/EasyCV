@@ -139,7 +139,7 @@ class DetSourceBase(object):
     def _rand_another(self, idx):
         return (idx + 1) % self.num_samples
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         result_dict = self.samples_list[idx]
         load_success = True
         try:
@@ -169,6 +169,6 @@ class DetSourceBase(object):
             if self._retry_count >= self._max_retry_num:
                 raise ValueError('All samples failed to load!')
 
-            result_dict = self.get_sample(self._rand_another(idx))
+            result_dict = self[self._rand_another(idx)]
 
         return result_dict
