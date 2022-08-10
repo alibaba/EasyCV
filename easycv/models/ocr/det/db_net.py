@@ -15,6 +15,7 @@ from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 from easycv.models.ocr.backbones.det_mobilenet_v3 import MobileNetV3
 from easycv.models.ocr.postprocess.db_postprocess import DBPostProcess
+from easycv.models.ocr.loss.det_db_loss import DBLoss
 
 
 @MODELS.register_module()
@@ -26,6 +27,7 @@ class DBNet(BaseModel):
         backbone,
         neck,
         head,
+        loss,
         postprocess,
         pretrained=None,
         **kwargs,
@@ -37,8 +39,8 @@ class DBNet(BaseModel):
         self.backbone = eval(backbone.type)(**backbone)
         self.neck = builder.build_neck(neck)
         self.head = builder.build_head(head)
+        self.loss = eval(loss.type)(**loss)
         self.postprocess_op = DBPostProcess(**postprocess)
-        
         self.init_weights()
         
     def init_weights(self):
@@ -78,8 +80,10 @@ class DBNet(BaseModel):
             y["head_out"] = x
         return y
     
-    def forward_train(self, img):
-        pass
+    def forward_train(self, img, **kwargs):
+        predicts = self.extract_feat(img)
+        loss = self.loss(predicts, kwargs)
+        return loss
     
     def forward_test(self, img):
         with torch.no_grad():

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class BalanceLoss(nn.Layer):
+class BalanceLoss(nn.Module):
     def __init__(self,
                  balance_loss=True,
                  main_loss_type='DiceLoss',
@@ -69,7 +69,7 @@ class BalanceLoss(nn.Layer):
         negative_loss = negative * loss
         negative_loss = torch.reshape(negative_loss, shape=[-1])
         if negative_count > 0:
-            sort_loss = negative_loss.sort(descending=True)
+            sort_loss, _ = negative_loss.sort(descending=True)
             negative_loss = sort_loss[:negative_count]
             # negative_loss, _ = paddle.topk(negative_loss, k=negative_count_int)
             balance_loss = (positive_loss.sum() + negative_loss.sum()) / (
@@ -126,7 +126,7 @@ class MaskL1Loss(nn.Module):
 
     def forward(self, pred: torch.Tensor, gt, mask):
         loss = (torch.abs(pred - gt) * mask).sum() / (mask.sum() + self.eps)
-        return 
+        return loss
     
     
 class BCELoss(nn.Module):
@@ -139,11 +139,11 @@ class BCELoss(nn.Module):
         return loss
     
     
-class DBLoss(nn.Layer):
+class DBLoss(nn.Module):
     """
     Differentiable Binarization (DB) Loss Function
     args:
-        param (dict): the super paramter for DB Loss
+        parm (dict): the super paramter for DB Loss
     """
 
     def __init__(self,
@@ -166,8 +166,14 @@ class DBLoss(nn.Layer):
 
     def forward(self, predicts, labels):
         predict_maps = predicts['maps']
-        label_threshold_map, label_threshold_mask, label_shrink_map, label_shrink_mask = labels[
-            1:]
+        # label_threshold_map, label_threshold_mask, label_shrink_map, label_shrink_mask = labels[
+        #     1:]
+        label_threshold_map, label_threshold_mask, label_shrink_map, label_shrink_mask = labels['threshold_map'], labels['threshold_mask'], labels['shrink_map'],  labels['shrink_mask']
+        if len(label_threshold_map.shape)==4:
+            label_threshold_map = label_threshold_map.squeeze(1)
+            label_threshold_mask = label_threshold_mask.squeeze(1)
+            label_shrink_map = label_shrink_map.squeeze(1)
+            label_shrink_mask = label_shrink_mask.squeeze(1)
         shrink_maps = predict_maps[:, 0, :, :]
         threshold_maps = predict_maps[:, 1, :, :]
         binary_maps = predict_maps[:, 2, :, :]
@@ -181,9 +187,9 @@ class DBLoss(nn.Layer):
         loss_shrink_maps = self.alpha * loss_shrink_maps
         loss_threshold_maps = self.beta * loss_threshold_maps
 
-        loss_all = loss_shrink_maps + loss_threshold_maps \
-                   + loss_binary_maps
-        losses = {'loss': loss_all, \
+        # loss_all = loss_shrink_maps + loss_threshold_maps \
+        #            + loss_binary_maps
+        losses = {
                   "loss_shrink_maps": loss_shrink_maps, \
                   "loss_threshold_maps": loss_threshold_maps, \
                   "loss_binary_maps": loss_binary_maps}

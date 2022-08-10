@@ -25,6 +25,14 @@ model = dict(
         use_dilation=False,
         score_mode='fast'
     ),
+    loss=dict(
+        type='DBLoss',
+        balance_loss=True,
+        main_loss_type='DiceLoss',
+        alpha=5,
+        beta=10,
+        ohem_ratio=3
+    ),
     pretrained='/root/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_det_infer.pth'
 )
 
@@ -71,3 +79,27 @@ test_pipeline = [
     dict(type='ImageToTensor', keys=['img']),
     dict(type='Collect', keys=['img','ori_shape']),
 ]
+
+train_dataset = dict(
+    type = 'OCRDetDataset',
+    data_source = dict(
+        type='OCRDetSource',
+        label_file = '/root/code/ocr/EasyCV/train_data/icdar2015/text_localization/train_icdar2015_label.txt',
+        data_dir='/root/code/ocr/EasyCV/train_data/icdar2015/text_localization'
+    ),
+    pipeline = train_pipeline
+)
+
+data = dict(
+    imgs_per_gpu=16, workers_per_gpu=2, train=train_dataset)
+
+total_epochs = 1200
+optimizer = dict(
+    type='Adam',
+    lr=0.001,
+    betas=(0.9, 0.999))
+
+# learning policy
+lr_config = dict(policy='fixed')
+
+checkpoint_config = dict(interval=100)
