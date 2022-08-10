@@ -117,8 +117,7 @@ model = dict(
         rcnn=dict(
             score_thr=0.05,
             nms=dict(type='nms', iou_threshold=0.5),
-            max_per_img=100)
-    ))
+            max_per_img=100)))
 
 mmlab_modules = [
     dict(type='mmdet', name='FasterRCNN', module='model'),
