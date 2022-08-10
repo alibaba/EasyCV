@@ -31,7 +31,6 @@ THIS SOFTWARE AND ANNOTATIONS ARE PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBU
 # license
 Source: https://groups.csail.mit.edu/vision/datasets/ADE20K/
 
-The Objects365 dataset is available for the academic purpose only. Any researcher who uses the Objects365 dataset should obey the license as below:
 Images
 MIT, CSAIL does not own the copyright of the images. If you are a researcher or educator who wish to have a copy of the original images for non-commercial research and/or educational use, we may provide you access by filling a request in our site. You may use the images under the following terms:
 ● Researcher shall use the Database only for non-commercial research and educational purposes. MIT makes no representations or warranties regarding the Database, including but not limited to warranties of non-infringement or fitness for a particular purpose.
@@ -54,6 +53,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 # license
 Source: https://www.objects365.org/overview.html
 
+The Objects365 dataset is available for the academic purpose only. Any researcher who uses the Objects365 dataset should obey the license as below:
 Images
 The Objects365 Consortium does not own the copyright of the images. Use of images must abide by the Flickr Terms of Use. The users of the images accept full responsibility for the use of the dataset, including but not limited to the use of any copies of copyrighted images that they may create from the dataset. You will NOT distribute the above images. We will delete the images immediately if the copyright of images are violated.
 Software
