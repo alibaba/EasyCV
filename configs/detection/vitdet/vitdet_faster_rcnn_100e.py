@@ -1,6 +1,6 @@
 _base_ = [
-    './_base_/models/vitdet.py', './_base_/datasets/coco_instance.py',
-    'configs/base.py'
+    './_base_/models/vitdet_faster_rcnn.py',
+    './_base_/datasets/coco_detection.py', 'configs/base.py'
 ]
 
 log_config = dict(
