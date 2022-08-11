@@ -117,6 +117,21 @@ notebook
           <li><a href="configs/classification/imagenet/vit">ViT (ICLR'2021)</a></li>
           <li><a href="configs/classification/imagenet/swint">SwinT (ICCV'2021)</a></li>
           <li><a href="configs/classification/imagenet/efficientformer">EfficientFormer (ArXiv'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/deit">DeiT (ICML'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/xcit">XCiT (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/tnt">TNT (NeurIPS'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/convit">ConViT (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/cait">CaiT (ICCV'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/levit">LeViT (ICCV'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/convnext">ConvNeXt (CVPR'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/resmlp">ResMLP (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/coat">CoaT (ICCV'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/convmixer">ConvMixer (ICLR'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/mlp-mixer">MLP-Mixer (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/nest">NesT (AAAI'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/pit">PiT (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/twins">Twins (NeurIPS'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/shuffle_transformer">Shuffle Transformer (ArXiv'2021)</a></li>
         </ul>
       </td>
       <td>

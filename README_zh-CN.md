@@ -68,22 +68,22 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 ## 模型库
 
 <div align="center">
-  <b>Architectures</b>
+  <b>模型</b>
 </div>
 <table align="center">
   <tbody>
     <tr align="center" valign="bottom">
       <td>
-        <b>Self-Supervised Learning</b>
+        <b>自监督学习</b>
       </td>
       <td>
-        <b>Image Classification</b>
+        <b>图像分类</b>
       </td>
       <td>
-        <b>Object Detection</b>
+        <b>目标检测</b>
       </td>
       <td>
-        <b>Segmentation</b>
+        <b>分割</b>
       </td>
     </tr>
     <tr valign="top">
@@ -108,6 +108,21 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
           <li><a href="configs/classification/imagenet/vit">ViT (ICLR'2021)</a></li>
           <li><a href="configs/classification/imagenet/swint">SwinT (ICCV'2021)</a></li>
           <li><a href="configs/classification/imagenet/efficientformer">EfficientFormer (ArXiv'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/deit">DeiT (ICML'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/xcit">XCiT (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/tnt">TNT (NeurIPS'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/convit">ConViT (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/cait">CaiT (ICCV'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/levit">LeViT (ICCV'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/convnext">ConvNeXt (CVPR'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/resmlp">ResMLP (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/coat">CoaT (ICCV'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/convmixer">ConvMixer (ICLR'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/mlp-mixer">MLP-Mixer (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/nest">NesT (AAAI'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/pit">PiT (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/twins">Twins (NeurIPS'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/shuffle_transformer">Shuffle Transformer (ArXiv'2021)</a></li>
         </ul>
       </td>
       <td>
@@ -121,7 +136,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
       </td>
       <td>
         </ul>
-          <li><b>Instance Segmentation</b></li>
+          <li><b>实例分割</b></li>
         <ul>
         <ul>
           <li><a href="configs/detection/mask_rcnn">Mask R-CNN (ICCV'2017)</a></li>
@@ -130,7 +145,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
         </ul>
         </ul>
         </ul>
-          <li><b>Sementic Segmentation</b></li>
+          <li><b>语义分割</b></li>
         <ul>
         <ul>
           <li><a href="configs/segmentation/fcn">FCN (CVPR'2015)</a></li>
@@ -138,7 +153,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
         </ul>
         </ul>
         </ul>
-          <li><b>Panoptic Segmentation</b></li>
+          <li><b>全景分割</b></li>
         <ul>
         <ul>
           <li><a href="configs/segmentation/mask2former">Mask2Former (CVPR'2022)</a></li>
