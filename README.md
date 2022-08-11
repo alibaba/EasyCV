@@ -77,8 +77,7 @@ output['detection_boxes'][0][:2] = [[131.10389709472656, 90.93302154541016, 148.
 Here we get a list of objects detected in the image, with a box surrounding the object and a confidence score. Here is the original image on the right, with the predictions displayed on the left:
 
 <h3 align="center">
-    <a><img src="https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg" width="400"></a>
-    <a><img src="https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/result.jpg" width="400"></a>
+    <a><img src="https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/result.jpg" width="800"></a>
 </h3>
 
 
