@@ -56,7 +56,7 @@ To immediately use a model on a given input image, we provide the Predictor API.
 ``` python
 >>> from easycv.predictors.detector import DetectionPredictor
 
-# Download an image
+# Specify file path
 >>> model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/detr/epoch_150.pth'
 >>> config_path = 'configs/detection/detr/detr_r50_8x2_150e_coco.py'
 >>> img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'

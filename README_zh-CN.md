@@ -56,7 +56,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 ``` python
 >>> from easycv.predictors.detector import DetectionPredictor
 
-# 下载图片
+# 指定文件路径
 >>> model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/detr/epoch_150.pth'
 >>> config_path = 'configs/detection/detr/detr_r50_8x2_150e_coco.py'
 >>> img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
