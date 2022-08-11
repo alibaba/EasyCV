@@ -98,35 +98,34 @@ notebook
     <tr valign="top">
       <td>
         <ul>
-            <li><a href="configs/selfsup/byol">BYOL ()</a></li>
-            <li><a href="configs/selfsup/dino">DINO ()</a></li>
-            <li><a href="configs/selfsup/mixco">MiXCo ()</a></li>
-            <li><a href="configs/selfsup/moby">MoBY ()</a></li>
-            <li><a href="configs/selfsup/mocov2">MoCov2 ()</a></li>
-            <li><a href="configs/selfsup/simclr">SimCLR ()</a></li>
-            <li><a href="configs/selfsup/swav">SwAV ()</a></li>
-            <li><a href="configs/selfsup/mae">MAE ()</a></li>
-            <li><a href="configs/selfsup/fast_convmae">FastConvMAE ()</a></li>
+            <li><a href="configs/selfsup/byol">BYOL (NeurIPS'2020)</a></li>
+            <li><a href="configs/selfsup/dino">DINO (ICCV'2021)</a></li>
+            <li><a href="configs/selfsup/mixco">MiXCo (NeurIPS'2020)</a></li>
+            <li><a href="configs/selfsup/moby">MoBY (ArXiv'2021)</a></li>
+            <li><a href="configs/selfsup/mocov2">MoCov2 (ArXiv'2020)</a></li>
+            <li><a href="configs/selfsup/simclr">SimCLR (ICML'2020)</a></li>
+            <li><a href="configs/selfsup/swav">SwAV (NeurIPS'2020)</a></li>
+            <li><a href="configs/selfsup/mae">MAE (CVPR'2022)</a></li>
+            <li><a href="configs/selfsup/fast_convmae">FastConvMAE (ArXiv'2022)</a></li>
       </ul>
       </td>
       <td>
         <ul>
-          <li><a href="configs/classification/imagenet/timm">Timm ()</a></li>
-          <li><a href="configs/classification/imagenet/resnet">ResNet ()</a></li>
-          <li><a href="configs/classification/imagenet/resnext">ResNeXt ()</a></li>
-          <li><a href="configs/classification/imagenet/hrnet">HRNet ()</a></li>
-          <li><a href="configs/classification/imagenet/vit">ViT ()</a></li>
-          <li><a href="configs/classification/imagenet/swint">SwinT ()</a></li>
-          <li><a href="configs/classification/imagenet/efficientformer">EfficientFormer ()</a></li>
+          <li><a href="configs/classification/imagenet/resnet">ResNet (CVPR'2016)</a></li>
+          <li><a href="configs/classification/imagenet/resnext">ResNeXt (CVPR'2017)</a></li>
+          <li><a href="configs/classification/imagenet/hrnet">HRNet (CVPR'2019)</a></li>
+          <li><a href="configs/classification/imagenet/vit">ViT (ICLR'2021)</a></li>
+          <li><a href="configs/classification/imagenet/swint">SwinT (ICCV'2021)</a></li>
+          <li><a href="configs/classification/imagenet/efficientformer">EfficientFormer (ArXiv'2022)</a></li>
         </ul>
       </td>
       <td>
         <ul>
-          <li><a href="configs/detection/fcos">FCOS ()</a></li>
-          <li><a href="configs/detection/yolox">YOLOX ()</a></li>
-          <li><a href="configs/detection/detr">DETR ()</a></li>
-          <li><a href="configs/detection/dab_detr">DAB-DETR ()</a></li>
-          <li><a href="configs/detection/dab_detr">DN-DETR ()</a></li>
+          <li><a href="configs/detection/fcos">FCOS (ICCV'2019)</a></li>
+          <li><a href="configs/detection/yolox">YOLOX (ArXiv'2021)</a></li>
+          <li><a href="configs/detection/detr">DETR (ECCV'2020)</a></li>
+          <li><a href="configs/detection/dab_detr">DAB-DETR (ICLR'2022)</a></li>
+          <li><a href="configs/detection/dab_detr">DN-DETR (CVPR'2022)</a></li>
         </ul>
       </td>
       <td>
@@ -134,24 +133,24 @@ notebook
           <li><b>Instance Segmentation</b></li>
         <ul>
         <ul>
-          <li><a href="configs/detection/mask_rcnn">Mask R-CNN ()</a></li>
-          <li><a href="configs/detection/vitdet">ViTDet ()</a></li>
-          <li><a href="configs/segmentation/mask2former">Mask2Former ()</a></li>
+          <li><a href="configs/detection/mask_rcnn">Mask R-CNN (ICCV'2017)</a></li>
+          <li><a href="configs/detection/vitdet">ViTDet (ArXiv'2022)</a></li>
+          <li><a href="configs/segmentation/mask2former">Mask2Former (CVPR'2022)</a></li>
         </ul>
         </ul>
         </ul>
           <li><b>Sementic Segmentation</b></li>
         <ul>
         <ul>
-          <li><a href="configs/segmentation/fcn">FCN ()</a></li>
-          <li><a href="configs/segmentation/upernet">UperNet ()</a></li>
+          <li><a href="configs/segmentation/fcn">FCN (CVPR'2015)</a></li>
+          <li><a href="configs/segmentation/upernet">UperNet (ECCV'2018)</a></li>
         </ul>
         </ul>
         </ul>
           <li><b>Panoptic Segmentation</b></li>
         <ul>
         <ul>
-          <li><a href="configs/segmentation/mask2former">Mask2Former ()</a></li>
+          <li><a href="configs/segmentation/mask2former">Mask2Former (CVPR'2022)</a></li>
         </ul>
         </ul>
       </ul>
