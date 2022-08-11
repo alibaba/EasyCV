@@ -67,6 +67,92 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 ## 模型库
 
+<div align="center">
+  <b>Architectures</b>
+</div>
+<table align="center">
+  <tbody>
+    <tr align="center" valign="bottom">
+      <td>
+        <b>Self-Supervised Learning</b>
+      </td>
+      <td>
+        <b>Image Classification</b>
+      </td>
+      <td>
+        <b>Object Detection</b>
+      </td>
+      <td>
+        <b>Segmentation</b>
+      </td>
+    </tr>
+    <tr valign="top">
+      <td>
+        <ul>
+            <li><a href="configs/selfsup/byol">BYOL ()</a></li>
+            <li><a href="configs/selfsup/dino">DINO ()</a></li>
+            <li><a href="configs/selfsup/mixco">MiXCo ()</a></li>
+            <li><a href="configs/selfsup/moby">MoBY ()</a></li>
+            <li><a href="configs/selfsup/mocov2">MoCov2 ()</a></li>
+            <li><a href="configs/selfsup/simclr">SimCLR ()</a></li>
+            <li><a href="configs/selfsup/swav">SwAV ()</a></li>
+            <li><a href="configs/selfsup/mae">MAE ()</a></li>
+            <li><a href="configs/selfsup/fast_convmae">FastConvMAE ()</a></li>
+      </ul>
+      </td>
+      <td>
+        <ul>
+          <li><a href="configs/classification/imagenet/timm">Timm ()</a></li>
+          <li><a href="configs/classification/imagenet/resnet">ResNet ()</a></li>
+          <li><a href="configs/classification/imagenet/resnext">ResNeXt ()</a></li>
+          <li><a href="configs/classification/imagenet/hrnet">HRNet ()</a></li>
+          <li><a href="configs/classification/imagenet/vit">ViT ()</a></li>
+          <li><a href="configs/classification/imagenet/swint">SwinT ()</a></li>
+          <li><a href="configs/classification/imagenet/efficientformer">EfficientFormer ()</a></li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li><a href="configs/detection/fcos">FCOS ()</a></li>
+          <li><a href="configs/detection/yolox">YOLOX ()</a></li>
+          <li><a href="configs/detection/detr">DETR ()</a></li>
+          <li><a href="configs/detection/dab_detr">DAB-DETR ()</a></li>
+          <li><a href="configs/detection/dab_detr">DN-DETR ()</a></li>
+        </ul>
+      </td>
+      <td>
+        </ul>
+          <li><b>Instance Segmentation</b></li>
+        <ul>
+        <ul>
+          <li><a href="configs/detection/mask_rcnn">Mask R-CNN ()</a></li>
+          <li><a href="configs/detection/vitdet">ViTDet ()</a></li>
+          <li><a href="configs/segmentation/mask2former">Mask2Former ()</a></li>
+        </ul>
+        </ul>
+        </ul>
+          <li><b>Sementic Segmentation</b></li>
+        <ul>
+        <ul>
+          <li><a href="configs/segmentation/fcn">FCN ()</a></li>
+          <li><a href="configs/segmentation/upernet">UperNet ()</a></li>
+        </ul>
+        </ul>
+        </ul>
+          <li><b>Panoptic Segmentation</b></li>
+        <ul>
+        <ul>
+          <li><a href="configs/segmentation/mask2former">Mask2Former ()</a></li>
+        </ul>
+        </ul>
+      </ul>
+      </td>
+    </tr>
+</td>
+    </tr>
+  </tbody>
+</table>
+
 不同领域的模型仓库和benchmark指标如下
 
 - [自监督模型库](docs/source/model_zoo_ssl.md)
