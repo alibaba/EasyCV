@@ -54,9 +54,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 为了在给定的输入图像上立即使用模型，我们提供了Predictor API。预测器将预先训练的模型与该模型训练期间使用的预处理组合在一起。例如，我们可以很容易地提取图像中的检测对象:
 
 ``` python
->>> import requests
->>> from PIL import Image
->>> from transformers import pipeline
+>>> from easycv.predictors.detector import DetectionPredictor
 
 # 下载图片
 >>> model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/detr/epoch_150.pth'

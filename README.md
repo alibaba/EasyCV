@@ -54,9 +54,7 @@ Please refer to the installation section in [quick_start.md](docs/source/quick_s
 To immediately use a model on a given input image, we provide the Predictor API. Predictor group together a pretrained model with the preprocessing that was used during that model's training. For example, we can easily extract detected objects in an image:
 
 ``` python
->>> import requests
->>> from PIL import Image
->>> from transformers import pipeline
+>>> from easycv.predictors.detector import DetectionPredictor
 
 # Download an image
 >>> model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/detr/epoch_150.pth'
