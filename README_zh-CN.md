@@ -64,7 +64,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 # 使用目标检测的predictor得到输出结果
 >>> detr = DetectionPredictor(model_path, config_path)
 >>> output = detr.predict(img)
->>> detr.visualize(img, output, out_file='./result.jpg')
+>>> detr.visualize(img, output, out_file='./result.png')
 output['detection_scores'][0][:2] = [0.07836595922708511, 0.219977006316185]
 output['detection_classes'][0][:2] = [2, 0]
 output['detection_boxes'][0][:2] = [[131.10389709472656, 90.93302154541016, 148.95504760742188,101.69216918945312],
@@ -75,7 +75,7 @@ output['detection_boxes'][0][:2] = [[131.10389709472656, 90.93302154541016, 148.
 在这里，我们得到了在图像中检测到的对象列表，对象周围有一个框和一个置信度得分。下面是预测结果:
 
 
-<img src="https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/result.jpg">
+<img src="https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/result.png">
 
 
 请参考[快速开始教程](docs/source/quick_start.md) 快速开始。我们也提供了更多的教程方便你的学习和使用。

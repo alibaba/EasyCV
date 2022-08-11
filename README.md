@@ -64,7 +64,7 @@ To immediately use a model on a given input image, we provide the Predictor API.
 # Allocate a predictor for object detection
 >>> detr = DetectionPredictor(model_path, config_path)
 >>> output = detr.predict(img)
->>> detr.visualize(img, output, out_file='./result.jpg')
+>>> detr.visualize(img, output, out_file='./result.png')
 output['detection_scores'][0][:2] = [0.07836595922708511, 0.219977006316185]
 output['detection_classes'][0][:2] = [2, 0]
 output['detection_boxes'][0][:2] = [[131.10389709472656, 90.93302154541016, 148.95504760742188,101.69216918945312],
@@ -75,7 +75,7 @@ output['detection_boxes'][0][:2] = [[131.10389709472656, 90.93302154541016, 148.
 Here we get a list of objects detected in the image, with a box surrounding the object and a confidence score. The prediction results are as follows:
 
 
-<img src="https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/result.jpg">
+<img src="https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/result.png">
 
 
 Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We also provides tutorials for more usages.
