@@ -33,7 +33,7 @@ model = dict(
         beta=10,
         ohem_ratio=3
     ),
-    pretrained='/root/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_det_infer.pth'
+    pretrained='/mnt/workspace/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_det_infer.pth'
 )
 
 img_norm_cfg = dict(
@@ -67,31 +67,38 @@ train_pipeline = [
     dict(type='ImageToTensor', keys=['img','threshold_map','threshold_mask','shrink_map','shrink_mask']),
     dict(type='Collect', keys=['img','threshold_map','threshold_mask','shrink_map','shrink_mask']),
 ]
-data_source = dict(
-    type='OCRDetSource',
-    label_file = '/root/code/ocr/EasyCV/train_data/icdar2015/text_localization/train_icdar2015_label.txt',
-    data_dir='/root/code/ocr/EasyCV/train_data/icdar2015/text_localization'
-)
+
 test_pipeline = [
     dict(type='MMResize', img_scale=(960,960)),
     dict(type='ResizeDivisor', size_divisor=32),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
-    dict(type='Collect', keys=['img','ori_shape']),
+    dict(type='Collect', keys=['img'],meta_keys=['ori_img_shape','polys','ignore_tags']),
 ]
 
 train_dataset = dict(
     type = 'OCRDetDataset',
     data_source = dict(
         type='OCRDetSource',
-        label_file = '/root/code/ocr/EasyCV/train_data/icdar2015/text_localization/train_icdar2015_label.txt',
-        data_dir='/root/code/ocr/EasyCV/train_data/icdar2015/text_localization'
+        label_file = '/mnt/workspace/database/ocr/det/icdar2015/text_localization/train_icdar2015_label.txt',
+        data_dir='/mnt/workspace/database/ocr/det/icdar2015/text_localization'
     ),
     pipeline = train_pipeline
 )
 
+val_dataset = dict(
+    type = 'OCRDetDataset',
+    imgs_per_gpu=2,
+    data_source = dict(
+        type='OCRDetSource',
+        label_file = '/mnt/workspace/database/ocr/det/icdar2015/text_localization/test_icdar2015_label.txt',
+        data_dir='/mnt/workspace/database/ocr/det/icdar2015/text_localization'
+    ),
+    pipeline = test_pipeline
+)
+
 data = dict(
-    imgs_per_gpu=16, workers_per_gpu=2, train=train_dataset)
+    imgs_per_gpu=16, workers_per_gpu=2, train=train_dataset, val=val_dataset)
 
 total_epochs = 1200
 optimizer = dict(
@@ -103,3 +110,21 @@ optimizer = dict(
 lr_config = dict(policy='fixed')
 
 checkpoint_config = dict(interval=100)
+
+log_config = dict(
+    interval=10,
+    hooks=[
+        dict(type='TextLoggerHook'),
+        # dict(type='TensorboardLoggerHook')
+    ])
+
+eval_config = dict(initial=True, interval=1, gpu_collect=False)
+eval_pipelines = [
+    dict(
+        mode='test',
+        dist_eval=True,
+        evaluators=[
+            dict(type='OCRDetEvaluator')
+        ],
+    )
+]

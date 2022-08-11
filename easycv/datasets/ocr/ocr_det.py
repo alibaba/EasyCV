@@ -23,7 +23,14 @@ class OCRDetDataset(BaseDataset):
         return data_dict
     
     def evaluate(self, results, evaluators, logger=None, **kwargs):
-        pass
+        assert len(evaluators) == 1, \
+            'ocrdet evaluation only support one evaluator'
+        points = results.pop('points')
+        ignore_tags = results.pop('ignore_tags')
+        polys = results.pop('polys')
+        eval_res = evaluators[0].evaluate(points, polys, ignore_tags)
+
+        return eval_res
     
 if __name__ == "__main__":
     from easycv.utils.config_tools import mmcv_config_fromfile

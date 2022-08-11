@@ -163,7 +163,8 @@ class DBPostProcess(object):
         pred = pred[:, 0, :, :]
         segmentation = pred > self.thresh
 
-        boxes_batch = []
+        # boxes_batch = []
+        boxes_batch = {'points': []}
         for batch_index in range(pred.shape[0]):
             src_h, src_w, c = shape_list[batch_index]
             if self.dilation_kernel is not None:
@@ -175,5 +176,6 @@ class DBPostProcess(object):
             boxes, scores = self.boxes_from_bitmap(pred[batch_index], mask,
                                                    src_w, src_h)
 
-            boxes_batch.append({'points': boxes})
+            # boxes_batch.append({'points': boxes})
+            boxes_batch['points'].append(boxes)
         return boxes_batch

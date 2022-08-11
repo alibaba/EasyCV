@@ -83,6 +83,7 @@ class OCRDetSource(object):
             
             img = load_image(img_path, mode='BGR')
             data['img'] = img.astype(np.float32)
+            data['ori_img_shape'] = img.shape
             outs = self.detlabel_encode(data)
         except:
             logging.error(

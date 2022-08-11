@@ -64,31 +64,28 @@ class DBNet(BaseModel):
                         nn.init.zeros_(m.bias)
                     
     def extract_feat(self, x):
-        y = dict()
         x = self.backbone(x)
-        y["backbone_out"] = x
+        # y["backbone_out"] = x
         x = self.neck(x)
-        y["neck_out"] = x
+        # y["neck_out"] = x
         x = self.head(x)
-        # for multi head, save ctc neck out for udml
-        if isinstance(x, dict) and 'ctc_nect' in x.keys():
-            y['neck_out'] = x['ctc_neck']
-            y['head_out'] = x
-        elif isinstance(x, dict):
-            y.update(x)
-        else:
-            y["head_out"] = x
-        return y
+        return x
     
     def forward_train(self, img, **kwargs):
         predicts = self.extract_feat(img)
         loss = self.loss(predicts, kwargs)
         return loss
     
-    def forward_test(self, img):
+    def forward_test(self, img,**kwargs):
+        shape_list = [img_meta['ori_img_shape'] for img_meta in kwargs['img_metas']]
+        ignore_tags = [img_meta['ignore_tags'] for img_meta in kwargs['img_metas']]
+        polys = [img_meta['polys'] for img_meta in kwargs['img_metas']]
         with torch.no_grad():
-            out = self.extract_feat(img)
-            return out
+            preds = self.extract_feat(img)
+        post_results = self.postprocess_op(preds, shape_list)
+        post_results['ignore_tags'] = ignore_tags
+        post_results['polys'] = polys
+        return post_results
     
     def postprocess(self, preds, shape_list):
 

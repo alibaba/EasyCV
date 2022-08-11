@@ -1043,7 +1043,6 @@ class MMResize:
             dict: Resized results, 'img_shape', 'pad_shape', 'scale_factor', \
                 'keep_ratio' keys are added into result dict.
         """
-
         if 'scale' not in results:
             if 'scale_factor' in results:
                 img_shape = results['img'].shape[:2]
@@ -2199,7 +2198,6 @@ class ResizeDivisor:
         self.size_divisor = size_divisor
         
     def __call__(self, results):
-        
         img = results['img']
         h,w,c = img.shape
         resize_h = max(int(round(h / self.size_divisor) * self.size_divisor), self.size_divisor)
