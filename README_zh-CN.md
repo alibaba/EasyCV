@@ -51,6 +51,56 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 ## 快速开始
 
+为了在给定的输入图像上立即使用模型，我们提供了Predictor API。预测器将预先训练的模型与该模型训练期间使用的预处理组合在一起。例如，我们可以很容易地提取图像中的检测对象:
+
+``` python
+>>> import requests
+>>> from PIL import Image
+>>> from transformers import pipeline
+
+# 下载图片
+>>> model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/detr/epoch_150.pth'
+>>> config_path = 'configs/detection/detr/detr_r50_8x2_150e_coco.py'
+>>> img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
+
+# 使用目标检测的predictor得到输出结果
+>>> detr = DetectionPredictor(model_path, config_path)
+>>> output = detr.predict(img)
+>>> detr.visualize(img, output, out_file='./result.jpg')
+output['detection_scores'][0][:5] = [
+                0.07836595922708511, 0.219977006316185, 0.5831383466720581,
+                0.4256463646888733, 0.9853266477584839]
+output['detection_classes'][0][:5] = [2, 0, 2, 2, 2]
+output['detection_boxes'][0][:5] = [[
+                131.10389709472656, 90.93302154541016, 148.95504760742188,
+                101.69216918945312
+            ],
+                      [
+                          239.10910034179688, 113.36551666259766,
+                          256.0523376464844, 125.22894287109375
+                      ],
+                      [
+                          132.1316375732422, 90.8366470336914,
+                          151.00839233398438, 101.83119201660156
+                      ],
+                      [
+                          579.37646484375, 108.26667785644531,
+                          605.0717163085938, 124.79525756835938
+                      ],
+                      [
+                          189.69073486328125, 108.04875946044922,
+                          296.8011779785156, 154.44204711914062
+                      ]]
+
+```
+
+在这里，我们得到了在图像中检测到的对象列表，对象周围有一个框和一个置信度得分。右边是原始图像，左边是预测结果:
+
+<h3 align="center">
+    <a><img src="https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg" width="400"></a>
+    <a><img src="https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/result.jpg" width="400"></a>
+</h3>
+
 请参考[快速开始教程](docs/source/quick_start.md) 快速开始。我们也提供了更多的教程方便你的学习和使用。
 
 * [自监督学习教程](docs/source/tutorials/ssl.md)
