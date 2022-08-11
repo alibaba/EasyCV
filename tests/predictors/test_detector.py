@@ -3,10 +3,8 @@
 isort:skip_file
 """
 import os
-import tempfile
 import unittest
 
-import cv2
 import numpy as np
 from PIL import Image
 
