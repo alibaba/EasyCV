@@ -243,8 +243,7 @@ class SetCriterion(nn.Module):
                                        num_boxes, **kwargs)
                 l_dict = {
                     k + '_interm':
-                    v * (self.weight_dict[k + '_interm'] if
-                         (k + '_interm') in self.weight_dict else 1.0)
+                    v * (self.weight_dict[k] if k in self.weight_dict else 1.0)
                     for k, v in l_dict.items()
                 }
                 losses.update(l_dict)

@@ -97,10 +97,4 @@ model = dict(
             cost_bbox=5,
             cost_giou=2,
         ),
-        weight_dict=dict(
-            loss_ce=1,
-            loss_bbox=5,
-            loss_giou=2,
-            loss_ce_interm=1,
-            loss_bbox_interm=1,
-            loss_giou_interm=1)))
+        weight_dict=dict(loss_ce=1, loss_bbox=5, loss_giou=2)))
