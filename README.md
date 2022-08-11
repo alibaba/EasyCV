@@ -81,7 +81,7 @@ notebook
 </div>
 <table align="center">
   <tbody>
-    <tr align="center" valign="bottom">
+    <tr align="center">
       <td>
         <b>Self-Supervised Learning</b>
       </td>
