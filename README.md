@@ -43,6 +43,13 @@ EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focus o
 
   EasyCV support multi-gpu and multi worker training. EasyCV use [DALI](https://github.com/NVIDIA/DALI) to accelerate data io and preprocessing process, and use [TorchAccelerator](https://github.com/alibaba/EasyCV/tree/master/docs/source/tutorials/torchacc.md) and fp16 to accelerate training process. For inference optimization, EasyCV export model using jit script, which can be optimized by [PAI-Blade](https://help.aliyun.com/document_detail/205134.html)
 
+## Technical Articles
+
+We have a series of technical articles on the functionalities of EasyCV.
+* [EasyCV开源｜开箱即用的视觉自监督+Transformer算法库](https://zhuanlan.zhihu.com/p/505219993)
+* [MAE自监督算法介绍和基于EasyCV的复现](https://zhuanlan.zhihu.com/p/515859470)
+* [基于EasyCV复现ViTDet：单层特征超越FPN](https://zhuanlan.zhihu.com/p/528733299)
+* [基于EasyCV复现DETR和DAB-DETR，Object Query的正确打开方式](https://zhuanlan.zhihu.com/p/543129581)
 
 ## Installation
 
@@ -58,7 +65,7 @@ Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We
 * [object detection with yolox](docs/source/tutorials/yolox.md)
 * [model compression with yolox](docs/source/tutorials/compression.md)
 * [metric learning](docs/source/tutorials/metric_learning.md)
-* [torchacc](https://github.com/alibaba/EasyCV/blob/master/docs/source/tutorials/torchacc.md)
+* [torchacc](docs/source/tutorials/torchacc.md)
 
 notebook
 * [self-supervised learning](docs/source/tutorials/EasyCV图像自监督训练-MAE.ipynb)
@@ -80,7 +87,7 @@ Please refer to the following model zoo for more details.
 
 EasyCV have collected dataset info for different senarios, making it easy for users to fintune or evaluate models in EasyCV modelzoo.
 
-Please refer to [data_hub.md](https://github.com/alibaba/EasyCV/blob/master/docs/source/data_hub.md).
+Please refer to [data_hub.md](docs/source/data_hub.md).
 
 ## ChangeLog
 
@@ -89,7 +96,7 @@ Please refer to [data_hub.md](https://github.com/alibaba/EasyCV/blob/master/docs
     * Classification support EfficientFormer algorithm
     * Detection support FCOS、DETR、DAB-DETR and DN-DETR algorithm
     * Segmentation support UperNet algorithm
-    * Support use [torchacc](https://github.com/alibaba/EasyCV/blob/master/docs/source/tutorials/torchacc.md) to speed up training
+    * Support use [torchacc](docs/source/tutorials/torchacc.md) to speed up training
     * Support use analyze tools
 
 * 23/06/2022 EasyCV v0.4.0 was released.
