@@ -78,7 +78,7 @@ class SetCriterion(nn.Module):
 
             loss_ce = py_sigmoid_focal_loss(
                 src_logits,
-                target_classes_onehot.long(),
+                target_classes_onehot,
                 alpha=0.25,
                 gamma=2,
                 reduction='none').mean(1).sum() / num_boxes
@@ -448,7 +448,7 @@ class DNCriterion(nn.Module):
         target_classes_onehot = target_classes_onehot[:, :, :-1]
         loss_ce = py_sigmoid_focal_loss(
             src_logits,
-            target_classes_onehot.long(),
+            target_classes_onehot,
             alpha=focal_alpha,
             gamma=2,
             reduction='none').mean(1).sum() / num_tgt * src_logits.shape[1]
@@ -491,7 +491,6 @@ class DNCriterion(nn.Module):
             losses['loss_bbox_dn'] = torch.as_tensor(0.).to('cuda')
             losses['loss_giou_dn'] = torch.as_tensor(0.).to('cuda')
             losses['loss_ce_dn'] = torch.as_tensor(0.).to('cuda')
-            losses['class_error_dn'] = torch.as_tensor(0.).to('cuda')
 
         if aux_num:
             for i in range(aux_num):
@@ -517,11 +516,10 @@ class DNCriterion(nn.Module):
                 else:
                     l_dict = dict()
                     l_dict['loss_bbox_dn'] = torch.as_tensor(0.).to('cuda')
-                    l_dict['class_error_dn'] = torch.as_tensor(0.).to('cuda')
                     l_dict['loss_giou_dn'] = torch.as_tensor(0.).to('cuda')
                     l_dict['loss_ce_dn'] = torch.as_tensor(0.).to('cuda')
                     l_dict = {
-                        k + f'_dn_{i}': v *
+                        k + f'_{i}': v *
                         (self.weight_dict[k] if k in self.weight_dict else 1.0)
                         for k, v in l_dict.items()
                     }

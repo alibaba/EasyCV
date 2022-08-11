@@ -9,8 +9,8 @@ from easycv.models.loss.utils import weight_reduce_loss
 
 
 # This method is only for debugging
-def py_sigmoid_focal_loss(pred,
-                          target,
+def py_sigmoid_focal_loss(inputs,
+                          targets,
                           weight=None,
                           gamma=2.0,
                           alpha=0.25,
@@ -32,13 +32,15 @@ def py_sigmoid_focal_loss(pred,
         avg_factor (int, optional): Average factor that is used to average
             the loss. Defaults to None.
     """
-    pred_sigmoid = pred.sigmoid()
-    target = target.type_as(pred)
-    pt = (1 - pred_sigmoid) * target + pred_sigmoid * (1 - target)
-    focal_weight = (alpha * target + (1 - alpha) *
-                    (1 - target)) * pt.pow(gamma)
-    loss = F.binary_cross_entropy_with_logits(
-        pred, target, reduction='none') * focal_weight
+    prob = inputs.sigmoid()
+    ce_loss = F.binary_cross_entropy_with_logits(
+        inputs, targets, reduction='none')
+    p_t = prob * targets + (1 - prob) * (1 - targets)
+    loss = ce_loss * ((1 - p_t)**gamma)
+
+    if alpha >= 0:
+        alpha_t = alpha * targets + (1 - alpha) * (1 - targets)
+        loss = alpha_t * loss
     if weight is not None:
         if weight.shape != loss.shape:
             if weight.size(0) == loss.size(0):
