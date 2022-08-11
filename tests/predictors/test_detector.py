@@ -10,7 +10,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from easycv.predictors.detector import TorchYoloXPredictor, TorchViTDetPredictor
+from easycv.predictors.detector import TorchYoloXPredictor, DetectionPredictor
 from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_EXPORT,
                              PRETRAINED_MODEL_YOLOXS_EXPORT_JIT,
                              PRETRAINED_MODEL_YOLOXS_END2END_JIT,
@@ -175,7 +175,7 @@ class DetectorTest(unittest.TestCase):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/vitdet/vit_base/vitdet_maskrcnn_export.pth'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
         out_file = './result.jpg'
-        vitdet = TorchViTDetPredictor(model_path)
+        vitdet = DetectionPredictor(model_path)
         output = vitdet.predict(img)
 
         self.assertIn('detection_boxes', output)

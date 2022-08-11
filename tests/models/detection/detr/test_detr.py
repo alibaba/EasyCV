@@ -2,17 +2,8 @@
 import unittest
 
 import numpy as np
-import torch
-from mmcv.parallel import collate, scatter
 from numpy.testing import assert_array_almost_equal
-from torchvision.transforms import Compose
-
-from easycv.datasets.registry import PIPELINES
-from easycv.datasets.utils import replace_ImageToTensor
-from easycv.models import build_model
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.config_tools import mmcv_config_fromfile
-from easycv.utils.registry import build_from_cfg
+from easycv.predictors.detector import DetectionPredictor
 
 
 class DETRTest(unittest.TestCase):
@@ -20,115 +11,12 @@ class DETRTest(unittest.TestCase):
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
-    def init_detr(self, model_path, config_path):
-        self.model_path = model_path
-
-        self.cfg = mmcv_config_fromfile(config_path)
-
-        # modify model_config
-        if self.cfg.model.head.get('num_select', None):
-            self.cfg.model.head.num_select = 10
-
-        # build model
-        self.model = build_model(self.cfg.model)
-
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        map_location = 'cpu' if self.device == 'cpu' else 'cuda'
-        self.ckpt = load_checkpoint(
-            self.model, self.model_path, map_location=map_location)
-
-        self.model.to(self.device)
-        self.model.eval()
-
-        self.CLASSES = self.cfg.CLASSES
-
-    def predict(self, imgs):
-        """Inference image(s) with the detector.
-        Args:
-            model (nn.Module): The loaded detector.
-            imgs (str/ndarray or list[str/ndarray] or tuple[str/ndarray]):
-            Either image files or loaded images.
-        Returns:
-            If imgs is a list or tuple, the same length list type results
-            will be returned, otherwise return the detection results directly.
-        """
-
-        if isinstance(imgs, (list, tuple)):
-            is_batch = True
-        else:
-            imgs = [imgs]
-            is_batch = False
-
-        cfg = self.cfg
-        device = next(self.model.parameters()).device  # model device
-
-        if isinstance(imgs[0], np.ndarray):
-            cfg = cfg.copy()
-            # set loading pipeline type
-            cfg.data.val.pipeline.insert(
-                0,
-                dict(
-                    type='LoadImageFromWebcam',
-                    file_client_args=dict(backend='http')))
-        else:
-            cfg = cfg.copy()
-            # set loading pipeline type
-            cfg.data.val.pipeline.insert(
-                0,
-                dict(
-                    type='LoadImageFromFile',
-                    file_client_args=dict(backend='http')))
-
-        cfg.data.val.pipeline = replace_ImageToTensor(cfg.data.val.pipeline)
-
-        transforms = []
-        for transform in cfg.data.val.pipeline:
-            if 'img_scale' in transform:
-                transform['img_scale'] = tuple(transform['img_scale'])
-            if isinstance(transform, dict):
-                transform = build_from_cfg(transform, PIPELINES)
-                transforms.append(transform)
-            elif callable(transform):
-                transforms.append(transform)
-            else:
-                raise TypeError('transform must be callable or a dict')
-        test_pipeline = Compose(transforms)
-
-        datas = []
-        for img in imgs:
-            # prepare data
-            if isinstance(img, np.ndarray):
-                # directly add img
-                data = dict(img=img)
-            else:
-                # add information into dict
-                data = dict(img_info=dict(filename=img), img_prefix=None)
-            # build the data pipeline
-            data = test_pipeline(data)
-            datas.append(data)
-
-        data = collate(datas, samples_per_gpu=len(imgs))
-        # just get the actual data from DataContainer
-        data['img_metas'] = [
-            img_metas.data[0] for img_metas in data['img_metas']
-        ]
-        data['img'] = [img.data[0] for img in data['img']]
-        if next(self.model.parameters()).is_cuda:
-            # scatter to specified GPU
-            data = scatter(data, [device])[0]
-
-        # forward the model
-        with torch.no_grad():
-            results = self.model(mode='test', **data)
-
-        return results
-
     def test_detr(self):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/detr/epoch_150.pth'
         config_path = 'configs/detection/detr/detr_r50_8x2_150e_coco.py'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-        self.init_detr(model_path, config_path)
-        output = self.predict(img)
+        detr = DetectionPredictor(model_path, config_path)
+        output = detr.predict(img)
 
         self.assertIn('detection_boxes', output)
         self.assertIn('detection_scores', output)
@@ -599,8 +487,8 @@ class DETRTest(unittest.TestCase):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/dab_detr/dab_detr_epoch_50.pth'
         config_path = 'configs/detection/dab_detr/dab_detr_r50_8x2_50e_coco.py'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-        self.init_detr(model_path, config_path)
-        output = self.predict(img)
+        dab_detr = DetectionPredictor(model_path, config_path)
+        output = dab_detr.predict(img)
 
         self.assertIn('detection_boxes', output)
         self.assertIn('detection_scores', output)
@@ -673,8 +561,8 @@ class DETRTest(unittest.TestCase):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/dn_detr/dn_detr_epoch_50.pth'
         config_path = 'configs/detection/dab_detr/dn_detr_r50_8x2_50e_coco.py'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-        self.init_detr(model_path, config_path)
-        output = self.predict(img)
+        dn_detr = DetectionPredictor(model_path, config_path)
+        output = dn_detr.predict(img)
 
         self.assertIn('detection_boxes', output)
         self.assertIn('detection_scores', output)
