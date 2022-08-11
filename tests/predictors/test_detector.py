@@ -177,6 +177,7 @@ class DetectorTest(unittest.TestCase):
         out_file = './result.jpg'
         vitdet = DetectionPredictor(model_path)
         output = vitdet.predict(img)
+        vitdet.visualize(img, output, out_file=out_file)
 
         self.assertIn('detection_boxes', output)
         self.assertIn('detection_scores', output)
@@ -241,8 +242,6 @@ class DetectorTest(unittest.TestCase):
                       [50.403812, 110.543495, 70.4368, 119.65186],
                       [373.50272, 134.27258, 432.18475, 187.81824]]),
             decimal=1)
-
-        vitdet.show_result_pyplot(img, output, out_file=out_file)
 
 
 if __name__ == '__main__':

@@ -43,12 +43,6 @@ class DetectionPredictor(PredictorInterface):
 
         if config_path is not None:
             self.cfg = mmcv_config_fromfile(config_path)
-
-            # modify model_config
-            if self.cfg.model.head.get('num_select', None):
-                self.cfg.model.head.num_select = 10
-            if self.cfg.model.head.test_cfg.get('max_per_img', None):
-                self.cfg.model.head.test_cfg.max_per_img = 10
         else:
             if is_url_path(self.model_path) and url_path_exists(self.model_path):
                 checkpoint = load_state_dict_from_url(model_path)
@@ -177,7 +171,7 @@ class DetectionPredictor(PredictorInterface):
 
         return results
 
-    def show_result_pyplot(self,
+    def visualize(self,
                            img,
                            results,
                            score_thr=0.3,
