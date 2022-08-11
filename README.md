@@ -79,7 +79,6 @@ notebook
 <div align="center">
   <b>Architectures</b>
 </div>
-
 <table align="center">
   <tbody>
     <tr align="center">
