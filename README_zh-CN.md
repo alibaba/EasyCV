@@ -70,6 +70,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 <div align="center">
   <b>模型</b>
 </div>
+
 <table align="center">
   <tbody>
     <tr align="center">
