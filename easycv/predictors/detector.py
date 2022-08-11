@@ -3,7 +3,6 @@ import json
 import os
 from glob import glob
 
-import cv2
 import numpy as np
 import torch
 from mmcv.ops import RoIPool
