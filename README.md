@@ -51,6 +51,57 @@ Please refer to the installation section in [quick_start.md](docs/source/quick_s
 
 ## Get Started
 
+To immediately use a model on a given input image, we provide the Predictor API. Predictor group together a pretrained model with the preprocessing that was used during that model's training. For example, we can easily extract detected objects in an image:
+
+``` python
+>>> import requests
+>>> from PIL import Image
+>>> from transformers import pipeline
+
+# Download an image
+>>> model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/detr/epoch_150.pth'
+>>> config_path = 'configs/detection/detr/detr_r50_8x2_150e_coco.py'
+>>> img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
+
+# Allocate a predictor for object detection
+>>> detr = DetectionPredictor(model_path, config_path)
+>>> output = detr.predict(img)
+>>> detr.visualize(img, output, out_file='./result.jpg')
+output['detection_scores'][0][:5] = [
+                0.07836595922708511, 0.219977006316185, 0.5831383466720581,
+                0.4256463646888733, 0.9853266477584839]
+output['detection_classes'][0][:5] = [2, 0, 2, 2, 2]
+output['detection_boxes'][0][:5] = [[
+                131.10389709472656, 90.93302154541016, 148.95504760742188,
+                101.69216918945312
+            ],
+                      [
+                          239.10910034179688, 113.36551666259766,
+                          256.0523376464844, 125.22894287109375
+                      ],
+                      [
+                          132.1316375732422, 90.8366470336914,
+                          151.00839233398438, 101.83119201660156
+                      ],
+                      [
+                          579.37646484375, 108.26667785644531,
+                          605.0717163085938, 124.79525756835938
+                      ],
+                      [
+                          189.69073486328125, 108.04875946044922,
+                          296.8011779785156, 154.44204711914062
+                      ]]
+
+```
+
+Here we get a list of objects detected in the image, with a box surrounding the object and a confidence score. Here is the original image on the right, with the predictions displayed on the left:
+
+<h3 align="center">
+    <a><img src="https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg" width="400"></a>
+    <a><img src="https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/result.jpg" width="400"></a>
+</h3>
+
+
 Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We also provides tutorials for more usages.
 
 * [self-supervised learning](docs/source/tutorials/ssl.md)
