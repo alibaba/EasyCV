@@ -34,6 +34,7 @@ try:
 except Exception:
     from easycv.thirdparty.mtcnn import FaceDetector
 
+
 @PREDICTORS.register_module()
 class DetectionPredictor(PredictorInterface):
 
@@ -44,7 +45,8 @@ class DetectionPredictor(PredictorInterface):
         if config_path is not None:
             self.cfg = mmcv_config_fromfile(config_path)
         else:
-            if is_url_path(self.model_path) and url_path_exists(self.model_path):
+            if is_url_path(self.model_path) and url_path_exists(
+                    self.model_path):
                 checkpoint = load_state_dict_from_url(model_path)
             else:
                 assert io.exists(
@@ -64,7 +66,7 @@ class DetectionPredictor(PredictorInterface):
             basename = os.path.basename(self.model_path)
             fname, _ = os.path.splitext(basename)
             self.local_config_file = os.path.join(CACHE_DIR,
-                                                f'{fname}_config.json')
+                                                  f'{fname}_config.json')
             if not os.path.exists(CACHE_DIR):
                 os.makedirs(CACHE_DIR)
             with open(self.local_config_file, 'w') as ofile:
@@ -172,11 +174,11 @@ class DetectionPredictor(PredictorInterface):
         return results
 
     def visualize(self,
-                           img,
-                           results,
-                           score_thr=0.3,
-                           show=False,
-                           out_file=None):
+                  img,
+                  results,
+                  score_thr=0.3,
+                  show=False,
+                  out_file=None):
         bboxes = results['detection_boxes'][0]
         scores = results['detection_scores'][0]
         labels = results['detection_classes'][0].tolist()
@@ -209,6 +211,7 @@ class DetectionPredictor(PredictorInterface):
             font_scale=0.5,
             show=show,
             out_file=out_file)
+
 
 @PREDICTORS.register_module()
 class TorchYoloXPredictor(PredictorInterface):
