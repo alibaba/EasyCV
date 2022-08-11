@@ -74,9 +74,8 @@ output['detection_boxes'][0][:2] = [[131.10389709472656, 90.93302154541016, 148.
 
 在这里，我们得到了在图像中检测到的对象列表，对象周围有一个框和一个置信度得分。右边是原始图像，左边是预测结果:
 
-<h3 align="center">
-    <a><img src="https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/result.jpg"></a>
-</h3>
+
+<img src="https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/result.jpg">
 
 
 请参考[快速开始教程](docs/source/quick_start.md) 快速开始。我们也提供了更多的教程方便你的学习和使用。
