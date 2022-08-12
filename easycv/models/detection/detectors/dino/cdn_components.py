@@ -58,7 +58,7 @@ def prepare_for_cdn(dn_args, training, num_queries, num_classes, hidden_dim,
 
         if label_noise_ratio > 0:
             p = torch.rand_like(known_labels_expaned.float())
-            chosen_indice = torch.nonzero(p < (label_noise_ratio * 0.5)).view(
+            chosen_indice = torch.nonzero(p < (label_noise_ratio)).view(
                 -1)  # half of bbox prob
             new_label = torch.randint_like(
                 chosen_indice, 0, num_classes)  # randomly put a new one here
