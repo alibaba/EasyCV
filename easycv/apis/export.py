@@ -53,7 +53,7 @@ def export(cfg, ckpt_path, filename):
         load_checkpoint(model, ckpt_path, map_location='cpu')
     else:
         cfg.model.backbone.pretrained = False
-    model = reparameterize_models(model)
+    # model = reparameterize_models(model)
 
     if isinstance(model, MOCO) or isinstance(model, DINO):
         _export_moco(model, cfg, filename)

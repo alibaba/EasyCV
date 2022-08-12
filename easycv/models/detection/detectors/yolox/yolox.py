@@ -278,3 +278,4 @@ class YOLOX(BaseModel):
                                       self.test_conf, self.nms_thre)
 
         return outputs
+

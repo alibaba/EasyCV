@@ -251,20 +251,14 @@ class TOODHead(nn.Module):
             conv_cfg = self.conv_cfg
             chn = self.feat_channels
             self.inter_convs.append(
-                Conv(
-                    in_channels=chn,
-                    out_channels=chn,
-                    act=act,
-                ))
-            # self.inter_convs.append(
-            #     ConvModule(
-            #         chn,
-            #         self.feat_channels,
-            #         3,
-            #         stride=1,
-            #         padding=1,
-            #         conv_cfg=conv_cfg,
-            #         norm_cfg=self.norm_cfg))
+                ConvModule(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=self.norm_cfg))
 
         self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction='none')
 
@@ -362,7 +356,6 @@ class TOODHead(nn.Module):
             outputs.append(output)
 
         if self.training:
-
             return self.get_losses(
                 imgs,
                 x_shifts,
