@@ -303,7 +303,7 @@ class DINOHead(nn.Module):
         poss = []
         for l, src in enumerate(feats):
             mask = F.interpolate(
-                img_masks[None], size=src.shape[-2:]).to(torch.bool).squeeze(0)
+                img_masks[None].float(), size=src.shape[-2:]).to(torch.bool)[0]
             # position encoding
             pos_l = self.positional_encoding(mask)  # [bs, embed_dim, h, w]
             srcs.append(self.input_proj[l](src))
@@ -318,8 +318,8 @@ class DINOHead(nn.Module):
                 else:
                     src = self.input_proj[l](srcs[-1])
                 mask = F.interpolate(
-                    img_masks[None],
-                    size=src.shape[-2:]).to(torch.bool).squeeze(0)
+                    img_masks[None].float(),
+                    size=src.shape[-2:]).to(torch.bool)[0]
                 # position encoding
                 pos_l = self.positional_encoding(mask)  # [bs, embed_dim, h, w]
                 srcs.append(src)
