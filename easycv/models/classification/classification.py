@@ -68,7 +68,12 @@ class Classification(BaseModel):
                     label_smoothing=0.1,
                     num_classes=num_classes)
             self.mixup = Mixup(**mixup_cfg)
-            # head.loss_config = {'type': 'SoftTargetCrossEntropy'}
+            if 'loss_config' not in head or 'type' not in head.loss_config:
+                head.loss_config = {'type': 'SoftTargetCrossEntropy'}
+            elif head.loss_config['type'] != 'SoftTargetCrossEntropy' and head.loss_config['type'] != 'BinaryCrossEntropyWithLogitsLoss':
+                raise ValueError(
+                    '{} cannot be used with mixUp. You can use SoftTargetCrossEntropy or BinaryCrossEntropyWithLogitsLoss.'.
+                    format(head.loss_config['type']))
             train_preprocess.remove('mixUp')
         self.train_preprocess = [
             self.preprocess_key_map[i] for i in train_preprocess
