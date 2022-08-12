@@ -134,6 +134,7 @@ eval_config = dict(interval=1, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',
+        dist_eval=True,
         evaluators=[
             dict(type='CocoDetectionEvaluator', classes=CLASSES),
         ],
