@@ -269,36 +269,36 @@ class ASFF(nn.Module):
             return out
 
 
-if __name__ == '__main__':
-    width = 0.5
-    num_classes = 80
-    in_channels = [256, 512, 1024]
-
-    asff_channel = 2
-    act = 'relu'
-
-    asff_1 = ASFF(
-        level=0, multiplier=width, asff_channel=asff_channel, act=act).cuda()
-    asff_2 = ASFF(
-        level=1, multiplier=width, asff_channel=asff_channel, act=act).cuda()
-    asff_3 = ASFF(
-        level=2, multiplier=width, asff_channel=asff_channel, act=act).cuda()
-
-    input = (torch.rand(1, 128, 80, 80).cuda(), torch.rand(1, 256, 40,
-                                                           40).cuda(),
-             torch.rand(1, 512, 20, 20).cuda())
-
-    # flops, params = get_model_complexity_info(asff_1, input, as_strings=True,
-    #                                           print_per_layer_stat=True)
-    # print('Flops:  ' + flops)
-    # print('Params: ' + params)
-
-    # input = torch.randn(1, 3, 640, 640).cuda()
-    # flops, params = profile(asff_1, inputs=(input,))
-    # print('flops: {}, params: {}'.format(flops, params))
-
-    from torchsummaryX import summary
-
-    summary(asff_1, input)
-    summary(asff_2, input)
-    summary(asff_3, input)
+# if __name__ == '__main__':
+#     width = 0.5
+#     num_classes = 80
+#     in_channels = [256, 512, 1024]
+#
+#     asff_channel = 2
+#     act = 'relu'
+#
+#     asff_1 = ASFF(
+#         level=0, multiplier=width, asff_channel=asff_channel, act=act).cuda()
+#     asff_2 = ASFF(
+#         level=1, multiplier=width, asff_channel=asff_channel, act=act).cuda()
+#     asff_3 = ASFF(
+#         level=2, multiplier=width, asff_channel=asff_channel, act=act).cuda()
+#
+#     input = (torch.rand(1, 128, 80, 80).cuda(), torch.rand(1, 256, 40,
+#                                                            40).cuda(),
+#              torch.rand(1, 512, 20, 20).cuda())
+#
+#     # flops, params = get_model_complexity_info(asff_1, input, as_strings=True,
+#     #                                           print_per_layer_stat=True)
+#     # print('Flops:  ' + flops)
+#     # print('Params: ' + params)
+#
+#     # input = torch.randn(1, 3, 640, 640).cuda()
+#     # flops, params = profile(asff_1, inputs=(input,))
+#     # print('flops: {}, params: {}'.format(flops, params))
+#
+#     from torchsummaryX import summary
+#
+#     summary(asff_1, input)
+#     summary(asff_2, input)
+#     summary(asff_3, input)
