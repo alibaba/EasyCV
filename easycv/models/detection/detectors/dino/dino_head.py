@@ -98,6 +98,7 @@ class DINOHead(nn.Module):
         self.dn_components = dn_components
 
         self.random_refpoints_xy = random_refpoints_xy
+        self.fix_refpoints_hw = fix_refpoints_hw
 
         # for dn training
         self.dn_number = self.dn_components['dn_number']
@@ -292,18 +293,17 @@ class DINOHead(nn.Module):
         # ignored positions, while zero values means valid positions.
         bs = feats[0].size(0)
         input_img_h, input_img_w = img_metas[0]['batch_input_shape']
-        ori_mask = feats[0].new_ones((bs, input_img_h, input_img_w))
+        img_masks = feats[0].new_ones((bs, input_img_h, input_img_w))
         for img_id in range(bs):
             img_h, img_w, _ = img_metas[img_id]['img_shape']
-            ori_mask[img_id, :img_h, :img_w] = 0
+            img_masks[img_id, :img_h, :img_w] = 0
 
         srcs = []
         masks = []
         poss = []
         for l, src in enumerate(feats):
             mask = F.interpolate(
-                ori_mask.unsqueeze(1),
-                size=src.shape[-2:]).to(torch.bool).squeeze(1)
+                img_masks[None], size=src.shape[-2:]).to(torch.bool).squeeze(0)
             # position encoding
             pos_l = self.positional_encoding(mask)  # [bs, embed_dim, h, w]
             srcs.append(self.input_proj[l](src))
@@ -318,8 +318,8 @@ class DINOHead(nn.Module):
                 else:
                     src = self.input_proj[l](srcs[-1])
                 mask = F.interpolate(
-                    ori_mask.unsqueeze(1),
-                    size=src.shape[-2:]).to(torch.bool).squeeze(1)
+                    img_masks[None],
+                    size=src.shape[-2:]).to(torch.bool).squeeze(0)
                 # position encoding
                 pos_l = self.positional_encoding(mask)  # [bs, embed_dim, h, w]
                 srcs.append(src)
