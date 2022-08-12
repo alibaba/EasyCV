@@ -1,51 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from easycv.models.backbones.network_blocks import SiLU
-
-
-def autopad(k, p=None):  # kernel, padding
-    # Pad to 'same'
-    if p is None:
-        p = k // 2 if isinstance(k, int) else [x // 2 for x in k]  # auto-pad
-    return p
-
-
-def get_activation(name='silu', inplace=True):
-    if name == 'silu':
-        module = SiLU(inplace=inplace)
-    elif name == 'relu':
-        module = nn.ReLU(inplace=inplace)
-    elif name == 'lrelu':
-        module = nn.LeakyReLU(0.1, inplace=inplace)
-    else:
-        raise AttributeError('Unsupported act type: {}'.format(name))
-    return module
-
-
-class Conv(nn.Module):
-    # Standard convolution
-    def __init__(self,
-                 c1,
-                 c2,
-                 k=1,
-                 s=1,
-                 p=None,
-                 g=1,
-                 act='silu'):  # ch_in, ch_out, kernel, stride, padding, groups
-        super(Conv, self).__init__()
-        self.conv = nn.Conv2d(
-            c1, c2, k, s, autopad(k, p), groups=g, bias=False)
-        self.bn = nn.BatchNorm2d(c2)
-        self.act = get_activation(act, inplace=True)
-
-    def forward(self, x):
-        return self.act(self.bn(self.conv(x)))
-
-    def forward_fuse(self, x):
-        return self.act(self.conv(x))
-
+from easycv.models.backbones.network_blocks import BaseConv, DWConv, SiLU
 
 class ASFF(nn.Module):
 
@@ -70,6 +26,8 @@ class ASFF(nn.Module):
             int(512 * multiplier),
             int(256 * multiplier)
         ]
+
+        Conv = BaseConv
 
         self.inter_dim = self.dim[self.level]
         if level == 0:
