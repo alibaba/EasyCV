@@ -26,7 +26,7 @@ import torch
 from mmcv.runner import init_dist
 
 from easycv import __version__
-from easycv.apis import set_random_seed, train_model
+from easycv.apis import init_random_seed, set_random_seed, train_model
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.datasets.utils import is_dali_dataset_type
 from easycv.file import io
@@ -207,15 +207,16 @@ def main():
     logger.info('GPU INFO : {}'.format(torch.cuda.get_device_name(0)))
 
     # set random seeds
+    seed = init_random_seed(args.seed, device=cfg.device)
     if is_torchacc_enabled():
-        assert args.seed is not None, 'Must provide `seed` to sync model initializer if use torchacc!'
+        assert seed is not None, 'Must provide `seed` to sync model initializer if use torchacc!'
 
-    if args.seed is not None:
+    if seed is not None:
         logger.info('Set random seed to {}, deterministic: {}'.format(
-            args.seed, args.deterministic))
-        set_random_seed(args.seed, deterministic=args.deterministic)
-    cfg.seed = args.seed
-    meta['seed'] = args.seed
+            seed, args.deterministic))
+        set_random_seed(seed, deterministic=args.deterministic)
+    cfg.seed = seed
+    meta['seed'] = seed
 
     if args.pretrained is not None:
         assert isinstance(args.pretrained, str)
