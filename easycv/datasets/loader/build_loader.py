@@ -78,6 +78,7 @@ def build_dataloader(dataset,
                 world_size,
                 rank,
                 shuffle=shuffle,
+                seed=seed,
                 split_huge_listfile_byrank=split_huge_listfile_byrank)
         batch_size = imgs_per_gpu
         num_workers = workers_per_gpu

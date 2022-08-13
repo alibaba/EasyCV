@@ -160,6 +160,7 @@ class DistributedSampler(_DistributedSampler):
         num_replicas=None,
         rank=None,
         shuffle=True,
+        seed=None,
         replace=False,
         split_huge_listfile_byrank=False,
     ):
@@ -175,6 +176,7 @@ class DistributedSampler(_DistributedSampler):
         """
         super().__init__(dataset, num_replicas=num_replicas, rank=rank)
         self.shuffle = shuffle
+        self.seed = seed
         self.replace = replace
         self.unif_sampling_flag = False
         self.split_huge_listfile_byrank = split_huge_listfile_byrank
@@ -196,7 +198,7 @@ class DistributedSampler(_DistributedSampler):
     def generate_new_list(self):
         if self.shuffle:
             g = torch.Generator()
-            g.manual_seed(self.epoch)
+            g.manual_seed(self.epoch + self.seed)
             if self.replace:
                 indices = torch.randint(
                     low=0,
@@ -217,7 +219,6 @@ class DistributedSampler(_DistributedSampler):
     def set_uniform_indices(self, labels, num_classes):
         self.unif_sampling_flag = True
         assert self.shuffle, 'Using uniform sampling, the indices must be shuffled.'
-        np.random.seed(self.epoch)
         assert (len(labels) == len(self.dataset))
         N = len(labels)
         size_per_label = int(N / num_classes) + 1
@@ -306,6 +307,7 @@ class DistributedGroupSampler(Sampler):
     def __init__(self,
                  dataset,
                  samples_per_gpu=1,
+                 seed=None,
                  num_replicas=None,
                  rank=None):
         _rank, _num_replicas = get_dist_info()
@@ -315,6 +317,7 @@ class DistributedGroupSampler(Sampler):
             rank = _rank
         self.dataset = dataset
         self.samples_per_gpu = samples_per_gpu
+        self.seed = seed
         self.num_replicas = num_replicas
         self.rank = rank
         self.epoch = 0
@@ -333,7 +336,7 @@ class DistributedGroupSampler(Sampler):
     def __iter__(self):
         # deterministically shuffle based on epoch
         g = torch.Generator()
-        g.manual_seed(self.epoch)
+        g.manual_seed(self.epoch + self.seed)
 
         indices = []
         for i, size in enumerate(self.group_sizes):
@@ -403,7 +406,6 @@ class DistributedGivenIterationSampler(Sampler):
         return iter(self.indices[(self.last_iter + 1) * self.batch_size:])
 
     def set_uniform_indices(self, labels, num_classes):
-        np.random.seed(0)
         assert (len(labels) == len(self.dataset))
         N = len(labels)
         size_per_label = int(N / num_classes) + 1
@@ -435,9 +437,6 @@ class DistributedGivenIterationSampler(Sampler):
         self.indices = indices
 
     def gen_new_list(self):
-
-        # each process shuffle all list with same seed, and pick one piece according to rank
-        np.random.seed(0)
 
         all_size = self.total_size * self.world_size
         indices = np.arange(len(self.dataset))
