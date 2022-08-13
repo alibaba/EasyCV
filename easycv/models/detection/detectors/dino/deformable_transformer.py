@@ -196,7 +196,6 @@ class DeformableTransformer(nn.Module):
         if (two_stage_type != 'no' and embed_init_tgt) or (two_stage_type
                                                            == 'no'):
             self.tgt_embed = nn.Embedding(self.num_queries, d_model)
-            nn.init.normal_(self.tgt_embed.weight.data)
         else:
             self.tgt_embed = None
 
@@ -216,7 +215,6 @@ class DeformableTransformer(nn.Module):
             if two_stage_pat_embed > 0:
                 self.pat_embed_for_2stage = nn.Parameter(
                     torch.Tensor(two_stage_pat_embed, d_model))
-                nn.init.normal_(self.pat_embed_for_2stage)
 
             if two_stage_add_query_num > 0:
                 self.tgt_embed = nn.Embedding(self.two_stage_add_query_num,
@@ -274,6 +272,12 @@ class DeformableTransformer(nn.Module):
         if self.two_stage_learn_wh:
             nn.init.constant_(self.two_stage_wh_embedding.weight,
                               math.log(0.05 / (1 - 0.05)))
+
+        if self.tgt_embed is not None:
+            nn.init.normal_(self.tgt_embed.weight.data)
+
+        if self.pat_embed_for_2stage is not None:
+            nn.init.normal_(self.pat_embed_for_2stage)
 
     def get_valid_ratio(self, mask):
         _, H, W = mask.shape
