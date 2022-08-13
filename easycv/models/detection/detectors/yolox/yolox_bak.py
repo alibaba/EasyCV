@@ -6,11 +6,14 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch import Tensor
-from easycv.utils.config_tools import mmcv_config_fromfile
+
+
 from easycv.models.base import BaseModel
-from easycv.models.builder import (MODELS, build_model, build_backbone, build_head,
-                                   build_neck)
+from easycv.models.builder import MODELS
 from easycv.models.detection.utils import postprocess
+from .tood_head import TOODHead
+from .yolo_head import YOLOXHead
+from .yolo_pafpn import YOLOPAFPN
 
 
 def init_yolo(M):
@@ -20,28 +23,105 @@ def init_yolo(M):
             m.momentum = 0.03
 
 
-@MODELS.register_module
+# @MODELS.register_module
 class YOLOX(BaseModel):
     """
     YOLOX model module. The module list is defined by create_yolov3_modules function.
     The network returns loss values from three YOLO layers during training
     and detection results during test.
     """
-    def __init__(self, backbone, test_conf, nms_thre, head=None, neck=None, pretrained=True):
-        super(YOLOX, self).__init__()
+    param_map = {
+        'nano': [0.33, 0.25],
+        'tiny': [0.33, 0.375],
+        's': [0.33, 0.5],
+        'm': [0.67, 0.75],
+        'l': [1.0, 1.0],
+        'x': [1.33, 1.25]
+    }
 
-        self.pretrained = pretrained
-        self.backbone = build_backbone(backbone)
-        if neck is not None:
-            self.neck = build_neck(neck)
-        self.head = build_head(head)
+    # TODO configs support more params
+    # backbone(Darknet)、neck(YOLOXPAFPN)、head(YOLOXHead)
+    def __init__(self,
+                 model_type: str = 's',
+                 num_classes: int = 80,
+                 test_size: tuple = (640, 640),
+                 test_conf: float = 0.01,
+                 nms_thre: float = 0.65,
+                 use_att: str = None,
+                 obj_loss_type: str = 'l1',
+                 reg_loss_type: str = 'l1',
+                 head_type: str = 'yolox',
+                 neck: str = 'yolo',
+                 neck_mode: str = 'all',
+                 act: str = 'silu',
+                 asff_channel: int = 16,
+                 stacked_convs: int = 6,
+                 la_down_rate: int = 8,
+                 conv_layers: int = 2,
+                 decode_in_inference: bool = True,
+                 backbone='CSPDarknet',
+                 expand_kernel=3,
+                 pretrained: str = None):
+        super(YOLOX, self).__init__()
+        assert model_type in self.param_map, f'invalid model_type for yolox {model_type}, valid ones are {list(self.param_map.keys())}'
+
+        in_channels = [256, 512, 1024]
+        depth = self.param_map[model_type][0]
+        width = self.param_map[model_type][1]
+
+        self.backbone = YOLOPAFPN(
+            depth,
+            width,
+            in_channels=in_channels,
+            asff_channel=asff_channel,
+            act=act,
+            use_att=use_att,
+            backbone=backbone,
+            neck=neck,
+            neck_mode=neck_mode,
+            expand_kernel=expand_kernel)
+
+        self.head_type = head_type
+        if head_type == 'yolox':
+            self.head = YOLOXHead(
+                num_classes,
+                width,
+                in_channels=in_channels,
+                act=act,
+                obj_loss_type=obj_loss_type,
+                reg_loss_type=reg_loss_type)
+            self.head.initialize_biases(1e-2)
+        elif head_type == 'tood':
+            self.head = TOODHead(
+                num_classes,
+                width,
+                in_channels=in_channels,
+                act=act,
+                obj_loss_type=obj_loss_type,
+                reg_loss_type=reg_loss_type,
+                stacked_convs=stacked_convs,
+                la_down_rate=la_down_rate,
+                conv_layers=conv_layers,
+                decode_in_inference=decode_in_inference)
+            self.head.initialize_biases(1e-2)
+
+        self.decode_in_inference = decode_in_inference
+        # use decode, we will use post process as default
+        if not self.decode_in_inference:
+            logging.warning(
+                'YOLOX-PAI head decode_in_inference close for speed test, post process will be close at same time!'
+            )
+            self.ignore_postprocess = True
+            logging.warning('YOLOX-PAI ignore_postprocess set to be True')
+        else:
+            self.ignore_postprocess = False
 
         self.apply(init_yolo)  # init_yolo(self)
-        self.num_classes = head.num_classes
+        self.num_classes = num_classes
         self.test_conf = test_conf
         self.nms_thre = nms_thre
-
-
+        self.test_size = test_size
+        self.epoch_counter = 0
 
     def forward_train(self,
                       img: Tensor,
@@ -157,12 +237,3 @@ class YOLOX(BaseModel):
                                       self.test_conf, self.nms_thre)
 
         return outputs
-
-if __name__=='__main__':
-    config_path = '/apsara/xinyi.zxy/code/pr154/configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
-    cfg = mmcv_config_fromfile(config_path)
-
-    print(cfg)
-
-    model = build_model(cfg.model)
-    print(model)

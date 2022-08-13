@@ -187,7 +187,6 @@ class SinePositionalEncoding(nn.Module):
 
 
 class TransformerDecoder(nn.Module):
-
     def __init__(self,
                  decoder_layer,
                  num_layers,

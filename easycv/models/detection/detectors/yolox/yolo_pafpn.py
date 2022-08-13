@@ -4,40 +4,50 @@ import math
 
 import torch
 import torch.nn as nn
-
+from easycv.models.registry import BACKBONES
 from easycv.models.backbones.darknet import CSPDarknet
 from easycv.models.backbones.network_blocks import (BaseConv, CSPLayer, DWConv,
                                                     GSConv, VoVGSCSP)
 from easycv.models.backbones.repvgg_yolox_backbone import RepVGGYOLOX
-
+from .ASFF import ASFF
 
 def make_divisible(x, divisor):
     # Upward revision the value x to make it evenly divisible by the divisor.
     return math.ceil(x / divisor) * divisor
 
 
+
+@BACKBONES.register_module
 class YOLOPAFPN(nn.Module):
     """
     YOLOv3 model. Darknet 53 is the default backbone of this model.
     """
+    param_map = {
+        'nano': [0.33, 0.25],
+        'tiny': [0.33, 0.375],
+        's': [0.33, 0.5],
+        'm': [0.67, 0.75],
+        'l': [1.0, 1.0],
+        'x': [1.33, 1.25]
+    }
 
     def __init__(self,
-                 depth=1.0,
-                 width=1.0,
+                 model_type='s',
                  in_features=('dark3', 'dark4', 'dark5'),
                  in_channels=[256, 512, 1024],
                  depthwise=False,
                  act='silu',
-                 asff_channel=16,
+                 asff_channel=2,
                  use_att=None,
                  expand_kernel=3,
-                 down_rate=32,
-                 use_dconv=False,
-                 use_expand=True,
                  backbone='CSPDarknet',
                  neck='yolo',
                  neck_mode='all'):
         super().__init__()
+
+        depth = self.param_map[model_type][0]
+        width = self.param_map[model_type][1]
+
         # build backbone
         if backbone == 'CSPDarknet':
             self.backbone = CSPDarknet(
@@ -51,11 +61,13 @@ class YOLOPAFPN(nn.Module):
             )
             self.backbone = RepVGGYOLOX(
                 in_channels=3, depth=depth, width=width)
+
         self.backbone_name = backbone
 
         # build neck
         self.in_features = in_features
         self.in_channels = in_channels
+
         Conv = DWConv if depthwise else BaseConv
         self.neck = neck
         self.neck_mode = neck_mode
@@ -230,52 +242,31 @@ class YOLOPAFPN(nn.Module):
             )
 
         if self.use_att == 'ASFF' or self.use_att == 'ASFF_sim':
-            if self.use_att == 'ASFF':
-                from .ASFF import ASFF
-                self.asff_1 = ASFF(
-                    level=0,
-                    multiplier=width,
-                    asff_channel=asff_channel,
-                    act=act)
-                self.asff_2 = ASFF(
-                    level=1,
-                    multiplier=width,
-                    asff_channel=asff_channel,
-                    act=act)
-                self.asff_3 = ASFF(
-                    level=2,
-                    multiplier=width,
-                    asff_channel=asff_channel,
-                    act=act)
-            else:
-                from .ASFF_sim import ASFF
-                self.asff_1 = ASFF(
-                    level=0,
-                    multiplier=width,
-                    asff_channel=asff_channel,
-                    act=act,
-                    expand_kernel=expand_kernel,
-                    down_rate=down_rate,
-                    use_dconv=use_dconv,
-                    use_expand=use_expand)
-                self.asff_2 = ASFF(
-                    level=1,
-                    multiplier=width,
-                    asff_channel=asff_channel,
-                    act=act,
-                    expand_kernel=expand_kernel,
-                    down_rate=down_rate,
-                    use_dconv=use_dconv,
-                    use_expand=use_expand)
-                self.asff_3 = ASFF(
-                    level=2,
-                    multiplier=width,
-                    asff_channel=asff_channel,
-                    act=act,
-                    expand_kernel=expand_kernel,
-                    down_rate=down_rate,
-                    use_dconv=use_dconv,
-                    use_expand=use_expand)
+            self.asff_1 = ASFF(
+                level=0,
+                type=self.use_att,
+                asff_channel=asff_channel,
+                expand_kernel=expand_kernel,
+                multiplier=width,
+                act=act,
+                )
+            self.asff_2 = ASFF(
+                level=1,
+                type=self.use_att,
+                asff_channel=asff_channel,
+                expand_kernel=expand_kernel,
+                multiplier=width,
+                act=act,
+            )
+            self.asff_3 = ASFF(
+                level=2,
+                type=self.use_att,
+                asff_channel=asff_channel,
+                expand_kernel=expand_kernel,
+                multiplier=width,
+                act=act,
+            )
+
 
     def forward(self, input):
         """
@@ -325,6 +316,7 @@ class YOLOPAFPN(nn.Module):
             fpn_out1 = self.gsconv2(f_out0)  # 512->256/16
             f_out1 = self.upsample(fpn_out1)  # 256/8
             f_out1 = torch.cat([f_out1, x2], 1)  # 256->512/8
+
             if self.neck_mode == 'all':
                 f_out1 = self.gsconv3(f_out1)
                 pan_out2 = self.vovGSCSP2(f_out1)  # 512->256/8

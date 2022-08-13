@@ -7,13 +7,13 @@ model = dict(
     nms_thre=0.65,
     backbone=dict(
         type='YOLOPAFPN',
-        backbone='CSPDarknet',
+        backbone='RepVGGYOLOX',
         model_type='s',  # s m l x tiny nano
         use_att=None,
         neck='yolo'
     ),
     head=dict(
-        type='YOLOXHead',
+        type='TOODHead',
         model_type='s',
         obj_loss_type='BCE',
         reg_loss_type='giou',
