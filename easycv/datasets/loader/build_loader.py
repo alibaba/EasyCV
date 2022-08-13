@@ -93,7 +93,12 @@ def build_dataloader(dataset,
         batch_size = num_gpus * imgs_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
-    init_fn = partial(worker_init_fn, seed=seed, odps_config=odps_config)
+    init_fn = partial(
+        worker_init_fn,
+        num_workers=num_workers,
+        rank=rank,
+        seed=seed,
+        odps_config=odps_config) if seed is not None else None
     collate_fn = dataset.collate_fn if hasattr(
         dataset, 'collate_fn') else partial(
             collate, samples_per_gpu=imgs_per_gpu)
@@ -145,12 +150,13 @@ def build_dataloader(dataset,
     return data_loader
 
 
-def worker_init_fn(worker_id, seed=None, odps_config=None):
-    if seed is not None:
-        worker_seed = worker_id + seed
-        np.random.seed(worker_seed)
-        random.seed(worker_seed)
-        torch.manual_seed(worker_seed)
+def worker_init_fn(worker_id, num_workers, rank, seed, odps_config=None):
+    # The seed of each worker equals to
+    # num_worker * rank + worker_id + user_seed
+    worker_seed = num_workers * rank + worker_id + seed
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+    torch.manual_seed(worker_seed)
 
     if odps_config is not None:
         # for odps to set correct offset in multi-process pytorch dataloader

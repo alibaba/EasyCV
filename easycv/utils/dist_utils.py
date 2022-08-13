@@ -134,3 +134,10 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
             torch.split(flatten_tensor, tensor_numels), tensor_shapes)
     ]
     return OrderedDict({k: v for k, v in zip(py_key, split_tensors)})
+
+
+def get_device():
+    """Returns an available device, cpu, cuda."""
+    is_device_available = {'cuda': torch.cuda.is_available()}
+    device_list = [k for k, v in is_device_available.items() if v]
+    return device_list[0] if len(device_list) == 1 else 'cpu'
