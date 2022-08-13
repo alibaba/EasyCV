@@ -1,3 +1,5 @@
+_base_ = 'configs/base.py'
+
 checkpoint_config = dict(interval=10)
 # optimizer
 paramwise_options = {
