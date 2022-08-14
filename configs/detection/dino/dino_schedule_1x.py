@@ -1,6 +1,6 @@
 _base_ = 'configs/base.py'
 
-checkpoint_config = dict(interval=10)
+checkpoint_config = dict(interval=1)
 # optimizer
 paramwise_options = {
     'backbone': dict(lr_mult=0.1, weight_decay_mult=1.0),

@@ -68,7 +68,7 @@ model = dict(
         dn_components=dict(
             dn_type='cdn',
             dn_number=100,
-            dn_label_noise_ratio=0.25,  # paper 0.5, release code 0.25
+            dn_label_noise_ratio=0.5,  # paper 0.5, release code 0.25
             dn_box_noise_scale=1.0,
             dn_labelbook_size=80,
         ),
