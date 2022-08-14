@@ -73,7 +73,6 @@ def giou_loss(pred, target, eps=1e-7):
 
 @LOSSES.register_module
 class IOUloss(nn.Module):
-
     def __init__(self, reduction='none', loss_type='iou'):
         super(IOUloss, self).__init__()
         self.reduction = reduction
@@ -144,11 +143,11 @@ class IOUloss(nn.Module):
         elif self.loss_type == 'diou':
             c_tl = torch.min(
                 (pred[:, :2] - pred[:, 2:] / 2),
-                (target[:, :2] - target[:, 2:] / 2)  # 包围框的左上点
+                (target[:, :2] - target[:, 2:] / 2)
             )
             c_br = torch.max(
                 (pred[:, :2] + pred[:, 2:] / 2),
-                (target[:, :2] + target[:, 2:] / 2)  # 包围框的右下点
+                (target[:, :2] + target[:, 2:] / 2)
             )
             convex_dis = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + torch.pow(
                 c_br[:, 1] - c_tl[:, 1], 2) + 1e-7  # convex diagonal squared
@@ -197,11 +196,11 @@ class IOUloss(nn.Module):
                           torch.pow(pred[:, 1] - target[:, 1], 2)
                           )  # center diagonal squared
 
-            dis_w = torch.pow(pred[:, 2] - target[:, 2], 2)  # 两个框的w欧式距离
-            dis_h = torch.pow(pred[:, 3] - target[:, 3], 2)  # 两个框的h欧式距离
+            dis_w = torch.pow(pred[:, 2] - target[:, 2], 2)
+            dis_h = torch.pow(pred[:, 3] - target[:, 3], 2)
 
-            C_w = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + 1e-7  # 包围框的w平方
-            C_h = torch.pow(c_br[:, 1] - c_tl[:, 1], 2) + 1e-7  # 包围框的h平方
+            C_w = torch.pow(c_br[:, 0] - c_tl[:, 0], 2) + 1e-7
+            C_h = torch.pow(c_br[:, 1] - c_tl[:, 1], 2) + 1e-7
 
             eiou = iou - (center_dis / convex_dis) - (dis_w / C_w) - (
                 dis_h / C_h)

@@ -31,7 +31,6 @@ from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
 from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 
-from mmcv.runner.checkpoint import _load_checkpoint
 from easycv.utils.setup_env import setup_multi_processes
 
 

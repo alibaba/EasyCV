@@ -24,6 +24,8 @@ def reduce_loss(loss, reduction):
         return loss.mean()
     elif reduction_enum == 2:
         return loss.sum()
+    else:
+        raise ValueError('reduction_enum should be 0,1,2')
 
 
 def varifocal_loss(pred,

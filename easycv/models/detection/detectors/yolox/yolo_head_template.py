@@ -7,10 +7,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from abc import abstractmethod
-from easycv.models.builder import HEADS
+
 from easycv.models.backbones.network_blocks import BaseConv, DWConv
 from easycv.models.detection.utils import bboxes_iou
-from easycv.models.loss import FocalLoss, IOUloss, VarifocalLoss
+from easycv.models.loss import IOUloss
 
 
 class YOLOXHead_Template(nn.Module):
@@ -142,13 +142,8 @@ class YOLOXHead_Template(nn.Module):
         self.obj_loss_type = obj_loss_type
         if obj_loss_type == 'BCE':
             self.obj_loss = nn.BCEWithLogitsLoss(reduction='none')
-        elif obj_loss_type == 'focal':
-            self.obj_loss = FocalLoss(reduction='none')
-
-        elif obj_loss_type == 'v_focal':
-            self.obj_loss = VarifocalLoss(reduction='none')
         else:
-            assert 'Undefined loss type: {}'.format(obj_loss_type)
+            raise KeyError('Undefined loss type: {}'.format(obj_loss_type))
 
         self.strides = strides
         self.grids = [torch.zeros(1)] * len(in_channels)
@@ -347,12 +342,9 @@ class YOLOXHead_Template(nn.Module):
         loss_iou = (self.iou_loss(
             bbox_preds.view(-1, 4)[fg_masks], reg_targets)).sum() / num_fg
 
-        if self.obj_loss_type == 'focal':
-            loss_obj = (self.focal_loss(obj_preds.sigmoid().view(-1, 1),
-                                        obj_targets)).sum() / num_fg
-        else:
-            loss_obj = (self.obj_loss(obj_preds.view(-1, 1),
-                                      obj_targets)).sum() / num_fg
+        loss_obj = (self.obj_loss(obj_preds.view(-1, 1),
+                                  obj_targets)).sum() / num_fg
+
         loss_cls = (self.bcewithlog_loss(
             cls_preds.view(-1, self.num_classes)[fg_masks],
             cls_targets)).sum() / num_fg
@@ -437,13 +429,13 @@ class YOLOXHead_Template(nn.Module):
         )
         # reference to: https://github.com/Megvii-BaseDetection/YOLOX/pull/811
         # NOTE: Fix `selected index k out of range`
-        npa: int = fg_mask.sum().item()  # number of positive anchors
+        num_pos_anchors: int = fg_mask.sum().item()  # number of positive anchors
 
-        if npa == 0:
+        if num_pos_anchors == 0:
             gt_matched_classes = torch.zeros(0, device=fg_mask.device).long()
             pred_ious_this_matching = torch.rand(0, device=fg_mask.device)
             matched_gt_inds = gt_matched_classes
-            num_fg = npa
+            num_fg = num_pos_anchors
 
             if mode == 'cpu':
                 gt_matched_classes = gt_matched_classes.cuda()

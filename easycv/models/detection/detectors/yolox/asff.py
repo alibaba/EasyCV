@@ -1,3 +1,4 @@
+# Copyright (c) 2014-2021 Alibaba PAI-Teams and GOATmessi7. All rights reserved.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -52,6 +53,8 @@ class ASFF(nn.Module):
                     int(1024 * multiplier), self.inter_dim, 1, 1, act=act)
                 self.compress_level_1 = Conv(
                     int(512 * multiplier), self.inter_dim, 1, 1, act=act)
+            else:
+                raise ValueError('Invalid level {}'.format(level))
 
         # add expand layer
         self.expand = Conv(
@@ -166,32 +169,4 @@ class ASFF(nn.Module):
         out = self.expand(fused_out_reduced)
 
         return out
-
-if __name__=='__main__':
-
-    width = 0.5
-    num_classes = 80
-    in_channels = [256, 512, 1024]
-
-    asff_channel = 2
-    act = 'silu'
-    type = 'ASFF_sim'
-    expand_kernel = 1
-
-    asff_1 = ASFF(
-        level=0, type = type, multiplier=width, asff_channel=asff_channel, act=act,expand_kernel=expand_kernel).cuda()
-    asff_2 = ASFF(
-        level=1, type = type, multiplier=width, asff_channel=asff_channel, act=act,expand_kernel=expand_kernel).cuda()
-    asff_3 = ASFF(
-        level=2, type = type, multiplier=width, asff_channel=asff_channel, act=act,expand_kernel=expand_kernel).cuda()
-
-    input = (torch.rand(1, 128, 80, 80).cuda(), torch.rand(1, 256, 40,
-                                                           40).cuda(),
-             torch.rand(1, 512, 20, 20).cuda())
-
-    from torchsummaryX import summary
-
-    summary(asff_1, input)
-    summary(asff_2, input)
-    summary(asff_3, input)
 

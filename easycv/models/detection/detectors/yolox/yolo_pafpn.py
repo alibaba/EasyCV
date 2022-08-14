@@ -9,11 +9,8 @@ from easycv.models.backbones.darknet import CSPDarknet
 from easycv.models.backbones.network_blocks import (BaseConv, CSPLayer, DWConv,
                                                     GSConv, VoVGSCSP)
 from easycv.models.backbones.repvgg_yolox_backbone import RepVGGYOLOX
-from .ASFF import ASFF
+from .asff import ASFF
 
-def make_divisible(x, divisor):
-    # Upward revision the value x to make it evenly divisible by the divisor.
-    return math.ceil(x / divisor) * divisor
 
 
 

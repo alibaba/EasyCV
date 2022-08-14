@@ -97,7 +97,7 @@ train_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         classes=CLASSES,
-        filter_empty_gt=False,
+        filter_empty_gt=True,
         iscrowd=False),
     pipeline=train_pipeline,
     dynamic_scale=img_scale)
@@ -115,6 +115,7 @@ val_dataset = dict(
         ],
         classes=CLASSES,
         filter_empty_gt=False,
+        test_mode=True,
         iscrowd=True),
     pipeline=test_pipeline,
     dynamic_scale=None,
@@ -194,4 +195,9 @@ log_config = dict(
         # dict(type='WandbLoggerHookV2'),
     ])
 
-export = dict(use_jit=False, export_blade=False, end2end=False)
+export = dict(use_jit=True,
+              export_blade=True,  # ????blade
+              end2end=False,      # ??????????nms???jit + blade
+              batch_size=1,       # static_opt=True???????batch_size
+              fp16_failback_ratio=0.05,   # fp16 fallback?fp32 ?layer ??
+              static_opt=True)    # ????static shape ?????True

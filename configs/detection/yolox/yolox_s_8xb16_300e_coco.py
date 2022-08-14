@@ -97,7 +97,7 @@ train_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         classes=CLASSES,
-        filter_empty_gt=False,
+        filter_empty_gt=True,
         iscrowd=False),
     pipeline=train_pipeline,
     dynamic_scale=img_scale)
@@ -115,6 +115,7 @@ val_dataset = dict(
         ],
         classes=CLASSES,
         filter_empty_gt=False,
+        test_mode=True,
         iscrowd=True),
     pipeline=test_pipeline,
     dynamic_scale=None,

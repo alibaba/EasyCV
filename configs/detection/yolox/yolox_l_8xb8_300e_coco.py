@@ -1,7 +1,14 @@
-_base_ = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
+_base_ = './yolox_s_8xb16_300e_coco.py'
 
 # model settings
-model = dict(model_type='l')
+model = dict(
+    backbone=dict(
+        model_type='l',  # s m l x tiny nano
+    ),
+    head=dict(
+        model_type='l',
+    )
+)
 
 data = dict(imgs_per_gpu=8, workers_per_gpu=4)
 

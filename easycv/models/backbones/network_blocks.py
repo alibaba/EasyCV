@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2021 Megvii Inc And Alibaba PAI Team. All rights reserved.
+# Copyright (c) 2014-2021 Megvii Inc, AlanLi And Alibaba PAI Team. All rights reserved.
 
 import torch
 import torch.nn as nn
@@ -59,8 +59,8 @@ class BaseConv(nn.Module):
     def __init__(self,
                  in_channels,
                  out_channels,
-                 ksize=1,
-                 stride=1,
+                 ksize,
+                 stride,
                  groups=1,
                  bias=False,
                  act='silu'):
@@ -161,10 +161,7 @@ class SPPFBottleneck(nn.Module):
         hidden_channels = in_channels // 2
         self.conv1 = BaseConv(
             in_channels, hidden_channels, 1, stride=1, act=activation)
-        # self.m = nn.ModuleList([
-        #     nn.MaxPool2d(kernel_size=ks, stride=1, padding=ks // 2)
-        #     for ks in kernel_sizes
-        # ])
+
         self.m = nn.MaxPool2d(
             kernel_size=kernel_size, stride=1, padding=kernel_size // 2)
 
@@ -177,8 +174,7 @@ class SPPFBottleneck(nn.Module):
         x1 = self.m(x)
         x2 = self.m(x1)
         x = self.conv2(torch.cat([x, x1, x2, self.m(x2)], 1))
-        # x = torch.cat([x] + [m(x) for m in self.m], dim=1)
-        # x = self.conv2(x)
+
         return x
 
 
@@ -288,7 +284,10 @@ class Focus(nn.Module):
 
 
 class GSConv(nn.Module):
-    # GSConv https://github.com/AlanLi1997/slim-neck-by-gsconv
+    """
+        GSConv is used to merge the channel information of DSConv and BaseConv
+        You can refer to https://github.com/AlanLi1997/slim-neck-by-gsconv for more details
+    """
     def __init__(self, c1, c2, k=1, s=1, g=1, act='silu'):
         super().__init__()
         c_ = c2 // 2
@@ -309,24 +308,26 @@ class GSConv(nn.Module):
 
 
 class GSBottleneck(nn.Module):
-    # GS Bottleneck https://github.com/AlanLi1997/slim-neck-by-gsconv
+    """
+        The use of GSBottleneck is to stack the GSConv layer
+        You can refer to https://github.com/AlanLi1997/slim-neck-by-gsconv for more details
+    """
     def __init__(self, c1, c2, k=3, s=1):
         super().__init__()
         c_ = c2 // 2
-        # for lighting
+
         self.conv_lighting = nn.Sequential(
             GSConv(c1, c_, 1, 1), GSConv(c_, c2, 1, 1, act='identity'))
-        # for receptive field
-        self.conv = nn.Sequential(
-            GSConv(c1, c_, 3, 1), GSConv(c_, c2, 3, 1, act='identity'))
-        self.shortcut = nn.Identity()
 
     def forward(self, x):
         return self.conv_lighting(x)
 
 
 class VoVGSCSP(nn.Module):
-    # VoV-GSCSP https://github.com/AlanLi1997/slim-neck-by-gsconv
+    """
+        VoVGSCSP is a new neck structure used in CSPNet
+        You can refer to https://github.com/AlanLi1997/slim-neck-by-gsconv for more details
+    """
     def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):
         super().__init__()
         c_ = int(c2 * e)

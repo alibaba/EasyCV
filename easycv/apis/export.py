@@ -37,6 +37,7 @@ def reparameterize_models(model):
     logging.info(
         'export : PAI-export reparameterize_count(RepVGGBlock, ) switch to deploy with {} blocks'
         .format(reparameterize_count))
+    print(reparameterize_count)
     return model
 
 

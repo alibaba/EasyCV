@@ -15,8 +15,7 @@ class Darknet(nn.Module):
                  depth,
                  in_channels=3,
                  stem_out_channels=32,
-                 out_features=('dark3', 'dark4', 'dark5'),
-                 spp_type='spp'):
+                 out_features=('dark3', 'dark4', 'dark5')):
         """
         Args:
             depth (int): depth of darknet used in model, usually use [21, 53] for this param.
@@ -49,18 +48,12 @@ class Darknet(nn.Module):
             *self.make_group_layer(in_channels, num_blocks[2], stride=2))
         in_channels *= 2  # 512
 
-        if spp_type == 'spp':
-            self.dark5 = nn.Sequential(
-                *self.make_group_layer(in_channels, num_blocks[3], stride=2),
-                *self.make_spp_block([in_channels, in_channels * 2],
-                                     in_channels * 2),
-            )
-        elif spp_type == 'sppf':
-            self.dark5 = nn.Sequential(
-                *self.make_group_layer(in_channels, num_blocks[3], stride=2),
-                *self.make_sppf_block([in_channels, in_channels * 2],
-                                      in_channels * 2),
-            )
+        self.dark5 = nn.Sequential(
+            *self.make_group_layer(in_channels, num_blocks[3], stride=2),
+            *self.make_spp_block([in_channels, in_channels * 2],
+                                 in_channels * 2),
+        )
+
 
     def make_group_layer(self,
                          in_channels: int,
@@ -94,22 +87,6 @@ class Darknet(nn.Module):
         ])
         return m
 
-    def make_sppf_block(self, filters_list, in_filters):
-        m = nn.Sequential(*[
-            BaseConv(in_filters, filters_list[0], 1, stride=1, act='lrelu'),
-            BaseConv(
-                filters_list[0], filters_list[1], 3, stride=1, act='lrelu'),
-            SPPBottleneck(
-                in_channels=filters_list[1],
-                out_channels=filters_list[0],
-                activation='lrelu',
-            ),
-            BaseConv(
-                filters_list[0], filters_list[1], 3, stride=1, act='lrelu'),
-            BaseConv(
-                filters_list[1], filters_list[0], 1, stride=1, act='lrelu'),
-        ])
-        return m
 
     def forward(self, x):
         outputs = {}

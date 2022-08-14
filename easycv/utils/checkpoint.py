@@ -4,8 +4,7 @@ import os
 import torch
 from mmcv.parallel import is_module_wrapper
 from mmcv.runner import load_checkpoint as mmcv_load_checkpoint
-from mmcv.runner.checkpoint import (_save_to_state_dict, get_state_dict,
-                                    weights_to_cpu)
+from mmcv.runner.checkpoint import (get_state_dict,weights_to_cpu)
 from torch.optim import Optimizer
 
 from easycv.file import io

@@ -1,16 +1,11 @@
 # borrow some code from https://github.com/DingXiaoH/RepVGG/repvgg.py MIT2.0
-import copy
-import math
 import warnings
 
 import numpy as np
 import torch
 import torch.nn as nn
 
-
-def make_divisible(x, divisor):
-    # Upward revision the value x to make it evenly divisible by the divisor.
-    return math.ceil(x / divisor) * divisor
+from easycv.models.utils.ops import make_divisible
 
 
 def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):
@@ -31,7 +26,7 @@ def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):
 
 
 class RepVGGBlock(nn.Module):
-
+    """Basic Block of RepVGG"""
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -108,6 +103,7 @@ class RepVGGBlock(nn.Module):
     #           loss += weight_decay_coefficient * 0.5 * blk.get_cust_L2()
     #       optimizer.zero_grad()
     #       loss.backward()
+
     def get_custom_L2(self):
         K3 = self.rbr_dense.conv.weight
         K1 = self.rbr_1x1.conv.weight
@@ -201,7 +197,6 @@ class RepVGGBlock(nn.Module):
 
 class ConvBNAct(nn.Module):
     '''Normal Conv with SiLU activation'''
-
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -361,6 +356,7 @@ class RepVGGYOLOX(nn.Module):
         x = self.stage4(x)
         outputs.append(x)
         return tuple(outputs)
+
 
 
 if __name__ == '__main__':

@@ -22,7 +22,7 @@ model = dict(
 )
 
 # s m l x
-img_scale = (640, 640)
+img_scale = (672, 672)
 random_size = (14, 26)
 scale_ratio = (0.1, 2)
 
@@ -48,9 +48,9 @@ CLASSES = [
 ]
 
 # dataset settings
-# data_root = '/apsarapangu/disk2/xinyi.zxy/data/coco/'
+data_root = '/apsarapangu/disk2/xinyi.zxy/data/coco/'
 # data_root = '/mnt/data/nas/data/detection/coco/'
-data_root = '/root/workspace/data/coco/'
+# data_root = '/root/workspace/data/coco/'
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -98,7 +98,7 @@ train_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         classes=CLASSES,
-        filter_empty_gt=False,
+        filter_empty_gt=True,
         iscrowd=False),
     pipeline=train_pipeline,
     dynamic_scale=img_scale)
@@ -116,6 +116,7 @@ val_dataset = dict(
         ],
         classes=CLASSES,
         filter_empty_gt=False,
+        test_mode=True,
         iscrowd=True),
     pipeline=test_pipeline,
     dynamic_scale=None,

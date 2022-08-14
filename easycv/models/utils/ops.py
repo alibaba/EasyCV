@@ -4,7 +4,7 @@ import warnings
 
 import torch
 import torch.nn.functional as F
-
+import math
 
 def resize_tensor(input,
                   size=None,
@@ -46,3 +46,7 @@ def resize_tensor(input,
     if isinstance(size, torch.Size):
         size = tuple(int(x) for x in size)
     return F.interpolate(input, size, scale_factor, mode, align_corners)
+
+def make_divisible(x, divisor):
+    # Upward revision the value x to make it evenly divisible by the divisor.
+    return math.ceil(x / divisor) * divisor
