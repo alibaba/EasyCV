@@ -4,8 +4,6 @@ checkpoint_config = dict(interval=10)
 # optimizer
 paramwise_options = {
     'backbone': dict(lr_mult=0.1),
-    # 'reference_points': dict(lr_mult=0.1),
-    # 'sampling_offsets': dict(lr_mult=0.1)
 }
 optimizer = dict(
     type='AdamW',
