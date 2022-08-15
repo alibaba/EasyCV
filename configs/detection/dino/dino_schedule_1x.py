@@ -3,9 +3,9 @@ _base_ = 'configs/base.py'
 checkpoint_config = dict(interval=10)
 # optimizer
 paramwise_options = {
-    'backbone': dict(lr_mult=0.1, weight_decay_mult=1.0),
-    'reference_points': dict(lr_mult=0.1),
-    'sampling_offsets': dict(lr_mult=0.1)
+    'backbone': dict(lr_mult=0.1),
+    # 'reference_points': dict(lr_mult=0.1),
+    # 'sampling_offsets': dict(lr_mult=0.1)
 }
 optimizer = dict(
     type='AdamW',
