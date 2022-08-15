@@ -10,16 +10,13 @@ model = dict(
         backbone='RepVGGYOLOX',
         model_type='s',  # s m l x tiny nano
         use_att=None,
-        neck='yolo'
-    ),
+        neck='yolo'),
     head=dict(
         type='TOODHead',
         model_type='s',
         obj_loss_type='BCE',
         reg_loss_type='giou',
-        num_classes=80
-    )
-)
+        num_classes=80))
 
 # s m l x
 img_scale = (640, 640)

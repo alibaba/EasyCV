@@ -1,16 +1,16 @@
 # Copyright (c) 2014-2021 Megvii Inc And Alibaba PAI-Teams. All rights reserved.
 import logging
 import math
+from abc import abstractmethod
 from distutils.version import LooseVersion
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from abc import abstractmethod
 
 from easycv.models.backbones.network_blocks import BaseConv, DWConv
 from easycv.models.detection.utils import bboxes_iou
-from easycv.models.loss import IOUloss
+from easycv.models.loss import GIoULoss, IOUloss, IoULoss
 
 
 class YOLOXHead_Template(nn.Module):
@@ -24,7 +24,7 @@ class YOLOXHead_Template(nn.Module):
     }
 
     def __init__(self,
-                 num_classes = 80,
+                 num_classes=80,
                  model_type='s',
                  strides=[8, 16, 32],
                  in_channels=[256, 512, 1024],
@@ -33,8 +33,7 @@ class YOLOXHead_Template(nn.Module):
                  stage='CLOUD',
                  obj_loss_type='BCE',
                  reg_loss_type='giou',
-                 decode_in_inference=True
-        ):
+                 decode_in_inference=True):
         """
         Args:
             num_classes (int): detection class numbers.
@@ -138,6 +137,10 @@ class YOLOXHead_Template(nn.Module):
         self.l1_loss = nn.L1Loss(reduction='none')
 
         self.iou_loss = IOUloss(reduction='none', loss_type=reg_loss_type)
+        if reg_loss_type == 'iou':
+            self.iou_loss1 = IoULoss(reduction='none', mode='square')
+        elif reg_loss_type == 'giou':
+            self.iou_loss1 = GIoULoss(reduction='none')
 
         self.obj_loss_type = obj_loss_type
         if obj_loss_type == 'BCE':
@@ -342,6 +345,9 @@ class YOLOXHead_Template(nn.Module):
         loss_iou = (self.iou_loss(
             bbox_preds.view(-1, 4)[fg_masks], reg_targets)).sum() / num_fg
 
+        # loss_iou1 = (self.iou_loss1(
+        #     bbox_preds.view(-1, 4)[fg_masks], reg_targets,xyxy=False)).sum() / num_fg
+
         loss_obj = (self.obj_loss(obj_preds.view(-1, 1),
                                   obj_targets)).sum() / num_fg
 
@@ -366,16 +372,6 @@ class YOLOXHead_Template(nn.Module):
             loss_l1,
             num_fg / max(num_gts, 1),
         )
-
-    def focal_loss(self, pred, gt):
-        pos_inds = gt.eq(1).float()
-        neg_inds = gt.eq(0).float()
-        pos_loss = torch.log(pred + 1e-5) * torch.pow(1 - pred,
-                                                      2) * pos_inds * 0.75
-        neg_loss = torch.log(1 - pred + 1e-5) * torch.pow(pred,
-                                                          2) * neg_inds * 0.25
-        loss = -(pos_loss + neg_loss)
-        return loss
 
     def get_l1_target(self,
                       l1_target,
@@ -429,7 +425,8 @@ class YOLOXHead_Template(nn.Module):
         )
         # reference to: https://github.com/Megvii-BaseDetection/YOLOX/pull/811
         # NOTE: Fix `selected index k out of range`
-        num_pos_anchors: int = fg_mask.sum().item()  # number of positive anchors
+        num_pos_anchors: int = fg_mask.sum().item(
+        )  # number of positive anchors
 
         if num_pos_anchors == 0:
             gt_matched_classes = torch.zeros(0, device=fg_mask.device).long()

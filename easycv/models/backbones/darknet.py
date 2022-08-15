@@ -54,7 +54,6 @@ class Darknet(nn.Module):
                                  in_channels * 2),
         )
 
-
     def make_group_layer(self,
                          in_channels: int,
                          num_blocks: int,
@@ -86,7 +85,6 @@ class Darknet(nn.Module):
                 filters_list[1], filters_list[0], 1, stride=1, act='lrelu'),
         ])
         return m
-
 
     def forward(self, x):
         outputs = {}

@@ -10,19 +10,16 @@ model = dict(
         backbone='RepVGGYOLOX',
         model_type='s',  # s m l x tiny nano
         use_att='ASFF',
-        neck='yolo'
-    ),
+        neck='yolo'),
     head=dict(
         type='TOODHead',
         model_type='s',
         obj_loss_type='BCE',
         reg_loss_type='giou',
-        num_classes=80
-    )
-)
+        num_classes=80))
 
 # s m l x
-img_scale = (672, 672)
+img_scale = (640, 640)
 random_size = (14, 26)
 scale_ratio = (0.1, 2)
 
@@ -196,4 +193,12 @@ log_config = dict(
         # dict(type='WandbLoggerHookV2'),
     ])
 
-export = dict(use_jit=False, export_blade=False, end2end=False)
+export = dict(use_jit=True,
+              export_blade=True,  # ????blade
+              end2end=False,      # ??????????nms???jit + blade
+              batch_size=32,       # static_opt=True???????batch_size
+              blade_config=dict(
+                    dict(enable_fp16=True,
+                    fp16_fallback_op_ratio=0.05)
+              ),   # fp16 fallback?fp32 ?layer ??
+              static_opt=True)    # ????static shape ?????True

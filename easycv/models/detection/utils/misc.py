@@ -1,11 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import List, Optional
-from torch.autograd import Function
+
 import numpy as np
 import torch
 import torchvision
 from packaging import version
 from torch import Tensor
+from torch.autograd import Function
 
 if version.parse(torchvision.__version__) < version.parse('0.7'):
     from torchvision.ops import _new_empty_tensor
@@ -181,6 +182,7 @@ def inverse_sigmoid(x, eps=1e-3):
     x1 = x.clamp(min=eps)
     x2 = (1 - x).clamp(min=eps)
     return torch.log(x1 / x2)
+
 
 class SigmoidGeometricMean(Function):
     """Forward and backward function of geometric mean of two sigmoid

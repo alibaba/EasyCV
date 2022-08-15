@@ -66,7 +66,8 @@ def blade_env_assert():
 
 
 @contextmanager
-def opt_trt_config(input_config=dict(enable_fp16=True)):
+def opt_trt_config(
+        input_config=dict(enable_fp16=True, fp16_fallback_op_ratio=0.05)):
     from torch_blade import tensorrt
     torch_config = torch_blade.Config()
 
@@ -239,9 +240,11 @@ def check_results(results0, results1):
 def blade_optimize(script_model,
                    model,
                    inputs,
-                   blade_config=dict(enable_fp16=True),
+                   blade_config=dict(
+                       enable_fp16=True, fp16_fallback_op_ratio=0.05),
                    backend='TensorRT',
                    batch=1,
+                   warm_up_time=10,
                    compute_cost=True,
                    static_opt=True):
 
@@ -289,24 +292,24 @@ def blade_optimize(script_model,
     print(opt_model.forward.graph)
     torch.cuda.empty_cache()
     # warm-up
-    for k in range(10):
+    for k in range(warm_up_time):
         test_result = opt_model(*inputs)
         torch.cuda.synchronize()
 
     torch.cuda.synchronize()
     cu_prof_start()
-    for k in range(10):
+    for k in range(warm_up_time):
         test_result = opt_model(*inputs)
         torch.cuda.synchronize()
     cu_prof_stop()
     import torch.autograd.profiler as profiler
     with profiler.profile(use_cuda=True) as prof:
-        for k in range(10):
+        for k in range(warm_up_time):
             test_result = opt_model(*inputs)
             torch.cuda.synchronize()
 
     with profiler.profile(use_cuda=True) as prof:
-        for k in range(10):
+        for k in range(warm_up_time):
             test_result = opt_model(*inputs)
             torch.cuda.synchronize()
 

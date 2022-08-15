@@ -2,12 +2,15 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from easycv.models.backbones.network_blocks import BaseConv
 
+
 class ASFF(nn.Module):
+
     def __init__(self,
                  level,
-                 type = 'ASFF',
+                 type='ASFF',
                  asff_channel=2,
                  expand_kernel=3,
                  multiplier=1,
@@ -58,11 +61,7 @@ class ASFF(nn.Module):
 
         # add expand layer
         self.expand = Conv(
-            self.inter_dim,
-            self.inter_dim,
-            expand_kernel,
-            1,
-            act=act)
+            self.inter_dim, self.inter_dim, expand_kernel, 1, act=act)
 
         self.weight_level_0 = Conv(self.inter_dim, asff_channel, 1, 1, act=act)
         self.weight_level_1 = Conv(self.inter_dim, asff_channel, 1, 1, act=act)
@@ -87,13 +86,11 @@ class ASFF(nn.Module):
         )
         return x
 
-
     def mean_channel(self, x):
         # [b,c,h,w]->[b,c/4,h*2,w*2]
         x1 = x[:, ::2, :, :]
         x2 = x[:, 1::2, :, :]
         return (x1 + x2) / 2
-
 
     def forward(self, x):  # l,m,s
         """
@@ -111,7 +108,8 @@ class ASFF(nn.Module):
                 level_1_resized = self.stride_level_1(x_level_1)
                 level_2_downsampled_inter = F.max_pool2d(
                     x_level_2, 3, stride=2, padding=1)
-                level_2_resized = self.stride_level_2(level_2_downsampled_inter)
+                level_2_resized = self.stride_level_2(
+                    level_2_downsampled_inter)
             elif self.level == 1:
                 level_0_compressed = self.compress_level_0(x_level_0)
                 level_0_resized = F.interpolate(
@@ -169,4 +167,3 @@ class ASFF(nn.Module):
         out = self.expand(fused_out_reduced)
 
         return out
-

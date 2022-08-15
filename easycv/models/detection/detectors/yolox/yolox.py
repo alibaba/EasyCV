@@ -6,9 +6,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch import Tensor
-from easycv.utils.config_tools import mmcv_config_fromfile
+
 from easycv.models.base import BaseModel
-from easycv.models.builder import (MODELS, build_model, build_backbone, build_head,
+from easycv.models.builder import (MODELS, build_backbone, build_head,
                                    build_neck)
 from easycv.models.detection.utils import postprocess
 
@@ -27,7 +27,14 @@ class YOLOX(BaseModel):
     The network returns loss values from three YOLO layers during training
     and detection results during test.
     """
-    def __init__(self, backbone, test_conf, nms_thre, head=None, neck=None, pretrained=True):
+
+    def __init__(self,
+                 backbone,
+                 test_conf,
+                 nms_thre,
+                 head=None,
+                 neck=None,
+                 pretrained=True):
         super(YOLOX, self).__init__()
 
         self.pretrained = pretrained
@@ -40,8 +47,6 @@ class YOLOX(BaseModel):
         self.num_classes = head.num_classes
         self.test_conf = test_conf
         self.nms_thre = nms_thre
-
-
 
     def forward_train(self,
                       img: Tensor,
@@ -82,7 +87,6 @@ class YOLOX(BaseModel):
             torch.tensor(img_metas[0]['img_shape'][1],
                          device=loss.device).float()
         }
-
 
         return outputs
 
@@ -152,17 +156,8 @@ class YOLOX(BaseModel):
             fpn_outs = self.backbone(img)
             outputs = self.head(fpn_outs)
 
-            if self.decode_in_inference:
+            if self.head.decode_in_inference:
                 outputs = postprocess(outputs, self.num_classes,
                                       self.test_conf, self.nms_thre)
 
         return outputs
-
-if __name__=='__main__':
-    config_path = '/apsara/xinyi.zxy/code/pr154/configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
-    cfg = mmcv_config_fromfile(config_path)
-
-    print(cfg)
-
-    model = build_model(cfg.model)
-    print(model)

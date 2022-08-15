@@ -5,10 +5,7 @@ model = dict(
     backbone=dict(
         model_type='l',  # s m l x tiny nano
     ),
-    head=dict(
-        model_type='l',
-    )
-)
+    head=dict(model_type='l', ))
 
 data = dict(imgs_per_gpu=8, workers_per_gpu=4)
 

@@ -10,16 +10,13 @@ model = dict(
         backbone='CSPDarknet',
         model_type='s',  # s m l x tiny nano
         use_att=None,
-        neck='yolo'
-    ),
+        neck='yolo'),
     head=dict(
         type='YOLOXHead',
         model_type='s',
         obj_loss_type='BCE',
         reg_loss_type='giou',
-        num_classes=80
-    )
-)
+        num_classes=80))
 
 # s m l x
 img_scale = (640, 640)
@@ -49,7 +46,7 @@ CLASSES = [
 
 # dataset settings
 # data_root = '/apsarapangu/disk2/xinyi.zxy/data/coco/'
-data_root = '/mnt/data/nas/data/detection/coco/'
+data_root = '/apsara/xinyi.zxy/data/coco/'
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -196,3 +193,13 @@ log_config = dict(
     ])
 
 export = dict(use_jit=False, export_blade=False, end2end=False)
+
+export = dict(use_jit=True,
+              export_blade=True,  # ????blade
+              end2end=False,      # ??????????nms???jit + blade
+              batch_size=32,       # static_opt=True???????batch_size
+              blade_config=dict(
+                    dict(enable_fp16=True,
+                    fp16_fallback_op_ratio=0.05)
+              ),   # fp16 fallback?fp32 ?layer ??
+              static_opt=True)    # ????static shape ?????True

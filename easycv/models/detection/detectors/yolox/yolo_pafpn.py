@@ -4,14 +4,13 @@ import math
 
 import torch
 import torch.nn as nn
-from easycv.models.registry import BACKBONES
+
 from easycv.models.backbones.darknet import CSPDarknet
 from easycv.models.backbones.network_blocks import (BaseConv, CSPLayer, DWConv,
                                                     GSConv, VoVGSCSP)
 from easycv.models.backbones.repvgg_yolox_backbone import RepVGGYOLOX
+from easycv.models.registry import BACKBONES
 from .asff import ASFF
-
-
 
 
 @BACKBONES.register_module
@@ -246,7 +245,7 @@ class YOLOPAFPN(nn.Module):
                 expand_kernel=expand_kernel,
                 multiplier=width,
                 act=act,
-                )
+            )
             self.asff_2 = ASFF(
                 level=1,
                 type=self.use_att,
@@ -263,7 +262,6 @@ class YOLOPAFPN(nn.Module):
                 multiplier=width,
                 act=act,
             )
-
 
     def forward(self, input):
         """

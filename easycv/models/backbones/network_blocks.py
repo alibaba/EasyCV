@@ -288,6 +288,7 @@ class GSConv(nn.Module):
         GSConv is used to merge the channel information of DSConv and BaseConv
         You can refer to https://github.com/AlanLi1997/slim-neck-by-gsconv for more details
     """
+
     def __init__(self, c1, c2, k=1, s=1, g=1, act='silu'):
         super().__init__()
         c_ = c2 // 2
@@ -312,6 +313,7 @@ class GSBottleneck(nn.Module):
         The use of GSBottleneck is to stack the GSConv layer
         You can refer to https://github.com/AlanLi1997/slim-neck-by-gsconv for more details
     """
+
     def __init__(self, c1, c2, k=3, s=1):
         super().__init__()
         c_ = c2 // 2
@@ -328,6 +330,7 @@ class VoVGSCSP(nn.Module):
         VoVGSCSP is a new neck structure used in CSPNet
         You can refer to https://github.com/AlanLi1997/slim-neck-by-gsconv for more details
     """
+
     def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):
         super().__init__()
         c_ = int(c2 * e)

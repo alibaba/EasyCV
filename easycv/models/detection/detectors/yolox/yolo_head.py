@@ -8,18 +8,20 @@ from .yolo_head_template import YOLOXHead_Template
 
 @HEADS.register_module
 class YOLOXHead(YOLOXHead_Template):
-    def __init__(self,
-                 num_classes = 80,
-                 model_type='s',
-                 strides=[8, 16, 32],
-                 in_channels=[256, 512, 1024],
-                 act='silu',
-                 depthwise=False,
-                 stage='CLOUD',
-                 obj_loss_type='BCE',
-                 reg_loss_type='giou',
-                 decode_in_inference=True,
-        ):
+
+    def __init__(
+        self,
+        num_classes=80,
+        model_type='s',
+        strides=[8, 16, 32],
+        in_channels=[256, 512, 1024],
+        act='silu',
+        depthwise=False,
+        stage='CLOUD',
+        obj_loss_type='BCE',
+        reg_loss_type='giou',
+        decode_in_inference=True,
+    ):
         """
         Args:
             num_classes (int): detection class numbers.
@@ -32,19 +34,17 @@ class YOLOXHead(YOLOXHead_Template):
             obj_loss_type (str): the loss function of the obj conf. Default value: l1.
             reg_loss_type (str): the loss function of the box prediction. Default value: l1.
         """
-        super(YOLOXHead,self).__init__(
-                num_classes = num_classes,
-                model_type=model_type,
-                strides=strides,
-                in_channels=in_channels,
-                act=act,
-                depthwise=depthwise,
-                stage=stage,
-                obj_loss_type=obj_loss_type,
-                reg_loss_type=reg_loss_type,
-                decode_in_inference=decode_in_inference
-        )
-
+        super(YOLOXHead, self).__init__(
+            num_classes=num_classes,
+            model_type=model_type,
+            strides=strides,
+            in_channels=in_channels,
+            act=act,
+            depthwise=depthwise,
+            stage=stage,
+            obj_loss_type=obj_loss_type,
+            reg_loss_type=reg_loss_type,
+            decode_in_inference=decode_in_inference)
 
     def forward(self, xin, labels=None, imgs=None):
         outputs = []

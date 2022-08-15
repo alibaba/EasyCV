@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, normal_init
+
 from easycv.models.builder import HEADS
 from .yolo_head_template import YOLOXHead_Template
 
@@ -80,6 +81,7 @@ class TaskDecomposition(nn.Module):
 
 @HEADS.register_module
 class TOODHead(YOLOXHead_Template):
+
     def __init__(
             self,
             num_classes,
@@ -119,8 +121,7 @@ class TOODHead(YOLOXHead_Template):
             stage=stage,
             obj_loss_type=obj_loss_type,
             reg_loss_type=reg_loss_type,
-            decode_in_inference=decode_in_inference
-        )
+            decode_in_inference=decode_in_inference)
 
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
@@ -155,7 +156,6 @@ class TOODHead(YOLOXHead_Template):
                     padding=1,
                     conv_cfg=conv_cfg,
                     norm_cfg=self.norm_cfg))
-
 
     def forward(self, xin, labels=None, imgs=None):
         outputs = []
@@ -243,5 +243,3 @@ class TOODHead(YOLOXHead_Template):
                 return self.decode_outputs(outputs, dtype=xin[0].type())
             else:
                 return outputs
-
-

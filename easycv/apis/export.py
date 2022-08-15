@@ -31,13 +31,13 @@ def reparameterize_models(model):
     """
     reparameterize_count = 0
     for layer in model.modules():
-        reparameterize_count += 1
         if isinstance(layer, RepVGGBlock):
+            reparameterize_count += 1
             layer.switch_to_deploy()
     logging.info(
         'export : PAI-export reparameterize_count(RepVGGBlock, ) switch to deploy with {} blocks'
         .format(reparameterize_count))
-    print(reparameterize_count)
+    print('reparam:', reparameterize_count)
     return model
 
 
@@ -194,6 +194,7 @@ def _export_yolox(model, cfg, filename):
         batch_size = cfg.export.get('batch_size', 1)
         static_opt = cfg.export.get('static_opt', True)
         img_scale = cfg.get('img_scale', (640, 640))
+
         assert (
             len(img_scale) == 2
         ), 'Export YoloX predictor config contains img_scale must be (int, int) tuple!'
@@ -220,8 +221,9 @@ def _export_yolox(model, cfg, filename):
             yolox_trace = torch.jit.trace(model_export, input.to(device))
 
         if getattr(cfg.export, 'export_blade', False):
-            blade_config = cfg.export.get('blade_config',
-                                          dict(enable_fp16=True))
+            blade_config = cfg.export.get(
+                'blade_config',
+                dict(enable_fp16=True, fp16_fallback_op_ratio=0.05))
 
             from easycv.toolkit.blade import blade_env_assert, blade_optimize
 
@@ -669,15 +671,11 @@ class End2endModelExportWrapper(torch.nn.Module):
 
         self.example_inputs = example_inputs
         self.preprocess_fn = preprocess_fn
-        self.ignore_postprocess = getattr(self.model, 'ignore_postprocess',
-                                          False)
-        if not self.ignore_postprocess:
-            self.postprocess_fn = postprocess_fn
-        else:
-            self.postprocess_fn = None
-        logging.warning(
-            'Model {} ignore_postprocess set to be {} during export !'.format(
-                type(model), self.ignore_postprocess))
+        self.postprocess_fn = postprocess_fn
+
+        if postprocess_fn == None:
+            self.model.head.decode_in_inference = False
+
         self.trace_model = trace_model
         if self.trace_model:
             self.trace_module()

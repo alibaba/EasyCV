@@ -5,7 +5,4 @@ model = dict(
     backbone=dict(
         model_type='nano',  # s m l x tiny nano
     ),
-    head=dict(
-        model_type='nano',
-    )
-)
+    head=dict(model_type='nano', ))

@@ -27,6 +27,7 @@ def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):
 
 class RepVGGBlock(nn.Module):
     """Basic Block of RepVGG"""
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -197,6 +198,7 @@ class RepVGGBlock(nn.Module):
 
 class ConvBNAct(nn.Module):
     '''Normal Conv with SiLU activation'''
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -356,7 +358,6 @@ class RepVGGYOLOX(nn.Module):
         x = self.stage4(x)
         outputs.append(x)
         return tuple(outputs)
-
 
 
 if __name__ == '__main__':

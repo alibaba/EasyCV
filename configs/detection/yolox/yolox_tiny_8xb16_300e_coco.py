@@ -5,10 +5,7 @@ model = dict(
     backbone=dict(
         model_type='tiny',  # s m l x tiny nano
     ),
-    head=dict(
-        model_type='tiny',
-    )
-)
+    head=dict(model_type='tiny', ))
 
 CLASSES = [
     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
