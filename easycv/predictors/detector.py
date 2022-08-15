@@ -43,6 +43,7 @@ class TorchYoloXPredictor(PredictorInterface):
                  model_path,
                  max_det=100,
                  score_thresh=0.5,
+                 use_trt_nms =False,
                  model_config=None):
         """
         init model
@@ -60,6 +61,7 @@ class TorchYoloXPredictor(PredictorInterface):
             'blade')
 
         self.use_blade = model_path.endswith('blade')
+        self.use_trt_nms = use_trt_nms
 
         if self.use_blade:
             import torch_blade
@@ -76,7 +78,6 @@ class TorchYoloXPredictor(PredictorInterface):
             with io.open(model_path, 'rb') as infile:
                 map_location = 'cpu' if self.device == 'cpu' else 'cuda'
                 self.model = torch.jit.load(infile, map_location)
-
             with io.open(model_path + '.config.json', 'r') as infile:
                 self.cfg = json.load(infile)
                 test_pipeline = self.cfg['test_pipeline']
@@ -117,7 +118,6 @@ class TorchYoloXPredictor(PredictorInterface):
 
             self.model.to(self.device)
             self.model.eval()
-
             test_pipeline = self.cfg.test_pipeline
             self.CLASSES = self.cfg.CLASSES
 
@@ -178,12 +178,21 @@ class TorchYoloXPredictor(PredictorInterface):
                 img = np.asarray(img)
 
             ori_img_shape = img.shape[:2]
-
+            speed_test=1
             if self.end2end:
                 # the input should also be as the type of uint8 as mmcv
                 img = torch.from_numpy(img).to(self.device)
-                det_out = self.model(img)
-
+                if self.use_trt_nms:
+                    for i in range(speed_test):
+                        tmp_out = self.model(img)
+                    det_out={}
+                    det_out['detection_boxes']=tmp_out[1]
+                    det_out['detection_scores']=tmp_out[2]
+                    det_out['detection_classes']=tmp_out[3]
+                else:
+                    for i in range(speed_test):
+                        det_out = self.model(img)
+                    
                 detection_scores = det_out['detection_scores']
 
                 if detection_scores is not None:
@@ -196,10 +205,9 @@ class TorchYoloXPredictor(PredictorInterface):
                     detection_classes = []
 
                 if to_numpy:
-                    detection_scores = detection_scores.detach().numpy()
-                    detection_boxes = detection_boxes.detach().numpy()
-                    detection_classes = detection_classes.detach().numpy()
-
+                    detection_scores = detection_scores.cpu().detach().numpy()
+                    detection_boxes = detection_boxes.cpu().detach().numpy()
+                    detection_classes = detection_classes.cpu().detach().numpy()
             else:
                 data_dict = {'img': img}
                 data_dict = self.pipeline(data_dict)
@@ -208,10 +216,19 @@ class TorchYoloXPredictor(PredictorInterface):
                 data_dict.pop('img')
 
                 if self.traceable:
-                    with torch.no_grad():
-                        det_out = self.post_assign(
-                            self.model(img),
-                            img_metas=[data_dict['img_metas']._data])
+                    if self.use_trt_nms:
+                        with torch.no_grad():
+                            for i in range(speed_test):
+                                tmp_out = self.model(img)
+                            det_out={}
+                            det_out['detection_boxes']=tmp_out[1]
+                            det_out['detection_scores']=tmp_out[2]
+                            det_out['detection_classes']=tmp_out[3]
+                    else:
+                        with torch.no_grad():
+                            det_out = self.post_assign(
+                                self.model(img),
+                                img_metas=[data_dict['img_metas']._data])
                 else:
                     with torch.no_grad():
                         det_out = self.model(

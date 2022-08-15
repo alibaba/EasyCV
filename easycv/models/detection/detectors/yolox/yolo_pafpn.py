@@ -33,7 +33,7 @@ class YOLOPAFPN(nn.Module):
                  in_channels=[256, 512, 1024],
                  depthwise=False,
                  act='silu',
-                 asff_channel=2,
+                 asff_channel=16,
                  use_att=None,
                  expand_kernel=3,
                  backbone='CSPDarknet',

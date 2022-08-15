@@ -54,6 +54,7 @@ def export(cfg, ckpt_path, filename):
         load_checkpoint(model, ckpt_path, map_location='cpu')
     else:
         cfg.model.backbone.pretrained = False
+    
     model = reparameterize_models(model)
 
     if isinstance(model, MOCO) or isinstance(model, DINO):
@@ -201,13 +202,19 @@ def _export_yolox(model, cfg, filename):
 
         input = 255 * torch.rand((batch_size, 3) + img_scale)
 
+        preprocess_fn = None
+        postprocess_fn = None
+        if end2end:
+            preprocess_fn = PreProcess(target_size=img_scale, keep_ratio=True)
+            postprocess_fn= DetPostProcess(max_det=100, score_thresh=0.5)
+            if cfg.model.get('use_trt_nms', False):
+                postprocess_fn = None
+        
         model_export = End2endModelExportWrapper(
             model,
             input.to(device),
-            preprocess_fn=PreProcess(target_size=img_scale, keep_ratio=True)
-            if end2end else None,
-            postprocess_fn=DetPostProcess(max_det=100, score_thresh=0.5)
-            if end2end else None,
+            preprocess_fn=preprocess_fn,
+            postprocess_fn=postprocess_fn,
             trace_model=True,
         )
 
@@ -223,7 +230,7 @@ def _export_yolox(model, cfg, filename):
         if getattr(cfg.export, 'export_blade', False):
             blade_config = cfg.export.get(
                 'blade_config',
-                dict(enable_fp16=True, fp16_fallback_op_ratio=0.05))
+                dict(enable_fp16=True, fp16_fallback_op_ratio=0.3))
 
             from easycv.toolkit.blade import blade_env_assert, blade_optimize
 
@@ -673,8 +680,8 @@ class End2endModelExportWrapper(torch.nn.Module):
         self.preprocess_fn = preprocess_fn
         self.postprocess_fn = postprocess_fn
 
-        if postprocess_fn == None:
-            self.model.head.decode_in_inference = False
+        # if postprocess_fn == None:
+        #     self.model.head.decode_in_inference = False
 
         self.trace_model = trace_model
         if self.trace_model:

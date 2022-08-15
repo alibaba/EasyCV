@@ -11,6 +11,7 @@ from easycv.models.base import BaseModel
 from easycv.models.builder import (MODELS, build_backbone, build_head,
                                    build_neck)
 from easycv.models.detection.utils import postprocess
+from easycv.models.detection.detectors.yolox.postprocess import create_tensorrt_postprocess
 
 
 def init_yolo(M):
@@ -34,7 +35,8 @@ class YOLOX(BaseModel):
                  nms_thre,
                  head=None,
                  neck=None,
-                 pretrained=True):
+                 pretrained=True,
+                 use_trt_nms=False):
         super(YOLOX, self).__init__()
 
         self.pretrained = pretrained
@@ -47,6 +49,12 @@ class YOLOX(BaseModel):
         self.num_classes = head.num_classes
         self.test_conf = test_conf
         self.nms_thre = nms_thre
+        self.use_trt_nms = use_trt_nms
+
+        if use_trt_nms:
+            example_scores = torch.randn([1, 8400, 85], dtype=torch.float32)
+            self.trt_nms = create_tensorrt_postprocess(example_scores, iou_thres=self.nms_thre, score_thres=self.test_conf)
+            self.head.decode_in_inference = True
 
     def forward_train(self,
                       img: Tensor,
@@ -100,10 +108,8 @@ class YOLOX(BaseModel):
         with torch.no_grad():
             fpn_outs = self.backbone(img)
             outputs = self.head(fpn_outs)
-
             outputs = postprocess(outputs, self.num_classes, self.test_conf,
                                   self.nms_thre)
-
             detection_boxes = []
             detection_scores = []
             detection_classes = []
@@ -157,7 +163,12 @@ class YOLOX(BaseModel):
             outputs = self.head(fpn_outs)
 
             if self.head.decode_in_inference:
-                outputs = postprocess(outputs, self.num_classes,
-                                      self.test_conf, self.nms_thre)
+                if self.use_trt_nms:
+                    print("fucking trt nms")
+                    outputs = self.trt_nms.forward(outputs)
+                else:
+                    print("fucking original nms")
+                    outputs = postprocess(outputs, self.num_classes,
+                                        self.test_conf, self.nms_thre)
 
         return outputs

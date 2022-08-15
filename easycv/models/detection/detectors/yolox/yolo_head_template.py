@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from easycv.models.backbones.network_blocks import BaseConv, DWConv
+from easycv.models.backbones.repvgg_yolox_backbone import RepVGGBlock
 from easycv.models.detection.utils import bboxes_iou
 from easycv.models.loss import GIoULoss, IOUloss, IoULoss
 
@@ -74,35 +75,35 @@ class YOLOXHead_Template(nn.Module):
                 ))
             self.cls_convs.append(
                 nn.Sequential(*[
-                    Conv(
+                    RepVGGBlock(
                         in_channels=int(256 * width),
                         out_channels=int(256 * width),
-                        ksize=3,
-                        stride=1,
+                        # ksize=3,
+                        # stride=1,
                         act=act,
                     ),
-                    Conv(
+                    RepVGGBlock(
                         in_channels=int(256 * width),
                         out_channels=int(256 * width),
-                        ksize=3,
-                        stride=1,
+                        # ksize=3,
+                        # stride=1,
                         act=act,
                     ),
                 ]))
             self.reg_convs.append(
                 nn.Sequential(*[
-                    Conv(
+                    RepVGGBlock(
                         in_channels=int(256 * width),
                         out_channels=int(256 * width),
-                        ksize=3,
-                        stride=1,
+                        # ksize=3,
+                        # stride=1,
                         act=act,
                     ),
-                    Conv(
+                    RepVGGBlock(
                         in_channels=int(256 * width),
                         out_channels=int(256 * width),
-                        ksize=3,
-                        stride=1,
+                        # ksize=3,
+                        # stride=1,
                         act=act,
                     ),
                 ]))
