@@ -23,7 +23,7 @@ __all__ = [
 
 
 def reparameterize_models(model):
-    """ reparameterize model for inference, especially for
+    """ reparameterize model for inference, especially forf
             1. rep conv block : merge 3x3 weight 1x1 weights
         call module switch_to_deploy recursively
     Args:
@@ -230,10 +230,8 @@ def _export_yolox(model, cfg, filename):
             assert blade_env_assert()
 
             if end2end:
-                if batch_size == 1:
-                    input = 255 * torch.rand(img_scale + (3, ))
-                else:
-                    input = 255 * torch.rand(img_scale + (3, batch_size))
+                # input [b,h,w,c]
+                input = 255 * torch.rand((batch_size,)+img_scale + (3,))
 
             yolox_blade = blade_optimize(
                 script_model=model,
@@ -511,15 +509,16 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
         ) -> Tuple[torch.Tensor, Dict[str, Tuple[float, float]]]:
             """
             Args:
-                image (torch.Tensor): image format should be [H, W, C]
+                image (torch.Tensor): image format should be [b, H, W, C]
             """
             input_h, input_w = self.target_size
-            image = image.permute(2, 0, 1)
+            print('img.shape', image.shape)
+            image = image.permute(0, 3, 1, 2)
 
             # rgb2bgr
-            image = image[torch.tensor([2, 1, 0]), :, :]
+            image = image[:,torch.tensor([2, 1, 0]), :, :]
 
-            image = torch.unsqueeze(image, 0)
+            # image = torch.unsqueeze(image, 0)
             ori_h, ori_w = image.shape[-2:]
 
             mean = [123.675, 116.28, 103.53]
@@ -690,6 +689,7 @@ class End2endModelExportWrapper(torch.nn.Module):
 
         with torch.no_grad():
             if self.preprocess_fn is not None:
+                print('before', image.shape)
                 output = self.preprocess_fn(image)
                 # if multi values ​​are returned, the first one must be image, others ​​are optional,
                 # and others will all be passed into postprocess_fn

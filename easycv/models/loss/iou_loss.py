@@ -74,10 +74,9 @@ def giou_loss(pred, target, eps=1e-7, xyxy=True):
 
 
 @LOSSES.register_module
-class IOUloss(nn.Module):
-
+class YOLOX_IOULoss(nn.Module):
     def __init__(self, reduction='none', loss_type='iou'):
-        super(IOUloss, self).__init__()
+        super(YOLOX_IOULoss, self).__init__()
         self.reduction = reduction
         self.loss_type = loss_type
 
@@ -109,7 +108,7 @@ class IOUloss(nn.Module):
             c_w = torch.max(pred[:, 0], target[:, 0]) - torch.min(
                 pred[:, 0], target[:, 0])
             sigma = torch.sqrt(((pred[:, :2] - target[:, :2])**2).sum(dim=1))
-            # angle_cost = 1 - 2 * torch.pow(torch.sin(torch.arctan(c_h / c_w) - torch.tensor(math.pi / 4)),2)
+
             angle_cost = 2 * (c_h * c_w) / (sigma**2)
 
             # distance cost

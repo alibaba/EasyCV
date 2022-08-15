@@ -10,7 +10,7 @@ import torch.nn.functional as F
 
 from easycv.models.backbones.network_blocks import BaseConv, DWConv
 from easycv.models.detection.utils import bboxes_iou
-from easycv.models.loss import GIoULoss, IOUloss, IoULoss
+from easycv.models.loss import YOLOX_IOULoss
 
 
 class YOLOXHead_Template(nn.Module):
@@ -136,11 +136,7 @@ class YOLOXHead_Template(nn.Module):
         self.use_l1 = False
         self.l1_loss = nn.L1Loss(reduction='none')
 
-        self.iou_loss = IOUloss(reduction='none', loss_type=reg_loss_type)
-        if reg_loss_type == 'iou':
-            self.iou_loss1 = IoULoss(reduction='none', mode='square')
-        elif reg_loss_type == 'giou':
-            self.iou_loss1 = GIoULoss(reduction='none')
+        self.iou_loss = YOLOX_IOULoss(reduction='none', loss_type=reg_loss_type)
 
         self.obj_loss_type = obj_loss_type
         if obj_loss_type == 'BCE':

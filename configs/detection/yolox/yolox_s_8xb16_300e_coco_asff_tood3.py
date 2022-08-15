@@ -195,7 +195,7 @@ log_config = dict(
 
 export = dict(use_jit=True,
               export_blade=True,  # ????blade
-              end2end=False,      # ??????????nms???jit + blade
+              end2end=True,      # ??????????nms???jit + blade
               batch_size=32,       # static_opt=True???????batch_size
               blade_config=dict(
                     dict(enable_fp16=True,
