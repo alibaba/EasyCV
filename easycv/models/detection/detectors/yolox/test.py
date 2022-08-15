@@ -1,3 +1,5 @@
+# !!!ignore it for cr, we are still work for tensorrt nms problem
+
 # from easycv.models.detection.detectors.yolox import YOLOX
 from easycv.models.detection.detectors.yolox.postprocess import create_tensorrt_postprocess
 import torch
