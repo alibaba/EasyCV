@@ -1,9 +1,24 @@
+<<<<<<< HEAD:test.py
 # from easycv.models.detection.detectors.yolox import YOLOX
 from easycv.models.detection.detectors.yolox.postprocess import create_tensorrt_postprocess
+=======
+# !!!ignore it for cr, we are still work for tensorrt nms problem
+
+import sys
+
+import numpy as np
+>>>>>>> 08bbba8177329f6f4a4925ec599f138054cdd9a6:easycv/models/detection/detectors/yolox/test.py
 import torch
 from torchvision.transforms import Compose
 
 from easycv.models import build_model
+<<<<<<< HEAD:test.py
+=======
+# from easycv.models.detection.detectors.yolox import YOLOX
+from easycv.models.detection.detectors.yolox.postprocess import \
+    create_tensorrt_postprocess
+from easycv.models.detection.utils import postprocess
+>>>>>>> 08bbba8177329f6f4a4925ec599f138054cdd9a6:easycv/models/detection/detectors/yolox/test.py
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.registry import build_from_cfg
@@ -11,6 +26,7 @@ from easycv.datasets.registry import PIPELINES
 from easycv.models.detection.utils import postprocess
 
 
+<<<<<<< HEAD:test.py
 
 import sys
 import numpy as np
@@ -18,6 +34,10 @@ from PIL import Image
 
 if __name__=='__main__':
     #a = YOLOX(decode_in_inference=False).eval()
+=======
+if __name__ == '__main__':
+    # a = YOLOX(decode_in_inference=False).eval()
+>>>>>>> 08bbba8177329f6f4a4925ec599f138054cdd9a6:easycv/models/detection/detectors/yolox/test.py
     cfg = sys.argv[1]
     ckpt_path = sys.argv[2]
 
@@ -60,6 +80,7 @@ if __name__=='__main__':
     # print(tc.shape)
 
     import copy
+
     tcback = copy.deepcopy(tc)
 
     tpa = postprocess(tc, model.num_classes, model.test_conf, model.nms_thre)[0]
@@ -107,6 +128,7 @@ if __name__=='__main__':
 
     if 0:
         from easycv.predictors import TorchYoloXPredictor
+
         img = Image.open(img_path)
         pred = TorchYoloXPredictor('models/predict.pt')
         m = pred.predict([img])
