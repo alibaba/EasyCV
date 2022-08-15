@@ -44,7 +44,7 @@ class YOLOX(BaseModel):
         self.head = build_head(head)
 
         self.apply(init_yolo)  # init_yolo(self)
-        self.num_classes = head.num_classes
+        self.num_classes = self.head.num_classes
         self.test_conf = test_conf
         self.nms_thre = nms_thre
 

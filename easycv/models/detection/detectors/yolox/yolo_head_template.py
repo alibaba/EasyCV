@@ -136,7 +136,8 @@ class YOLOXHead_Template(nn.Module):
         self.use_l1 = False
         self.l1_loss = nn.L1Loss(reduction='none')
 
-        self.iou_loss = YOLOX_IOULoss(reduction='none', loss_type=reg_loss_type)
+        self.iou_loss = YOLOX_IOULoss(
+            reduction='none', loss_type=reg_loss_type)
 
         self.obj_loss_type = obj_loss_type
         if obj_loss_type == 'BCE':

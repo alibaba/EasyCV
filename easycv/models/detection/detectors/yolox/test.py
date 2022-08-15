@@ -1,20 +1,21 @@
 # !!!ignore it for cr, we are still work for tensorrt nms problem
 
-# from easycv.models.detection.detectors.yolox import YOLOX
-from easycv.models.detection.detectors.yolox.postprocess import create_tensorrt_postprocess
+import sys
+
+import numpy as np
 import torch
+from PIL import Image
 from torchvision.transforms import Compose
 
+from easycv.datasets.registry import PIPELINES
 from easycv.models import build_model
+# from easycv.models.detection.detectors.yolox import YOLOX
+from easycv.models.detection.detectors.yolox.postprocess import \
+    create_tensorrt_postprocess
+from easycv.models.detection.utils import postprocess
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.registry import build_from_cfg
-from easycv.datasets.registry import PIPELINES
-from easycv.models.detection.utils import postprocess
-
-import sys
-import numpy as np
-from PIL import Image
 
 if __name__ == '__main__':
     # a = YOLOX(decode_in_inference=False).eval()
@@ -34,7 +35,8 @@ if __name__ == '__main__':
 
     # 8400 ishard code, need to reimplement to  sum(img_w / stride_i + img_h /stride_i)
     example_scores = torch.randn([1, 8400, 85], dtype=torch.float32)
-    trt_ext = create_tensorrt_postprocess(example_scores, iou_thres=model.nms_thre, score_thres=model.test_conf)
+    trt_ext = create_tensorrt_postprocess(
+        example_scores, iou_thres=model.nms_thre, score_thres=model.test_conf)
 
     # img_path = '/apsara/xinyi.zxy/data/coco/val2017/000000129062.jpg'
     img_path = '/apsara/xinyi.zxy/data/coco/val2017/000000254016.jpg'
@@ -54,7 +56,8 @@ if __name__ == '__main__':
     c = model.forward_export(img)
 
     # print(type(c), c.shape)
-    print(model.test_conf, model.nms_thre, model.num_classes, model.decode_in_inference)
+    print(model.test_conf, model.nms_thre, model.num_classes,
+          model.decode_in_inference)
     tc = model.head.decode_outputs(c, c[0].type())
     # print(type(tc))
     # print(tc.shape)
@@ -63,7 +66,8 @@ if __name__ == '__main__':
 
     tcback = copy.deepcopy(tc)
 
-    tpa = postprocess(tc, model.num_classes, model.test_conf, model.nms_thre)[0]
+    tpa = postprocess(tc, model.num_classes, model.test_conf,
+                      model.nms_thre)[0]
     # print(tpa)
     tpa[:, 4] = tpa[:, 4] * tpa[:, 5]
     tpa[:, 5] = tpa[:, 6]
@@ -95,14 +99,12 @@ if __name__ == '__main__':
     score_b = tpb[2][:, :valid_length].cpu().view(score_a.shape)
     id_b = tpb[3][:, :valid_length].cpu().view(id_a.shape)
 
-
     def get_diff(input_a, input_b, name='score'):
-        print("name:", name)
-        print("shape:", input_a.shape)
-        print("max_diff  :", torch.max(input_a - input_b))
-        print("avg_diff  :", torch.mean(input_a - input_b))
-        print("totol_diff:", torch.sum(input_a - input_b))
-
+        print('name:', name)
+        print('shape:', input_a.shape)
+        print('max_diff  :', torch.max(input_a - input_b))
+        print('avg_diff  :', torch.mean(input_a - input_b))
+        print('totol_diff:', torch.sum(input_a - input_b))
 
     get_diff(box_a, box_b, 'box')
     get_diff(score_a, score_b, 'score')

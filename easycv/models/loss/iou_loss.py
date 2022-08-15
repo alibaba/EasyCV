@@ -75,6 +75,7 @@ def giou_loss(pred, target, eps=1e-7, xyxy=True):
 
 @LOSSES.register_module
 class YOLOX_IOULoss(nn.Module):
+
     def __init__(self, reduction='none', loss_type='iou'):
         super(YOLOX_IOULoss, self).__init__()
         self.reduction = reduction

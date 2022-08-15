@@ -193,12 +193,4 @@ log_config = dict(
         # dict(type='WandbLoggerHookV2'),
     ])
 
-export = dict(use_jit=True,
-              export_blade=True,  # ????blade
-              end2end=True,      # ??????????nms???jit + blade
-              batch_size=32,       # static_opt=True???????batch_size
-              blade_config=dict(
-                    dict(enable_fp16=True,
-                    fp16_fallback_op_ratio=0.05)
-              ),   # fp16 fallback?fp32 ?layer ??
-              static_opt=True)    # ????static shape ?????True
+export = dict(use_jit=False, export_blade=False, end2end=False)

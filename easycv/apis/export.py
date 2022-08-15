@@ -231,7 +231,7 @@ def _export_yolox(model, cfg, filename):
 
             if end2end:
                 # input [b,h,w,c]
-                input = 255 * torch.rand((batch_size,)+img_scale + (3,))
+                input = 255 * torch.rand((batch_size, ) + img_scale + (3, ))
 
             yolox_blade = blade_optimize(
                 script_model=model,
@@ -516,7 +516,7 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
             image = image.permute(0, 3, 1, 2)
 
             # rgb2bgr
-            image = image[:,torch.tensor([2, 1, 0]), :, :]
+            image = image[:, torch.tensor([2, 1, 0]), :, :]
 
             # image = torch.unsqueeze(image, 0)
             ori_h, ori_w = image.shape[-2:]
