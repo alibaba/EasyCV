@@ -46,9 +46,6 @@ class OptimizerHook(_OptimizerHook):
         self.multiply_key = multiply_key
         self.multiply_rate = multiply_rate
 
-    # def before_run(self, runner):
-    #     runner.optimizer.zero_grad()
-
     def _get_module(self, runner):
         module = runner.model
         if is_module_wrapper(module):
@@ -149,8 +146,6 @@ class AMPFP16OptimizerHook(OptimizerHook):
         for m in runner.model.modules():
             if hasattr(m, 'fp16_enabled'):
                 m.fp16_enabled = True
-
-        # runner.optimizer.zero_grad()
 
     def after_train_iter(self, runner):
         loss = runner.outputs['loss'] / self.update_interval
