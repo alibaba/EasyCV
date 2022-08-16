@@ -21,7 +21,11 @@ from easycv.models.detection.utils import (gen_encoder_output_proposals,
                                            gen_sineembed_for_position,
                                            inverse_sigmoid)
 from easycv.models.utils import MLP, _get_activation_fn, _get_clones
-from .ops.modules import MSDeformAttn
+
+try:
+    from thirdparty.msdeformattn.modules import MSDeformAttn
+except:
+    pass
 
 
 @NECKS.register_module
@@ -939,7 +943,8 @@ class DeformableTransformerEncoderLayer(nn.Module):
         super().__init__()
 
         # self attention
-        self.self_attn = MSDeformAttn(d_model, n_levels, n_heads, n_points)
+        self.self_attn = MSDeformAttn(
+            d_model, n_levels, n_heads, n_points, im2col_step=64)
         self.dropout1 = nn.Dropout(dropout)
         self.norm1 = nn.LayerNorm(d_model)
 
@@ -1013,8 +1018,8 @@ class DeformableTransformerDecoderLayer(nn.Module):
         assert sorted(module_seq) == ['ca', 'ffn', 'sa']
 
         # cross attention
-        # self.cross_attn = MSDeformAttn(d_model, n_levels, n_heads, n_points)
-        self.cross_attn = MSDeformAttn(d_model, n_levels, n_heads, n_points)
+        self.cross_attn = MSDeformAttn(
+            d_model, n_levels, n_heads, n_points, im2col_step=64)
         self.dropout1 = nn.Dropout(dropout)
         self.norm1 = nn.LayerNorm(d_model)
 
@@ -1038,7 +1043,8 @@ class DeformableTransformerDecoderLayer(nn.Module):
         assert decoder_sa_type in ['sa', 'ca_label', 'ca_content']
 
         if decoder_sa_type == 'ca_content':
-            self.self_attn = MSDeformAttn(d_model, n_levels, n_heads, n_points)
+            self.self_attn = MSDeformAttn(
+                d_model, n_levels, n_heads, n_points, im2col_step=64)
 
     def rm_self_attn_modules(self):
         self.self_attn = None

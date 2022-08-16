@@ -11,7 +11,7 @@ from torch.nn.init import constant_, normal_, uniform_, xavier_uniform_
 from .transformer_decoder import PositionEmbeddingSine, _get_activation_fn
 
 try:
-    from thirdparty.deformable_transformer.modules import MSDeformAttn
+    from thirdparty.msdeformattn.modules import MSDeformAttn
 except:
     pass
 

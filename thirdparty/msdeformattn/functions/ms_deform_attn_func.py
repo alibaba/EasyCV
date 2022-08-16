@@ -6,13 +6,24 @@
 # Modified from https://github.com/chengdazhi/Deformable-Convolution-V2-PyTorch/tree/pytorch_1.0.0
 # ------------------------------------------------------------------------------------------------
 
+# Copyright (c) Facebook, Inc. and its affiliates.
+# Modified by Bowen Cheng from https://github.com/fundamentalvision/Deformable-DETR
+
 from __future__ import absolute_import, division, print_function
 
-import MultiScaleDeformableAttention as MSDA
 import torch
 import torch.nn.functional as F
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
+
+try:
+    import MultiScaleDeformableAttention as MSDA
+except ModuleNotFoundError as e:
+    info_string = (
+        '\n\nPlease compile MultiScaleDeformableAttention CUDA op with the following commands:\n'
+        '\t`cd thirdparty/msdeformattn`\n'
+        '\t`sh make.sh`\n')
+    raise ModuleNotFoundError(info_string)
 
 
 class MSDeformAttnFunction(Function):
