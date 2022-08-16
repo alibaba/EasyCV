@@ -471,7 +471,7 @@ class DNCriterion(nn.Module):
             losses['class_error'] = 100 - accuracy(src_logits_, tgt_labels_)[0]
         return losses
 
-    def forward(self, mask_dict, training, aux_num):
+    def forward(self, mask_dict, aux_num):
         """
         compute dn loss in criterion
         Args:
@@ -480,7 +480,7 @@ class DNCriterion(nn.Module):
             aux_num: aux loss number
         """
         losses = {}
-        if training and 'output_known_lbs_bboxes' in mask_dict:
+        if self.training and 'output_known_lbs_bboxes' in mask_dict:
             known_labels, known_bboxs, output_known_class, output_known_coord, num_tgt = self.prepare_for_loss(
                 mask_dict)
             l_dict = self.tgt_loss_labels(output_known_class[-1], known_labels,
@@ -507,7 +507,7 @@ class DNCriterion(nn.Module):
         if aux_num:
             for i in range(aux_num):
                 # dn aux loss
-                if training and 'output_known_lbs_bboxes' in mask_dict:
+                if self.training and 'output_known_lbs_bboxes' in mask_dict:
                     l_dict = self.tgt_loss_labels(output_known_class[i],
                                                   known_labels, num_tgt, 0.25)
                     l_dict = {

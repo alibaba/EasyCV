@@ -258,8 +258,7 @@ class DABDETRHead(nn.Module):
 
         losses = self.criterion(outputs, targets)
         losses.update(
-            self.dn_criterion(mask_dict, self.training,
-                              len(outputs['aux_outputs'])))
+            self.dn_criterion(mask_dict, len(outputs['aux_outputs'])))
 
         return losses
 

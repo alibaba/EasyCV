@@ -79,10 +79,14 @@ class DINOHead(nn.Module):
             matcher=self.matcher,
             weight_dict=weight_dict,
             losses=['labels', 'boxes'],
-            loss_class_type='focal_loss',
-            dn_components=dn_components['dn_type'])
+            loss_class_type='focal_loss')
         if dn_components is not None:
-            self.dn_criterion = CDNCriterion(weight_dict)
+            self.dn_criterion = CDNCriterion(
+                num_classes,
+                matcher=self.matcher,
+                weight_dict=weight_dict,
+                losses=['labels', 'boxes'],
+                loss_class_type='focal_loss')
         self.postprocess = DetrPostProcess(num_select=num_select)
         self.transformer = build_neck(transformer)
 
