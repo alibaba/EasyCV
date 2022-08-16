@@ -160,6 +160,18 @@ class YOLOXHead_Template(nn.Module):
             b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
             conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
+    def get_nmsboxes_num(self, img_scale=(640, 640)):
+        """ Count all Yolox NMS box with img_scale and head stride config
+        """
+        assert (
+            len(img_scale) == 2
+        ), 'Export YoloX predictor config contains img_scale must be (int, int) tuple!'
+
+        total_box_count = 0
+        for stride in self.strides:
+            total_box_count+= (img_scale[0] / stride) * (img_scale[1] / stride)
+        return total_box_count
+
     @abstractmethod
     def forward(self, xin, labels=None, imgs=None):
         pass

@@ -43,7 +43,7 @@ class TorchYoloXPredictor(PredictorInterface):
                  model_path,
                  max_det=100,
                  score_thresh=0.5,
-                 use_trt_nms =False,
+                 use_trt_efficientnms=False,
                  model_config=None):
         """
         init model
@@ -61,7 +61,7 @@ class TorchYoloXPredictor(PredictorInterface):
             'blade')
 
         self.use_blade = model_path.endswith('blade')
-        self.use_trt_nms = use_trt_nms
+        self.use_trt_efficientnms = use_trt_efficientnms
 
         if self.use_blade:
             import torch_blade
@@ -178,20 +178,17 @@ class TorchYoloXPredictor(PredictorInterface):
                 img = np.asarray(img)
 
             ori_img_shape = img.shape[:2]
-            speed_test=1
             if self.end2end:
                 # the input should also be as the type of uint8 as mmcv
                 img = torch.from_numpy(img).to(self.device)
-                if self.use_trt_nms:
-                    for i in range(speed_test):
-                        tmp_out = self.model(img)
+                if self.use_trt_efficientnms:
+                    tmp_out = self.model(img)
                     det_out={}
                     det_out['detection_boxes']=tmp_out[1]
                     det_out['detection_scores']=tmp_out[2]
                     det_out['detection_classes']=tmp_out[3]
                 else:
-                    for i in range(speed_test):
-                        det_out = self.model(img)
+                    det_out = self.model(img)
                     
                 detection_scores = det_out['detection_scores']
 
@@ -216,10 +213,9 @@ class TorchYoloXPredictor(PredictorInterface):
                 data_dict.pop('img')
 
                 if self.traceable:
-                    if self.use_trt_nms:
+                    if self.use_trt_efficientnms:
                         with torch.no_grad():
-                            for i in range(speed_test):
-                                tmp_out = self.model(img)
+                            tmp_out = self.model(img)
                             det_out={}
                             det_out['detection_boxes']=tmp_out[1]
                             det_out['detection_scores']=tmp_out[2]

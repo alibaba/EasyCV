@@ -194,6 +194,9 @@ def _export_yolox(model, cfg, filename):
 
         batch_size = cfg.export.get('batch_size', 1)
         static_opt = cfg.export.get('static_opt', True)
+        use_trt_efficientnms = cfg.export.get('use_trt_efficientnms', False)
+        
+        # assert image scale and assgin input
         img_scale = cfg.get('img_scale', (640, 640))
 
         assert (
@@ -202,14 +205,37 @@ def _export_yolox(model, cfg, filename):
 
         input = 255 * torch.rand((batch_size, 3) + img_scale)
 
+        # assert use_trt_efficientnms only happens when static_opt=True
+        if static_opt is not True:
+            assert (
+                use_trt_efficientnms == False
+            ), 'Export YoloX predictor use_trt_efficientnms=True only when use static_opt=True!'
+
+        # ignore DetPostProcess when use_trt_efficientnms 
         preprocess_fn = None
         postprocess_fn = None
         if end2end:
             preprocess_fn = PreProcess(target_size=img_scale, keep_ratio=True)
             postprocess_fn= DetPostProcess(max_det=100, score_thresh=0.5)
-            if cfg.model.get('use_trt_nms', False):
+            # use_trt_efficientnms = detection.boxes.postprocess + DetPostProcess
+            if use_trt_efficientnms:
+                logging.info('PAI-YOLOX: use_trt_efficientnms=True during export, we drop DetPostProcess, because trt_efficientnms = detection.boxes.postprocess + DetPostProcess!')
                 postprocess_fn = None
         
+        # set model use_trt_efficientnms
+        from easycv.toolkit.blade import create_tensorrt_efficientnms
+        if hasattr(model, 'get_nmsboxes_num'):
+            nmsbox_num = model.get_nmsboxes_num(img_scale)
+        else:
+            logging.warning('PAI-YOLOX: use_trt_efficientnms encounter model has no attr named get_nmsboxes_num, use 8400 as default!')
+            nmsbox_num = 8400
+
+        tmp_example_scores = torch.randn([batch_size, nmsbox_num, 4 + 1 + len(cfg.CLASSES)],
+                                 dtype=torch.float32)
+        logging.info('PAI-YOLOX: use_trt_efficientnms with staic shape [{}, {}, {}]'.format(batch_size, nmsbox_num, 4 + 1 + len(cfg.CLASSES)))
+        model.trt_efficientnms = create_tensorrt_efficientnms(example_scores, iou_thres=model.nms_thre, score_thres=model.test_conf)
+        model.use_trt_efficientnms = True
+
         model_export = End2endModelExportWrapper(
             model,
             input.to(device),

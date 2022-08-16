@@ -46,6 +46,8 @@ class YOLOXHead(YOLOXHead_Template):
             reg_loss_type=reg_loss_type,
             decode_in_inference=decode_in_inference)
 
+
+
     def forward(self, xin, labels=None, imgs=None):
         outputs = []
         origin_preds = []
