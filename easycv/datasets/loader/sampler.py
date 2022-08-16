@@ -160,7 +160,7 @@ class DistributedSampler(_DistributedSampler):
         num_replicas=None,
         rank=None,
         shuffle=True,
-        seed=None,
+        seed=0,
         replace=False,
         split_huge_listfile_byrank=False,
     ):
@@ -307,7 +307,7 @@ class DistributedGroupSampler(Sampler):
     def __init__(self,
                  dataset,
                  samples_per_gpu=1,
-                 seed=None,
+                 seed=0,
                  num_replicas=None,
                  rank=None):
         _rank, _num_replicas = get_dist_info()
