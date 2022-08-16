@@ -116,9 +116,8 @@ output['detection_boxes'][0][:2] = [[131.10389709472656, 90.93302154541016, 148.
 
 Here we get a list of objects detected in the image, with a box surrounding the object and a confidence score. The prediction results are as follows:
 
-<div align="center">
-  ![result](_static/result.jpg)
-</div>
+
+![result](_static/result.jpg)
 
 
 ## Examples
