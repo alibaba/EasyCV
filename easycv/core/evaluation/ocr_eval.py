@@ -222,6 +222,7 @@ class OCRDetEvaluator(Evaluator):
             result = self.evaluate_image(gt_info_list, det_info_list)
             results.append(result)
         results = self.combine_results(results)
+        print(results)
         return results
 
 METRICS.register_default_best_metric(OCRDetEvaluator, 'hmean', 'max')     

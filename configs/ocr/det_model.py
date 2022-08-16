@@ -10,11 +10,13 @@ model = dict(
     neck=dict(
         type='RSEFPN',
         in_channels=[16, 24, 56, 480],
-        out_channels=96,
+        # out_channels=96,
+        out_channels=256,
         shortcut=True),
     head=dict(
         type='DBHead',
-        in_channels=96,
+        # in_channels=96,
+        in_channels=256,
         k=50),
     postprocess=dict(
         type='DBPostProcess',
@@ -33,7 +35,8 @@ model = dict(
         beta=10,
         ohem_ratio=3
     ),
-    pretrained='/mnt/workspace/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_det_infer.pth'
+    # pretrained='/mnt/workspace/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_det_infer.pth'
+    pretrained='/mnt/data/code/ocr/PaddleOCR/pretrain_models/MobileNetV3_large_x0_5_pretrained.pth'
 )
 
 img_norm_cfg = dict(
@@ -76,12 +79,19 @@ test_pipeline = [
     dict(type='Collect', keys=['img'],meta_keys=['ori_img_shape','polys','ignore_tags']),
 ]
 
+val_pipeline = [
+    dict(type='DetResizeForTest', image_shape=(736,1280)),
+    dict(type='MMNormalize', **img_norm_cfg),
+    dict(type='ImageToTensor', keys=['img']),
+    dict(type='Collect', keys=['img'],meta_keys=['ori_img_shape','polys','ignore_tags']),
+]
+
 train_dataset = dict(
     type = 'OCRDetDataset',
     data_source = dict(
         type='OCRDetSource',
-        label_file = '/mnt/workspace/database/ocr/det/icdar2015/text_localization/train_icdar2015_label.txt',
-        data_dir='/mnt/workspace/database/ocr/det/icdar2015/text_localization'
+        label_file = '/mnt/data/database/ocr/det/icdar2015/text_localization/train_icdar2015_label.txt',
+        data_dir='/mnt/data/database/ocr/det/icdar2015/text_localization'
     ),
     pipeline = train_pipeline
 )
@@ -91,10 +101,10 @@ val_dataset = dict(
     imgs_per_gpu=2,
     data_source = dict(
         type='OCRDetSource',
-        label_file = '/mnt/workspace/database/ocr/det/icdar2015/text_localization/test_icdar2015_label.txt',
-        data_dir='/mnt/workspace/database/ocr/det/icdar2015/text_localization'
+        label_file = '/mnt/data/database/ocr/det/icdar2015/text_localization/test_icdar2015_label.txt',
+        data_dir='/mnt/data/database/ocr/det/icdar2015/text_localization'
     ),
-    pipeline = test_pipeline
+    pipeline = val_pipeline
 )
 
 data = dict(
@@ -107,7 +117,16 @@ optimizer = dict(
     betas=(0.9, 0.999))
 
 # learning policy
-lr_config = dict(policy='fixed')
+# lr_config = dict(policy='fixed')
+
+lr_config = dict(
+    policy='CosineAnnealing',
+    min_lr=1e-5,
+    warmup='linear',
+    warmup_iters=40,
+    warmup_ratio=1e-4,
+    warmup_by_epoch=True,
+    by_epoch=False)
 
 checkpoint_config = dict(interval=100)
 
@@ -118,7 +137,7 @@ log_config = dict(
         # dict(type='TensorboardLoggerHook')
     ])
 
-eval_config = dict(initial=True, interval=1, gpu_collect=False)
+eval_config = dict(initial=False, interval=10, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',
