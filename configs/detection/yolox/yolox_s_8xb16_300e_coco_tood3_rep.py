@@ -7,15 +7,16 @@ model = dict(
     nms_thre=0.65,
     backbone=dict(
         type='YOLOPAFPN',
-        backbone='CSPDarknet',
+        backbone='RepVGGYOLOX',
         model_type='s',  # s m l x tiny nano
         use_att=None,
         neck='yolo'),
     head=dict(
-        type='YOLOXHead',
+        type='TOODHead',
         model_type='s',
         obj_loss_type='BCE',
         reg_loss_type='giou',
+        conv_type='repconv',
         num_classes=80))
 
 # s m l x
@@ -46,7 +47,7 @@ CLASSES = [
 
 # dataset settings
 # data_root = '/apsarapangu/disk2/xinyi.zxy/data/coco/'
-data_root = '/apsara/xinyi.zxy/data/coco/'
+data_root = '/apsarapangu/disk6/xinyi.zxy/coco/'
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -192,4 +193,4 @@ log_config = dict(
         # dict(type='WandbLoggerHookV2'),
     ])
 
-export = dict(use_jit=True, export_blade=True, end2end=False, batch_size=32)
+export = dict(use_jit=False, export_blade=False, end2end=False)

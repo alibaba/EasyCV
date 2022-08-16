@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from easycv.models.backbones.network_blocks import BaseConv, DWConv
 from easycv.models.detection.utils import bboxes_iou
 from easycv.models.loss import YOLOX_IOULoss
+from easycv.models.backbones.repvgg_yolox_backbone import RepVGGBlock
 
 
 class YOLOXHead_Template(nn.Module):
@@ -29,7 +30,7 @@ class YOLOXHead_Template(nn.Module):
                  strides=[8, 16, 32],
                  in_channels=[256, 512, 1024],
                  act='silu',
-                 depthwise=False,
+                 conv_type='conv',
                  stage='CLOUD',
                  obj_loss_type='BCE',
                  reg_loss_type='giou',
@@ -61,7 +62,19 @@ class YOLOXHead_Template(nn.Module):
         self.obj_preds = nn.ModuleList()
         self.stems = nn.ModuleList()
 
-        Conv = DWConv if depthwise else BaseConv
+
+        default_conv_type_list = ['conv', 'dwconv', 'repconv']
+
+        if conv_type not in default_conv_type_list:
+            logging.warning(
+                'YOLOX-PAI tood head conv_type must in [conv, dwconv, repconv], otherwise we use repconv as default')
+            conv_type = 'repconv'
+        if conv_type == 'conv':
+            Conv = BaseConv
+        if conv_type == 'dwconv':
+            Conv = DWConv
+        if conv_type == 'repconv':
+            Conv = RepVGGBlock
 
         for i in range(len(in_channels)):
             self.stems.append(

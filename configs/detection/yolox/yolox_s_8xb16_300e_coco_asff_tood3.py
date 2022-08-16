@@ -45,9 +45,10 @@ CLASSES = [
 ]
 
 # dataset settings
-data_root = '/apsarapangu/disk2/xinyi.zxy/data/coco/'
+# data_root = '/apsarapangu/disk2/xinyi.zxy/data/coco/'
 # data_root = '/mnt/data/nas/data/detection/coco/'
 # data_root = '/root/workspace/data/coco/'
+data_root = '/apsara/xinyi.zxy/data/coco/'
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -193,4 +194,4 @@ log_config = dict(
         # dict(type='WandbLoggerHookV2'),
     ])
 
-export = dict(use_jit=False, export_blade=False, end2end=False)
+export = dict(use_jit=True, export_blade=True, end2end=False, batch_size=32)

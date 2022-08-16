@@ -160,8 +160,7 @@ def bbox_overlaps(bboxes1,
                   bboxes2,
                   mode='iou',
                   is_aligned=False,
-                  eps=1e-6,
-                  xyxy=True):
+                  eps=1e-6):
     """Calculate overlap between two set of bboxes.
 
     FP16 Contributed by https://github.com/open-mmlab/mmdetection/pull/4889
@@ -282,10 +281,6 @@ def bbox_overlaps(bboxes1,
     # Either the boxes are empty or the length of boxes' last dimension is 4
     assert (bboxes1.size(-1) == 4 or bboxes1.size(0) == 0)
     assert (bboxes2.size(-1) == 4 or bboxes2.size(0) == 0)
-
-    if not xyxy:
-        bboxes1 = box_cxcywh_to_xyxy(bboxes1)
-        bboxes2 = box_cxcywh_to_xyxy(bboxes2)
 
     # Batch dim must be the same
     # Batch dim: (B1, B2, ... Bn)

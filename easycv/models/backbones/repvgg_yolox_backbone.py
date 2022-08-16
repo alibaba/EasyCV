@@ -31,7 +31,7 @@ class RepVGGBlock(nn.Module):
     def __init__(self,
                  in_channels,
                  out_channels,
-                 kernel_size=3,
+                 ksize=3,
                  stride=1,
                  padding=1,
                  dilation=1,
@@ -44,10 +44,10 @@ class RepVGGBlock(nn.Module):
         self.groups = groups
         self.in_channels = in_channels
 
-        assert kernel_size == 3
+        assert ksize == 3
         assert padding == 1
 
-        padding_11 = padding - kernel_size // 2
+        padding_11 = padding - ksize // 2
 
         self.nonlinearity = nn.ReLU()
         self.se = nn.Identity()
@@ -56,7 +56,7 @@ class RepVGGBlock(nn.Module):
             self.rbr_reparam = nn.Conv2d(
                 in_channels=in_channels,
                 out_channels=out_channels,
-                kernel_size=kernel_size,
+                kernel_size=ksize,
                 stride=stride,
                 padding=padding,
                 dilation=dilation,
@@ -71,7 +71,7 @@ class RepVGGBlock(nn.Module):
             self.rbr_dense = conv_bn(
                 in_channels=in_channels,
                 out_channels=out_channels,
-                kernel_size=kernel_size,
+                kernel_size=ksize,
                 stride=stride,
                 padding=padding,
                 groups=groups)
@@ -319,7 +319,7 @@ class RepVGGYOLOX(nn.Module):
         self.stage0 = RepVGGBlock(
             in_channels=in_channels,
             out_channels=channels_list[0],
-            kernel_size=3,
+            ksize=3,
             stride=2)
         self.stage1 = self._make_stage(channels_list[0], channels_list[1],
                                        num_repeats[1])
@@ -339,7 +339,7 @@ class RepVGGYOLOX(nn.Module):
         blocks = []
         blocks.append(
             RepVGGBlock(
-                in_channels, out_channels, kernel_size=3, stride=stride))
+                in_channels, out_channels, ksize=3, stride=stride))
         for i in range(repeat):
             blocks.append(RepVGGBlock(out_channels, out_channels))
         if add_ppf:
@@ -358,33 +358,3 @@ class RepVGGYOLOX(nn.Module):
         x = self.stage4(x)
         outputs.append(x)
         return tuple(outputs)
-
-
-if __name__ == '__main__':
-
-    from torchsummaryX import summary
-
-    depth_mul = 0.33
-    width_mul = 0.5
-    num_repeat_backbone = [1, 6, 12, 18, 6]
-    channels_list_backbone = [64, 128, 256, 512, 1024]
-    num_repeat_neck = [12, 12, 12, 12]
-    channels_list_neck = [256, 128, 128, 256, 256, 512]
-    channels = 3
-    num_repeat = [(max(round(i * depth_mul), 1) if i > 1 else i)
-                  for i in (num_repeat_backbone + num_repeat_neck)]
-
-    channels_list = [
-        make_divisible(i * width_mul, 8)
-        for i in (channels_list_backbone + channels_list_neck)
-    ]
-    # model = RepVGGYOLOX(in_channels=channels, channels_list=channels_list, num_repeats=num_repeat)
-    model = RepVGGYOLOX(in_channels=channels, depth=depth_mul, width=width_mul)
-    for layer in model.modules():
-        if isinstance(layer, RepVGGBlock):
-            layer.switch_to_deploy()
-
-    model = model.cuda()
-
-    a = torch.randn(1, 3, 640, 640).cuda()
-    summary(model, a)

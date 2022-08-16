@@ -32,6 +32,27 @@ from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
 from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 
 from easycv.utils.setup_env import setup_multi_processes
+import logging
+from easycv.models.backbones.repvgg_yolox_backbone import RepVGGBlock
+
+
+def reparameterize_models(model):
+    """ reparameterize model for inference, especially forf
+            1. rep conv block : merge 3x3 weight 1x1 weights
+        call module switch_to_deploy recursively
+    Args:
+        model: nn.Module
+    """
+    reparameterize_count = 0
+    for layer in model.modules():
+        if isinstance(layer, RepVGGBlock):
+            reparameterize_count += 1
+            layer.switch_to_deploy()
+    logging.info(
+        'export : PAI-export reparameterize_count(RepVGGBlock, ) switch to deploy with {} blocks'
+        .format(reparameterize_count))
+    print('reparam:', reparameterize_count)
+    return model
 
 
 def parse_args():
@@ -184,6 +205,8 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f'use device {device}')
     checkpoint = load_checkpoint(model, args.checkpoint, map_location=device)
+
+    model = reparameterize_models(model)
 
     model.to(device)
     # if args.fuse_conv_bn:

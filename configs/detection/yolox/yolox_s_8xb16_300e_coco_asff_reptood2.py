@@ -7,19 +7,24 @@ model = dict(
     nms_thre=0.65,
     backbone=dict(
         type='YOLOPAFPN',
-        backbone='CSPDarknet',
+        backbone='RepVGGYOLOX',
         model_type='s',  # s m l x tiny nano
-        use_att=None,
+        use_att='ASFF',
+        asff_channel=16,
         neck='yolo'),
     head=dict(
-        type='YOLOXHead',
+        type='TOODHead',
         model_type='s',
         obj_loss_type='BCE',
         reg_loss_type='giou',
-        num_classes=80))
+        num_classes=80,
+        conv_type='repconv',
+        la_down_rate=8,
+        stacked_convs=2
+    ))
 
 # s m l x
-img_scale = (640, 640)
+img_scale = (672, 672)
 random_size = (14, 26)
 scale_ratio = (0.1, 2)
 
@@ -46,6 +51,8 @@ CLASSES = [
 
 # dataset settings
 # data_root = '/apsarapangu/disk2/xinyi.zxy/data/coco/'
+# data_root = '/mnt/data/nas/data/detection/coco/'
+# data_root = '/root/workspace/data/coco/'
 data_root = '/apsara/xinyi.zxy/data/coco/'
 
 img_norm_cfg = dict(

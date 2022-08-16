@@ -14,7 +14,7 @@ from ..registry import LOSSES
 
 @mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
-def iou_loss(pred, target, linear=False, mode='log', eps=1e-6, xyxy=True):
+def iou_loss(pred, target, linear=False, mode='log', eps=1e-6):
     """IoU loss.
 
     Computing the IoU loss between a set of predicted bboxes and target bboxes.
@@ -40,7 +40,7 @@ def iou_loss(pred, target, linear=False, mode='log', eps=1e-6, xyxy=True):
                       'iou_loss is deprecated, please use "mode=`linear`" '
                       'instead.')
     ious = bbox_overlaps(
-        pred, target, is_aligned=True, xyxy=xyxy).clamp(min=eps)
+        pred, target, is_aligned=True).clamp(min=eps)
     if mode == 'linear':
         loss = 1 - ious
     elif mode == 'square':
@@ -54,7 +54,7 @@ def iou_loss(pred, target, linear=False, mode='log', eps=1e-6, xyxy=True):
 
 @mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
-def giou_loss(pred, target, eps=1e-7, xyxy=True):
+def giou_loss(pred, target, eps=1e-7):
     r"""`Generalized Intersection over Union: A Metric and A Loss for Bounding
     Box Regression <https://arxiv.org/abs/1902.09630>`_.
 
@@ -68,7 +68,7 @@ def giou_loss(pred, target, eps=1e-7, xyxy=True):
         Tensor: Loss tensor.
     """
     gious = bbox_overlaps(
-        pred, target, mode='giou', is_aligned=True, eps=eps, xyxy=xyxy)
+        pred, target, mode='giou', is_aligned=True, eps=eps)
     loss = 1 - gious
     return loss
 
@@ -255,7 +255,6 @@ class IoULoss(nn.Module):
                 weight=None,
                 avg_factor=None,
                 reduction_override=None,
-                xyxy=True,
                 **kwargs):
         """Forward function.
 
@@ -292,7 +291,6 @@ class IoULoss(nn.Module):
             eps=self.eps,
             reduction=reduction,
             avg_factor=avg_factor,
-            xyxy=xyxy,
             **kwargs)
         return loss
 
@@ -312,7 +310,6 @@ class GIoULoss(nn.Module):
                 weight=None,
                 avg_factor=None,
                 reduction_override=None,
-                xyxy=True,
                 **kwargs):
         if weight is not None and not torch.any(weight > 0):
             if pred.dim() == weight.dim() + 1:
@@ -334,6 +331,5 @@ class GIoULoss(nn.Module):
             eps=self.eps,
             reduction=reduction,
             avg_factor=avg_factor,
-            xyxy=xyxy,
             **kwargs)
         return loss
