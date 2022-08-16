@@ -31,7 +31,7 @@ class MIXCO(MOCO):
 
         if 'mixUp' in train_preprocess:
             rank, _ = get_dist_info()
-            # np.random.seed(rank + 12)
+            np.random.seed(rank + 12)
             self.mixup = mixUp
             self.lam = None
             train_preprocess.remove('mixUp')

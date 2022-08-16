@@ -184,7 +184,7 @@ class SegSourceBase(object):
         # may be different in each iteration if not specified.
         # See: https://github.com/open-mmlab/mmdetection/issues/5844
         state = np.random.get_state()
-        # np.random.seed(42)
+        np.random.seed(42)
         # random palette
         palette = np.random.randint(0, 255, size=(len(self.CLASSES), 3))
         np.random.set_state(state)

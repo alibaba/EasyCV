@@ -82,7 +82,7 @@
 6. If you want to use MSDeformAttn, you need to compiling CUDA operators
 
     ```shell
-    cd models/detection/detectors/dino/ops
+    cd thirdparty/msdeformattn/
     python setup.py build install
     # unit test (should see all checking is True)
     python test.py

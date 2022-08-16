@@ -22,7 +22,7 @@ except ModuleNotFoundError as e:
     info_string = (
         '\n\nPlease compile MultiScaleDeformableAttention CUDA op with the following commands:\n'
         '\t`cd thirdparty/msdeformattn`\n'
-        '\t`sh make.sh`\n')
+        '\t`python setup.py build install`\n')
     raise ModuleNotFoundError(info_string)
 
 

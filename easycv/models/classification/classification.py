@@ -52,7 +52,7 @@ class Classification(BaseModel):
 
         if 'mixUp' in train_preprocess:
             rank, _ = get_dist_info()
-            # np.random.seed(rank + 12)
+            np.random.seed(rank + 12)
             if not mixup_cfg:
                 num_classes = head.get(
                     'num_classes',
