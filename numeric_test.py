@@ -22,58 +22,34 @@ def timeit_context(name):
     elapsedTime = time.time() - startTime
     print('[{}] finished in {} ms'.format(name, int(elapsedTime * 1000)))
 
+
+def model_speed_test(name, img, use_trt_efficientnms=False):
+    pred = TorchYoloXPredictor(name, use_trt_efficientnms=use_trt_efficientnms)
+    for i in range(10):
+        m0 = pred.predict([img])
+    with timeit_context('{} speed test'.format(name)):
+        for i in range(100):
+            m0 = pred.predict([img]) 
+    print(m0[0]['detection_classes'])
+    print(m0[0]['detection_scores'])
+
+
 if __name__=='__main__':
     if 1:
         img_path = '/apsara/xinyi.zxy/data/coco/val2017/000000254016.jpg'
         from easycv.predictors import TorchYoloXPredictor
         img = Image.open(img_path)
 
-        pred = TorchYoloXPredictor('models/output.pt')
-        m = pred.predict([img])
-        print("fucking m :", m)
-
-        pred0 = TorchYoloXPredictor('models/output_bs1.blade.jit')
-        for i in range(10):
-            m0 = pred0.predict([img])
-        with timeit_context('m0 speed test'):
-            for i in range(100):
-                m0 = pred0.predict([img]) 
-        print("fucking m0:", m0)
+        # model_speed_test('models/output_bs1_e2e_f005.blade.jit', img)
+        model_speed_test('models/output_bs1_e2e_f005_trtnms.blade.blade', img, True)
+        # model_speed_test('models/output_bs1_e2e_noblade.pt', img)
+        # model_speed_test('models/output_bs1_e2e_noblade_trtnms.pt', img)
+        # model_speed_test('models/output_bs1_noe2e_noblade.pt', img)
+        # model_speed_test('models/output_bs1_noe2e_noblade_trtnms.pt', img)
         
-        pred1 = TorchYoloXPredictor('models/output_bs1_e2e.blade.jit')
-        for i in range(10):
-            m1 = pred1.predict([img])
-        with timeit_context('m1 speed test'):
-            for i in range(100):
-                m1 = pred1.predict([img])       
-        print("fucking m1:", m1)
+        # model_speed_test('models/output_bs1_e2e_f005_trtnms.blade.jit', img, True)
+        # model_speed_test('models/output_bs1_noe2e_f030.blade.jit', img, False)
+        # model_speed_test('models/output_bs1_noe2e_f030.blade.jit', img, False)
 
-        # pred2 = TorchYoloXPredictor('models/output_bs1_e2e.blade.jit')
-        # m2 = pred2.predict([img])
-        # print("fucking m2:", m2)
-
-        # pred3 = TorchYoloXPredictor('models/output_bs1_e2e_f005.blade.jit')
-        # m3 = pred3.predict([img])
-        # print("fucking m3:", m3)
-
-        # pred4 = TorchYoloXPredictor('models/output_trtnms.pt')
-        # m4 = pred4.predict([img]) 
-        # print("fucking m4:", m4)
-
-        pred5 = TorchYoloXPredictor(model_path='models/output_bs1_noe2e_f005_trtnms.blade.blade', use_trt_nms=True)
-        # m5 = pred5.predict([img]) 
-        for i in range(10):
-            m5 = pred5.predict([img])
-        with timeit_context('m5 speed test'):
-            for i in range(100):
-                m5 = pred5.predict([img])     
-        print("fucking m5:", m5)
-
-        pred6 = TorchYoloXPredictor(model_path='models/output_bs1_e2e_f005_trtnms.blade.blade', use_trt_nms=True)
-        # m5 = pred5.predict([img]) 
-        for i in range(10):
-            m6 = pred6.predict([img])
-        with timeit_context('m6 speed test'):
-            for i in range(100):
-                m6 = pred5.predict([img])     
-        print("fucking m6:", m6)
+        # model_speed_test('models/output_bs1_e2e_f005_trtnms.blade.jit', img, False)
+        # model_speed_test('models/output_bs1_e2e_f005.blade.jit', img, False)

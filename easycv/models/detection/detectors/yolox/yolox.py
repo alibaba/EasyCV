@@ -11,7 +11,6 @@ from easycv.models.base import BaseModel
 from easycv.models.builder import (MODELS, build_backbone, build_head,
                                    build_neck)
 from easycv.models.detection.utils import postprocess
-from easycv.models.detection.detectors.yolox.postprocess import create_tensorrt_postprocess
 
 
 def init_yolo(M):
@@ -54,7 +53,7 @@ class YOLOX(BaseModel):
     def get_nmsboxes_num(self, img_scale=(640, 640)):
         """ Detection neck or head should provide nms box count information
         """
-        if hasattr(self, neck, None) is not None:
+        if getattr(self, 'neck', None) is not None:
             return self.neck.get_nmsboxes_num(img_scale=(640, 640))
         else:
             return self.head.get_nmsboxes_num(img_scale=(640, 640))
@@ -164,6 +163,7 @@ class YOLOX(BaseModel):
         with torch.no_grad():
             fpn_outs = self.backbone(img)
             outputs = self.head(fpn_outs)
+            
             if self.head.decode_in_inference:
                 if self.use_trt_efficientnms:
                     if self.trt_efficientnms is not None:

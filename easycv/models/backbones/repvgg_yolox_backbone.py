@@ -82,7 +82,7 @@ class RepVGGBlock(nn.Module):
                 stride=stride,
                 padding=padding_11,
                 groups=groups)
-            print('RepVGG Block, identity = ', self.rbr_identity)
+            # print('RepVGG Block, identity = ', self.rbr_identity)
 
     def forward(self, inputs):
         if hasattr(self, 'rbr_reparam'):
