@@ -6,9 +6,9 @@ import torch
 import torch.nn as nn
 
 from easycv.models.builder import HEADS, build_neck
-from easycv.models.detection.utils import (DetrPostProcess, HungarianMatcher,
-                                           SetCriterion, box_xyxy_to_cxcywh,
-                                           inverse_sigmoid)
+from easycv.models.detection.utils import (DetrPostProcess, DNCriterion,
+                                           HungarianMatcher, SetCriterion,
+                                           box_xyxy_to_cxcywh, inverse_sigmoid)
 from easycv.models.utils import MLP
 from .dn_components import dn_post_process, prepare_for_dn
 
@@ -55,8 +55,9 @@ class DABDETRHead(nn.Module):
             matcher=self.matcher,
             weight_dict=weight_dict,
             losses=['labels', 'boxes'],
-            loss_class_type='focal_loss',
-            dn_components=dn_components)
+            loss_class_type='focal_loss')
+        if dn_components is not None:
+            self.dn_criterion = DNCriterion(weight_dict)
         self.postprocess = DetrPostProcess(num_select=num_select)
         self.transformer = build_neck(transformer)
 
@@ -255,7 +256,10 @@ class DABDETRHead(nn.Module):
             attn_mask=attn_mask,
             mask_dict=mask_dict)
 
-        losses = self.criterion(outputs, targets, mask_dict)
+        losses = self.criterion(outputs, targets)
+        losses.update(
+            self.dn_criterion(mask_dict, self.training,
+                              len(outputs['aux_outputs'])))
 
         return losses
 

@@ -8,9 +8,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from easycv.models.builder import HEADS, build_neck
-from easycv.models.detection.utils import (DetrPostProcess, HungarianMatcher,
-                                           SetCriterion, box_xyxy_to_cxcywh,
-                                           inverse_sigmoid)
+from easycv.models.detection.utils import (CDNCriterion, DetrPostProcess,
+                                           HungarianMatcher, SetCriterion,
+                                           box_xyxy_to_cxcywh, inverse_sigmoid)
 from easycv.models.utils import MLP
 from ..dab_detr.dab_detr_transformer import PositionEmbeddingSineHW
 from .cdn_components import cdn_post_process, prepare_for_cdn
@@ -81,6 +81,8 @@ class DINOHead(nn.Module):
             losses=['labels', 'boxes'],
             loss_class_type='focal_loss',
             dn_components=dn_components['dn_type'])
+        if dn_components is not None:
+            self.dn_criterion = CDNCriterion(weight_dict)
         self.postprocess = DetrPostProcess(num_select=num_select)
         self.transformer = build_neck(transformer)
 
@@ -429,7 +431,9 @@ class DINOHead(nn.Module):
             attn_mask=attn_mask,
             dn_meta=dn_meta)
 
-        losses = self.criterion(outputs, targets, dn_meta)
+        losses = self.criterion(outputs, targets)
+        losses.update(
+            self.dn_criterion(outputs, targets, len(outputs['aux_outputs'])))
 
         return losses
 

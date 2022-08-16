@@ -66,7 +66,6 @@ model = dict(
             embed_init_tgt=True,
             use_detached_boxes_dec_out=False),
         dn_components=dict(
-            dn_type='cdn',
             dn_number=100,
             dn_label_noise_ratio=0.5,  # paper 0.5, release code 0.25
             dn_box_noise_scale=1.0,

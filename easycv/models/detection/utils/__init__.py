@@ -9,4 +9,4 @@ from .misc import (DetrPostProcess, accuracy, filter_scores_and_topk,
                    gen_encoder_output_proposals, gen_sineembed_for_position,
                    interpolate, inverse_sigmoid, output_postprocess,
                    select_single_mlvl)
-from .set_criterion import SetCriterion
+from .set_criterion import CDNCriterion, DNCriterion, SetCriterion

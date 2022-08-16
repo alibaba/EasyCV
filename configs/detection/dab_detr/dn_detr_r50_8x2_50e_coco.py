@@ -4,5 +4,4 @@ _base_ = './dab_detr_r50_8x2_50e_coco.py'
 model = dict(
     head=dict(
         dn_components=dict(
-            dn_type='dn', scalar=5, label_noise_scale=0.2,
-            box_noise_scale=0.4)))
+            scalar=5, label_noise_scale=0.2, box_noise_scale=0.4)))
