@@ -58,6 +58,7 @@ Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We
 * [object detection with yolox](docs/source/tutorials/yolox.md)
 * [model compression with yolox](docs/source/tutorials/compression.md)
 * [metric learning](docs/source/tutorials/metric_learning.md)
+* [torchacc](https://github.com/alibaba/EasyCV/blob/master/docs/source/tutorials/torchacc.md)
 
 notebook
 * [self-supervised learning](docs/source/tutorials/EasyCV图像自监督训练-MAE.ipynb)
@@ -82,6 +83,14 @@ EasyCV have collected dataset info for different senarios, making it easy for us
 Please refer to [data_hub.md](https://github.com/alibaba/EasyCV/blob/master/docs/source/data_hub.md).
 
 ## ChangeLog
+
+* 28/07/2022 EasyCV v0.5.0 was released.
+    * Self-Supervised support ConvMAE algorithm
+    * Classification support EfficientFormer algorithm
+    * Detection support FCOS、DETR、DAB-DETR and DN-DETR algorithm
+    * Segmentation support UperNet algorithm
+    * Support use [torchacc](https://github.com/alibaba/EasyCV/blob/master/docs/source/tutorials/torchacc.md) to speed up training
+    * Support use analyze tools
 
 * 23/06/2022 EasyCV v0.4.0 was released.
     * Add semantic segmentation modules, support FCN algorithm

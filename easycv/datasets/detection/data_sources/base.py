@@ -81,7 +81,7 @@ class DetSourceBase(object):
         )
         self.samples_list = self.build_samples(
             source_iter, process_fn=process_fn)
-        self.num_samples = self.get_length()
+        self.num_samples = len(self.samples_list)
         # An error will be raised if failed to load _max_retry_num times in a row
         self._max_retry_num = self.num_samples
         self._retry_count = 0
@@ -106,11 +106,8 @@ class DetSourceBase(object):
 
         return samples_list
 
-    def get_length(self):
-        return len(self.samples_list)
-
     def __len__(self):
-        return self.get_length()
+        return len(self.samples_list)
 
     def get_ann_info(self, idx):
         """
@@ -146,6 +143,10 @@ class DetSourceBase(object):
         result_dict = self.samples_list[idx]
         load_success = True
         try:
+            # avoid data cache from taking up too much memory
+            if not self.cache_at_init and not self.cache_on_the_fly:
+                result_dict = copy.deepcopy(result_dict)
+
             if not self.cache_at_init and result_dict.get('img', None) is None:
                 result_dict.update(_load_image(result_dict['filename']))
                 if self.cache_on_the_fly:

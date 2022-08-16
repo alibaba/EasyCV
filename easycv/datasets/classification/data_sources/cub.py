@@ -132,7 +132,7 @@ class ClsSourceCUB(object):
             data_infos.append(info)
         return data_infos
 
-    def get_length(self):
+    def __len__(self):
         return len(self.data_infos)
 
     def get_sample(self, idx):

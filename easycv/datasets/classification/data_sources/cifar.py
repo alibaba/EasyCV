@@ -19,7 +19,7 @@ class ClsSourceCifar10(object):
             root=root, train=(split == 'train'), download=False)
         self.labels = self.cifar.targets
 
-    def get_length(self):
+    def __len__(self):
         return len(self.cifar)
 
     def get_sample(self, idx):
@@ -42,7 +42,7 @@ class ClsSourceCifar100(object):
 
         self.labels = self.cifar.targets
 
-    def get_length(self):
+    def __len__(self):
         return len(self.cifar)
 
     def get_sample(self, idx):

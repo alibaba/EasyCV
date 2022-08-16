@@ -19,8 +19,9 @@ class DetSourceVOCTest(unittest.TestCase):
                 os.path.join(data_root, 'ImageSets/Main/*.cache')):
             io.remove(cache_file)
 
-    def _base_test(self, data_source):
+    def _base_test(self, data_source, cache_at_init, cache_on_the_fly):
         index_list = random.choices(list(range(20)), k=3)
+        exclude_list = [i for i in range(20) if i not in index_list]
         for idx in index_list:
             data = data_source.get_sample(idx)
             self.assertIn('img_shape', data)
@@ -33,7 +34,21 @@ class DetSourceVOCTest(unittest.TestCase):
             self.assertGreaterEqual(len(data['gt_labels']), 1)
             self.assertEqual(data['img'].shape[-1], 3)
 
-        length = data_source.get_length()
+        if cache_at_init:
+            for i in range(20):
+                self.assertIn('img', data_source.samples_list[i])
+
+        if not cache_at_init and cache_on_the_fly:
+            for i in index_list:
+                self.assertIn('img', data_source.samples_list[i])
+            for j in exclude_list:
+                self.assertNotIn('img', data_source.samples_list[j])
+
+        if not cache_at_init and not cache_on_the_fly:
+            for i in range(20):
+                self.assertNotIn('img', data_source.samples_list[i])
+
+        length = len(data_source)
         self.assertEqual(length, 20)
 
         exists = False
@@ -56,39 +71,52 @@ class DetSourceVOCTest(unittest.TestCase):
 
     def test_default(self):
         data_root = DET_DATA_SMALL_VOC_LOCAL
+        cache_at_init = False
+        cache_on_the_fly = False
         data_source = DetSourceVOC(
             path=os.path.join(data_root, 'ImageSets/Main/train_20.txt'),
-            classes=VOC_CLASSES)
-        self._base_test(data_source)
+            classes=VOC_CLASSES,
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly)
+        self._base_test(data_source, cache_at_init, cache_on_the_fly)
 
     def test_cache_on_the_fly(self):
         data_root = DET_DATA_SMALL_VOC_LOCAL
+        cache_at_init = True
+        cache_on_the_fly = False
         data_source = DetSourceVOC(
             path=os.path.join(data_root, 'ImageSets/Main/train_20.txt'),
             classes=VOC_CLASSES,
-            cache_at_init=True,
-            cache_on_the_fly=False)
-        self._base_test(data_source)
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly)
+        self._base_test(
+            data_source,
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly)
 
     def test_cache_at_init(self):
         data_root = DET_DATA_SMALL_VOC_LOCAL
+        cache_at_init = False
+        cache_on_the_fly = True
         data_source = DetSourceVOC(
             path=os.path.join(data_root, 'ImageSets/Main/train_20.txt'),
             classes=VOC_CLASSES,
-            cache_at_init=False,
-            cache_on_the_fly=True)
-        self._base_test(data_source)
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly)
+        self._base_test(data_source, cache_at_init, cache_on_the_fly)
 
     def test_image_root_and_label_root(self):
         data_root = DET_DATA_SMALL_VOC_LOCAL
+        cache_at_init = False
+        cache_on_the_fly = True
         data_source = DetSourceVOC(
             path=os.path.join(data_root, 'ImageSets/Main/train_20.txt'),
             classes=VOC_CLASSES,
             img_root_path=os.path.join(data_root, 'JPEGImages'),
             label_root_path=os.path.join(data_root, 'Annotations'),
-            cache_at_init=False,
-            cache_on_the_fly=True)
-        self._base_test(data_source)
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly)
+        self._base_test(data_source, cache_at_init, cache_on_the_fly)
 
     def test_max_retry_num(self):
         data_root = DET_DATA_SMALL_VOC_LOCAL

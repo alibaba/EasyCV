@@ -15,7 +15,7 @@ class DetSourcePAITest(unittest.TestCase):
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
-    def _test_base(self, data_source):
+    def _test_base(self, data_source, cache_at_init, cache_on_the_fly):
         index_list = random.choices(list(range(20)), k=3)
         for idx in index_list:
             data = data_source.get_sample(idx)
@@ -28,14 +28,21 @@ class DetSourcePAITest(unittest.TestCase):
             self.assertEqual(data['img'].shape[-1], 3)
 
         exclude_idx = [i for i in list(range(20)) if i not in index_list]
-        for i in range(3):
-            if data_source.cache_at_init:
-                self.assertIn('img', data_source.samples_list[exclude_idx[i]])
-            if data_source.cache_on_the_fly:
-                self.assertNotIn('img',
-                                 data_source.samples_list[exclude_idx[i]])
+        if cache_at_init:
+            for i in range(20):
+                self.assertIn('img', data_source.samples_list[i])
 
-        length = data_source.get_length()
+        if not cache_at_init and cache_on_the_fly:
+            for i in index_list:
+                self.assertIn('img', data_source.samples_list[i])
+            for j in exclude_idx:
+                self.assertNotIn('img', data_source.samples_list[j])
+
+        if not cache_at_init and not cache_on_the_fly:
+            for i in range(20):
+                self.assertNotIn('img', data_source.samples_list[i])
+
+        length = len(data_source)
         self.assertEqual(length, 20)
 
         exists = False
@@ -85,37 +92,41 @@ class DetSourcePAITest(unittest.TestCase):
     def test_default(self):
         io.access_oss()
         data_root = DET_DATA_MANIFEST_OSS
-
+        cache_at_init = False
+        cache_on_the_fly = False
         data_source = DetSourcePAI(
             path=os.path.join(data_root, 'train2017_20.manifest'),
             classes=COCO_CLASSES,
-        )
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly)
 
-        self._test_base(data_source)
+        self._test_base(data_source, cache_at_init, cache_on_the_fly)
 
     def test_cache_on_the_fly(self):
         io.access_oss()
         data_root = DET_DATA_MANIFEST_OSS
-
+        cache_on_the_fly = True
+        cache_at_init = False
         data_source = DetSourcePAI(
             path=os.path.join(data_root, 'train2017_20.manifest'),
             classes=COCO_CLASSES,
-            cache_at_init=False,
-            cache_on_the_fly=True)
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly)
 
-        self._test_base(data_source)
+        self._test_base(data_source, cache_at_init, cache_on_the_fly)
 
     def test_cache_at_init(self):
         io.access_oss()
         data_root = DET_DATA_MANIFEST_OSS
-
+        cache_on_the_fly = False
+        cache_at_init = True
         data_source = DetSourcePAI(
             path=os.path.join(data_root, 'train2017_20.manifest'),
             classes=COCO_CLASSES,
-            cache_on_the_fly=False,
-            cache_at_init=True)
+            cache_on_the_fly=cache_on_the_fly,
+            cache_at_init=cache_at_init)
 
-        self._test_base(data_source)
+        self._test_base(data_source, cache_at_init, cache_on_the_fly)
 
 
 if __name__ == '__main__':

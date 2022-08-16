@@ -88,3 +88,14 @@ val_dataset = dict(
 
 data = dict(
     imgs_per_gpu=2, workers_per_gpu=2, train=train_dataset, val=val_dataset)
+
+# evaluation
+eval_config = dict(interval=1, gpu_collect=False)
+eval_pipelines = [
+    dict(
+        mode='test',
+        evaluators=[
+            dict(type='CocoDetectionEvaluator', classes=CLASSES),
+        ],
+    )
+]
