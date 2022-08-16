@@ -2,6 +2,7 @@
 import copy
 import json
 import logging
+import cv2
 from collections import OrderedDict
 from distutils.version import LooseVersion
 from typing import Callable, Dict, List, Optional, Tuple
@@ -18,7 +19,7 @@ from easycv.utils.bbox_util import scale_coords
 from easycv.utils.checkpoint import load_checkpoint
 
 __all__ = [
-    'export', 'PreProcess', 'DetPostProcess', 'End2endModelExportWrapper'
+    'export', 'PreProcess', 'DetPostProcess', 'End2endModelExportWrapper', 'reparameterize_models'
 ]
 
 
@@ -34,12 +35,10 @@ def reparameterize_models(model):
         if isinstance(layer, RepVGGBlock):
             reparameterize_count += 1
             layer.switch_to_deploy()
-    logging.info(
+    logging.warning(
         'export : PAI-export reparameterize_count(RepVGGBlock, ) switch to deploy with {} blocks'
         .format(reparameterize_count))
-    print('reparam:', reparameterize_count)
     return model
-
 
 def export(cfg, ckpt_path, filename):
     """ export model for inference
@@ -54,8 +53,7 @@ def export(cfg, ckpt_path, filename):
         load_checkpoint(model, ckpt_path, map_location='cpu')
     else:
         cfg.model.backbone.pretrained = False
-    model = reparameterize_models(model)
-
+    
     if isinstance(model, MOCO) or isinstance(model, DINO):
         _export_moco(model, cfg, filename)
     elif isinstance(model, MoBY):
@@ -71,7 +69,6 @@ def export(cfg, ckpt_path, filename):
         return
     else:
         _export_common(model, cfg, filename)
-
 
 def _export_common(model, cfg, filename):
     """ export model, add cfg dict to checkpoint['meta']['config'] without process
@@ -181,11 +178,11 @@ def _export_yolox(model, cfg, filename):
 
     if hasattr(cfg, 'export') and (getattr(cfg.export, 'use_jit', False) or
                                    getattr(cfg.export, 'export_blade', False)):
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+        # only when we use jit or blade, we need to reparameterize_models before export        
+        model = reparameterize_models(model)
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
         model = copy.deepcopy(model)
-        model.eval()
-        model.to(device)
 
         end2end = cfg.export.get('end2end', False)
         if LooseVersion(torch.__version__) < LooseVersion('1.7.0') and end2end:
@@ -193,6 +190,10 @@ def _export_yolox(model, cfg, filename):
 
         batch_size = cfg.export.get('batch_size', 1)
         static_opt = cfg.export.get('static_opt', True)
+        use_blade = getattr(cfg.export, 'export_blade', False)
+        use_trt_efficientnms = cfg.export.get('use_trt_efficientnms', False)
+        
+        # assert image scale and assgin input
         img_scale = cfg.get('img_scale', (640, 640))
 
         assert (
@@ -200,14 +201,53 @@ def _export_yolox(model, cfg, filename):
         ), 'Export YoloX predictor config contains img_scale must be (int, int) tuple!'
 
         input = 255 * torch.rand((batch_size, 3) + img_scale)
+        print(input.dtype)
+
+        # assert use_trt_efficientnms only happens when static_opt=True
+        if static_opt is not True:
+            assert (
+                use_trt_efficientnms == False
+            ), 'Export YoloX predictor use_trt_efficientnms=True only when use static_opt=True!'
+
+        # ignore DetPostProcess when use_trt_efficientnms 
+        preprocess_fn = None
+        postprocess_fn = None
+        if end2end:
+            preprocess_fn = PreProcess(target_size=img_scale, keep_ratio=True)
+            postprocess_fn= DetPostProcess(max_det=100, score_thresh=0.5)
+            # use_trt_efficientnms = detection.boxes.postprocess + DetPostProcess
+            if use_trt_efficientnms:
+                logging.warning('PAI-YOLOX: use_trt_efficientnms=True during export, we drop DetPostProcess, because trt_efficientnms = detection.boxes.postprocess + DetPostProcess!')
+                postprocess_fn = None
+            
+            if use_blade:
+                logging.warning('PAI-YOLOX: End2endModelExportWrapper with preprocess_fn can\'t optimize by blade !')
+                preprocess_fn = None
+
+
+        # set model use_trt_efficientnms
+        if use_trt_efficientnms:
+            from easycv.toolkit.blade import create_tensorrt_efficientnms
+            if hasattr(model, 'get_nmsboxes_num'):
+                nmsbox_num = int(model.get_nmsboxes_num(img_scale))
+            else:
+                logging.warning('PAI-YOLOX: use_trt_efficientnms encounter model has no attr named get_nmsboxes_num, use 8400 as default!')
+                nmsbox_num = 8400
+
+            tmp_example_scores = torch.randn([batch_size, nmsbox_num, 4 + 1 + len(cfg.CLASSES)],
+                                    dtype=torch.float32)
+            logging.warning('PAI-YOLOX: use_trt_efficientnms with staic shape [{}, {}, {}]'.format(batch_size, nmsbox_num, 4 + 1 + len(cfg.CLASSES)))
+            model.trt_efficientnms = create_tensorrt_efficientnms(tmp_example_scores, iou_thres=model.nms_thre, score_thres=model.test_conf)
+            model.use_trt_efficientnms = True
+
+        model.eval()
+        model.to(device)
 
         model_export = End2endModelExportWrapper(
             model,
             input.to(device),
-            preprocess_fn=PreProcess(target_size=img_scale, keep_ratio=True)
-            if end2end else None,
-            postprocess_fn=DetPostProcess(max_det=100, score_thresh=0.5)
-            if end2end else None,
+            preprocess_fn=preprocess_fn,
+            postprocess_fn=postprocess_fn,
             trace_model=True,
         )
 
@@ -223,22 +263,29 @@ def _export_yolox(model, cfg, filename):
         if getattr(cfg.export, 'export_blade', False):
             blade_config = cfg.export.get(
                 'blade_config',
-                dict(enable_fp16=True, fp16_fallback_op_ratio=0.05))
+                dict(enable_fp16=True, 
+                fp16_fallback_op_ratio=0.3))
 
             from easycv.toolkit.blade import blade_env_assert, blade_optimize
-
             assert blade_env_assert()
 
-            if end2end:
-                # input [b,h,w,c]
-                input = 255 * torch.rand((batch_size, ) + img_scale + (3, ))
-
+            # if end2end:
+            #     input = 255 * torch.rand((batch_size,) + img_scale + (3,))
+            
             yolox_blade = blade_optimize(
-                script_model=model,
+                speed_test_model=model,
                 model=yolox_trace,
-                inputs=(input.to(device), ),
+                inputs=(input.to(device),),
                 blade_config=blade_config,
                 static_opt=static_opt)
+            
+            tpre_input = 255 * torch.rand((batch_size,) + img_scale + (3,))
+            tpre = PreprocessExportWrapper(example_inputs=tpre_input.to(device),
+                preprocess_fn=PreProcess(target_size=img_scale, keep_ratio=True))
+            tpre.eval().to(device)
+            preprocess = torch.jit.script(tpre)
+            with io.open(filename + '.preprocess', 'wb') as prefile:
+                torch.jit.save(preprocess, prefile)
 
             with io.open(filename + '.blade', 'wb') as ofile:
                 torch.jit.save(yolox_blade, ofile)
@@ -512,7 +559,6 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
                 image (torch.Tensor): image format should be [b, H, W, C]
             """
             input_h, input_w = self.target_size
-            print('img.shape', image.shape)
             image = image.permute(0, 3, 1, 2)
 
             # rgb2bgr
@@ -552,6 +598,9 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
                 'ori_img_shape': (float(ori_h), float(ori_w)),
                 'img_shape': (float(h), float(w))
             }
+
+            # print('outimg.shape ', out_image.shape)
+
             return out_image, output_info
 
     @torch.jit.script
@@ -671,10 +720,7 @@ class End2endModelExportWrapper(torch.nn.Module):
         self.example_inputs = example_inputs
         self.preprocess_fn = preprocess_fn
         self.postprocess_fn = postprocess_fn
-
-        if postprocess_fn == None:
-            self.model.head.decode_in_inference = False
-
+        print("fucking!!!! : ", self.preprocess_fn , self.postprocess_fn)
         self.trace_model = trace_model
         if self.trace_model:
             self.trace_module()
@@ -689,7 +735,7 @@ class End2endModelExportWrapper(torch.nn.Module):
 
         with torch.no_grad():
             if self.preprocess_fn is not None:
-                print('before', image.shape)
+                # print('before', image.shape)
                 output = self.preprocess_fn(image)
                 # if multi values ​​are returned, the first one must be image, others ​​are optional,
                 # and others will all be passed into postprocess_fn
@@ -705,3 +751,21 @@ class End2endModelExportWrapper(torch.nn.Module):
                                                    *preprocess_outputs)
 
         return model_output
+
+
+class PreprocessExportWrapper(torch.nn.Module):
+    def __init__(self,
+                 example_inputs,
+                 preprocess_fn: Optional[Callable] = None) -> None:
+        super().__init__()
+        self.preprocess_fn = preprocess_fn
+
+    def forward(self, image):
+        with torch.no_grad():
+            output = self.preprocess_fn(image)
+            if isinstance(output, tuple):
+                image = output[0]
+                preprocess_outputs = output[1:]
+            else:
+                image = output
+        return image

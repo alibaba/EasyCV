@@ -237,7 +237,7 @@ def check_results(results0, results1):
         logging.error(err)
 
 
-def blade_optimize(script_model,
+def blade_optimize(speed_test_model,
                    model,
                    inputs,
                    blade_config=dict(
@@ -270,16 +270,24 @@ def blade_optimize(script_model,
                 model_inputs=tuple(inputs),
             )
 
+
     if compute_cost:
         results = []
-
         inputs_t = inputs
-        if (inputs_t[0].shape[2] == 3):
-            inputs_t = inputs_t[0].permute(2, 0, 1)
-            inputs_t = (torch.unsqueeze(inputs_t, 0), )
+
+        # end2end model and scripts needs different channel purmulate, encounter this problem only when we use end2end export
+        if (inputs_t[0].shape[-1] == 3):
+            shape_length = len(inputs_t[0].shape)
+            if shape_length == 4:
+                inputs_t = inputs_t[0].permute(0, 3, 1, 2)
+                inputs_t = [inputs_t]
+
+            if shape_length == 3:
+                inputs_t = inputs_t[0].permute(2, 0, 1)
+                inputs_t = (torch.unsqueeze(inputs_t, 0), )
 
         results.append(
-            benchmark(script_model, inputs_t, backend, batch, 'easycv'))
+            benchmark(speed_test_model, inputs_t, backend, batch, 'easycv'))
         results.append(
             benchmark(model, inputs, backend, batch, 'easycv script'))
         results.append(benchmark(opt_model, inputs, backend, batch, 'blade'))
@@ -288,8 +296,8 @@ def blade_optimize(script_model,
         summary = pd.DataFrame(results)
         logging.warning(summary.to_markdown())
 
-    print(opt_model.forward.code)
-    print(opt_model.forward.graph)
+    # print(opt_model.forward.code)
+    # print(opt_model.forward.graph)
     torch.cuda.empty_cache()
     # warm-up
     for k in range(warm_up_time):

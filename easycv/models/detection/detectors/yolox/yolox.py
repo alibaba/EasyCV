@@ -47,6 +47,16 @@ class YOLOX(BaseModel):
         self.num_classes = self.head.num_classes
         self.test_conf = test_conf
         self.nms_thre = nms_thre
+        self.use_trt_efficientnms = False  # TRT NMS only will be convert during export 
+        self.trt_efficientnms = None
+
+    def get_nmsboxes_num(self, img_scale=(640, 640)):
+        """ Detection neck or head should provide nms box count information
+        """
+        if getattr(self, 'neck', None) is not None:
+            return self.neck.get_nmsboxes_num(img_scale=(640, 640))
+        else:
+            return self.head.get_nmsboxes_num(img_scale=(640, 640))
 
     def forward_train(self,
                       img: Tensor,
@@ -100,10 +110,8 @@ class YOLOX(BaseModel):
         with torch.no_grad():
             fpn_outs = self.backbone(img)
             outputs = self.head(fpn_outs)
-
             outputs = postprocess(outputs, self.num_classes, self.test_conf,
                                   self.nms_thre)
-
             detection_boxes = []
             detection_scores = []
             detection_classes = []
@@ -155,9 +163,15 @@ class YOLOX(BaseModel):
         with torch.no_grad():
             fpn_outs = self.backbone(img)
             outputs = self.head(fpn_outs)
-
+            
             if self.head.decode_in_inference:
-                outputs = postprocess(outputs, self.num_classes,
-                                      self.test_conf, self.nms_thre)
+                if self.use_trt_efficientnms:
+                    if self.trt_efficientnms is not None:
+                        outputs = self.trt_efficientnms.forward(outputs)
+                    else:
+                        logging.error('PAI-YOLOX : using trt_efficientnms set to be True, but model has not attr(trt_efficientnms)')
+                else:
+                    outputs = postprocess(outputs, self.num_classes,
+                                        self.test_conf, self.nms_thre)
 
         return outputs

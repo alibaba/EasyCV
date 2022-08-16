@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from easycv.models.backbones.network_blocks import BaseConv, DWConv
+from easycv.models.backbones.repvgg_yolox_backbone import RepVGGBlock
 from easycv.models.detection.utils import bboxes_iou
 from easycv.models.loss import YOLOX_IOULoss
 from easycv.models.backbones.repvgg_yolox_backbone import RepVGGBlock
@@ -87,35 +88,35 @@ class YOLOXHead_Template(nn.Module):
                 ))
             self.cls_convs.append(
                 nn.Sequential(*[
-                    Conv(
+                    RepVGGBlock(
                         in_channels=int(256 * width),
                         out_channels=int(256 * width),
-                        ksize=3,
-                        stride=1,
+                        # ksize=3,
+                        # stride=1,
                         act=act,
                     ),
-                    Conv(
+                    RepVGGBlock(
                         in_channels=int(256 * width),
                         out_channels=int(256 * width),
-                        ksize=3,
-                        stride=1,
+                        # ksize=3,
+                        # stride=1,
                         act=act,
                     ),
                 ]))
             self.reg_convs.append(
                 nn.Sequential(*[
-                    Conv(
+                    RepVGGBlock(
                         in_channels=int(256 * width),
                         out_channels=int(256 * width),
-                        ksize=3,
-                        stride=1,
+                        # ksize=3,
+                        # stride=1,
                         act=act,
                     ),
-                    Conv(
+                    RepVGGBlock(
                         in_channels=int(256 * width),
                         out_channels=int(256 * width),
-                        ksize=3,
-                        stride=1,
+                        # ksize=3,
+                        # stride=1,
                         act=act,
                     ),
                 ]))
@@ -171,6 +172,18 @@ class YOLOXHead_Template(nn.Module):
             b = conv.bias.view(self.n_anchors, -1)
             b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
             conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
+
+    def get_nmsboxes_num(self, img_scale=(640, 640)):
+        """ Count all Yolox NMS box with img_scale and head stride config
+        """
+        assert (
+            len(img_scale) == 2
+        ), 'Export YoloX predictor config contains img_scale must be (int, int) tuple!'
+
+        total_box_count = 0
+        for stride in self.strides:
+            total_box_count+= (img_scale[0] / stride) * (img_scale[1] / stride)
+        return total_box_count
 
     @abstractmethod
     def forward(self, xin, labels=None, imgs=None):

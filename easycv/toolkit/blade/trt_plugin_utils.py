@@ -1,4 +1,9 @@
-# !!!ignore it for cr, we are still work for tensorrt nms problem
+# This is a TensorRT Plugin Python Wrapper Link implementation, original plugin documents refers to
+# https://github.com/NVIDIA/TensorRT/tree/main/plugin/
+# We use python wrapper to build ONNX-TRTPlugin Engine and then wrapper as a jit script module, after this, 
+# we could replace some original model's OP with this plugin during Blade Export to speed up those are not 
+# well optimized by original Blade
+# Here we provide a TRTPlugin-EfficientNMS implementation 
 
 import torch
 from torch import nn
@@ -85,9 +90,12 @@ class ONNX_TRT8(nn.Module):
             self.score_activation, self.score_threshold)
         return num_det, det_boxes, det_scores, det_classes
 
-def create_tensorrt_postprocess(example_scores,
+def create_tensorrt_efficientnms(example_scores,
                                 iou_thres=0.45,
                                 score_thres=0.25):
+    """
+    
+    """
     from torch_blade import tensorrt
     import torch_blade._torch_blade._backends as backends
     import io
