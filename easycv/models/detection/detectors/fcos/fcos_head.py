@@ -796,9 +796,6 @@ class FCOSHead(nn.Module):
                 Default: False.
             with_nms (bool): If True, do nms before return boxes.
                 Default: True.
-            mlvl_score_factors (list[Tensor], optional): Score factor from
-                all scale levels of a single image, each item has shape
-                (num_bboxes, ). Default: None.
         Returns:
             tuple[Tensor]: Results of detected bboxes and labels. If with_nms
                 is False and mlvl_score_factor is None, return mlvl_bboxes and
