@@ -51,33 +51,6 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 ## 快速开始
 
-为了在给定的输入图像上立即使用模型，我们提供了Predictor API。预测器将预先训练的模型与该模型训练期间使用的预处理组合在一起。例如，我们可以很容易地提取图像中的检测对象:
-
-``` python
->>> from easycv.predictors.detector import DetectionPredictor
-
-# 指定文件路径
->>> model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/detr/epoch_150.pth'
->>> config_path = 'configs/detection/detr/detr_r50_8x2_150e_coco.py'
->>> img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-
-# 使用目标检测的predictor得到输出结果
->>> detr = DetectionPredictor(model_path, config_path)
->>> output = detr.predict(img)
->>> detr.visualize(img, output, out_file='./result.jpg')
-output['detection_scores'][0][:2] = [0.07836595922708511, 0.219977006316185]
-output['detection_classes'][0][:2] = [2, 0]
-output['detection_boxes'][0][:2] = [[131.10389709472656, 90.93302154541016, 148.95504760742188,101.69216918945312],
-                                    [239.10910034179688, 113.36551666259766,256.0523376464844, 125.22894287109375]]
-
-```
-
-在这里，我们得到了在图像中检测到的对象列表，对象周围有一个框和一个置信度得分。下面是预测结果:
-
-
-![result](docs/source/_static/result.jpg)
-
-
 请参考[快速开始教程](docs/source/quick_start.md) 快速开始。我们也提供了更多的教程方便你的学习和使用。
 
 * [自监督学习教程](docs/source/tutorials/ssl.md)
