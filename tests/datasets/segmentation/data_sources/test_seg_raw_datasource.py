@@ -18,7 +18,7 @@ class SegSourceRawTest(unittest.TestCase):
     def _base_test(self, data_source, cache_at_init, cache_on_the_fly):
         index_list = random.choices(list(range(20)), k=3)
         for idx in index_list:
-            data = data_source.get_sample(idx)
+            data = data_source[idx]
             self.assertIn('filename', data)
             self.assertIn('seg_filename', data)
             self.assertEqual(data['img_fields'], ['img'])
@@ -54,7 +54,7 @@ class SegSourceRawTest(unittest.TestCase):
 
         exists = False
         for idx in range(length):
-            result = data_source.get_sample(idx)
+            result = data_source[idx]
             file_name = result.get('filename', '')
             if file_name.endswith('001185.jpg'):
                 exists = True

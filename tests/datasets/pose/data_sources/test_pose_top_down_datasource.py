@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 from tests.ut_config import POSE_DATA_SMALL_COCO_LOCAL
 
-from easycv.datasets.pose.data_sources.coco import PoseTopDownSourceCoco
+from easycv.datasets.pose.data_sources.top_down import PoseTopDownSource
 
 _DATA_CFG = dict(
     image_size=[288, 384],
@@ -22,20 +22,22 @@ _DATA_CFG = dict(
     det_bbox_thr=0.0)
 
 
-class PoseTopDownSourceCocoTest(unittest.TestCase):
+class PoseTopDownSourceTest(unittest.TestCase):
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
-    def test_top_down_source_coco(self):
-        data_source = PoseTopDownSourceCoco(
-            data_cfg=_DATA_CFG,
+    def test_top_down_source(self):
+        data_source = PoseTopDownSource(
             ann_file=f'{POSE_DATA_SMALL_COCO_LOCAL}/train_200.json',
-            img_prefix=f'{POSE_DATA_SMALL_COCO_LOCAL}/images/')
+            img_prefix=f'{POSE_DATA_SMALL_COCO_LOCAL}/images/',
+            data_cfg=_DATA_CFG,
+            dataset_info=
+            f'{POSE_DATA_SMALL_COCO_LOCAL}/pose_person_dataset_info.py')
 
         index_list = random.choices(list(range(20)), k=3)
         for idx in index_list:
-            data = data_source.get_sample(idx)
+            data = data_source[idx]
             self.assertIn('image_file', data)
             self.assertIn('image_id', data)
             self.assertIn('bbox_score', data)

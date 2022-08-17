@@ -34,7 +34,7 @@ class MultiViewDataset(BaseDataset):
             self.transforms_list.extend([pipelines_list[i]] * num_views[i])
 
     def __getitem__(self, idx):
-        results = self.data_source.get_sample(idx)
+        results = self.data_source[idx]
 
         img = results['img']
         assert isinstance(img, Image.Image), \

@@ -24,7 +24,7 @@ class ImageNpyTest(unittest.TestCase):
 
         index_list = random.choices(list(range(100)), k=3)
         for idx in index_list:
-            results = data_source.get_sample(idx)
+            results = data_source[idx]
             img = results['img']
             label = results['gt_labels']
             self.assertEqual(img.mode, 'RGB')
@@ -46,7 +46,7 @@ class ImageNpyTest(unittest.TestCase):
 
         index_list = random.choices(list(range(100)), k=3)
         for idx in index_list:
-            results = data_source.get_sample(idx)
+            results = data_source[idx]
             img = results['img']
             label = results['gt_labels']
             self.assertEqual(img.mode, 'RGB')

@@ -21,7 +21,7 @@ class ClsDataset(BaseDataset):
         super(ClsDataset, self).__init__(data_source, pipeline)
 
     def __getitem__(self, idx):
-        results = self.data_source.get_sample(idx)
+        results = self.data_source[idx]
         img = results['img']
         gt_labels = results['gt_labels']
         if isinstance(img, list):
