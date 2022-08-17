@@ -47,7 +47,7 @@ class YOLOX(BaseModel):
         self.num_classes = self.head.num_classes
         self.test_conf = test_conf
         self.nms_thre = nms_thre
-        self.use_trt_efficientnms = False  # TRT NMS only will be convert during export 
+        self.use_trt_efficientnms = False  # TRT NMS only will be convert during export
         self.trt_efficientnms = None
 
     def get_nmsboxes_num(self, img_scale=(640, 640)):
@@ -163,15 +163,17 @@ class YOLOX(BaseModel):
         with torch.no_grad():
             fpn_outs = self.backbone(img)
             outputs = self.head(fpn_outs)
-            
+
             if self.head.decode_in_inference:
                 if self.use_trt_efficientnms:
                     if self.trt_efficientnms is not None:
                         outputs = self.trt_efficientnms.forward(outputs)
                     else:
-                        logging.error('PAI-YOLOX : using trt_efficientnms set to be True, but model has not attr(trt_efficientnms)')
+                        logging.error(
+                            'PAI-YOLOX : using trt_efficientnms set to be True, but model has not attr(trt_efficientnms)'
+                        )
                 else:
                     outputs = postprocess(outputs, self.num_classes,
-                                        self.test_conf, self.nms_thre)
+                                          self.test_conf, self.nms_thre)
 
         return outputs

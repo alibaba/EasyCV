@@ -12,7 +12,6 @@ from easycv.models.backbones.network_blocks import BaseConv, DWConv
 from easycv.models.backbones.repvgg_yolox_backbone import RepVGGBlock
 from easycv.models.detection.utils import bboxes_iou
 from easycv.models.loss import YOLOX_IOULoss
-from easycv.models.backbones.repvgg_yolox_backbone import RepVGGBlock
 
 
 class YOLOXHead_Template(nn.Module):
@@ -63,12 +62,12 @@ class YOLOXHead_Template(nn.Module):
         self.obj_preds = nn.ModuleList()
         self.stems = nn.ModuleList()
 
-
         default_conv_type_list = ['conv', 'dwconv', 'repconv']
 
         if conv_type not in default_conv_type_list:
             logging.warning(
-                'YOLOX-PAI tood head conv_type must in [conv, dwconv, repconv], otherwise we use repconv as default')
+                'YOLOX-PAI tood head conv_type must in [conv, dwconv, repconv], otherwise we use repconv as default'
+            )
             conv_type = 'repconv'
         if conv_type == 'conv':
             Conv = BaseConv
@@ -88,35 +87,35 @@ class YOLOXHead_Template(nn.Module):
                 ))
             self.cls_convs.append(
                 nn.Sequential(*[
-                    RepVGGBlock(
+                    Conv(
                         in_channels=int(256 * width),
                         out_channels=int(256 * width),
-                        # ksize=3,
-                        # stride=1,
+                        ksize=3,
+                        stride=1,
                         act=act,
                     ),
-                    RepVGGBlock(
+                    Conv(
                         in_channels=int(256 * width),
                         out_channels=int(256 * width),
-                        # ksize=3,
-                        # stride=1,
+                        ksize=3,
+                        stride=1,
                         act=act,
                     ),
                 ]))
             self.reg_convs.append(
                 nn.Sequential(*[
-                    RepVGGBlock(
+                    Conv(
                         in_channels=int(256 * width),
                         out_channels=int(256 * width),
-                        # ksize=3,
-                        # stride=1,
+                        ksize=3,
+                        stride=1,
                         act=act,
                     ),
-                    RepVGGBlock(
+                    Conv(
                         in_channels=int(256 * width),
                         out_channels=int(256 * width),
-                        # ksize=3,
-                        # stride=1,
+                        ksize=3,
+                        stride=1,
                         act=act,
                     ),
                 ]))
@@ -182,7 +181,8 @@ class YOLOXHead_Template(nn.Module):
 
         total_box_count = 0
         for stride in self.strides:
-            total_box_count+= (img_scale[0] / stride) * (img_scale[1] / stride)
+            total_box_count += (img_scale[0] / stride) * (
+                img_scale[1] / stride)
         return total_box_count
 
     @abstractmethod

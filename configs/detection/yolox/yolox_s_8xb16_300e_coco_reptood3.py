@@ -17,8 +17,7 @@ model = dict(
         obj_loss_type='BCE',
         reg_loss_type='giou',
         num_classes=80,
-        conv_type='repconv'
-    ))
+        conv_type='repconv'))
 
 # s m l x
 img_scale = (672, 672)

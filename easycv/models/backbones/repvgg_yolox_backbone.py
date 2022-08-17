@@ -338,8 +338,7 @@ class RepVGGYOLOX(nn.Module):
                     add_ppf=False):
         blocks = []
         blocks.append(
-            RepVGGBlock(
-                in_channels, out_channels, ksize=3, stride=stride))
+            RepVGGBlock(in_channels, out_channels, ksize=3, stride=stride))
         for i in range(repeat):
             blocks.append(RepVGGBlock(out_channels, out_channels))
         if add_ppf:

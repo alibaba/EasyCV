@@ -1,12 +1,12 @@
 # conver to new
+import torch
+
+from easycv.models import build_model
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
-import torch
-from easycv.models import build_model
 
-
-if __name__=='__main__':
+if __name__ == '__main__':
     # cfg_path = '/apsara/xinyi.zxy/code/pr154/configs/detection/yolox/yolox_s_8xb16_300e_coco_asff_tood3.py'
     cfg_path = '/apsara/xinyi.zxy/code/pr154/configs/detection/yolox/yolox_s_8xb16_300e_coco_asff_reptood2.py'
     cfg = mmcv_config_fromfile(cfg_path)
@@ -33,52 +33,23 @@ if __name__=='__main__':
     #     of2.writelines(key + '\n')
 
     key_ori = [
-        'backbone.stem',
-        'ERBlock_2.0',
-        'ERBlock_2.1.conv1',
-        'ERBlock_2.1.block.0',
-        'ERBlock_3.0',
-        'ERBlock_3.1.conv1',
-        'ERBlock_3.1.block.0',
-        'ERBlock_3.1.block.1',
-        'ERBlock_3.1.block.2',
-        'ERBlock_4.0',
-        'ERBlock_4.1.conv1',
-        'ERBlock_4.1.block.0',
-        'ERBlock_4.1.block.1',
-        'ERBlock_4.1.block.2',
-        'ERBlock_4.1.block.3',
-        'ERBlock_4.1.block.4',
-        'ERBlock_5.0',
-        'ERBlock_5.1.conv1',
-        'ERBlock_5.1.block.0',
-        'ERBlock_5.2'
+        'backbone.stem', 'ERBlock_2.0', 'ERBlock_2.1.conv1',
+        'ERBlock_2.1.block.0', 'ERBlock_3.0', 'ERBlock_3.1.conv1',
+        'ERBlock_3.1.block.0', 'ERBlock_3.1.block.1', 'ERBlock_3.1.block.2',
+        'ERBlock_4.0', 'ERBlock_4.1.conv1', 'ERBlock_4.1.block.0',
+        'ERBlock_4.1.block.1', 'ERBlock_4.1.block.2', 'ERBlock_4.1.block.3',
+        'ERBlock_4.1.block.4', 'ERBlock_5.0', 'ERBlock_5.1.conv1',
+        'ERBlock_5.1.block.0', 'ERBlock_5.2'
     ]
 
     key_new = [
-        'backbone.stage0',
-        'stage1.0',
-        'stage1.1',
-        'stage1.2',
-        'stage2.0',
-        'stage2.1',
-        'stage2.2',
-        'stage2.3',
-        'stage2.4',
-        'stage3.0',
-        'stage3.1',
-        'stage3.2',
-        'stage3.3',
-        'stage3.4',
-        'stage3.5',
-        'stage3.6',
-        'stage4.0',
-        'stage4.1',
-        'stage4.2',
-        'stage4.3'
+        'backbone.stage0', 'stage1.0', 'stage1.1', 'stage1.2', 'stage2.0',
+        'stage2.1', 'stage2.2', 'stage2.3', 'stage2.4', 'stage3.0', 'stage3.1',
+        'stage3.2', 'stage3.3', 'stage3.4', 'stage3.5', 'stage3.6', 'stage4.0',
+        'stage4.1', 'stage4.2', 'stage4.3'
     ]
 
-    print(len(key_ori)==len(key_new))
+    print(len(key_ori) == len(key_new))
 
     for i, key in enumerate(pretrain_model_state):
         find = False
@@ -87,7 +58,8 @@ if __name__=='__main__':
                 find = True
                 break
         if find:
-            model_state_dict[key.replace(t_k,key_new[t_i])] = pretrain_model_state[key]
+            model_state_dict[key.replace(
+                t_k, key_new[t_i])] = pretrain_model_state[key]
         else:
             model_state_dict[key] = pretrain_model_state[key]
 

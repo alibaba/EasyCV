@@ -39,6 +39,7 @@ def bboxes_iou(bboxes_a, bboxes_b, xyxy=True):
 # refer to easycv/models/detection/detectors/yolox/postprocess.py and test.py to rebuild a torch-blade-trtplugin NMS, which is checked by zhoulou in test.py
 # infer docker images is : registry.cn-shanghai.aliyuncs.com/pai-ai-test/eas-service:easycv_blade_181_export
 
+
 def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
     box_corner = prediction.new(prediction.shape)
     box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
@@ -153,11 +154,7 @@ def generalized_box_iou(boxes1, boxes2):
     return iou - (area - union) / area
 
 
-def bbox_overlaps(bboxes1,
-                  bboxes2,
-                  mode='iou',
-                  is_aligned=False,
-                  eps=1e-6):
+def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     """Calculate overlap between two set of bboxes.
 
     FP16 Contributed by https://github.com/open-mmlab/mmdetection/pull/4889

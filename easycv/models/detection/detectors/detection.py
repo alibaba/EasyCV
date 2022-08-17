@@ -8,6 +8,7 @@ from easycv.utils.logger import get_root_logger, print_log
 
 @MODELS.register_module
 class Detection(BaseModel):
+
     def __init__(self, backbone, head=None, neck=None, pretrained=True):
         super(Detection, self).__init__()
 

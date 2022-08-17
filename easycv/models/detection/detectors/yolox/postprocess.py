@@ -3,6 +3,7 @@
 import torch
 from torch import nn
 
+
 class TRT8_NMS(torch.autograd.Function):
     '''TensorRT NMS operation'''
 
@@ -54,6 +55,7 @@ class TRT8_NMS(torch.autograd.Function):
         nums, boxes, scores, classes = out
         return nums, boxes, scores, classes
 
+
 class ONNX_TRT8(nn.Module):
     '''onnx module with TensorRT NMS operation.'''
 
@@ -84,6 +86,7 @@ class ONNX_TRT8(nn.Module):
             self.iou_threshold, self.max_obj, self.plugin_version,
             self.score_activation, self.score_threshold)
         return num_det, det_boxes, det_scores, det_classes
+
 
 def create_tensorrt_postprocess(example_scores,
                                 iou_thres=0.45,

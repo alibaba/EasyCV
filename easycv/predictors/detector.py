@@ -11,6 +11,7 @@ from mmcv.parallel import collate, scatter
 from torch.hub import load_state_dict_from_url
 from torchvision.transforms import Compose
 
+from easycv.apis.export import reparameterize_models
 from easycv.core.visualization import imshow_bboxes
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.utils import replace_ImageToTensor
@@ -22,7 +23,6 @@ from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
 from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.registry import build_from_cfg
-from easycv.apis.export import reparameterize_models
 from .builder import PREDICTORS
 from .classifier import TorchClassifier
 
@@ -75,7 +75,8 @@ class TorchYoloXPredictor(PredictorInterface):
             'score_thresh'] if 'score_thresh' in model_config else score_thresh
 
         if self.use_jit:
-            preprocess_path = ".".join(model_path.split('.')[:-1] + ['preprocess'])
+            preprocess_path = '.'.join(
+                model_path.split('.')[:-1] + ['preprocess'])
             if os.path.exists(preprocess_path):
                 with io.open(preprocess_path, 'rb') as infile:
                     map_location = 'cpu' if self.device == 'cpu' else 'cuda'
@@ -121,7 +122,7 @@ class TorchYoloXPredictor(PredictorInterface):
             map_location = 'cpu' if self.device == 'cpu' else 'cuda'
             self.ckpt = load_checkpoint(
                 self.model, self.model_path, map_location=map_location)
-            
+
             self.model = reparameterize_models(self.model)
 
             self.model.to(self.device)
@@ -196,10 +197,10 @@ class TorchYoloXPredictor(PredictorInterface):
 
                 if self.use_trt_efficientnms:
                     tmp_out = self.model(img)
-                    det_out={}
-                    det_out['detection_boxes']=tmp_out[1]
-                    det_out['detection_scores']=tmp_out[2]
-                    det_out['detection_classes']=tmp_out[3]
+                    det_out = {}
+                    det_out['detection_boxes'] = tmp_out[1]
+                    det_out['detection_scores'] = tmp_out[2]
+                    det_out['detection_classes'] = tmp_out[3]
                 else:
                     det_out = self.model(img)
 
@@ -217,21 +218,22 @@ class TorchYoloXPredictor(PredictorInterface):
                 if to_numpy:
                     detection_scores = detection_scores.cpu().detach().numpy()
                     detection_boxes = detection_boxes.cpu().detach().numpy()
-                    detection_classes = detection_classes.cpu().detach().numpy()
+                    detection_classes = detection_classes.cpu().detach().numpy(
+                    )
             else:
-                # data_dict = {'img': img}
-                # data_dict = self.pipeline(data_dict)
-                # img = data_dict['img']
-                # img = torch.unsqueeze(img._data, 0).to(self.device)
-                # data_dict.pop('img')
+                data_dict = {'img': img}
+                data_dict = self.pipeline(data_dict)
+                img = data_dict['img']
+                img = torch.unsqueeze(img._data, 0).to(self.device)
+                data_dict.pop('img')
                 if self.traceable:
                     if self.use_trt_efficientnms:
                         with torch.no_grad():
                             tmp_out = self.model(img)
-                            det_out={}
-                            det_out['detection_boxes']=tmp_out[1]
-                            det_out['detection_scores']=tmp_out[2]
-                            det_out['detection_classes']=tmp_out[3]
+                            det_out = {}
+                            det_out['detection_boxes'] = tmp_out[1]
+                            det_out['detection_scores'] = tmp_out[2]
+                            det_out['detection_classes'] = tmp_out[3]
                     else:
                         with torch.no_grad():
                             det_out = self.post_assign(
@@ -262,7 +264,7 @@ class TorchYoloXPredictor(PredictorInterface):
                 else:
                     detection_boxes = None
                     detection_classes = None
-            
+
             num_boxes = detection_classes.shape[
                 0] if detection_classes is not None else 0
 

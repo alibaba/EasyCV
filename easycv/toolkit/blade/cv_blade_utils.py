@@ -270,7 +270,6 @@ def blade_optimize(speed_test_model,
                 model_inputs=tuple(inputs),
             )
 
-
     if compute_cost:
         results = []
         inputs_t = inputs
@@ -296,8 +295,6 @@ def blade_optimize(speed_test_model,
         summary = pd.DataFrame(results)
         logging.warning(summary.to_markdown())
 
-    # print(opt_model.forward.code)
-    # print(opt_model.forward.graph)
     torch.cuda.empty_cache()
     # warm-up
     for k in range(warm_up_time):

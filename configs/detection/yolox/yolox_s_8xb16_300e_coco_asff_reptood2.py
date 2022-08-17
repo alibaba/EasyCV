@@ -20,8 +20,7 @@ model = dict(
         num_classes=80,
         conv_type='repconv',
         la_down_rate=8,
-        stacked_convs=2
-    ))
+        stacked_convs=2))
 
 # s m l x
 img_scale = (672, 672)
