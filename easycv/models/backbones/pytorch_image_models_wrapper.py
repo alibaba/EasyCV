@@ -10,17 +10,17 @@ from timm.models.hub import download_cached_file
 from easycv.utils.logger import get_root_logger, print_log
 from ..modelzoo import timm_models as model_urls
 from ..registry import BACKBONES
-from .shuffle_transformer import (shuffletrans_base_p4_w7_224,
-                                  shuffletrans_small_p4_w7_224,
-                                  shuffletrans_tiny_p4_w7_224)
-from .swin_transformer_dynamic import (dynamic_swin_base_p4_w7_224,
+from .dynamic_swin_transformer import (dynamic_swin_base_p4_w7_224,
                                        dynamic_swin_small_p4_w7_224,
                                        dynamic_swin_tiny_p4_w7_224)
-from .vit_transfomer_dynamic import (dynamic_deit_small_p16,
+from .dynamic_vit_transfomer import (dynamic_deit_small_p16,
                                      dynamic_deit_tiny_p16,
                                      dynamic_vit_base_p16,
                                      dynamic_vit_huge_p14,
                                      dynamic_vit_large_p16)
+from .shuffle_transformer import (shuffletrans_base_p4_w7_224,
+                                  shuffletrans_small_p4_w7_224,
+                                  shuffletrans_tiny_p4_w7_224)
 from .xcit_transformer import (xcit_large_24_p8, xcit_medium_24_p8,
                                xcit_medium_24_p16, xcit_small_12_p8,
                                xcit_small_12_p16)
@@ -31,12 +31,12 @@ _MODEL_MAP = {
     'shuffletrans_base_p4_w7_224': shuffletrans_base_p4_w7_224,
     'shuffletrans_small_p4_w7_224': shuffletrans_small_p4_w7_224,
 
-    # swin_transformer_dynamic
+    # dynamic_swin_transformer
     'dynamic_swin_tiny_p4_w7_224': dynamic_swin_tiny_p4_w7_224,
     'dynamic_swin_small_p4_w7_224': dynamic_swin_small_p4_w7_224,
     'dynamic_swin_base_p4_w7_224': dynamic_swin_base_p4_w7_224,
 
-    # vit_transfomer_dynamic
+    # dynamic_vit_transfomer
     'dynamic_deit_small_p16': dynamic_deit_small_p16,
     'dynamic_deit_tiny_p16': dynamic_deit_tiny_p16,
     'dynamic_vit_base_p16': dynamic_vit_base_p16,

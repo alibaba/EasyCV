@@ -661,7 +661,7 @@ class PatchEmbed(nn.Module):
 
 
 @BACKBONES.register_module
-class SwinTransformer(nn.Module):
+class DynamicSwinTransformer(nn.Module):
     r""" Swin Transformer
         A PyTorch impl of : `Swin Transformer: Hierarchical Vision Transformer using Shifted Windows`  -
           https://arxiv.org/pdf/2103.14030
@@ -984,7 +984,7 @@ class SwinTransformer(nn.Module):
 
 
 def dynamic_swin_tiny_p4_w7_224(pretrained=False, **kwargs):
-    model = SwinTransformer(
+    model = DynamicSwinTransformer(
         img_size=224,
         in_chans=3,
         num_classes=kwargs['num_classes'],
@@ -1006,7 +1006,7 @@ def dynamic_swin_tiny_p4_w7_224(pretrained=False, **kwargs):
 
 
 def dynamic_swin_small_p4_w7_224(pretrained=False, **kwargs):
-    model = SwinTransformer(
+    model = DynamicSwinTransformer(
         img_size=224,
         in_chans=3,
         num_classes=kwargs['num_classes'],
@@ -1028,7 +1028,7 @@ def dynamic_swin_small_p4_w7_224(pretrained=False, **kwargs):
 
 
 def dynamic_swin_base_p4_w7_224(pretrained=False, **kwargs):
-    model = SwinTransformer(
+    model = DynamicSwinTransformer(
         img_size=224,
         in_chans=3,
         num_classes=kwargs['num_classes'],

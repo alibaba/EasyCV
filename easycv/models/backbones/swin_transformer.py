@@ -508,7 +508,7 @@ class PatchEmbed(nn.Module):
 
 
 @BACKBONES.register_module
-class DINOSwinTransformer(nn.Module):
+class SwinTransformer(nn.Module):
     """ Swin Transformer backbone.
         A PyTorch impl of : `Swin Transformer: Hierarchical Vision Transformer using Shifted Windows`  -
           https://arxiv.org/pdf/2103.14030
@@ -749,54 +749,5 @@ class DINOSwinTransformer(nn.Module):
 
     def train(self, mode=True):
         """Convert the model into training mode while keep layers freezed."""
-        super(DINOSwinTransformer, self).train(mode)
+        super(SwinTransformer, self).train(mode)
         self._freeze_stages()
-
-
-# def build_swin_transformer(modelname, pretrain_img_size, **kw):
-#     assert modelname in ['swin_T_224_1k', 'swin_B_224_22k', 'swin_B_384_22k', 'swin_L_224_22k', 'swin_L_384_22k']
-
-#     model_para_dict = {
-#         'swin_T_224_1k': dict(
-#             embed_dim=96,
-#             depths=[ 2, 2, 6, 2 ],
-#             num_heads=[ 3, 6, 12, 24],
-#             window_size=7
-#         ),
-#         'swin_B_224_22k': dict(
-#             embed_dim=128,
-#             depths=[ 2, 2, 18, 2 ],
-#             num_heads=[ 4, 8, 16, 32 ],
-#             window_size=7
-#         ),
-#         'swin_B_384_22k': dict(
-#             embed_dim=128,
-#             depths=[ 2, 2, 18, 2 ],
-#             num_heads=[ 4, 8, 16, 32 ],
-#             window_size=12
-#         ),
-#         'swin_L_224_22k': dict(
-#             embed_dim=192,
-#             depths=[ 2, 2, 18, 2 ],
-#             num_heads=[ 6, 12, 24, 48 ],
-#             window_size=7
-#         ),
-#         'swin_L_384_22k': dict(
-#             embed_dim=192,
-#             depths=[ 2, 2, 18, 2 ],
-#             num_heads=[ 6, 12, 24, 48 ],
-#             window_size=12
-#         ),
-#     }
-#     kw_cgf = model_para_dict[modelname]
-#     kw_cgf.update(kw)
-#     model = SwinTransformer(pretrain_img_size=pretrain_img_size, **kw_cgf)
-#     return model
-
-# if __name__ == "__main__":
-#     model = build_swin_transformer('swin_L_384_22k', 384, dilation=True)
-#     x = torch.rand(2, 3, 1024, 1024)
-#     y = model.forward_raw(x)
-#     import ipdb; ipdb.set_trace()
-#     x = torch.rand(2, 3, 384, 384)
-#     y = model.forward_raw(x)
