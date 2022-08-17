@@ -12,12 +12,12 @@ import torch
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 
-from easycv.apis import set_random_seed
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.file import io
 from easycv.models import build_model
 from easycv.utils.collect import dist_forward_collect, nondist_forward_collect
 from easycv.utils.config_tools import mmcv_config_fromfile
+from easycv.utils.dist_utils import set_random_seed
 from easycv.utils.logger import get_root_logger
 
 

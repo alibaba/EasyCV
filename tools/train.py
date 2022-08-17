@@ -26,7 +26,7 @@ import torch
 from mmcv.runner import init_dist
 
 from easycv import __version__
-from easycv.apis import init_random_seed, set_random_seed, train_model
+from easycv.apis import train_model
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.datasets.utils import is_dali_dataset_type
 from easycv.file import io
@@ -37,7 +37,7 @@ from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.config_tools import traverse_replace
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
-from easycv.utils.dist_utils import get_device
+from easycv.utils.dist_utils import get_device, init_random_seed, set_random_seed
 from easycv.utils.setup_env import setup_multi_processes
 
 
