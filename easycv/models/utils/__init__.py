@@ -15,7 +15,7 @@ from .scale import Scale
 # from .weight_init import (bias_init_with_prob, kaiming_init, normal_init,
 #                          uniform_init, xavier_init)
 from .sobel import Sobel
-from .transformer import (MLP, Mlp, TransformerEncoder,
+from .transformer import (MLP, DropPath, Mlp, TransformerEncoder,
                           TransformerEncoderLayer, _get_activation_fn,
                           _get_clones)
 

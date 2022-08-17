@@ -6,13 +6,8 @@
 # modified from https://github.com/SwinTransformer/Swin-Transformer-Object-Detection/blob/master/mmdet/models/backbones/swin_transformer.py
 # --------------------------------------------------------
 
-import logging
-from functools import partial
-from math import sqrt
-
 import numpy as np
 import torch
-import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
