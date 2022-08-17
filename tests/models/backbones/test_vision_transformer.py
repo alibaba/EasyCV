@@ -3,16 +3,16 @@ import unittest
 
 import torch
 
-from easycv.models.backbones import VisionTransformer
+from easycv.models.backbones import ViTDet
 
 
-class VisionTransformerTest(unittest.TestCase):
+class ViTDetTest(unittest.TestCase):
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
     def test_vision_transformer(self):
-        model = VisionTransformer(
+        model = ViTDet(
             img_size=1024,
             embed_dim=768,
             depth=12,
