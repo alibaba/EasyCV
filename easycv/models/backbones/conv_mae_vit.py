@@ -9,7 +9,7 @@ from timm.models.layers import trunc_normal_
 
 from easycv.models.registry import BACKBONES
 from easycv.models.utils.pos_embed import get_2d_sincos_pos_embed
-from .vit_transfomer_dynamic import Block, DropPath
+from .dynamic_vit_transfomer import Block, DropPath
 
 
 class PatchEmbed(nn.Module):

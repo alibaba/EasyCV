@@ -10,7 +10,7 @@ oss_io_config = dict(
     buckets=['your oss buckets'])
 
 # model settings
-# 1920: merge 4 layers of features, open models/backbones/vit_transfomer_dynamic.py:311: self.forward_return_n_last_blocks
+# 1920: merge 4 layers of features, open models/backbones/dynamic_vit_transfomer.py:311: self.forward_return_n_last_blocks
 # 384: default
 feature_num = 1920
 model = dict(
