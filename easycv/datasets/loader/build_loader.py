@@ -60,9 +60,9 @@ def build_dataloader(dataset,
         DataLoader: A PyTorch dataloader.
     """
     seed = init_random_seed(seed)
+    rank, world_size = get_dist_info()
 
     if dist:
-        rank, world_size = get_dist_info()
         split_huge_listfile_byrank = getattr(dataset,
                                              'split_huge_listfile_byrank',
                                              False)
