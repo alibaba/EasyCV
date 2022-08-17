@@ -123,8 +123,8 @@ class PatchEmbed(nn.Module):
         return x
 
 
-class VisionTransformer(nn.Module):
-    """ Vision Transformer """
+class DynamicVisionTransformer(nn.Module):
+    """Dynamic Vision Transformer """
 
     def __init__(self,
                  img_size=[224],
@@ -401,7 +401,7 @@ class VisionTransformer(nn.Module):
 
 
 def dynamic_deit_tiny_p16(patch_size=16, **kwargs):
-    model = VisionTransformer(
+    model = DynamicVisionTransformer(
         patch_size=patch_size,
         embed_dim=192,
         depth=12,
@@ -414,7 +414,7 @@ def dynamic_deit_tiny_p16(patch_size=16, **kwargs):
 
 
 def dynamic_deit_small_p16(patch_size=16, **kwargs):
-    model = VisionTransformer(
+    model = DynamicVisionTransformer(
         patch_size=patch_size,
         embed_dim=384,
         depth=12,
@@ -427,7 +427,7 @@ def dynamic_deit_small_p16(patch_size=16, **kwargs):
 
 
 def dynamic_vit_base_p16(patch_size=16, **kwargs):
-    model = VisionTransformer(
+    model = DynamicVisionTransformer(
         patch_size=patch_size,
         embed_dim=768,
         depth=12,
@@ -440,7 +440,7 @@ def dynamic_vit_base_p16(patch_size=16, **kwargs):
 
 
 def dynamic_vit_large_p16(patch_size=16, **kwargs):
-    model = VisionTransformer(
+    model = DynamicVisionTransformer(
         patch_size=patch_size,
         embed_dim=1024,
         depth=24,
@@ -453,7 +453,7 @@ def dynamic_vit_large_p16(patch_size=16, **kwargs):
 
 
 def dynamic_vit_huge_p14(patch_size=14, **kwargs):
-    model = VisionTransformer(
+    model = DynamicVisionTransformer(
         patch_size=patch_size,
         embed_dim=1280,
         depth=32,

@@ -595,7 +595,7 @@ class Norm2d(nn.Module):
 
 # todo: refactor vitdet and vit_transformer_dynamic
 @BACKBONES.register_module()
-class ViTDet(nn.Module):
+class VisionTransformer(nn.Module):
     """ Vision Transformer with support for patch or hybrid CNN input stage
     """
 
