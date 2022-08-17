@@ -5,12 +5,9 @@ model = dict(
     type='YOLOX',
     test_conf=0.01,
     nms_thre=0.65,
-    backbone=dict(
-        type='YOLOPAFPN',
-        backbone='RepVGGYOLOX',
-        model_type='s',  # s m l x tiny nano
-        # use_att='ASFF',
-        neck='yolo'),
+    backbone='RepVGGYOLOX',
+    model_type='s',  # s m l x tiny nano
+
     head=dict(
         type='TOODHead',
         model_type='s',

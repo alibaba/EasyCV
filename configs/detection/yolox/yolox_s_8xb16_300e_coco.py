@@ -5,18 +5,15 @@ model = dict(
     type='YOLOX',
     test_conf=0.01,
     nms_thre=0.65,
-    backbone=dict(
-        type='YOLOPAFPN',
-        backbone='CSPDarknet',
-        model_type='s',  # s m l x tiny nano
-        use_att=None,
-        neck='yolo'),
+    backbone='CSPDarknet',
+    model_type='s',  # s m l x tiny nano
     head=dict(
         type='YOLOXHead',
         model_type='s',
         obj_loss_type='BCE',
         reg_loss_type='giou',
-        num_classes=80))
+        num_classes=80)
+)
 
 # s m l x
 img_scale = (640, 640)

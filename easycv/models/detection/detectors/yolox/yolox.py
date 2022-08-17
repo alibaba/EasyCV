@@ -8,9 +8,10 @@ import torch.nn as nn
 from torch import Tensor
 
 from easycv.models.base import BaseModel
-from easycv.models.builder import (MODELS, build_backbone, build_head,
-                                   build_neck)
+from easycv.models.builder import (MODELS, build_head)
 from easycv.models.detection.utils import postprocess
+
+from .yolo_pafpn import YOLOPAFPN
 
 
 def init_yolo(M):
@@ -27,20 +28,47 @@ class YOLOX(BaseModel):
     The network returns loss values from three YOLO layers during training
     and detection results during test.
     """
+    param_map = {
+        'nano': [0.33, 0.25],
+        'tiny': [0.33, 0.375],
+        's': [0.33, 0.5],
+        'm': [0.67, 0.75],
+        'l': [1.0, 1.0],
+        'x': [1.33, 1.25]
+    }
 
     def __init__(self,
-                 backbone,
-                 test_conf,
-                 nms_thre,
+                 model_type = 's',
+                 test_conf=0.01,
+                 nms_thre=0.65,
+                 backbone = 'CSPDarknet',
+                 use_att=None,
+                 asff_channel=2,
+                 neck='yolo',
+                 neck_mode='all',
                  head=None,
-                 neck=None,
                  pretrained=True):
         super(YOLOX, self).__init__()
+        print('in')
+        assert model_type in self.param_map, f'invalid model_type for yolox {model_type}, valid ones are {list(self.param_map.keys())}'
 
         self.pretrained = pretrained
-        self.backbone = build_backbone(backbone)
-        if neck is not None:
-            self.neck = build_neck(neck)
+
+        in_channels = [256, 512, 1024]
+        depth = self.param_map[model_type][0]
+        width = self.param_map[model_type][1]
+
+        self.backbone = YOLOPAFPN(
+            depth,
+            width,
+            backbone=backbone,
+            neck=neck,
+            neck_mode=neck_mode,
+            in_channels=in_channels,
+            asff_channel=asff_channel,
+            use_att=use_att
+        )
+
         self.head = build_head(head)
 
         self.apply(init_yolo)  # init_yolo(self)
