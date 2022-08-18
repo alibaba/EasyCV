@@ -150,7 +150,7 @@ class SetCriterion(nn.Module):
         assert loss in loss_map, f'do you really want to compute {loss} loss?'
         return loss_map[loss](outputs, targets, indices, num_boxes, **kwargs)
 
-    def forward(self, outputs, targets, return_indices=False):
+    def forward(self, outputs, targets, num_boxes=None, return_indices=False):
         """ This performs the loss computation.
         Parameters:
              outputs: dict of tensors, see the output specification of the model for the format
@@ -171,14 +171,16 @@ class SetCriterion(nn.Module):
             indices0_copy = indices
             indices_list = []
 
-        # Compute the average number of target boxes accross all nodes, for normalization purposes
-        num_boxes = sum(len(t['labels']) for t in targets)
-        num_boxes = torch.as_tensor([num_boxes],
-                                    dtype=torch.float,
-                                    device=next(iter(outputs.values())).device)
-        if is_dist_avail_and_initialized():
-            torch.distributed.all_reduce(num_boxes)
-        num_boxes = torch.clamp(num_boxes / get_world_size(), min=1).item()
+        if num_boxes is None:
+            # Compute the average number of target boxes accross all nodes, for normalization purposes
+            num_boxes = sum(len(t['labels']) for t in targets)
+            num_boxes = torch.as_tensor([num_boxes],
+                                        dtype=torch.float,
+                                        device=next(iter(
+                                            outputs.values())).device)
+            if is_dist_avail_and_initialized():
+                torch.distributed.all_reduce(num_boxes)
+            num_boxes = torch.clamp(num_boxes / get_world_size(), min=1).item()
 
         # Compute all the requested losses
         losses = {}
@@ -240,7 +242,7 @@ class SetCriterion(nn.Module):
             indices_list.append(indices0_copy)
             return losses, indices_list
 
-        return losses
+        return losses, num_boxes
 
 
 class CDNCriterion(SetCriterion):
@@ -273,15 +275,8 @@ class CDNCriterion(SetCriterion):
 
         return output_known_lbs_bboxes, single_pad, num_dn_groups
 
-    def forward(self, outputs, targets, aux_num):
+    def forward(self, outputs, targets, aux_num, num_boxes):
         # Compute the average number of target boxes accross all nodes, for normalization purposes
-        num_boxes = sum(len(t['labels']) for t in targets)
-        num_boxes = torch.as_tensor([num_boxes],
-                                    dtype=torch.float,
-                                    device=next(iter(outputs.values())).device)
-        if is_dist_avail_and_initialized():
-            torch.distributed.all_reduce(num_boxes)
-        num_boxes = torch.clamp(num_boxes / get_world_size(), min=1).item()
 
         dn_meta = outputs['dn_meta']
         losses = {}

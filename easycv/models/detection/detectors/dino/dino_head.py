@@ -11,7 +11,8 @@ from easycv.models.builder import HEADS, build_neck
 from easycv.models.detection.utils import (CDNCriterion, DetrPostProcess,
                                            HungarianMatcher, SetCriterion,
                                            box_xyxy_to_cxcywh, inverse_sigmoid)
-from easycv.models.utils import MLP
+from easycv.models.utils import (MLP, get_world_size,
+                                 is_dist_avail_and_initialized)
 from ..dab_detr.dab_detr_transformer import PositionEmbeddingSineHW
 from .cdn_components import cdn_post_process, prepare_for_cdn
 
@@ -435,9 +436,20 @@ class DINOHead(nn.Module):
             attn_mask=attn_mask,
             dn_meta=dn_meta)
 
-        losses = self.criterion(outputs, targets)
+        # Avoid inconsistent num_boxes for set_critertion and dn_critertion
+        # Compute the average number of target boxes accross all nodes, for normalization purposes
+        num_boxes = sum(len(t['labels']) for t in targets)
+        num_boxes = torch.as_tensor([num_boxes],
+                                    dtype=torch.float,
+                                    device=next(iter(outputs.values())).device)
+        if is_dist_avail_and_initialized():
+            torch.distributed.all_reduce(num_boxes)
+        num_boxes = torch.clamp(num_boxes / get_world_size(), min=1).item()
+
+        losses = self.criterion(outputs, targets, num_boxes=num_boxes)
         losses.update(
-            self.dn_criterion(outputs, targets, len(outputs['aux_outputs'])))
+            self.dn_criterion(outputs, targets, len(outputs['aux_outputs']),
+                              num_boxes))
 
         return losses
 
