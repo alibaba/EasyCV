@@ -8,9 +8,8 @@ import torch.nn as nn
 from torch import Tensor
 
 from easycv.models.base import BaseModel
-from easycv.models.builder import (MODELS, build_head)
+from easycv.models.builder import MODELS, build_head
 from easycv.models.detection.utils import postprocess
-
 from .yolo_pafpn import YOLOPAFPN
 
 
@@ -38,18 +37,18 @@ class YOLOX(BaseModel):
     }
 
     def __init__(self,
-                 model_type = 's',
+                 model_type='s',
                  test_conf=0.01,
                  nms_thre=0.65,
-                 backbone = 'CSPDarknet',
+                 backbone='CSPDarknet',
                  use_att=None,
                  asff_channel=2,
-                 neck='yolo',
+                 neck_type='yolo',
                  neck_mode='all',
                  head=None,
                  pretrained=True):
         super(YOLOX, self).__init__()
-        print('in')
+
         assert model_type in self.param_map, f'invalid model_type for yolox {model_type}, valid ones are {list(self.param_map.keys())}'
 
         self.pretrained = pretrained
@@ -62,12 +61,11 @@ class YOLOX(BaseModel):
             depth,
             width,
             backbone=backbone,
-            neck=neck,
+            neck_type=neck_type,
             neck_mode=neck_mode,
             in_channels=in_channels,
             asff_channel=asff_channel,
-            use_att=use_att
-        )
+            use_att=use_att)
 
         self.head = build_head(head)
 

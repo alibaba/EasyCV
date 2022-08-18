@@ -12,8 +12,8 @@ model = dict(
         model_type='s',
         obj_loss_type='BCE',
         reg_loss_type='giou',
-        num_classes=80)
-)
+        num_classes=80,
+        decode_in_inference=True))
 
 # s m l x
 img_scale = (640, 640)
@@ -42,8 +42,7 @@ CLASSES = [
 ]
 
 # dataset settings
-# data_root = '/apsarapangu/disk2/xinyi.zxy/data/coco/'
-data_root = '/apsara/xinyi.zxy/data/coco/'
+data_root = 'data/coco/'
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -189,4 +188,13 @@ log_config = dict(
         # dict(type='WandbLoggerHookV2'),
     ])
 
-export = dict(use_jit=True, export_blade=False, end2end=True, batch_size=1)
+
+# export = dict(export_type = 'ori', end2end = False,  batch_size=1, blade_config=dict(enable_fp16=True, fp16_fallback_op_ratio=0.01), use_trt_efficientnms=False)
+# export = dict(export_type = 'jit', end2end = False,  batch_size=1, blade_config=dict(enable_fp16=True, fp16_fallback_op_ratio=0.01), use_trt_efficientnms=False)
+export = dict(export_type = 'blade', end2end = False,  batch_size=1, blade_config=dict(enable_fp16=True, fp16_fallback_op_ratio=0.01), use_trt_efficientnms=False)
+# export = dict(export_type = 'jit', end2end = True,  batch_size=1, blade_config=dict(enable_fp16=True, fp16_fallback_op_ratio=0.01), use_trt_efficientnms=False)
+# export = dict(export_type = 'jit', end2end = True,  batch_size=1, blade_config=dict(enable_fp16=True, fp16_fallback_op_ratio=0.01), use_trt_efficientnms=True)
+# export = dict(export_type = 'blade', end2end = True,  batch_size=1, blade_config=dict(enable_fp16=True, fp16_fallback_op_ratio=0.01), use_trt_efficientnms=True)
+# export = dict(export_type = 'blade', end2end = True,  batch_size=1, blade_config=dict(enable_fp16=True, fp16_fallback_op_ratio=0.01), use_trt_efficientnms=False) # assert error
+# export = dict(export_type = 'jit', end2end = False,  batch_size=1, blade_config=dict(enable_fp16=True, fp16_fallback_op_ratio=0.01), use_trt_efficientnms=True)
+# export = dict(export_type = 'blade', end2end = False,  batch_size=1, blade_config=dict(enable_fp16=True, fp16_fallback_op_ratio=0.01), use_trt_efficientnms=True)

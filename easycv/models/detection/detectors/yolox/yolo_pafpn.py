@@ -12,6 +12,7 @@ from easycv.models.backbones.repvgg_yolox_backbone import RepVGGYOLOX
 from easycv.models.registry import BACKBONES
 from .asff import ASFF
 
+
 class YOLOPAFPN(nn.Module):
     """
     YOLOv3 model. Darknet 53 is the default backbone of this model.
@@ -25,21 +26,19 @@ class YOLOPAFPN(nn.Module):
         'x': [1.33, 1.25]
     }
 
-    def __init__(
-            self,
-            depth=1.0,
-            width=1.0,
-            backbone='CSPDarknet',
-            neck = 'yolo',
-            neck_mode = 'all',
-            in_features=('dark3', 'dark4', 'dark5'),
-            in_channels=[256, 512, 1024],
-            depthwise=False,
-            act='silu',
-            use_att=None,
-            asff_channel=2,
-            expand_kernel=3
-    ):
+    def __init__(self,
+                 depth=1.0,
+                 width=1.0,
+                 backbone='CSPDarknet',
+                 neck_type='yolo',
+                 neck_mode='all',
+                 in_features=('dark3', 'dark4', 'dark5'),
+                 in_channels=[256, 512, 1024],
+                 depthwise=False,
+                 act='silu',
+                 use_att=None,
+                 asff_channel=2,
+                 expand_kernel=3):
         super().__init__()
 
         # build backbone
@@ -63,14 +62,14 @@ class YOLOPAFPN(nn.Module):
         self.in_channels = in_channels
 
         Conv = DWConv if depthwise else BaseConv
-        self.neck = neck
+        self.neck_type = neck_type
         self.neck_mode = neck_mode
-        if neck != 'gsconv':
-            if neck != 'yolo':
+        if neck_type != 'gsconv':
+            if neck_type != 'yolo':
                 logging.warning(
                     'YOLOX-PAI backbone must in [yolo, gsconv], otherwise we use yolo as default'
                 )
-            self.neck = 'yolo'
+            self.neck_type = 'yolo'
 
             self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
             self.lateral_conv0 = BaseConv(
@@ -278,7 +277,7 @@ class YOLOPAFPN(nn.Module):
             features = self.backbone(input)
             [x2, x1, x0] = features
 
-        if self.neck == 'yolo':
+        if self.neck_type == 'yolo':
             fpn_out0 = self.lateral_conv0(x0)  # 1024->512/32
             f_out0 = self.upsample(fpn_out0)  # 512/16
             f_out0 = torch.cat([f_out0, x1], 1)  # 512->1024/16

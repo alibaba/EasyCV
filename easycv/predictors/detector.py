@@ -58,12 +58,16 @@ class TorchYoloXPredictor(PredictorInterface):
         self.model_path = model_path
         self.max_det = max_det
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.use_jit = model_path.endswith('jit') or model_path.endswith(
-            'blade')
-        self.use_blade = model_path.endswith('blade')
+        # set type
+        self.model_type = 'ori'
+        if model_path.endswith('jit'):
+            self.model_type = 'jit'
+        if model_path.endswith('blade'):
+            self.model_type = 'blade'
+
         self.use_trt_efficientnms = use_trt_efficientnms
 
-        if self.use_blade:
+        if self.model_type=='blade':
             import torch_blade
 
         if model_config:
@@ -74,10 +78,12 @@ class TorchYoloXPredictor(PredictorInterface):
         self.score_thresh = model_config[
             'score_thresh'] if 'score_thresh' in model_config else score_thresh
 
-        if self.use_jit:
+        if self.model_type!='ori':
+            # jit or blade model
             preprocess_path = '.'.join(
                 model_path.split('.')[:-1] + ['preprocess'])
             if os.path.exists(preprocess_path):
+                # use a preprocess jit model to speed up
                 with io.open(preprocess_path, 'rb') as infile:
                     map_location = 'cpu' if self.device == 'cpu' else 'cuda'
                     self.preprocess = torch.jit.load(infile, map_location)
@@ -188,8 +194,8 @@ class TorchYoloXPredictor(PredictorInterface):
 
             ori_img_shape = img.shape[:2]
             if self.end2end:
+                print('end2end')
                 # the input should also be as the type of uint8 as mmcv
-
                 img = torch.from_numpy(img).to(self.device)
                 img = img.unsqueeze(0)
                 if hasattr(self, 'preprocess'):
@@ -267,6 +273,8 @@ class TorchYoloXPredictor(PredictorInterface):
 
             num_boxes = detection_classes.shape[
                 0] if detection_classes is not None else 0
+
+            print(num_boxes)
 
             detection_classes_names = [
                 self.CLASSES[detection_classes[idx]]
