@@ -242,7 +242,7 @@ class SetCriterion(nn.Module):
             indices_list.append(indices0_copy)
             return losses, indices_list
 
-        return losses, num_boxes
+        return losses
 
 
 class CDNCriterion(SetCriterion):
