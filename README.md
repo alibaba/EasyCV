@@ -43,6 +43,13 @@ EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focus o
 
   EasyCV support multi-gpu and multi worker training. EasyCV use [DALI](https://github.com/NVIDIA/DALI) to accelerate data io and preprocessing process, and use [TorchAccelerator](https://github.com/alibaba/EasyCV/tree/master/docs/source/tutorials/torchacc.md) and fp16 to accelerate training process. For inference optimization, EasyCV export model using jit script, which can be optimized by [PAI-Blade](https://help.aliyun.com/document_detail/205134.html)
 
+## Technical Articles
+
+We have a series of technical articles on the functionalities of EasyCV.
+* [EasyCV开源｜开箱即用的视觉自监督+Transformer算法库](https://zhuanlan.zhihu.com/p/505219993)
+* [MAE自监督算法介绍和基于EasyCV的复现](https://zhuanlan.zhihu.com/p/515859470)
+* [基于EasyCV复现ViTDet：单层特征超越FPN](https://zhuanlan.zhihu.com/p/528733299)
+* [基于EasyCV复现DETR和DAB-DETR，Object Query的正确打开方式](https://zhuanlan.zhihu.com/p/543129581)
 
 ## Installation
 
@@ -58,7 +65,7 @@ Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We
 * [object detection with yolox](docs/source/tutorials/yolox.md)
 * [model compression with yolox](docs/source/tutorials/compression.md)
 * [metric learning](docs/source/tutorials/metric_learning.md)
-* [torchacc](https://github.com/alibaba/EasyCV/blob/master/docs/source/tutorials/torchacc.md)
+* [torchacc](docs/source/tutorials/torchacc.md)
 
 notebook
 * [self-supervised learning](docs/source/tutorials/EasyCV图像自监督训练-MAE.ipynb)
@@ -68,6 +75,107 @@ notebook
 
 
 ## Model Zoo
+
+<div align="center">
+  <b>Architectures</b>
+</div>
+<table align="center">
+  <tbody>
+    <tr align="center">
+      <td>
+        <b>Self-Supervised Learning</b>
+      </td>
+      <td>
+        <b>Image Classification</b>
+      </td>
+      <td>
+        <b>Object Detection</b>
+      </td>
+      <td>
+        <b>Segmentation</b>
+      </td>
+    </tr>
+    <tr valign="top">
+      <td>
+        <ul>
+            <li><a href="configs/selfsup/byol">BYOL (NeurIPS'2020)</a></li>
+            <li><a href="configs/selfsup/dino">DINO (ICCV'2021)</a></li>
+            <li><a href="configs/selfsup/mixco">MiXCo (NeurIPS'2020)</a></li>
+            <li><a href="configs/selfsup/moby">MoBY (ArXiv'2021)</a></li>
+            <li><a href="configs/selfsup/mocov2">MoCov2 (ArXiv'2020)</a></li>
+            <li><a href="configs/selfsup/simclr">SimCLR (ICML'2020)</a></li>
+            <li><a href="configs/selfsup/swav">SwAV (NeurIPS'2020)</a></li>
+            <li><a href="configs/selfsup/mae">MAE (CVPR'2022)</a></li>
+            <li><a href="configs/selfsup/fast_convmae">FastConvMAE (ArXiv'2022)</a></li>
+      </ul>
+      </td>
+      <td>
+        <ul>
+          <li><a href="configs/classification/imagenet/resnet">ResNet (CVPR'2016)</a></li>
+          <li><a href="configs/classification/imagenet/resnext">ResNeXt (CVPR'2017)</a></li>
+          <li><a href="configs/classification/imagenet/hrnet">HRNet (CVPR'2019)</a></li>
+          <li><a href="configs/classification/imagenet/vit">ViT (ICLR'2021)</a></li>
+          <li><a href="configs/classification/imagenet/swint">SwinT (ICCV'2021)</a></li>
+          <li><a href="configs/classification/imagenet/efficientformer">EfficientFormer (ArXiv'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/deit">DeiT (ICML'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/xcit">XCiT (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/tnt">TNT (NeurIPS'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/convit">ConViT (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/cait">CaiT (ICCV'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/levit">LeViT (ICCV'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/convnext">ConvNeXt (CVPR'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/resmlp">ResMLP (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/coat">CoaT (ICCV'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/convmixer">ConvMixer (ICLR'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/mlp-mixer">MLP-Mixer (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/nest">NesT (AAAI'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/pit">PiT (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/twins">Twins (NeurIPS'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/shuffle_transformer">Shuffle Transformer (ArXiv'2021)</a></li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li><a href="configs/detection/fcos">FCOS (ICCV'2019)</a></li>
+          <li><a href="configs/detection/yolox">YOLOX (ArXiv'2021)</a></li>
+          <li><a href="configs/detection/detr">DETR (ECCV'2020)</a></li>
+          <li><a href="configs/detection/dab_detr">DAB-DETR (ICLR'2022)</a></li>
+          <li><a href="configs/detection/dab_detr">DN-DETR (CVPR'2022)</a></li>
+        </ul>
+      </td>
+      <td>
+        </ul>
+          <li><b>Instance Segmentation</b></li>
+        <ul>
+        <ul>
+          <li><a href="configs/detection/mask_rcnn">Mask R-CNN (ICCV'2017)</a></li>
+          <li><a href="configs/detection/vitdet">ViTDet (ArXiv'2022)</a></li>
+          <li><a href="configs/segmentation/mask2former">Mask2Former (CVPR'2022)</a></li>
+        </ul>
+        </ul>
+        </ul>
+          <li><b>Sementic Segmentation</b></li>
+        <ul>
+        <ul>
+          <li><a href="configs/segmentation/fcn">FCN (CVPR'2015)</a></li>
+          <li><a href="configs/segmentation/upernet">UperNet (ECCV'2018)</a></li>
+        </ul>
+        </ul>
+        </ul>
+          <li><b>Panoptic Segmentation</b></li>
+        <ul>
+        <ul>
+          <li><a href="configs/segmentation/mask2former">Mask2Former (CVPR'2022)</a></li>
+        </ul>
+        </ul>
+      </ul>
+      </td>
+    </tr>
+</td>
+    </tr>
+  </tbody>
+</table>
+
 
 Please refer to the following model zoo for more details.
 
@@ -80,7 +188,7 @@ Please refer to the following model zoo for more details.
 
 EasyCV have collected dataset info for different senarios, making it easy for users to fintune or evaluate models in EasyCV modelzoo.
 
-Please refer to [data_hub.md](https://github.com/alibaba/EasyCV/blob/master/docs/source/data_hub.md).
+Please refer to [data_hub.md](docs/source/data_hub.md).
 
 ## ChangeLog
 
@@ -89,7 +197,7 @@ Please refer to [data_hub.md](https://github.com/alibaba/EasyCV/blob/master/docs
     * Classification support EfficientFormer algorithm
     * Detection support FCOS、DETR、DAB-DETR and DN-DETR algorithm
     * Segmentation support UperNet algorithm
-    * Support use [torchacc](https://github.com/alibaba/EasyCV/blob/master/docs/source/tutorials/torchacc.md) to speed up training
+    * Support use [torchacc](docs/source/tutorials/torchacc.md) to speed up training
     * Support use analyze tools
 
 * 23/06/2022 EasyCV v0.4.0 was released.
