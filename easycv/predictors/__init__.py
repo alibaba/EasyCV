@@ -7,3 +7,4 @@ from .feature_extractor import (TorchFaceAttrExtractor,
                                 TorchFeatureExtractor)
 from .pose_predictor import (TorchPoseTopDownPredictor,
                              TorchPoseTopDownPredictorWithDetector)
+from .segmentation import Mask2formerPredictor, SegFormerPredictor

@@ -111,3 +111,10 @@ PRETRAINED_MODEL_MAE = os.path.join(
 PRETRAINED_MODEL_MASK2FORMER = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/segmentation/mask2former/mask2former_r50_instance.pth')
+
+PRETRAINED_MODEL_SEGFORMER = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/segformer/segformer_b0/SegmentationEvaluator_mIoU_best.pth'
+)
+MODEL_CONFIG_SEGFORMER = (
+    './configs/segmentation/segformer/segformer_b0_coco.py')

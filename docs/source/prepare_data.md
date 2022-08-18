@@ -6,6 +6,8 @@ EasyCV provides various datasets for multi tasks. Please refer to the following 
 - [Object Detection](#Object-Detection)
 - [Self-Supervised Learning](#Self-Supervised-Learning)
 - [Pose (Keypoint)](#Pose)
+- [Image Segmentation](#Image-Segmentation)
+
 
 ## Image Classification
 
@@ -354,3 +356,31 @@ data/coco2017
     ├── 000000000285.jpg
     ├── ...
 ```
+
+## Image Segmentation
+
+- [COCO Stuff 164k](#COCO-Stuff-164k)
+### COCO Stuff 164k
+
+For COCO Stuff 164k dataset, please run the following commands to download and convert the augmented dataset.
+
+```shell
+# download
+mkdir coco_stuff164k && cd coco_stuff164k
+wget http://images.cocodataset.org/zips/train2017.zip
+wget http://images.cocodataset.org/zips/val2017.zip
+wget http://calvin.inf.ed.ac.uk/wp-content/uploads/data/cocostuffdataset/stuffthingmaps_trainval2017.zip
+
+# unzip
+unzip train2017.zip -d images/
+unzip val2017.zip -d images/
+unzip stuffthingmaps_trainval2017.zip -d annotations/
+
+# --nproc means 8 process for conversion, which could be omitted as well.
+python tools/prepare_data/coco_stuff164k.py /path/to/coco_stuff164k --nproc 8
+```
+
+By convention, mask labels in `/path/to/coco_stuff164k/annotations/*2017/*_labelTrainIds.png` are used for COCO Stuff 164k training and testing.
+
+The details of this dataset could be found at [here](https://github.com/nightrome/cocostuff#downloads).
+

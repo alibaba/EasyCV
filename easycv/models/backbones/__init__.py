@@ -9,6 +9,7 @@ from .hrnet import HRNet
 from .inceptionv3 import Inception3
 from .lighthrnet import LiteHRNet
 from .mae_vit_transformer import *
+from .mit import MixVisionTransformer
 from .mnasnet import MNASNet
 from .mobilenetv2 import MobileNetV2
 from .pytorch_image_models_wrapper import *
