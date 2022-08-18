@@ -1,15 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import random
 import re
 from distutils.version import LooseVersion
 
-import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import DistSamplerSeedHook, obj_from_dict
-from mmcv.runner.dist_utils import get_dist_info
-from torch import optim
 
 from easycv.apis.train_misc import build_yolo_optimizer
 from easycv.core import optimizer
