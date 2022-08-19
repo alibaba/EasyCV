@@ -96,7 +96,7 @@
 To immediately use a model on a given input image, we provide the Predictor API. Predictor group together a pretrained model with the preprocessing that was used during that model's training. For example, we can easily extract detected objects in an image:
 
 ``` python
->>> from easycv.predictors.detector import DetectionPredictor
+>>> from easycv.predictors.detector import DetectorPredictor
 
 # Specify file path
 >>> model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/detr/epoch_150.pth'
@@ -104,7 +104,7 @@ To immediately use a model on a given input image, we provide the Predictor API.
 >>> img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
 
 # Allocate a predictor for object detection
->>> detr = DetectionPredictor(model_path, config_path)
+>>> detr = DetectorPredictor(model_path, config_path)
 >>> output = detr.predict(img)
 >>> detr.visualize(img, output, out_file='./result.jpg')
 output['detection_scores'][0][:2] = [0.07836595922708511, 0.219977006316185]

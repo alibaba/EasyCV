@@ -8,7 +8,7 @@ import unittest
 import numpy as np
 from PIL import Image
 
-from easycv.predictors.detector import TorchYoloXPredictor, DetectionPredictor
+from easycv.predictors.detector import TorchYoloXPredictor, DetectorPredictor
 from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_EXPORT,
                              PRETRAINED_MODEL_YOLOXS_EXPORT_JIT,
                              PRETRAINED_MODEL_YOLOXS_END2END_JIT,
@@ -173,7 +173,7 @@ class DetectorTest(unittest.TestCase):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/vitdet/vit_base/vitdet_maskrcnn_export.pth'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
         out_file = './result.jpg'
-        vitdet = DetectionPredictor(model_path)
+        vitdet = DetectorPredictor(model_path)
         output = vitdet.predict(img)
         vitdet.visualize(img, output, out_file=out_file)
 

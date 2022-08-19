@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 
-from easycv.predictors.detector import DetectionPredictor
+from easycv.predictors.detector import DetectorPredictor
 
 
 class DETRTest(unittest.TestCase):
@@ -16,7 +16,7 @@ class DETRTest(unittest.TestCase):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/detr/epoch_150.pth'
         config_path = 'configs/detection/detr/detr_r50_8x2_150e_coco.py'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-        detr = DetectionPredictor(model_path, config_path)
+        detr = DetectorPredictor(model_path, config_path)
         output = detr.predict(img)
         detr.visualize(img, output, out_file=None)
 
@@ -91,7 +91,7 @@ class DETRTest(unittest.TestCase):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/dab_detr/dab_detr_epoch_50.pth'
         config_path = 'configs/detection/dab_detr/dab_detr_r50_8x2_50e_coco.py'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-        dab_detr = DetectionPredictor(model_path, config_path)
+        dab_detr = DetectorPredictor(model_path, config_path)
         output = dab_detr.predict(img)
         dab_detr.visualize(img, output, out_file=None)
 
@@ -166,7 +166,7 @@ class DETRTest(unittest.TestCase):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/dn_detr/dn_detr_epoch_50.pth'
         config_path = 'configs/detection/dab_detr/dn_detr_r50_8x2_50e_coco.py'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-        dn_detr = DetectionPredictor(model_path, config_path)
+        dn_detr = DetectorPredictor(model_path, config_path)
         output = dn_detr.predict(img)
         dn_detr.visualize(img, output, out_file=None)
 

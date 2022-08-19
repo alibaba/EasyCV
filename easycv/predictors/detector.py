@@ -19,6 +19,7 @@ from easycv.models import build_model
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
+from easycv.utils.logger import get_root_logger
 from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.registry import build_from_cfg
 from .builder import PREDICTORS
@@ -36,7 +37,12 @@ except Exception:
 
 
 @PREDICTORS.register_module()
-class DetectionPredictor(PredictorInterface):
+class DetectorPredictor(PredictorInterface):
+    """Inference image(s) with the detector.
+    Args:
+        model_path (str): checkpoint model and export model are shared.
+        config_path (str): If config_path is specified, both checkpoint model and export model can be used; if config_path=None, the export model is used by default.
+    """
 
     def __init__(self, model_path, config_path=None):
 
@@ -45,6 +51,8 @@ class DetectionPredictor(PredictorInterface):
         if config_path is not None:
             self.cfg = mmcv_config_fromfile(config_path)
         else:
+            logger = get_root_logger()
+            logger.warning('please use export model!')
             if is_url_path(self.model_path) and url_path_exists(
                     self.model_path):
                 checkpoint = load_state_dict_from_url(model_path)
@@ -90,9 +98,8 @@ class DetectionPredictor(PredictorInterface):
         self.CLASSES = self.cfg.CLASSES
 
     def predict(self, imgs):
-        """Inference image(s) with the detector.
+        """
         Args:
-            model (nn.Module): The loaded detector.
             imgs (str/ndarray or list[str/ndarray] or tuple[str/ndarray]):
             Either image files or loaded images.
         Returns:

@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 
-from easycv.predictors.detector import DetectionPredictor
+from easycv.predictors.detector import DetectorPredictor
 
 
 class FCOSTest(unittest.TestCase):
@@ -16,7 +16,7 @@ class FCOSTest(unittest.TestCase):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/fcos/epoch_12.pth'
         config_path = 'configs/detection/fcos/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_1x_coco.py'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-        fcos = DetectionPredictor(model_path, config_path)
+        fcos = DetectorPredictor(model_path, config_path)
         output = fcos.predict(img)
         fcos.visualize(img, output, out_file=None)
 
