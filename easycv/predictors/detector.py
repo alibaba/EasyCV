@@ -18,6 +18,7 @@ from easycv.datasets.utils import replace_ImageToTensor
 from easycv.file import io
 from easycv.file.utils import is_url_path, url_path_exists
 from easycv.models import build_model
+from easycv.models.detection.utils import postprocess
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
@@ -67,7 +68,7 @@ class TorchYoloXPredictor(PredictorInterface):
 
         self.use_trt_efficientnms = use_trt_efficientnms
 
-        if self.model_type=='blade':
+        if self.model_type == 'blade' or self.use_trt_efficientnms:
             import torch_blade
 
         if model_config:
@@ -78,7 +79,7 @@ class TorchYoloXPredictor(PredictorInterface):
         self.score_thresh = model_config[
             'score_thresh'] if 'score_thresh' in model_config else score_thresh
 
-        if self.model_type!='ori':
+        if self.model_type != 'ori':
             # jit or blade model
             preprocess_path = '.'.join(
                 model_path.split('.')[:-1] + ['preprocess'])
@@ -87,6 +88,7 @@ class TorchYoloXPredictor(PredictorInterface):
                 with io.open(preprocess_path, 'rb') as infile:
                     map_location = 'cpu' if self.device == 'cpu' else 'cuda'
                     self.preprocess = torch.jit.load(infile, map_location)
+
             with io.open(model_path, 'rb') as infile:
                 map_location = 'cpu' if self.device == 'cpu' else 'cuda'
                 self.model = torch.jit.load(infile, map_location)
@@ -94,12 +96,12 @@ class TorchYoloXPredictor(PredictorInterface):
                 self.cfg = json.load(infile)
                 test_pipeline = self.cfg['test_pipeline']
                 self.CLASSES = self.cfg['classes']
-                self.end2end = self.cfg['export']['end2end']
+                self.preprocess_jit = self.cfg['export']['preprocess_jit']
 
             self.traceable = True
 
         else:
-            self.end2end = False
+            self.preprocess_jit = False
             with io.open(self.model_path, 'rb') as infile:
                 checkpoint = torch.load(infile, map_location='cpu')
 
@@ -139,6 +141,10 @@ class TorchYoloXPredictor(PredictorInterface):
         # build pipeline
         pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
         self.pipeline = Compose(pipeline)
+        print(self.cfg)
+        self.test_conf = self.cfg['model'].get('test_conf', 0.01)
+        self.nms_thre = self.cfg['model'].get('nms_thre', 0.65)
+        self.num_classes = len(self.CLASSES)
 
     def post_assign(self, outputs, img_metas):
         detection_boxes = []
@@ -151,6 +157,7 @@ class TorchYoloXPredictor(PredictorInterface):
                 img_metas_list.append(img_metas[i])
             if outputs[i].requires_grad == True:
                 outputs[i] = outputs[i].detach()
+
             if outputs[i] is not None:
                 bboxes = outputs[i][:, 0:4] if outputs[i] is not None else None
                 if img_metas:
@@ -193,83 +200,61 @@ class TorchYoloXPredictor(PredictorInterface):
                 img = np.asarray(img)
 
             ori_img_shape = img.shape[:2]
-            if self.end2end:
-                print('end2end')
+            if self.preprocess_jit:
                 # the input should also be as the type of uint8 as mmcv
                 img = torch.from_numpy(img).to(self.device)
                 img = img.unsqueeze(0)
+
                 if hasattr(self, 'preprocess'):
-                    img = self.preprocess(img)
+                    img, img_info = self.preprocess(img)
 
-                if self.use_trt_efficientnms:
-                    tmp_out = self.model(img)
-                    det_out = {}
-                    det_out['detection_boxes'] = tmp_out[1]
-                    det_out['detection_scores'] = tmp_out[2]
-                    det_out['detection_classes'] = tmp_out[3]
-                else:
-                    det_out = self.model(img)
-
-                detection_scores = det_out['detection_scores']
-
-                if detection_scores is not None:
-                    sel_ids = detection_scores > self.score_thresh
-                    detection_scores = detection_scores[sel_ids]
-                    detection_boxes = det_out['detection_boxes'][sel_ids]
-                    detection_classes = det_out['detection_classes'][sel_ids]
-                else:
-                    detection_boxes = []
-                    detection_classes = []
-
-                if to_numpy:
-                    detection_scores = detection_scores.cpu().detach().numpy()
-                    detection_boxes = detection_boxes.cpu().detach().numpy()
-                    detection_classes = detection_classes.cpu().detach().numpy(
-                    )
             else:
                 data_dict = {'img': img}
                 data_dict = self.pipeline(data_dict)
                 img = data_dict['img']
                 img = torch.unsqueeze(img._data, 0).to(self.device)
                 data_dict.pop('img')
-                if self.traceable:
-                    if self.use_trt_efficientnms:
-                        with torch.no_grad():
-                            tmp_out = self.model(img)
-                            det_out = {}
-                            det_out['detection_boxes'] = tmp_out[1]
-                            det_out['detection_scores'] = tmp_out[2]
-                            det_out['detection_classes'] = tmp_out[3]
-                    else:
-                        with torch.no_grad():
-                            det_out = self.post_assign(
-                                self.model(img),
-                                img_metas=[data_dict['img_metas']._data])
+                img_info = data_dict['img_metas']._data
+
+            if self.traceable:
+                if self.use_trt_efficientnms:
+                    with torch.no_grad():
+                        tmp_out = self.model(img)
+                        det_out = {}
+                        det_out['detection_boxes'] = tmp_out[1] / img_info[
+                            'scale_factor'][0]
+                        det_out['detection_scores'] = tmp_out[2]
+                        det_out['detection_classes'] = tmp_out[3]
+
                 else:
                     with torch.no_grad():
-                        det_out = self.model(
-                            img,
-                            mode='test',
-                            img_metas=[data_dict['img_metas']._data])
+                        det_out = self.post_assign(
+                            postprocess(
+                                self.model(img), self.num_classes,
+                                self.test_conf, self.nms_thre),
+                            img_metas=[img_info])
+            else:
+                with torch.no_grad():
+                    det_out = self.model(
+                        img, mode='test', img_metas=[img_info])
 
-                # print(det_out)
-                # det_out = det_out[:self.max_det]
-                # scale box to original image scale, this logic has some operation
-                # that can not be traced, see
-                # https://discuss.pytorch.org/t/windows-libtorch-c-load-cuda-module-with-std-runtime-error-message-shape-4-is-invalid-for-input-if-size-40/63073/4
-                # det_out = scale_coords(img.shape[2:], det_out, ori_img_shape, (scale_factor, pad))
+            # print(det_out)
+            # det_out = det_out[:self.max_det]
+            # scale box to original image scale, this logic has some operation
+            # that can not be traced, see
+            # https://discuss.pytorch.org/t/windows-libtorch-c-load-cuda-module-with-std-runtime-error-message-shape-4-is-invalid-for-input-if-size-40/63073/4
+            # det_out = scale_coords(img.shape[2:], det_out, ori_img_shape, (scale_factor, pad))
 
-                detection_scores = det_out['detection_scores'][0]
+            detection_scores = det_out['detection_scores'][0]
 
-                if detection_scores is not None:
-                    sel_ids = detection_scores > self.score_thresh
-                    detection_scores = detection_scores[sel_ids]
-                    detection_boxes = det_out['detection_boxes'][0][sel_ids]
-                    detection_classes = det_out['detection_classes'][0][
-                        sel_ids]
-                else:
-                    detection_boxes = None
-                    detection_classes = None
+            if detection_scores is not None:
+                sel_ids = detection_scores > self.score_thresh
+                detection_scores = detection_scores[sel_ids]
+                detection_boxes = det_out['detection_boxes'][0][sel_ids]
+                detection_classes = det_out['detection_classes'][0][sel_ids]
+            else:
+                detection_boxes = None
+                detection_classes = None
 
             num_boxes = detection_classes.shape[
                 0] if detection_classes is not None else 0

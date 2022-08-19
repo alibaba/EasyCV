@@ -198,8 +198,8 @@ class YOLOX(BaseModel):
                         logging.error(
                             'PAI-YOLOX : using trt_efficientnms set to be True, but model has not attr(trt_efficientnms)'
                         )
-                else:
-                    outputs = postprocess(outputs, self.num_classes,
-                                          self.test_conf, self.nms_thre)
+                # else:
+                #     outputs = postprocess(outputs, self.num_classes,
+                #                           self.test_conf, self.nms_thre)
 
         return outputs

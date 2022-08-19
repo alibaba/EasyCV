@@ -49,7 +49,7 @@ class ModelExportTest(unittest.TestCase):
     def test_export_yolox_jit(self):
         config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
         cfg = mmcv_config_fromfile(config_file)
-        cfg.export = dict(use_jit=True, export_blade=False, end2end=False)
+        cfg.export = dict(export_type='jit', end2end=False)
         ori_ckpt = PRETRAINED_MODEL_YOLOXS_EXPORT
 
         target_path = f'{self.tmp_dir}/export_yolox_s_epoch300_export'
@@ -61,7 +61,7 @@ class ModelExportTest(unittest.TestCase):
     def test_export_yolox_jit_end2end(self):
         config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
         cfg = mmcv_config_fromfile(config_file)
-        cfg.export = dict(use_jit=True, export_blade=False, end2end=True)
+        cfg.export = dict(export_type='jit', end2end=True)
         ori_ckpt = PRETRAINED_MODEL_YOLOXS_EXPORT
 
         target_path = f'{self.tmp_dir}/export_yolox_s_epoch300_end2end'
