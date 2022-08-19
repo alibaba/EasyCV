@@ -3,23 +3,15 @@
 isort:skip_file
 """
 import os
-import tempfile
 import unittest
 
-import cv2
 import numpy as np
 from PIL import Image
 
-from easycv.predictors.detector import TorchYoloXPredictor, TorchViTDetPredictor
-from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_EXPORT,
-                             PRETRAINED_MODEL_YOLOXS_EXPORT_JIT,
-                             PRETRAINED_MODEL_YOLOXS_END2END_JIT,
-                             DET_DATA_SMALL_COCO_LOCAL)
-
+from tests.ut_config import TEST_IMAGES_DIR
 from tests.ut_config import (PRETRAINED_MODEL_SEGFORMER,
                              MODEL_CONFIG_SEGFORMER)
-from easycv.predictors.segmentation import (SegFormerPredictor)
-from numpy.testing import assert_array_almost_equal
+from easycv.predictors.segmentation import SegFormerPredictor
 
 
 class SegmentorTest(unittest.TestCase):
@@ -31,9 +23,8 @@ class SegmentorTest(unittest.TestCase):
         segmentation_model_path = PRETRAINED_MODEL_SEGFORMER
         segmentation_model_config = MODEL_CONFIG_SEGFORMER
 
-        img = os.path.join(DET_DATA_SMALL_COCO_LOCAL,
-                           'val2017/000000289059.jpg')
-        if os.path.exists(img) == False:
+        img = os.path.join(TEST_IMAGES_DIR, '000000289059.jpg')
+        if not os.path.exists(img):
             img = './data/test/segmentation/coco_stuff_164k/val2017/000000289059.jpg'
 
         input_data_list = [np.asarray(Image.open(img))]

@@ -383,4 +383,3 @@ python tools/prepare_data/coco_stuff164k.py /path/to/coco_stuff164k --nproc 8
 By convention, mask labels in `/path/to/coco_stuff164k/annotations/*2017/*_labelTrainIds.png` are used for COCO Stuff 164k training and testing.
 
 The details of this dataset could be found at [here](https://github.com/nightrome/cocostuff#downloads).
-
