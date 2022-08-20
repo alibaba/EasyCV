@@ -49,7 +49,10 @@ class ModelExportTest(unittest.TestCase):
     def test_export_yolox_jit_nopre_notrt(self):
         config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
         cfg = mmcv_config_fromfile(config_file)
-        cfg.export = dict(export_type='jit', preprocess_jit=False, use_trt_efficientnms=False)
+        cfg.export = dict(
+            export_type='jit',
+            preprocess_jit=False,
+            use_trt_efficientnms=False)
         ori_ckpt = PRETRAINED_MODEL_YOLOXS_EXPORT
 
         target_path = f'{self.tmp_dir}/export_yolox_s_epoch300_export'
@@ -61,7 +64,8 @@ class ModelExportTest(unittest.TestCase):
     def test_export_yolox_jit_pre_notrt(self):
         config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
         cfg = mmcv_config_fromfile(config_file)
-        cfg.export = dict(export_type='jit', preprocess_jit=True, use_trt_efficientnms=False)
+        cfg.export = dict(
+            export_type='jit', preprocess_jit=True, use_trt_efficientnms=False)
         ori_ckpt = PRETRAINED_MODEL_YOLOXS_EXPORT
 
         target_path = f'{self.tmp_dir}/export_yolox_s_epoch300_end2end'

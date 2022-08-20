@@ -43,24 +43,24 @@ class DetectorTest(unittest.TestCase):
         self.assertEqual(len(output['detection_boxes']), 4)
         self.assertEqual(output['ori_img_shape'], [480, 640])
 
-        self.assertListEqual(
-            output['detection_classes'].tolist(),
-            np.array([13, 8, 8, 8], dtype=np.int32).tolist())
+        self.assertListEqual(output['detection_classes'].tolist(),
+                             np.array([13, 8, 8, 8], dtype=np.int32).tolist())
 
-        self.assertListEqual(output['detection_class_names'], ['bench', 'boat', 'boat', 'boat'])
+        self.assertListEqual(output['detection_class_names'],
+                             ['bench', 'boat', 'boat', 'boat'])
 
         assert_array_almost_equal(
             output['detection_scores'],
-            np.array([0.92593855, 0.60268813, 0.57775956, 0.5750004 ],
+            np.array([0.92593855, 0.60268813, 0.57775956, 0.5750004],
                      dtype=np.float32),
             decimal=2)
 
         assert_array_almost_equal(
             output['detection_boxes'],
-            np.array([[407.89523, 284.62598, 561.4984 , 356.7296],
-                     [439.37653,263.42395, 467.01526, 271.79144],
-                     [480.8597,  269.64435, 502.18765, 274.80127],
-                     [510.37033, 268.4982,  527.67017, 273.04935]]),
+            np.array([[407.89523, 284.62598, 561.4984, 356.7296],
+                      [439.37653, 263.42395, 467.01526, 271.79144],
+                      [480.8597, 269.64435, 502.18765, 274.80127],
+                      [510.37033, 268.4982, 527.67017, 273.04935]]),
             decimal=1)
 
     def test_yolox_detector_jit_nopre_notrt(self):
@@ -83,11 +83,11 @@ class DetectorTest(unittest.TestCase):
         self.assertEqual(len(output['detection_boxes']), 4)
         self.assertEqual(output['ori_img_shape'], [480, 640])
 
-        self.assertListEqual(
-            output['detection_classes'].tolist(),
-            np.array([13, 8, 8, 8], dtype=np.int32).tolist())
+        self.assertListEqual(output['detection_classes'].tolist(),
+                             np.array([13, 8, 8, 8], dtype=np.int32).tolist())
 
-        self.assertListEqual(output['detection_class_names'], ['bench', 'boat', 'boat', 'boat'])
+        self.assertListEqual(output['detection_class_names'],
+                             ['bench', 'boat', 'boat', 'boat'])
 
         assert_array_almost_equal(
             output['detection_scores'],
@@ -123,11 +123,11 @@ class DetectorTest(unittest.TestCase):
         self.assertEqual(len(output['detection_boxes']), 4)
         self.assertEqual(output['ori_img_shape'], [480, 640])
 
-        self.assertListEqual(
-            output['detection_classes'].tolist(),
-            np.array([13, 8, 8, 8], dtype=np.int32).tolist())
+        self.assertListEqual(output['detection_classes'].tolist(),
+                             np.array([13, 8, 8, 8], dtype=np.int32).tolist())
 
-        self.assertListEqual(output['detection_class_names'], ['bench', 'boat', 'boat', 'boat'])
+        self.assertListEqual(output['detection_class_names'],
+                             ['bench', 'boat', 'boat', 'boat'])
 
         assert_array_almost_equal(
             output['detection_scores'],
