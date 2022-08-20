@@ -12,8 +12,8 @@ from PIL import Image
 
 from easycv.predictors.detector import TorchYoloXPredictor, TorchViTDetPredictor
 from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_EXPORT,
-                             PRETRAINED_MODEL_YOLOXS_EXPORT_JIT,
-                             PRETRAINED_MODEL_YOLOXS_END2END_JIT,
+                             PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_JIT,
+                             PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT,
                              DET_DATA_SMALL_COCO_LOCAL)
 from numpy.testing import assert_array_almost_equal
 
@@ -27,7 +27,7 @@ class DetectorTest(unittest.TestCase):
         detection_model_path = PRETRAINED_MODEL_YOLOXS_EXPORT
 
         img = os.path.join(DET_DATA_SMALL_COCO_LOCAL,
-                           'val2017/000000037777.jpg')
+                           'val2017/000000522713.jpg')
 
         input_data_list = [np.asarray(Image.open(img))]
         predictor = TorchYoloXPredictor(
@@ -39,132 +39,108 @@ class DetectorTest(unittest.TestCase):
         self.assertIn('detection_classes', output)
         self.assertIn('detection_class_names', output)
         self.assertIn('ori_img_shape', output)
-        self.assertEqual(len(output['detection_boxes']), 7)
-        self.assertEqual(output['ori_img_shape'], [230, 352])
+
+        self.assertEqual(len(output['detection_boxes']), 4)
+        self.assertEqual(output['ori_img_shape'], [480, 640])
 
         self.assertListEqual(
             output['detection_classes'].tolist(),
-            np.array([72, 69, 49, 60, 49, 46, 49], dtype=np.int32).tolist())
+            np.array([13, 8, 8, 8], dtype=np.int32).tolist())
 
-        self.assertListEqual(output['detection_class_names'], [
-            'refrigerator', 'oven', 'orange', 'dining table', 'orange',
-            'banana', 'orange'
-        ])
+        self.assertListEqual(output['detection_class_names'], ['bench', 'boat', 'boat', 'boat'])
 
         assert_array_almost_equal(
             output['detection_scores'],
-            np.array([
-                0.9150531, 0.79622537, 0.68270016, 0.6374498, 0.600583,
-                0.56233376, 0.5553793
-            ],
+            np.array([0.92593855, 0.60268813, 0.57775956, 0.5750004 ],
                      dtype=np.float32),
             decimal=2)
 
         assert_array_almost_equal(
             output['detection_boxes'],
-            np.array([[297.19852, 80.219, 351.66287, 230.79648],
-                      [138.09207, 124.47283, 196.79352, 192.22653],
-                      [231.14838, 200.19218, 248.22963, 217.3257],
-                      [83.67468, 170.77133, 292.94174, 228.3555],
-                      [217.1804, 200.14183, 232.14671, 214.6331],
-                      [238.3924, 187.66922, 258.8048, 205.60503],
-                      [204.3168, 187.50964, 220.10815, 207.12463]]),
+            np.array([[407.89523, 284.62598, 561.4984 , 356.7296],
+                     [439.37653,263.42395, 467.01526, 271.79144],
+                     [480.8597,  269.64435, 502.18765, 274.80127],
+                     [510.37033, 268.4982,  527.67017, 273.04935]]),
             decimal=1)
 
-    def test_yolox_detector_jit_end2end(self):
+    def test_yolox_detector_jit_nopre_notrt(self):
         img = os.path.join(DET_DATA_SMALL_COCO_LOCAL,
-                           'val2017/000000037777.jpg')
+                           'val2017/000000522713.jpg')
 
         input_data_list = [np.asarray(Image.open(img))]
 
-        jit_path = PRETRAINED_MODEL_YOLOXS_END2END_JIT
+        jit_path = PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_JIT
         predictor_jit = TorchYoloXPredictor(
             model_path=jit_path, score_thresh=0.5)
 
-        output_jit = predictor_jit.predict(input_data_list)[0]
+        output = predictor_jit.predict(input_data_list)[0]
+        self.assertIn('detection_boxes', output)
+        self.assertIn('detection_scores', output)
+        self.assertIn('detection_classes', output)
+        self.assertIn('detection_class_names', output)
+        self.assertIn('ori_img_shape', output)
 
-        self.assertIn('detection_boxes', output_jit)
-        self.assertIn('detection_scores', output_jit)
-        self.assertIn('detection_classes', output_jit)
+        self.assertEqual(len(output['detection_boxes']), 4)
+        self.assertEqual(output['ori_img_shape'], [480, 640])
 
         self.assertListEqual(
-            output_jit['detection_classes'].tolist(),
-            np.array([72, 69, 49, 60, 49, 46, 49], dtype=np.int32).tolist())
+            output['detection_classes'].tolist(),
+            np.array([13, 8, 8, 8], dtype=np.int32).tolist())
 
-        self.assertListEqual(output_jit['detection_class_names'], [
-            'refrigerator', 'oven', 'orange', 'dining table', 'orange',
-            'banana', 'orange'
-        ])
+        self.assertListEqual(output['detection_class_names'], ['bench', 'boat', 'boat', 'boat'])
 
         assert_array_almost_equal(
-            output_jit['detection_scores'],
-            np.array([
-                0.9150531, 0.79622537, 0.68270016, 0.6374498, 0.600583,
-                0.56233376, 0.5553793
-            ],
+            output['detection_scores'],
+            np.array([0.92593855, 0.60268813, 0.57775956, 0.5750004],
                      dtype=np.float32),
             decimal=2)
 
         assert_array_almost_equal(
-            output_jit['detection_boxes'],
-            np.array([[
-                297.19852, 80.219, 351.66287, 230.79648
-            ][138.09207, 124.47283, 196.79352,
-              192.22653][231.14838, 200.19218, 248.22963,
-                         217.3257][83.67468, 170.77133, 292.94174,
-                                   228.3555][217.1804, 200.14183, 232.14671,
-                                             214.6331][238.3924, 187.66922,
-                                                       258.8048,
-                                                       205.60503][204.3168,
-                                                                  187.50964,
-                                                                  220.10815,
-                                                                  207.12463]]),
+            output['detection_boxes'],
+            np.array([[407.89523, 284.62598, 561.4984, 356.7296],
+                      [439.37653, 263.42395, 467.01526, 271.79144],
+                      [480.8597, 269.64435, 502.18765, 274.80127],
+                      [510.37033, 268.4982, 527.67017, 273.04935]]),
             decimal=1)
 
-    def test_yolox_detector_jit(self):
+    def test_yolox_detector_jit_pre_trt(self):
         img = os.path.join(DET_DATA_SMALL_COCO_LOCAL,
-                           'val2017/000000037777.jpg')
+                           'val2017/000000522713.jpg')
 
         input_data_list = [np.asarray(Image.open(img))]
 
-        jit_path = PRETRAINED_MODEL_YOLOXS_EXPORT_JIT
-
+        jit_path = PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT
         predictor_jit = TorchYoloXPredictor(
             model_path=jit_path, score_thresh=0.5)
 
-        output_jit = predictor_jit.predict(input_data_list)[0]
+        output = predictor_jit.predict(input_data_list)[0]
+        self.assertIn('detection_boxes', output)
+        self.assertIn('detection_scores', output)
+        self.assertIn('detection_classes', output)
+        self.assertIn('detection_class_names', output)
+        self.assertIn('ori_img_shape', output)
 
-        self.assertIn('detection_boxes', output_jit)
-        self.assertIn('detection_scores', output_jit)
-        self.assertIn('detection_classes', output_jit)
+        self.assertEqual(len(output['detection_boxes']), 4)
+        self.assertEqual(output['ori_img_shape'], [480, 640])
 
         self.assertListEqual(
-            output_jit['detection_classes'].tolist(),
-            np.array([72, 69, 49, 60, 49, 46, 49], dtype=np.int32).tolist())
+            output['detection_classes'].tolist(),
+            np.array([13, 8, 8, 8], dtype=np.int32).tolist())
 
-        self.assertListEqual(output_jit['detection_class_names'], [
-            'refrigerator', 'oven', 'orange', 'dining table', 'orange',
-            'banana', 'orange'
-        ])
+        self.assertListEqual(output['detection_class_names'], ['bench', 'boat', 'boat', 'boat'])
 
         assert_array_almost_equal(
-            output_jit['detection_scores'],
-            np.array([
-                0.9150531, 0.79622537, 0.68270016, 0.6374498, 0.600583,
-                0.56233376, 0.5553793
-            ],
+            output['detection_scores'],
+            np.array([0.92593855, 0.60268813, 0.57775956, 0.5750004],
                      dtype=np.float32),
             decimal=2)
 
         assert_array_almost_equal(
-            output_jit['detection_boxes'],
-            np.array([[297.19852, 80.219, 351.66287, 230.79648],
-                      [138.09207, 124.47283, 196.79352, 192.22653],
-                      [231.14838, 200.19218, 248.22963, 217.3257],
-                      [83.67468, 170.77133, 292.94174, 228.3555],
-                      [217.1804, 200.14183, 232.14671, 214.6331],
-                      [238.3924, 187.66922, 258.8048, 205.60503],
-                      [204.3168, 187.50964, 220.10815, 207.12463]]),
+            output['detection_boxes'],
+            np.array([[407.89523, 284.62598, 561.4984, 356.7296],
+                      [439.37653, 263.42395, 467.01526, 271.79144],
+                      [480.8597, 269.64435, 502.18765, 274.80127],
+                      [510.37033, 268.4982, 527.67017, 273.04935]]),
             decimal=1)
 
     def test_vitdet_detector(self):

@@ -82,22 +82,33 @@ PRETRAINED_MODEL_RESNET50_WITHOUTHEAD = os.path.join(
 PRETRAINED_MODEL_FACEID = os.path.join(BASE_LOCAL_PATH,
                                        'pretrained_models/faceid')
 PRETRAINED_MODEL_YOLOXS_EXPORT = os.path.join(
-    BASE_LOCAL_PATH, 'pretrained_models/detection/yolox_s/epoch_300.pt')
-PRETRAINED_MODEL_YOLOXS_END2END_JIT = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/detection/infer_yolox/epoch_300.pt')
+PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_JIT = os.path.join(
     BASE_LOCAL_PATH,
-    'pretrained_models/detection/yolox_s/epoch_300_j_e2e_notrt.pt.jit')
-PRETRAINED_MODEL_YOLOXS_END2END_BLADE = os.path.join(
+    'pretrained_models/detection/infer_yolox/epoch_300_nopre_notrt.pt.jit')
+PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT = os.path.join(
     BASE_LOCAL_PATH,
-    'pretrained_models/detection/yolox_s/epoch_300_b_e2e_trt.pt.blade')
-PRETRAINED_MODEL_YOLOXS_EXPORT_JIT = os.path.join(
+    'pretrained_models/detection/infer_yolox/epoch_300_pre_notrt.pt.jit')
+PRETRAINED_MODEL_YOLOXS_NOPRE_TRT_JIT = os.path.join(
     BASE_LOCAL_PATH,
-    'pretrained_models/detection/yolox_s/epoch_300_j_noe2e.pt.jit')
-PRETRAINED_MODEL_YOLOXS_EXPORT_BLADE = os.path.join(
+    'pretrained_models/detection/infer_yolox/epoch_300_nopre_trt.pt.jit')
+PRETRAINED_MODEL_YOLOXS_PRE_TRT_JIT = os.path.join(
     BASE_LOCAL_PATH,
-    'pretrained_models/detection/yolox_s/epoch_300_b_noe2e_trt.pt.blade')
-
+    'pretrained_models/detection/infer_yolox/epoch_300_pre_trt.pt.jit')
+PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_BLADE = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/detection/infer_yolox/epoch_300_nopre_notrt.pt.blade')
+PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_BLADE = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/detection/infer_yolox/epoch_300_pre_notrt.pt.blade')
+PRETRAINED_MODEL_YOLOXS_NOPRE_TRT_BLADE = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/detection/infer_yolox/epoch_300_nopre_trt.pt.blade')
+PRETRAINED_MODEL_YOLOXS_PRE_TRT_BLADE = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/detection/infer_yolox/epoch_300_pre_trt.pt.blade')
 PRETRAINED_MODEL_YOLOXS = os.path.join(
-    BASE_LOCAL_PATH, 'pretrained_models/detection/yolox_s/epoch_300.pth')
+    BASE_LOCAL_PATH, 'pretrained_models/detection/infer_yolox/epoch_300.pth')
 
 PRETRAINED_MODEL_POSE_HRNET_EXPORT = os.path.join(
     BASE_LOCAL_PATH,

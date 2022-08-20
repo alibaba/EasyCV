@@ -141,7 +141,7 @@ class TorchYoloXPredictor(PredictorInterface):
         # build pipeline
         pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
         self.pipeline = Compose(pipeline)
-        print(self.cfg)
+
         self.test_conf = self.cfg['model'].get('test_conf', 0.01)
         self.nms_thre = self.cfg['model'].get('nms_thre', 0.65)
         self.num_classes = len(self.CLASSES)
@@ -258,8 +258,6 @@ class TorchYoloXPredictor(PredictorInterface):
 
             num_boxes = detection_classes.shape[
                 0] if detection_classes is not None else 0
-
-            print(num_boxes)
 
             detection_classes_names = [
                 self.CLASSES[detection_classes[idx]]

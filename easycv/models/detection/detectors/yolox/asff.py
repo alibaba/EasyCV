@@ -5,7 +5,6 @@ import torch.nn.functional as F
 
 from easycv.models.backbones.network_blocks import BaseConv
 
-
 class ASFF(nn.Module):
 
     def __init__(self,
