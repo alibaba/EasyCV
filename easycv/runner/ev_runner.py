@@ -168,12 +168,9 @@ class EVRunner(EpochBasedRunner):
                 param groups. If the runner has a dict of optimizers, this
                 method will return a dict.
         """
-        # add interface to selfdefine current_lr_fn for lr_hook
-        # so that runner can logging correct lrs
-        if hasattr(self, 'current_lr_fn'):
-            lr = self.current_lr_fn(self.optimizer)
-        elif isinstance(self.optimizer, torch.optim.Optimizer):
-            lr = [group['lr'] for group in self.optimizer.param_groups]
+        if isinstance(self.optimizer, torch.optim.Optimizer):
+            lr = sorted([group['lr'] for group in self.optimizer.param_groups],
+                        reverse=True)  # avoid lr display error
         elif isinstance(self.optimizer, dict):
             lr = dict()
             for name, optim in self.optimizer.items():
