@@ -2,12 +2,12 @@
 
 ## Introduction
 Welcome to YOLOX-PAI! YOLOX-PAI is an incremental work of YOLOX based on PAI-EasyCV.
-We use various existing detection methods and PAI-BLADE to boost the performance.
+We use various existing detection methods and PAI-Blade to boost the performance.
 We also provide an efficient way for end2end object detction.
 
 In breif, our main contributions are:
 - Investigate various detection methods upon YOLOX to achieve SOTA object detection results.
-- Provide an easy way to use PAI-BLADE to accelerate the inference process.
+- Provide an easy way to use PAI-Blade to accelerate the inference process.
 - Provide a convenient way to train/evaluate/export YOLOX-PAI model and conduct end2end object detection.
 
 To learn more details of YOLOX-PAI, you can refer to our technical paper [??link][arxiv].
@@ -141,7 +141,7 @@ python tools/export.py configs/detection/yolox/yolox_s_8xb16_300e_coco.py \
 ```
 
 ### Inference
-Download exported models([preprocess](http://pai-vision-data-hz.oss-accelerate.aliyuncs.com/EasyCV/modelzoo/detection/yolox/yolox-pai/model/export/epoch_300_pre_notrt.pt.preprocess), [model](http://pai-vision-data-hz.oss-accelerate.aliyuncs.com/EasyCV/modelzoo/detection/yolox/yolox-pai/model/export/epoch_300_pre_notrt.pt.blade), [meta](http://pai-vision-data-hz.oss-accelerate.aliyuncs.com/EasyCV/modelzoo/detection/yolox/yolox-pai/model/export/epoch_300_pre_notrt.pt.blade.config.json)) or export your own model. 
+Download exported models([preprocess](http://pai-vision-data-hz.oss-accelerate.aliyuncs.com/EasyCV/modelzoo/detection/yolox/yolox-pai/model/export/epoch_300_pre_notrt.pt.preprocess), [model](http://pai-vision-data-hz.oss-accelerate.aliyuncs.com/EasyCV/modelzoo/detection/yolox/yolox-pai/model/export/epoch_300_pre_notrt.pt.blade), [meta](http://pai-vision-data-hz.oss-accelerate.aliyuncs.com/EasyCV/modelzoo/detection/yolox/yolox-pai/model/export/epoch_300_pre_notrt.pt.blade.config.json)) or export your own model.
 Put them in the following format:
 ```shell
 export_blade/

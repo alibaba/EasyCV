@@ -57,7 +57,7 @@ python tools/export.py configs/detection/yolox/yolox_s_8xb16_300e_coco.py \
 
 **Export configs:**
 ```shell
-export = dict(export_type='ori',              # exported model type ['ori','jit','blade'] 
+export = dict(export_type='ori',              # exported model type ['ori','jit','blade']
               preprocess_jit=True,            # whether to save a preprocess jit model
               static_opt=True,                # whether to use static shape ti optimize model
               batch_size=1,                   # batch_size if the static shape
@@ -67,13 +67,13 @@ export = dict(export_type='ori',              # exported model type ['ori','jit'
                                               # the difference between the fp16 and fp32 results of all layers will be computed
                                               # The layers with larger difference are likely to fallback to fp16
                                               # if the optimized result is not ture, you can choose a larger ratio.
-              ), 
+              ),
               use_trt_efficientnms=True)      # whether to wrap the trt_nms into model
 ```
 
 ### Inference Time Comparisons
 Use YOLOX-s as an example, we test the en2end inference time of models exported with different configs.
-Note that blade optimization needs warmup, and we report average time among 1000 experiments on a single NVIDIA Tesla V100.  
+Note that blade optimization needs warmup, and we report average time among 1000 experiments on a single NVIDIA Tesla V100.
 
 
 | export_type | preprocess_jit | use_trt_efficientnms | Infer time (end2end) /ms |
@@ -87,4 +87,3 @@ Note that blade optimization needs warmup, and we report average time among 1000
 |    blade    |     False      |         True         |           9.39           |
 |    blade    |      True      |        False         |           3.93           |
 |    blade    |      True      |         True         |           4.53           |
-
