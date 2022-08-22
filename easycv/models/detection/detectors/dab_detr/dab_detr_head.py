@@ -15,9 +15,10 @@ from .dn_components import dn_post_process, prepare_for_dn
 
 @HEADS.register_module()
 class DABDETRHead(nn.Module):
-    """Implements the DETR transformer head.
-    See `paper: End-to-End Object Detection with Transformers
-    <https://arxiv.org/pdf/2005.12872>`_ for details.
+    """Implements the DAB-DETR head.
+    See `paper: DAB-DETR: Dynamic Anchor Boxes are Better Queries for DETR
+    <https://arxiv.org/abs/2201.12329> and DN-DETR: Accelerate DETR Training by Introducing Query DeNoising
+    <https://arxiv.org/abs/2203.01305>`_ for details.
     Args:
         num_classes (int): Number of categories excluding the background.
     """
