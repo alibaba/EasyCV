@@ -14,10 +14,7 @@ from .test_util import run_in_subprocess
 
 try:
     from mmcv.runner.hooks import HOOKS
-    if 'easycv' not in HOOKS.module_dict['YOLOXLrUpdaterHook'].__module__:
-        # the latest mmcv has registed YOLOXLrUpdaterHook and will occur conflict with our YOLOXLrUpdaterHook
-        # however, we can not find the exact version of such change!
-        HOOKS._module_dict.pop('YOLOXLrUpdaterHook', None)
+    HOOKS._module_dict.pop('YOLOXLrUpdaterHook', None)
     from mmdet.models.builder import MODELS as MMMODELS
     from mmdet.models.builder import BACKBONES as MMBACKBONES
     from mmdet.models.builder import NECKS as MMNECKS
