@@ -7,5 +7,3 @@ model = dict(
         in_channels=[192, 384, 768, 1536],
         num_feature_levels=5,
         transformer=dict(num_feature_levels=5)))
-
-data = dict(imgs_per_gpu=1)
