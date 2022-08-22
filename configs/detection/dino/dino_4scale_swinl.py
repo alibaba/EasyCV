@@ -1,7 +1,8 @@
 # model settings
 model = dict(
     type='Detection',
-    pretrained='/root/pretrain/warpper_swin_large_patch4_window12_384_22k.pth',
+    pretrained=
+    'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/timm/swint/warpper_swin_large_patch4_window12_384_22k.pth',
     backbone=dict(
         type='SwinTransformer',
         pretrain_img_size=384,
