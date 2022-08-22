@@ -21,6 +21,7 @@ class YOLOXHead(YOLOXHead_Template):
         obj_loss_type='BCE',
         reg_loss_type='giou',
         decode_in_inference=True,
+        width=None,
     ):
         """
         Args:
@@ -35,6 +36,7 @@ class YOLOXHead(YOLOXHead_Template):
             reg_loss_type (str): the loss function of the box prediction. Default value: l1.
         """
         super(YOLOXHead, self).__init__(
+            width=width,
             num_classes=num_classes,
             model_type=model_type,
             strides=strides,
@@ -44,7 +46,8 @@ class YOLOXHead(YOLOXHead_Template):
             stage=stage,
             obj_loss_type=obj_loss_type,
             reg_loss_type=reg_loss_type,
-            decode_in_inference=decode_in_inference)
+            decode_in_inference=decode_in_inference,
+        )
 
     def forward(self, xin, labels=None, imgs=None):
         outputs = []

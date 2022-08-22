@@ -15,15 +15,13 @@ class YOLOXTest(unittest.TestCase):
     def test_yolox(self):
         for model_type in ['s', 'm', 'l', 'x', 'tiny', 'nano']:
             model = YOLOX(
-                backbone=dict(
-                    type='YOLOPAFPN',
-                    backbone='CSPDarknet',
-                    model_type=model_type,  # s m l x tiny nano
-                    neck='yolo'),
+                test_conf=0.01,
+                nms_thre=0.65,
+                backbone='CSPDarknet',
+                model_type=model_type,
                 head=dict(
                     type='YOLOXHead', model_type=model_type, num_classes=2),
-                test_conf=0.01,
-                nms_thre=0.65)
+            )
             model = model.cuda()
             model.train()
 

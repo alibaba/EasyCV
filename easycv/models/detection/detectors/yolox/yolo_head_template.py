@@ -34,7 +34,8 @@ class YOLOXHead_Template(nn.Module):
                  stage='CLOUD',
                  obj_loss_type='BCE',
                  reg_loss_type='giou',
-                 decode_in_inference=True):
+                 decode_in_inference=True,
+                 width=None):
         """
         Args:
             num_classes (int): detection class numbers.
@@ -48,7 +49,12 @@ class YOLOXHead_Template(nn.Module):
             reg_loss_type (str): the loss function of the box prediction. Default value: giou.
         """
         super().__init__()
-        width = self.param_map[model_type][1]
+        if width is None and model_type in self.param_map:
+            width = self.param_map[model_type][1]
+        else:
+            assert (width!=None),\
+            'Unknow model type must have a given width!'
+
         self.width = width
         self.n_anchors = 1
         self.num_classes = num_classes
