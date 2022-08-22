@@ -229,7 +229,7 @@ def _export_yolox(model, cfg, filename):
                     nmsbox_num = int(model.get_nmsboxes_num(img_scale))
                 else:
                     logging.warning(
-                        'PAI-YOLOX: use_trt_efficientnms encounter model has no attr named get_nmsboxes_num, use 8400 as default!'
+                        'PAI-YOLOX: use_trt_efficientnms encounter model has no attr named get_nmsboxes_num, use 8400 (80*80+40*40+20*20)cas default!'
                     )
                     nmsbox_num = 8400
 

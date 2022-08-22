@@ -1,4 +1,18 @@
-# yolox tutorial
+# YOLOX-PAI Turtorial
+
+## Introduction
+Welcome to YOLOX-PAI! YOLOX-PAI is an incremental work of YOLOX based on PAI-EasyCV.
+We use various existing detection methods and PAI-BLADE to boost the performance.
+We also provide an efficient way for end2end object detction.
+
+In breif, our main contributions are:
+- Investigate various detection methods upon YOLOX to achieve SOTA object detection results.
+- Provide an easy way to use PAI-BLADE to accelerate the inference process.
+- Provide a convenient way to train/evaluate/export YOLOX-PAI model and conduct end2end object detection.
+
+To learn more details of YOLOX-PAI, you can refer to our technical paper [to be done].
+
+img
 
 ## Data preparation
 To download the dataset, please refer to [prepare_data.md](../prepare_data.md).
@@ -10,6 +24,8 @@ To use coco data to train detection, you can refer to [configs/detection/yolox/y
 
 ### PAI-Itag detection format
 To use pai-itag detection format data to train detection, you can refer to [configs/detection/yolox/yolox_s_8xb16_300e_coco_pai.py](https://github.com/alibaba/EasyCV/tree/master/configs/detection/yolox/yolox_s_8xb16_300e_coco_pai.py) for more configuration details.
+
+## Docker (Recommended)
 
 ## Local & PAI-DSW
 
