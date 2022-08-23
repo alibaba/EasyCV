@@ -30,7 +30,7 @@ class YOLOXEDGETest(unittest.TestCase):
             model = model.cuda()
             model.train()
 
-            batch_size = 2
+            batch_size = 1
             imgs = torch.randn(batch_size, 3, 640, 640).cuda()
             num_boxes = 5
             gt_bboxes = torch.randint(

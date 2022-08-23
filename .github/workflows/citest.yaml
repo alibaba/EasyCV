@@ -64,7 +64,9 @@ jobs:
           export CUDA_VISIBLE_DEVICES=7
           source ~/workspace/anaconda2/etc/profile.d/conda.sh
           conda activate evtorch_torch1.8.0
-          PYTHONPATH=. python tests/run.py
+#          PYTHONPATH=. python tests/run.py
+          PYTHONPATH=. python tests/models/detection/yolox_edge/test_yolox_edge.py
+          PYTHONPATH=. python tests/tools/test_prune.py
 
 # blade test env will be updated!
 #  ut-torch181-blade:
