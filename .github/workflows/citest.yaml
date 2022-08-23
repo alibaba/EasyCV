@@ -65,7 +65,7 @@ jobs:
           source ~/workspace/anaconda2/etc/profile.d/conda.sh
           conda activate evtorch_torch1.8.0
           PYTHONPATH=. python tests/run.py
-       
+
 
 # blade test env will be updated!
 #  ut-torch181-blade:

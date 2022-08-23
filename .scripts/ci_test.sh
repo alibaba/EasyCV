@@ -40,5 +40,4 @@ export TEST_DIR="/tmp/easycv_test_${USER}_`date +%s`"
 # do not uncomments, casue faild in Online UT, install requirements by yourself on UT machine
 # pip install -r requirements.txt
 #run test
-#PYTHONPATH=. python tests/run.py
-PYTHONPATH=. python tests/tools/test_prune.py
+PYTHONPATH=. python tests/run.py
