@@ -24,7 +24,10 @@ class MLP(nn.Module):
 
 
 class Mlp(nn.Module):
-    """ Multilayer perceptron."""
+    """ Multilayer perceptron.
+    Parameters:
+        act_layer: Specify the activate function, default use nn.GELU.
+    """
 
     def __init__(self,
                  in_features,
