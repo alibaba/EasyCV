@@ -13,7 +13,6 @@ import random
 from typing import Optional
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
 
 from easycv.models.builder import NECKS
@@ -25,7 +24,11 @@ from easycv.models.utils import MLP, _get_activation_fn, _get_clones
 try:
     from thirdparty.msdeformattn.modules import MSDeformAttn
 except:
-    pass
+    from easycv.utils.logger import get_root_logger
+    logger = get_root_logger()
+    logger.warning(
+        'Please compile MultiScaleDeformableAttention CUDA op, Otherwise the pixel_decoder cannot be run.'
+    )
 
 
 @NECKS.register_module
