@@ -233,6 +233,8 @@ eval_pipelines = [
     )
 ]
 
+predict = dict(type='SegmentationPredictor')
+
 log_config = dict(
     interval=50,
     hooks=[

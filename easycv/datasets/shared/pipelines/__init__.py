@@ -4,4 +4,4 @@ from .dali_transforms import (DaliColorTwist, DaliCropMirrorNormalize,
                               DaliImageDecoder, DaliRandomGrayscale,
                               DaliRandomResizedCrop, DaliResize)
 from .format import Collect, DefaultFormatBundle, ImageToTensor
-from .transforms import Compose
+from .transforms import Compose, LoadImage
