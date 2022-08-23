@@ -52,8 +52,8 @@ class YOLOXHead_Template(nn.Module):
         if width is None and model_type in self.param_map:
             width = self.param_map[model_type][1]
         else:
-            assert (width!=None),\
-            'Unknow model type must have a given width!'
+            assert (width !=
+                    None), 'Unknow model type must have a given width!'
 
         self.width = width
         self.n_anchors = 1

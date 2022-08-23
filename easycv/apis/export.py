@@ -15,32 +15,15 @@ from mmcv.utils import Config
 from easycv.file import io
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
                            build_model)
-from easycv.models.backbones.repvgg_yolox_backbone import RepVGGBlock
-from easycv.utils.bbox_util import scale_coords
 from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.misc import reparameterize_models
 
 __all__ = [
-    'export', 'PreProcess', 'ModelExportWrapper', 'ProcessExportWrapper',
-    'reparameterize_models'
+    'export',
+    'PreProcess',
+    'ModelExportWrapper',
+    'ProcessExportWrapper',
 ]
-
-
-def reparameterize_models(model):
-    """ reparameterize model for inference, especially forf
-            1. rep conv block : merge 3x3 weight 1x1 weights
-        call module switch_to_deploy recursively
-    Args:
-        model: nn.Module
-    """
-    reparameterize_count = 0
-    for layer in model.modules():
-        if isinstance(layer, RepVGGBlock):
-            reparameterize_count += 1
-            layer.switch_to_deploy()
-    logging.warning(
-        'export : PAI-export reparameterize_count(RepVGGBlock, ) switch to deploy with {} blocks'
-        .format(reparameterize_count))
-    return model
 
 
 def export(cfg, ckpt_path, filename):

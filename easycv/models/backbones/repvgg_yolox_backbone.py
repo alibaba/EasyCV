@@ -26,7 +26,12 @@ def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):
 
 
 class RepVGGBlock(nn.Module):
-    """Basic Block of RepVGG"""
+    """
+        Basic Block of RepVGG
+        It's an efficient block that will be reparameterized in evaluation. (deploy = True)
+        Usage: RepVGGBlock(in_channels, out_channels, ksize=3, stride=stride)
+
+    """
 
     def __init__(self,
                  in_channels,
@@ -82,7 +87,6 @@ class RepVGGBlock(nn.Module):
                 stride=stride,
                 padding=padding_11,
                 groups=groups)
-            # print('RepVGG Block, identity = ', self.rbr_identity)
 
     def forward(self, inputs):
         if hasattr(self, 'rbr_reparam'):
@@ -291,7 +295,8 @@ class MT_SPPF(nn.Module):
 
 
 class RepVGGYOLOX(nn.Module):
-    ''' RepVGG with MT_SPPF to build a efficient Yolox backbone
+    '''
+        RepVGG with MT_SPPF to build a efficient Yolox backbone
     '''
 
     def __init__(

@@ -16,7 +16,11 @@ model = dict(
     max_model_flops=-1,
     activation='relu',
     head=dict(
-        type='YOLOXHead', model_type='customized', num_classes=1, width=1.0))
+        type='YOLOXHead',
+        model_type='customized',
+        num_classes=1,
+        reg_loss_type='iou',
+        width=1.0))
 
 # train setting
 samples_per_gpu = 16  # batch size per gpu

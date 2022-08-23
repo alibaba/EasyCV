@@ -246,6 +246,8 @@ def blade_optimize(speed_test_model,
                    batch=1,
                    warm_up_time=10,
                    compute_cost=True,
+                   use_profile=False,
+                   check_result=False,
                    static_opt=True):
 
     if not static_opt:
@@ -295,32 +297,36 @@ def blade_optimize(speed_test_model,
         summary = pd.DataFrame(results)
         logging.warning(summary.to_markdown())
 
-    torch.cuda.empty_cache()
-    # warm-up
-    for k in range(warm_up_time):
-        test_result = opt_model(*inputs)
-        torch.cuda.synchronize()
-
-    torch.cuda.synchronize()
-    cu_prof_start()
-    for k in range(warm_up_time):
-        test_result = opt_model(*inputs)
-        torch.cuda.synchronize()
-    cu_prof_stop()
-    import torch.autograd.profiler as profiler
-    with profiler.profile(use_cuda=True) as prof:
+    if use_profile:
+        torch.cuda.empty_cache()
+        # warm-up
         for k in range(warm_up_time):
             test_result = opt_model(*inputs)
             torch.cuda.synchronize()
 
-    with profiler.profile(use_cuda=True) as prof:
+        torch.cuda.synchronize()
+        cu_prof_start()
         for k in range(warm_up_time):
             test_result = opt_model(*inputs)
             torch.cuda.synchronize()
+        cu_prof_stop()
+        import torch.autograd.profiler as profiler
+        with profiler.profile(use_cuda=True) as prof:
+            for k in range(warm_up_time):
+                test_result = opt_model(*inputs)
+                torch.cuda.synchronize()
 
-    prof_str = prof.key_averages().table(sort_by='cuda_time_total')
-    print(f'{prof_str}')
+        with profiler.profile(use_cuda=True) as prof:
+            for k in range(warm_up_time):
+                test_result = opt_model(*inputs)
+                torch.cuda.synchronize()
 
-    # check_results(output, test_result)
+        prof_str = prof.key_averages().table(sort_by='cuda_time_total')
+        print(f'{prof_str}')
+
+    if check_result:
+        output = model(*inputs)
+        test_result = opt_model(*inputs)
+        check_results(output, test_result)
 
     return opt_model
