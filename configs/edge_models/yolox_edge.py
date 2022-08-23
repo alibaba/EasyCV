@@ -27,7 +27,7 @@ samples_per_gpu = 16  # batch size per gpu
 test_samples_per_gpu = 16  # test batch size per gpu
 gpu_num = 2  # gpu number for one worker
 total_epochs = 11  # train epoch
-interval = 5
+interval = 5  # eval interval
 
 # tiny nano without mixup
 img_scale = (256, 256)
