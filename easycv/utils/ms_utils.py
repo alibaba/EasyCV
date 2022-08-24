@@ -37,7 +37,6 @@ def to_ms_config(cfg, task, ms_model_name, save_path=None, dump=True):
 
     assert save_path.endswith('json'), 'Only support json file!'
     optimizer_options = easycv_cfg.optimizer_config
-    optimizer_options.update({'loss_keys': 'total_loss'})
 
     val_dataset_cfg = easycv_cfg.data.val
     val_imgs_per_gpu = val_dataset_cfg.pop('imgs_per_gpu',
@@ -79,6 +78,9 @@ def to_ms_config(cfg, task, ms_model_name, save_path=None, dump=True):
         else:
             log_hook_i.update({'interval': log_config.interval})
             hooks.append(log_hook_i)
+
+    # process tensor type, convert to numpy for dump logs
+    hooks.append({'type': 'PreLoggerHook', 'interval': log_config.interval})
 
     ori_model_type = easycv_cfg.model.pop('type')
 
