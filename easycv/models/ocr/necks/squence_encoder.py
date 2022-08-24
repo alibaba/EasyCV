@@ -75,7 +75,8 @@ class EncoderWithSVTR(nn.Module):
             drop_rate=0.1,
             attn_drop_rate=0.1,
             drop_path=0.,
-            qk_scale=None):
+            qk_scale=None,
+            **kwargs):
         super(EncoderWithSVTR, self).__init__()
         self.depth = depth
         self.use_guide = use_guide

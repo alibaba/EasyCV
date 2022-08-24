@@ -5,9 +5,12 @@ sys.path.append('/root/code/ocr/EasyCV')
 
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
+import logging
+import traceback
+import numpy as np
  
  
-@DATASETS.register_module()
+@DATASETS.register_module(force=True)
 class OCRDetDataset(BaseDataset):
     """Dataset for ocr text detection
     """
@@ -19,8 +22,17 @@ class OCRDetDataset(BaseDataset):
         return len(self.data_source)
     
     def __getitem__(self, idx):
-        data_dict = self.data_source.get_sample(idx)
-        data_dict = self.pipeline(data_dict)
+        try:
+            data_dict = self.data_source.get_sample(idx)
+            data_dict = self.pipeline(data_dict)
+        except:
+            logging.error(
+                "When parsing line {}, error happened with msg: {}".format(
+                    idx, traceback.format_exc()))
+            data_dict = None
+        if data_dict is None:
+            rnd_idx = np.random.randint(self.__len__())
+            return self.__getitem__(rnd_idx)
         return data_dict
     
     def evaluate(self, results, evaluators, logger=None, **kwargs):

@@ -264,7 +264,7 @@ class MakeBorderMap(object):
         img = data['img']
         text_polys = data['polys']
         ignore_tags = data['ignore_tags']
-
+        
         canvas = np.zeros(img.shape[:2], dtype=np.float32)
         mask = np.zeros(img.shape[:2], dtype=np.float32)
 
@@ -291,7 +291,6 @@ class MakeBorderMap(object):
         subject = [tuple(l) for l in polygon]
         padding = pyclipper.PyclipperOffset()
         padding.AddPath(subject, pyclipper.JT_ROUND, pyclipper.ET_CLOSEDPOLYGON)
-
         padded_polygon = np.array(padding.Execute(distance)[0])
         cv2.fillPoly(mask, [padded_polygon.astype(np.int32)], 1.0)
 
@@ -647,9 +646,9 @@ class RecAug(object):
         self.aug_prob = aug_prob
 
     def __call__(self, data):
-        img = data['image']
+        img = data['img']
         img = warp(img, 10, self.use_tia, self.aug_prob)
-        data['image'] = img
+        data['img'] = img
         return data
     
 
@@ -1198,11 +1197,14 @@ def resize_norm_img(img, image_shape, padding=True):
         resized_image = resized_image / 255
         resized_image = resized_image[np.newaxis, :]
     else:
-        resized_image = resized_image.transpose((2, 0, 1)) / 255
+        # resized_image = resized_image.transpose((2, 0, 1)) / 255
+        resized_image = resized_image / 255
     resized_image -= 0.5
     resized_image /= 0.5
-    padding_im = np.zeros((imgC, imgH, imgW), dtype=np.float32)
-    padding_im[:, :, 0:resized_w] = resized_image
+    # padding_im = np.zeros((imgC, imgH, imgW), dtype=np.float32)
+    # padding_im[:, :, 0:resized_w] = resized_image
+    padding_im = np.zeros((imgH, imgW, imgC), dtype=np.float32)
+    padding_im[:, 0:resized_w, :] = resized_image
     valid_ratio = min(1.0, float(resized_w / imgW))
     return padding_im, valid_ratio
 
@@ -1225,10 +1227,13 @@ def resize_norm_img_chinese(img, image_shape):
         resized_image = resized_image / 255
         resized_image = resized_image[np.newaxis, :]
     else:
-        resized_image = resized_image.transpose((2, 0, 1)) / 255
+        # resized_image = resized_image.transpose((2, 0, 1)) / 255
+        resized_image = resized_image / 255
     resized_image -= 0.5
     resized_image /= 0.5
-    padding_im = np.zeros((imgC, imgH, imgW), dtype=np.float32)
-    padding_im[:, :, 0:resized_w] = resized_image
+    # padding_im = np.zeros((imgC, imgH, imgW), dtype=np.float32)
+    # padding_im[:, :, 0:resized_w] = resized_image
+    padding_im = np.zeros((imgH, imgW, imgC), dtype=np.float32)
+    padding_im[:, 0:resized_w, :] = resized_image
     valid_ratio = min(1.0, float(resized_w / imgW))
     return padding_im, valid_ratio

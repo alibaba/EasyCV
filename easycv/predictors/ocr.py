@@ -61,7 +61,7 @@ class OCRDetPredictor(PredictorInterface):
                 output_list.append(res[0])
             return output_list
         else:
-            res = self.predict_single(input_data_list)
+            res = self.predict_single(input_data_list)[0]
             return res
     
     def predict_single(self, img):
@@ -69,16 +69,16 @@ class OCRDetPredictor(PredictorInterface):
             img = np.asarray(img)
         ori_shape = img.shape
         data_dict = {'img': img,
-                        'ori_shape': ori_shape}
+                    'ori_img_shape': ori_shape}
         data_dict = self.pipeline(data_dict)
         img = data_dict['img']
         img = torch.unsqueeze(img, 0).to(self.device)
-        res = self.det_model.forward_test(img, )
+        res = self.det_model.extract_feat(img, )
         res = self.det_model.postprocess(res,[ori_shape])
         return res
     
     def show(self, dt_boxes, img):
-        img = img[...,::-1]
+        # img = img[...,::-1]
         img = img.astype(np.uint8)
         for box in dt_boxes:
             box = np.array(box).astype(np.int32).reshape(-1, 2)
@@ -123,7 +123,7 @@ class OCRRecPredictor(PredictorInterface):
             output_list = []
             for idx, img in enumerate(input_data_list):
                 res = self.predict_single(img)
-                output_list.append(res[0])
+                output_list.append(res)
             return output_list
         else:
             res = self.predict_single(input_data_list)
@@ -140,7 +140,7 @@ class OCRRecPredictor(PredictorInterface):
         img = data_dict['img']
         img = torch.unsqueeze(img, 0).to(self.device)
         res = self.rec_model.forward_test(img, )
-        res = self.rec_model.postprocess(res)
+        # res = self.rec_model.postprocess(res)
         return res
     
 
@@ -209,21 +209,22 @@ class OCRPredictor(PredictorInterface):
     
     def predict_single(self, img):
         ori_im = img.copy()
-        dt_boxes = self.det_predictor.predict(img[...,::-1])
-        dt_boxes = self.sorted_boxes(dt_boxes[0])
+        # dt_boxes = self.det_predictor.predict(img[...,::-1])
+        dt_boxes = self.det_predictor.predict(img)
+        dt_boxes = self.sorted_boxes(dt_boxes)
         img_crop_list = []
         for bno in range(len(dt_boxes)):
             tmp_box = copy.deepcopy(dt_boxes[bno])
             img_crop = self.get_rotate_crop_image(ori_im, tmp_box)
-            # cv2.imwrite(f"test_rgb_{bno}.jpg",img_crop)
+            cv2.imwrite(f"test_rgb_{bno}.jpg",img_crop)
             img_crop_list.append(img_crop)
         rec_res = self.rec_predictor.predict(img_crop_list)
         filter_boxes, filter_rec_res = [], []
         for box, rec_reuslt in zip(dt_boxes, rec_res):
-            text, score = rec_reuslt
+            text, score = rec_reuslt['preds_text'][0]
             if score >= self.drop_score:
                 filter_boxes.append(box)
-                filter_rec_res.append(rec_reuslt)
+                filter_rec_res.append(rec_reuslt['preds_text'][0])
         return filter_boxes, filter_rec_res
         
     def show(self, boxes, rec_res, img , drop_score=0.5, font_path="./doc/simfang.ttf"):
@@ -296,34 +297,45 @@ if __name__=="__main__":
     
     # det
     # predictor  = OCRDetPredictor(det_model_path='/root/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_det_infer_export.pth')
-    # # img = cv2.imread('/root/code/ocr/test_img/test_ocr.jpg')
-    # img = cv2.imread('/root/code/ocr/ppocr_img/ch/ch.jpg')
-    # img = img[...,::-1]
+    # predictor  = OCRDetPredictor(det_model_path='/root/code/ocr/EasyCV/out/det_ocr_ch/epoch_1_export.pth')
+    # img = cv2.imread('/root/code/ocr/test_img/test_ocr.jpg')
+    # # img = cv2.imread('/root/code/ocr/ppocr_img/ch/ch.jpg')
+    # # img = img[...,::-1]
     # dt_boxes = predictor.predict(img)
-    # print(dt_boxes)
     # src_img = predictor.show(dt_boxes,img)
     # cv2.imwrite("test.jpg",src_img)
     
     # rec
-    # predictor = OCRRecPredictor(rec_model_path='/root/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_rec_infer_export.pth')
+    # predictor = OCRRecPredictor(rec_model_path='../../out/rec_ocr_ch/epoch_10_export.pth')
     # # img = cv2.imread('/root/code/ocr/ppocr_img/ch/word_1.jpg')
-    # img = cv2.imread('test_3.jpg')
-    # rec_out = predictor.predict(img)
-    # print(rec_out)
+    # # img = cv2.imread('test_rgb_3.jpg')
+    # import glob
+    # img_list = glob.glob('/nas/database/ocr/rec/pai/img/test/*png')
+    # sorted(img_list)
+    # for img_path in img_list:
+    #     img = cv2.imread(img_path)
+    #     rec_out = predictor.predict(img)
+    #     print(img_path,rec_out['preds_text'][0][0])
     
     # system
-    predictor = OCRPredictor(det_model_path='/root/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_det_infer_export.pth', \
-                             rec_model_path='/root/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_rec_infer_export.pth')
-    img = cv2.imread('/root/code/ocr/test_img/test_ocr.jpg')
+    predictor = OCRPredictor(det_model_path='/root/code/ocr/EasyCV/out/det_ocr_ch/epoch_4_export.pth', \
+                             rec_model_path='../../out/rec_ocr_ch/epoch_10_export.pth')
+    # predictor = OCRPredictor(det_model_path='/root/code/ocr/PaddleOCR/pretrain_models/ch_PP-OCRv3_det_distill_train/student_export.pth', \
+    #                          rec_model_path='/root/code/ocr/PaddleOCR/pretrain_models/ch_PP-OCRv3_rec_train/best_accuracy_student_export.pth')
+    # img = cv2.imread('/root/code/ocr/test_img/test_ocr.jpg')
     # img = cv2.imread('/root/code/ocr/ppocr_img/ch/ch.jpg')
+    # img = cv2.imread('/nas/database/ocr/rec/pai/img/train/217745.png')
+    import glob
     import time
-    for i in range(10):
+    img_list = glob.glob('/nas/database/ocr/det/pai/img/test/*')
+    img_list = ['/root/code/ocr/test_img/test_ocr.jpg']
+    for img_path in img_list:
         tic = time.time()
+        img = cv2.imread(img_path)
         filter_boxes, filter_rec_res = predictor.predict_single(img)
-        print(time.time()-tic)
         out_img = predictor.show(filter_boxes, filter_rec_res, img, font_path='/nas/code/ocr/PaddleOCR2Pytorch-main/doc/fonts/simfang.ttf')
         
-        cv2.imwrite('test.jpg',out_img)
+        cv2.imwrite('test_easycv/'+img_path.split('/')[-1],out_img)
     
     
     

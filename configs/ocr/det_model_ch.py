@@ -10,13 +10,13 @@ model = dict(
     neck=dict(
         type='RSEFPN',
         in_channels=[16, 24, 56, 480],
-        # out_channels=96,
-        out_channels=256,
+        out_channels=96,
+        # out_channels=256,
         shortcut=True),
     head=dict(
         type='DBHead',
-        # in_channels=96,
-        in_channels=256,
+        in_channels=96,
+        # in_channels=256,
         k=50),
     postprocess=dict(
         type='DBPostProcess',
@@ -36,7 +36,8 @@ model = dict(
         ohem_ratio=3
     ),
     # pretrained='/mnt/workspace/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_det_infer.pth'
-    pretrained='/mnt/data/code/ocr/PaddleOCR/pretrain_models/MobileNetV3_large_x0_5_pretrained.pth'
+    # pretrained='/mnt/data/code/ocr/PaddleOCR/pretrain_models/MobileNetV3_large_x0_5_pretrained.pth'
+    pretrained='/root/code/ocr/PaddleOCR/pretrain_models/ch_PP-OCRv3_det_distill_train/student.pth'
 )
 
 img_norm_cfg = dict(
@@ -71,16 +72,23 @@ train_pipeline = [
     dict(type='Collect', keys=['img','threshold_map','threshold_mask','shrink_map','shrink_mask']),
 ]
 
+# test_pipeline = [
+#     dict(type='MMResize', img_scale=(960,960)),
+#     dict(type='ResizeDivisor', size_divisor=32),
+#     dict(type='MMNormalize', **img_norm_cfg),
+#     dict(type='ImageToTensor', keys=['img']),
+#     dict(type='Collect', keys=['img'],meta_keys=['ori_img_shape','polys','ignore_tags']),
+# ]
+
 test_pipeline = [
-    dict(type='MMResize', img_scale=(960,960)),
-    dict(type='ResizeDivisor', size_divisor=32),
+    dict(type='DetResizeForTest', limit_side_len=960),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
     dict(type='Collect', keys=['img'],meta_keys=['ori_img_shape','polys','ignore_tags']),
 ]
 
 val_pipeline = [
-    dict(type='DetResizeForTest', image_shape=(736,1280)),
+    dict(type='DetResizeForTest', limit_side_len=960),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
     dict(type='Collect', keys=['img'],meta_keys=['ori_img_shape','polys','ignore_tags']),
@@ -89,20 +97,20 @@ val_pipeline = [
 train_dataset = dict(
     type = 'OCRDetDataset',
     data_source = dict(
-        type='OCRDetSource',
-        label_file = '/mnt/data/database/ocr/det/icdar2015/text_localization/train_icdar2015_label.txt',
-        data_dir='/mnt/data/database/ocr/det/icdar2015/text_localization'
+        type='OCRPaiDetSource',
+        label_file = ['/nas/database/ocr/det/pai/label_file/train/20191218131226_npx_e2e_train.csv','/nas/database/ocr/det/pai/label_file/train/20191218131302_social_e2e_train.csv'],
+        data_dir='/nas/database/ocr/det/pai/img/train'
     ),
     pipeline = train_pipeline
 )
 
 val_dataset = dict(
     type = 'OCRDetDataset',
-    imgs_per_gpu=2,
+    imgs_per_gpu=1,
     data_source = dict(
-        type='OCRDetSource',
-        label_file = '/mnt/data/database/ocr/det/icdar2015/text_localization/test_icdar2015_label.txt',
-        data_dir='/mnt/data/database/ocr/det/icdar2015/text_localization'
+        type='OCRPaiDetSource',
+        label_file = ['/nas/database/ocr/det/pai/label_file/test/20191218131744_npx_e2e_test.csv','/nas/database/ocr/det/pai/label_file/test/20191218131817_social_e2e_test.csv'],
+        data_dir='/nas/database/ocr/det/pai/img/test'
     ),
     pipeline = val_pipeline
 )
@@ -113,6 +121,7 @@ data = dict(
 total_epochs = 1200
 optimizer = dict(
     type='Adam',
+    # lr=0.001,
     lr=0.001,
     betas=(0.9, 0.999))
 
@@ -128,7 +137,7 @@ lr_config = dict(policy='fixed')
 #     warmup_by_epoch=True,
 #     by_epoch=False)
 
-checkpoint_config = dict(interval=100)
+checkpoint_config = dict(interval=1)
 
 log_config = dict(
     interval=10,
@@ -137,7 +146,7 @@ log_config = dict(
         # dict(type='TensorboardLoggerHook')
     ])
 
-eval_config = dict(initial=False, interval=1, gpu_collect=False)
+eval_config = dict(initial=True, interval=1, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',

@@ -13,7 +13,7 @@ from easycv.file.image import load_image
 
 
 @DATASOURCES.register_module(force=True)
-class OCRRECSource(object):
+class OCRRecSource(object):
     """ocr rec data source
     """
     
@@ -39,7 +39,6 @@ class OCRRECSource(object):
             file_name = substr[0]
             label = substr[1]
             img_path = os.path.join(self.data_dir, file_name)
-            
             outs = {'img_path': img_path, 'label': label}
             if not os.path.exists(img_path):
                 raise Exception('{} does not exist!'.format(img_path))

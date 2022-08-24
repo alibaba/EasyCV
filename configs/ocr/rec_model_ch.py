@@ -23,8 +23,8 @@ model = dict(
         type='MultiHead',
         in_channels = 512,
         out_channels_list=dict(
-            CTCLabelDecode=97,
-            SARLabelDecode=99,
+            CTCLabelDecode=6625,
+            SARLabelDecode=6627,
         ),
         head_list=[
             dict(
@@ -50,20 +50,20 @@ model = dict(
     postprocess=dict(
         type='CTCLabelDecode',
         # character_type='ch',
-        # character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
-        character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/en_dict.txt',
+        character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
+        # character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/en_dict.txt',
         use_space_char=True
     ),
     loss=dict(
         type='MultiLoss',
-        ignore_index=98,
+        ignore_index=6626,
         loss_config_list=[
             dict(CTCLoss=None),
             dict(SARLoss=None),
             ]
     ),
     # pretrained='/root/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_rec_infer.pth'
-    pretrained='/root/code/ocr/PaddleOCR/pretrain_models/en_PP-OCRv3_rec_train/best_accuracy.pth'
+    pretrained='/root/code/ocr/PaddleOCR/pretrain_models/ch_PP-OCRv3_rec_train/best_accuracy_student.pth'
 )
 
 
@@ -73,7 +73,8 @@ train_pipeline = [
     dict(type='MultiLabelEncode',
          max_text_length=25,
          use_space_char=True,
-         character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/en_dict.txt'
+        #  character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/en_dict.txt'
+         character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
          ),
     dict(type='RecResizeImg', image_shape=(3,48,320)),
     dict(type='MMToTensor'),
@@ -84,24 +85,32 @@ val_pipeline = [
     dict(type='MultiLabelEncode',
          max_text_length=25,
          use_space_char=True,
-         character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/en_dict.txt'
+        #  character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/en_dict.txt'
+        character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
          ),
     dict(type='RecResizeImg', image_shape=(3,48,320)),
     dict(type='MMToTensor'),
     dict(type='Collect', keys=['img', 'label_ctc', 'label_sar', 'length', 'valid_ratio'],meta_keys=['img_path'])
 ]
+
+# test_pipeline = [
+#     dict(type='OCRResizeNorm', img_shape=(48,320)),
+#     dict(type='ImageToTensor', keys=['img']),
+#     dict(type='Collect', keys=['img']),
+# ]
+
 test_pipeline = [
-    dict(type='OCRResizeNorm', img_shape=(48,320)),
-    dict(type='ImageToTensor', keys=['img']),
-    dict(type='Collect', keys=['img']),
+    dict(type='RecResizeImg', image_shape=(3,48,320)),
+    dict(type='MMToTensor'),
+    dict(type='Collect', keys=['img'],meta_keys=['img_path'])
 ]
 
 train_dataset = dict(
     type = 'OCRRecDataset',
     data_source = dict(
         type = 'OCRRecSource',
-        label_file = '/mnt/data/database/ocr/rec/ic15_data/rec_gt_train.txt',
-        data_dir = '/mnt/data/database/ocr/rec/ic15_data',
+        label_file = '/nas/database/ocr/rec/pai/label_file/train.txt',
+        data_dir = '/nas/database/ocr/rec/pai/img/train',
         ext_data_num = 2,
     ),
     pipeline = train_pipeline
@@ -111,8 +120,8 @@ val_dataset = dict(
     type = 'OCRRecDataset',
     data_source = dict(
         type = 'OCRRecSource',
-        label_file = '/mnt/data/database/ocr/rec/ic15_data/rec_gt_test.txt',
-        data_dir = '/mnt/data/database/ocr/rec/ic15_data',
+        label_file = '/nas/database/ocr/rec/pai/label_file/test.txt',
+        data_dir = '/nas/database/ocr/rec/pai/img/test',
         ext_data_num = 0,
     ),
     pipeline = val_pipeline
@@ -121,10 +130,11 @@ val_dataset = dict(
 data = dict(
     imgs_per_gpu=128, workers_per_gpu=4, train=train_dataset, val=val_dataset)
 
-total_epochs = 500
+total_epochs = 10
 optimizer = dict(
     type='Adam',
-    lr=0.001,
+    # lr=0.001,
+    lr=0.0001,
     betas=(0.9, 0.999))
 
 lr_config = dict(
@@ -136,10 +146,10 @@ lr_config = dict(
     warmup_by_epoch=True,
     by_epoch=False)
 
-checkpoint_config = dict(interval=100)
+checkpoint_config = dict(interval=1)
 
 log_config = dict(
-    interval=1,
+    interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')
@@ -151,7 +161,7 @@ eval_pipelines = [
         mode='test',
         dist_eval=False,
         evaluators=[
-            dict(type='OCRRecEvaluator')
+            dict(type='OCRRecEvaluator',ignore_space=False)
         ],
     )
 ]

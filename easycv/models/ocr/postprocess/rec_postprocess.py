@@ -19,10 +19,7 @@ import torch
 class BaseRecLabelDecode(object):
     """ Convert between text-label and text-index """
 
-    def __init__(self,
-                 character_dict_path=None,
-                 use_space_char=False):
-
+    def __init__(self, character_dict_path=None, use_space_char=False):
         self.beg_str = "sos"
         self.end_str = "eos"
 
@@ -55,24 +52,25 @@ class BaseRecLabelDecode(object):
         ignored_tokens = self.get_ignored_tokens()
         batch_size = len(text_index)
         for batch_idx in range(batch_size):
-            char_list = []
-            conf_list = []
-            for idx in range(len(text_index[batch_idx])):
-                if text_index[batch_idx][idx] in ignored_tokens:
-                    continue
-                if is_remove_duplicate:
-                    # only for predict
-                    if idx > 0 and text_index[batch_idx][idx - 1] == text_index[
-                            batch_idx][idx]:
-                        continue
-                char_list.append(self.character[int(text_index[batch_idx][
-                    idx])])
-                if text_prob is not None:
-                    conf_list.append(text_prob[batch_idx][idx])
-                else:
-                    conf_list.append(1)
+            selection = np.ones(len(text_index[batch_idx]), dtype=bool)
+            if is_remove_duplicate:
+                selection[1:] = text_index[batch_idx][1:] != text_index[
+                    batch_idx][:-1]
+            for ignored_token in ignored_tokens:
+                selection &= text_index[batch_idx] != ignored_token
+            char_list = [
+                self.character[text_id]
+                for text_id in text_index[batch_idx][selection]
+            ]
+            if text_prob is not None:
+                conf_list = text_prob[batch_idx][selection]
+            else:
+                conf_list = [1] * len(selection)
+            if len(conf_list) == 0:
+                conf_list = [0]
+
             text = ''.join(char_list)
-            result_list.append((text, np.mean(conf_list)))
+            result_list.append((text, np.mean(conf_list).tolist()))
         return result_list
 
     def get_ignored_tokens(self):
@@ -82,20 +80,19 @@ class BaseRecLabelDecode(object):
 class CTCLabelDecode(BaseRecLabelDecode):
     """ Convert between text-label and text-index """
 
-    def __init__(self,
-                 character_dict_path=None,
-                 use_space_char=False,
+    def __init__(self, character_dict_path=None, use_space_char=False,
                  **kwargs):
         super(CTCLabelDecode, self).__init__(character_dict_path,
                                              use_space_char)
 
     def __call__(self, preds, label=None, *args, **kwargs):
+        if isinstance(preds, tuple) or isinstance(preds, list):
+            preds = preds[-1]
         if isinstance(preds, torch.Tensor):
             preds = preds.numpy()
         preds_idx = preds.argmax(axis=2)
         preds_prob = preds.max(axis=2)
         text = self.decode(preds_idx, preds_prob, is_remove_duplicate=True)
-
         if label is None:
             return text
         label = self.decode(label)

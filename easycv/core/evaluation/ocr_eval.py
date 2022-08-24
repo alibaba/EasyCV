@@ -1,7 +1,9 @@
 from collections import namedtuple
 import numpy as np
+import string
 
 from shapely.geometry import Polygon
+from rapidfuzz.distance import Levenshtein
 
 from .base_evaluator import Evaluator
 from .builder import EVALUATORS
@@ -224,5 +226,45 @@ class OCRDetEvaluator(Evaluator):
         results = self.combine_results(results)
         print(results)
         return results
+    
 
-METRICS.register_default_best_metric(OCRDetEvaluator, 'hmean', 'max')     
+@EVALUATORS.register_module()
+class OCRRecEvaluator(Evaluator):
+    
+    def __init__(self, is_filter=False, ignore_space=True, dataset_name=None, metric_names=['acc']):
+        super().__init__(dataset_name, metric_names)
+        self.is_filter = is_filter
+        self.ignore_space = ignore_space
+        self.eps = 1e-5
+        
+    def _evaluate_impl(self, predictions, labels, **kwargs):
+        pass
+        
+    def _normalize_text(self, text):
+        text = ''.join(
+            filter(lambda x: x in (string.digits + string.ascii_letters), text))
+        return text.lower()
+    
+    def evaluate(self, preds, labels, **kwargs):
+        correct_num = 0
+        all_num = 0
+        norm_edit_dis = 0.0
+        for (pred, pred_conf), (target, _) in zip(preds, labels):
+            if self.ignore_space:
+                pred = pred.replace(" ", "")
+                target = target.replace(" ", "")
+            if self.is_filter:
+                pred = self._normalize_text(pred)
+                target = self._normalize_text(target)
+            norm_edit_dis += Levenshtein.normalized_distance(pred, target)
+            if pred == target:
+                correct_num += 1
+            all_num += 1
+        print(correct_num / (all_num + self.eps),1 - norm_edit_dis / (all_num + self.eps))
+        return {
+            'acc': correct_num / (all_num + self.eps),
+            'norm_edit_dis': 1 - norm_edit_dis / (all_num + self.eps)
+        }
+          
+METRICS.register_default_best_metric(OCRDetEvaluator, 'hmean', 'max')
+METRICS.register_default_best_metric(OCRRecEvaluator, 'acc', 'max')   

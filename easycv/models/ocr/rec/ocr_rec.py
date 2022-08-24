@@ -15,6 +15,7 @@ from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 from easycv.models.ocr.backbones.rec_mv1_enhance import MobileNetV1Enhance
 from easycv.models.ocr.postprocess.rec_postprocess import CTCLabelDecode
+from easycv.models.ocr.loss.rec_multi_loss import MultiLoss
 
 
 
@@ -25,9 +26,10 @@ class OCRRecNet(BaseModel):
     def __init__(
         self,
         backbone,
-        neck,
         head,
         postprocess,
+        neck=None,
+        loss=None,
         pretrained=None,
         **kwargs,
     ):
@@ -36,8 +38,9 @@ class OCRRecNet(BaseModel):
         self.pretrained = pretrained
         
         self.backbone = eval(backbone.type)(**backbone)
-        self.neck = builder.build_neck(neck)
+        self.neck = builder.build_neck(neck) if neck else None
         self.head = builder.build_head(head)
+        self.loss = eval(loss.type)(**loss) if loss else None
         self.postprocess_op = eval(postprocess.type)(**postprocess)
         self.init_weights()
         
@@ -61,13 +64,14 @@ class OCRRecNet(BaseModel):
                     if m.bias is not None:
                         nn.init.zeros_(m.bias)
                     
-    def extract_feat(self, x):
+    def extract_feat(self, x, label=None, valid_ratios=None):
         y = dict()
         x = self.backbone(x)
         y["backbone_out"] = x
-        x = self.neck(x)
-        y["neck_out"] = x
-        x = self.head(x)
+        if self.neck:
+            x = self.neck(x)
+            y["neck_out"] = x
+        x = self.head(x,label=label,valid_ratios=valid_ratios)
         # for multi head, save ctc neck out for udml
         if isinstance(x, dict) and 'ctc_nect' in x.keys():
             y['neck_out'] = x['ctc_neck']
@@ -78,24 +82,42 @@ class OCRRecNet(BaseModel):
             y["head_out"] = x
         return y
     
-    def forward_train(self, img):
-        pass
+    def forward_train(self, img, **kwargs):
+        label_ctc = kwargs.get('label_ctc', None)
+        label_sar = kwargs.get('label_sar', None)
+        length = kwargs.get('length', None)
+        valid_ratio = kwargs.get('valid_ratio', None)
+        predicts = self.extract_feat(img, label=label_sar, valid_ratios=valid_ratio)
+        loss = self.loss(predicts, label_ctc=label_ctc, label_sar=label_sar, length=length)
+        # if loss['CTCLoss']==np.inf:
+        #     print(kwargs['img_metas'])
+        #     exit()
+        return loss
     
-    def forward_test(self, img):
+    def forward_test(self, img, **kwargs):
+        label_ctc = kwargs.get('label_ctc', None)
+        result = {}
         with torch.no_grad():
-            out = self.extract_feat(img)
-            return out
+            preds = self.extract_feat(img)
+            if label_ctc==None:
+                preds_text = self.postprocess(preds)
+            else:
+                preds_text, label_text = self.postprocess(preds,label_ctc)
+                result['label_text'] = label_text
+            result['preds_text']=preds_text
+            return result
         
-    def postprocess(self, preds):
-
+    def postprocess(self, preds, label=None):
         if isinstance(preds,dict):
             preds = preds['head_out']
         if isinstance(preds, list):
             preds = [v.cpu().detach().numpy() for v in preds]
         else:
             preds = preds.cpu().detach().numpy()
-        rec_result = self.postprocess_op(preds)
-        return rec_result
+        label = label.cpu().detach().numpy() if label!=None else label
+        text_out = self.postprocess_op(preds,label)
+
+        return text_out
 
 if __name__ == "__main__":
     from easycv.utils.config_tools import mmcv_config_fromfile

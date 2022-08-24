@@ -27,8 +27,8 @@ class DBNet(BaseModel):
         backbone,
         neck,
         head,
-        loss,
         postprocess,
+        loss=None,
         pretrained=None,
         **kwargs,
     ):
@@ -39,7 +39,7 @@ class DBNet(BaseModel):
         self.backbone = eval(backbone.type)(**backbone)
         self.neck = builder.build_neck(neck)
         self.head = builder.build_head(head)
-        self.loss = eval(loss.type)(**loss)
+        self.loss = eval(loss.type)(**loss) if loss else None
         self.postprocess_op = DBPostProcess(**postprocess)
         self.init_weights()
         
@@ -86,13 +86,15 @@ class DBNet(BaseModel):
         post_results['ignore_tags'] = ignore_tags
         post_results['polys'] = polys
         return post_results
+        # return preds
     
     def postprocess(self, preds, shape_list):
 
         post_results = self.postprocess_op(preds, shape_list)
+        points_results = post_results['points']
         dt_boxes = []
-        for idx,post_result in enumerate(post_results):
-            dt_box = post_result['points']
+        for idx in range(len(points_results)):
+            dt_box = points_results[idx]
             dt_box = self.filter_tag_det_res(dt_box, shape_list[idx])
             dt_boxes.append(dt_box)
         return dt_boxes
