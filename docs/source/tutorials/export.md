@@ -57,9 +57,9 @@ python tools/export.py configs/detection/yolox/yolox_s_8xb16_300e_coco.py \
 
 **Export configs:**
 ```shell
-export = dict(export_type='ori',              # exported model type ['ori','jit','blade']
+export = dict(export_type='raw',              # exported model type ['raw','jit','blade']
               preprocess_jit=True,            # whether to save a preprocess jit model
-              static_opt=True,                # whether to use static shape ti optimize model
+              static_opt=True,                # whether to use static shape to optimize model
               batch_size=1,                   # batch_size if the static shape
               blade_config=dict(
                   enable_fp16=True,

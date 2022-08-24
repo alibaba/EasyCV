@@ -164,15 +164,15 @@ def _export_yolox(model, cfg, filename):
     """
 
     if hasattr(cfg, 'export'):
-        export_type = getattr(cfg.export, 'export_type', 'ori')
-        default_export_type_list = ['ori', 'jit', 'blade']
+        export_type = getattr(cfg.export, 'export_type', 'raw')
+        default_export_type_list = ['raw', 'jit', 'blade']
         if export_type not in default_export_type_list:
             logging.warning(
-                'YOLOX-PAI only supports the export type as  [ori,jit,blade], otherwise we use ori as default'
+                'YOLOX-PAI only supports the export type as  [raw,jit,blade], otherwise we use ori as default'
             )
-            export_type = 'ori'
+            export_type = 'raw'
 
-        if export_type != 'ori':
+        if export_type != 'raw':
             # only when we use jit or blade, we need to reparameterize_models before export
             model = reparameterize_models(model)
             device = 'cuda' if torch.cuda.is_available() else 'cpu'

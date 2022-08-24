@@ -60,7 +60,7 @@ class TorchYoloXPredictor(PredictorInterface):
         self.max_det = max_det
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         # set type
-        self.model_type = 'ori'
+        self.model_type = 'raw'
         if model_path.endswith('jit'):
             self.model_type = 'jit'
         if model_path.endswith('blade'):
@@ -79,7 +79,7 @@ class TorchYoloXPredictor(PredictorInterface):
         self.score_thresh = model_config[
             'score_thresh'] if 'score_thresh' in model_config else score_thresh
 
-        if self.model_type != 'ori':
+        if self.model_type != 'raw':
             # jit or blade model
             preprocess_path = '.'.join(
                 model_path.split('.')[:-1] + ['preprocess'])

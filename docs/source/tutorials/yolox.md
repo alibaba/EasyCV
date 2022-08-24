@@ -10,7 +10,7 @@ In breif, our main contributions are:
 - Provide an easy way to use PAI-Blade to accelerate the inference process.
 - Provide a convenient way to train/evaluate/export YOLOX-PAI model and conduct end2end object detection.
 
-To learn more details of YOLOX-PAI, you can refer to our technical paper [??link][arxiv].
+To learn more details of YOLOX-PAI, you can refer to our technical paper [technical report][arxiv].
 
 ![image](../../../assets/result.jpg)
 
@@ -145,9 +145,9 @@ Download exported models([preprocess](http://pai-vision-data-hz.oss-accelerate.a
 Put them in the following format:
 ```shell
 export_blade/
-??? epoch_300_pre_notrt.pt.blade
-??? epoch_300_pre_notrt.pt.blade.config.json
-??? epoch_300_pre_notrt.pt.preprocess
+epoch_300_pre_notrt.pt.blade
+epoch_300_pre_notrt.pt.blade.config.json
+epoch_300_pre_notrt.pt.preprocess
 ```
 Download [test_image](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/small_coco_demo/val2017/000000017627.jpg)
 
