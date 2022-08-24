@@ -22,6 +22,8 @@ English | [简体中文](README_zh-CN.md)
 
 EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focus on self-supervised learning, transformer based models, and SOTA CV tasks including image classification, metric-learning, object detection, pose estimation and so on.
 
+[🔥 Latest News] We have released our YOLOX-PAI that reveives SOTA results within 40~50 mAP (less than 1ms). And we also provide a convenient and fast export/predictor api for end2end object detection. To get a quick start of YOLOX-PAI, click [here](docs/source/tutorials/yolox.md)!
+
 ### Major features
 
 - **SOTA SSL Algorithms**

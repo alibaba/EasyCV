@@ -1,7 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import torch.nn as nn
 
-from easycv.models.builder import MODELS
+from easycv.models.builder import MODELS, build_head
 from easycv.models.detection.detectors.yolox.yolo_head import YOLOXHead
 from easycv.models.detection.detectors.yolox.yolo_pafpn import YOLOPAFPN
 from easycv.models.detection.detectors.yolox.yolox import YOLOX
@@ -22,6 +22,15 @@ class YOLOX_EDGE(YOLOX):
     and detection results during test.
     """
 
+    param_map = {
+        'nano': [0.33, 0.25],
+        'tiny': [0.33, 0.375],
+        's': [0.33, 0.5],
+        'm': [0.67, 0.75],
+        'l': [1.0, 1.0],
+        'x': [1.33, 1.25]
+    }
+
     def __init__(self,
                  stage: str = 'EDGE',
                  model_type: str = 's',
@@ -38,23 +47,21 @@ class YOLOX_EDGE(YOLOX):
                  in_channels: list = [256, 512, 1024],
                  backbone=None,
                  head=None):
+
         super(YOLOX_EDGE, self).__init__()
 
-        if backbone is None:
-            self.backbone = YOLOPAFPN(
-                depth,
-                width,
-                in_channels=in_channels,
-                depthwise=True,
-                act=activation)
-        if head is None:
-            self.head = YOLOXHead(
-                num_classes,
-                width,
-                in_channels=in_channels,
-                depthwise=True,
-                act=activation,
-                stage=stage)
+        if model_type in self.param_map.keys():
+            depth = self.param_map[model_type][0]
+            width = self.param_map[model_type][1]
+
+        self.backbone = YOLOPAFPN(
+            depth,
+            width,
+            in_channels=in_channels,
+            depthwise=True,
+            act=activation)
+
+        self.head = build_head(head)
 
         self.apply(init_yolo)  # init_yolo(self)
         self.head.initialize_biases(1e-2)
