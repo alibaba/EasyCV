@@ -186,6 +186,7 @@ def main():
     print(f'use device {device}')
     checkpoint = load_checkpoint(model, args.checkpoint, map_location=device)
 
+    # reparameter to deploy for RepVGG block
     model = reparameterize_models(model)
 
     model.to(device)
