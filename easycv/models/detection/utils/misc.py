@@ -6,6 +6,7 @@ import torch
 import torchvision
 from packaging import version
 from torch import Tensor
+from torch.autograd import Function
 
 if version.parse(torchvision.__version__) < version.parse('0.7'):
     from torchvision.ops import _new_empty_tensor
@@ -181,3 +182,32 @@ def inverse_sigmoid(x, eps=1e-3):
     x1 = x.clamp(min=eps)
     x2 = (1 - x).clamp(min=eps)
     return torch.log(x1 / x2)
+
+
+class SigmoidGeometricMean(Function):
+    """Forward and backward function of geometric mean of two sigmoid
+    functions.
+
+    This implementation with analytical gradient function substitutes
+    the autograd function of (x.sigmoid() * y.sigmoid()).sqrt(). The
+    original implementation incurs none during gradient backprapagation
+    if both x and y are very small values.
+    """
+
+    @staticmethod
+    def forward(ctx, x, y):
+        x_sigmoid = x.sigmoid()
+        y_sigmoid = y.sigmoid()
+        z = (x_sigmoid * y_sigmoid).sqrt()
+        ctx.save_for_backward(x_sigmoid, y_sigmoid, z)
+        return z
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        x_sigmoid, y_sigmoid, z = ctx.saved_tensors
+        grad_x = grad_output * z * (1 - x_sigmoid) / 2
+        grad_y = grad_output * z * (1 - y_sigmoid) / 2
+        return grad_x, grad_y
+
+
+sigmoid_geometric_mean = SigmoidGeometricMean.apply

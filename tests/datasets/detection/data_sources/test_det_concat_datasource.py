@@ -34,7 +34,7 @@ class DetSourceCocoTest(unittest.TestCase):
         data_source = build_datasource(data_source)
         index_list = random.choices(list(range(20)), k=3)
         for idx in index_list:
-            data = data_source.get_sample(idx)
+            data = data_source[idx]
             self.assertEqual(len(data['img_shape']), 3)
             self.assertEqual(data['img_fields'], ['img'])
             self.assertEqual(data['gt_bboxes'].shape[-1], 4)
@@ -67,7 +67,7 @@ class DetSourceCocoTest(unittest.TestCase):
         data_source = build_datasource(data_source)
         index_list = random.choices(list(range(20)), k=3)
         for idx in index_list:
-            data = data_source.get_sample(idx)
+            data = data_source[idx]
             self.assertEqual(len(data['img_shape']), 3)
             self.assertEqual(data['img_fields'], ['img'])
             self.assertEqual(data['gt_bboxes'].shape[-1], 4)

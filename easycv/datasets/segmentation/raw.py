@@ -34,7 +34,7 @@ class SegDataset(BaseDataset):
         self.ignore_index = ignore_index
 
     def __getitem__(self, idx):
-        data_dict = self.data_source.get_sample(idx)
+        data_dict = self.data_source[idx]
         data_dict = self.pipeline(data_dict)
         return data_dict
 
@@ -53,7 +53,7 @@ class SegDataset(BaseDataset):
         predict_segs = results['seg_pred']
         gt_seg_maps = []
         for i in range(len(self.data_source)):
-            sample = self.data_source.get_sample(i)
+            sample = self.data_source[i]
 
             gt_seg = sample['gt_semantic_seg']
             mask = (gt_seg != self.ignore_index)

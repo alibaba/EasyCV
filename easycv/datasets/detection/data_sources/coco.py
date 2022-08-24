@@ -316,11 +316,3 @@ class DetSourceCoco(object):
         """Get another random index from the same group as the given index."""
         pool = np.where(self.flag == self.flag[idx])[0]
         return np.random.choice(pool)
-
-    def get_sample(self, idx):
-        while True:
-            data = self.prepare_train_img(idx)
-            if data is None:
-                idx = self._rand_another(idx)
-                continue
-            return data

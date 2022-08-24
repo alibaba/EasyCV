@@ -30,7 +30,7 @@ class DetSourceCocoTest(unittest.TestCase):
 
         index_list = random.choices(list(range(20)), k=3)
         for idx in index_list:
-            data = data_source.get_sample(idx)
+            data = data_source[idx]
             self.assertIn('ann_info', data)
             self.assertIn('img_info', data)
             self.assertIn('filename', data)
@@ -45,7 +45,7 @@ class DetSourceCocoTest(unittest.TestCase):
 
         exists = False
         for idx in range(length):
-            result = data_source.get_sample(idx)
+            result = data_source[idx]
             file_name = result.get('filename', '')
             if file_name.endswith('000000224736.jpg'):
                 exists = True

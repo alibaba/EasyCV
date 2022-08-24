@@ -192,7 +192,7 @@ class OdpsReader(object):
         else:
             self.idx = 0
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         global DATALOADER_WORKID
         global DATALOADER_WORKNUM
 
