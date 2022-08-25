@@ -23,6 +23,7 @@ if is_torchacc_enabled():
 import time
 import requests
 import torch
+import torch.distributed as dist
 from mmcv.runner import init_dist
 
 from easycv import __version__
@@ -62,6 +63,10 @@ def parse_args():
         help='number of gpus to use '
         '(only applicable to non-distributed training)')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
+    parser.add_argument(
+        '--diff-seed',
+        action='store_true',
+        help='Whether or not set different seeds for different ranks')
     parser.add_argument('--fp16', action='store_true', help='use fp16')
     parser.add_argument(
         '--deterministic',
@@ -208,7 +213,9 @@ def main():
     logger.info('GPU INFO : {}'.format(torch.cuda.get_device_name(0)))
 
     # set random seeds
+    # Using different seeds for different ranks may reduce accuracy
     seed = init_random_seed(args.seed, device=get_device())
+    seed = seed + dist.get_rank() if args.diff_seed else seed
     if is_torchacc_enabled():
         assert seed is not None, 'Must provide `seed` to sync model initializer if use torchacc!'
 
