@@ -174,30 +174,3 @@ for box, cls_name in zip(output[0]['detection_boxes'], output[0]['detection_clas
 
 cv2.imwrite('result.jpg',image)
 ```
-
-
-To immediately use a model on a given input image, we provide the Predictor API. Predictor group together a pretrained model with the preprocessing that was used during that model's training. For example, we can easily extract detected objects in an image:
-
-``` python
->>> from easycv.predictors.detector import DetrPredictor
-
-# Specify file path
->>> model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/detr/epoch_150.pth'
->>> config_path = 'configs/detection/detr/detr_r50_8x2_150e_coco.py'
->>> img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-
-# Allocate a predictor for object detection
->>> detr = DetrPredictor(model_path, config_path)
->>> output = detr.predict(img)
->>> detr.visualize(img, output, out_file='./result.jpg')
-output['detection_scores'][0][:2] = [0.07836595922708511, 0.219977006316185]
-output['detection_classes'][0][:2] = [2, 0]
-output['detection_boxes'][0][:2] = [[131.10389709472656, 90.93302154541016, 148.95504760742188,101.69216918945312],
-                                    [239.10910034179688, 113.36551666259766,256.0523376464844, 125.22894287109375]]
-
-```
-
-Here we get a list of objects detected in the image, with a box surrounding the object and a confidence score. The prediction results are as follows:
-
-
-![result](../_static/result.jpg)
