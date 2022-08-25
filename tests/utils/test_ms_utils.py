@@ -33,12 +33,15 @@ class MsConfigTest(unittest.TestCase):
             config_path,
             task='image-object-detection',
             ms_model_name='yolox',
+            pipeline_name='easycv-detection',
             reserved_keys=['CLASSES'],
             save_path=ms_cfg_file)
         cfg = Config.fromfile(ms_cfg_file)
         self.assertIn('task', cfg)
         self.assertIn('framework', cfg)
         self.assertIn('CLASSES', cfg)
+        self.assertIn('preprocessor', cfg)
+        self.assertIn('pipeline', cfg)
         self.assertEqual(cfg.model.type, 'yolox')
         self.assertIn('dataset', cfg)
         self.assertIn('batch_size_per_gpu', cfg.train.dataloader)

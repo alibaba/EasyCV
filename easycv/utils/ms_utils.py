@@ -19,6 +19,7 @@ class EasyCVMeta:
 def to_ms_config(cfg,
                  task,
                  ms_model_name,
+                 pipeline_name,
                  save_path=None,
                  reserved_keys=[],
                  dump=True):
@@ -28,6 +29,7 @@ def to_ms_config(cfg,
         cfg (str | Config): Easycv config file or Config object.
         task (str): Task name in modelscope, refer to: modelscope.utils.constant.Tasks.
         ms_model_name (str): Model name registered in modelscope, model type will be replaced with `ms_model_name`, used in modelscope.
+        pipeline_name (str): Predict pipeline name registered in modelscope, refer to: modelscope/pipelines/cv/easycv_pipelines.
         save_path (str): Save path for saving the generated modelscope configuration file. Only valid when dump is True.
         reserved_keys (list of str): Keys conversion may loss some of the original global keys, not all keys will be retained.
             If you need to keep some keys, for example, keep the `CLASSES` key of config for inference, you can specify: reserved_keys=['CLASSES'].
@@ -101,6 +103,7 @@ def to_ms_config(cfg,
         dict(
             task=task,
             framework='pytorch',
+            preprocessor={},  # adapt to modelscope, do nothing
             model={
                 'type': ms_model_name,
                 **easycv_cfg.model, EasyCVMeta.ARCH: {
@@ -128,7 +131,7 @@ def to_ms_config(cfg,
                     'type': 'EasyCVMetric',
                     'evaluators': easycv_cfg.eval_pipelines[0].evaluators
                 }),
-            pipeline=dict(predictor_config=predict_config),
+            pipeline=dict(type=pipeline_name, predictor_config=predict_config),
         ))
 
     for key in reserved_keys:
