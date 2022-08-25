@@ -7,10 +7,21 @@ from easycv.file import io
 from easycv.utils.config_tools import Config
 
 MODELSCOPE_PREFIX = 'modelscope'
-EASYCV_ARCH = '__easycv_arch__'
 
 
-def to_ms_config(cfg, task, ms_model_name, save_path=None, dump=True):
+class EasyCVMeta:
+    ARCH = '__easycv_arch__'
+
+    META = '__easycv_meta__'
+    RESERVED_KEYS = 'reserved_keys'
+
+
+def to_ms_config(cfg,
+                 task,
+                 ms_model_name,
+                 save_path=None,
+                 reserved_keys=[],
+                 dump=True):
     """Convert EasyCV config to ModelScope style.
 
     Args:
@@ -18,6 +29,8 @@ def to_ms_config(cfg, task, ms_model_name, save_path=None, dump=True):
         task (str): Task name in modelscope, refer to: modelscope.utils.constant.Tasks.
         ms_model_name (str): Model name registered in modelscope, model type will be replaced with `ms_model_name`, used in modelscope.
         save_path (str): Save path for saving the generated modelscope configuration file. Only valid when dump is True.
+        reserved_keys (list of str): Keys conversion may loss some of the original global keys, not all keys will be retained.
+            If you need to keep some keys, for example, keep the `CLASSES` key of config for inference, you can specify: reserved_keys=['CLASSES'].
         dump (bool): Whether dump the converted config to `save_path`.
     """
     # TODO: support multi eval_pipelines
@@ -90,7 +103,7 @@ def to_ms_config(cfg, task, ms_model_name, save_path=None, dump=True):
             framework='pytorch',
             model={
                 'type': ms_model_name,
-                **easycv_cfg.model, EASYCV_ARCH: {
+                **easycv_cfg.model, EasyCVMeta.ARCH: {
                     'type': ori_model_type
                 }
             },
@@ -117,6 +130,15 @@ def to_ms_config(cfg, task, ms_model_name, save_path=None, dump=True):
                 }),
             pipeline=dict(predictor_config=predict_config),
         ))
+
+    for key in reserved_keys:
+        ms_cfg.merge_from_dict({key: getattr(easycv_cfg, key)})
+
+    if len(reserved_keys) > 1:
+        ms_cfg.merge_from_dict(
+            {EasyCVMeta.META: {
+                EasyCVMeta.RESERVED_KEYS: reserved_keys
+            }})
 
     if dump:
         with io.open(save_path, 'w') as f:
