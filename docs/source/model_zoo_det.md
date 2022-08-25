@@ -1,6 +1,6 @@
 # Detection Model Zoo
 
-## YOLOX
+## YOLOX-PAI
 
 Pretrained on COCO2017 dataset.
 
