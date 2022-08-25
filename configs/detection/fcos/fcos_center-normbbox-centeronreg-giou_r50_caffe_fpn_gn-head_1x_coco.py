@@ -1,4 +1,6 @@
-_base_ = ['./fcos.py', './coco_detection.py', 'configs/base.py']
+_base_ = [
+    './fcos.py', '../_base_/dataset/coco_detection.py', 'configs/base.py'
+]
 
 log_config = dict(
     interval=50,
