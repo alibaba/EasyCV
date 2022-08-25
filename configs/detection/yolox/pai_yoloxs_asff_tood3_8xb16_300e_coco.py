@@ -8,16 +8,15 @@ model = dict(
     backbone='RepVGGYOLOX',
     model_type='s',  # s m l x tiny nano
     use_att='ASFF',
-
     head=dict(
         type='TOODHead',
         model_type='s',
         obj_loss_type='BCE',
         reg_loss_type='giou',
         num_classes=80,
-        decode_in_inference=True # set to False when test speed to ignore decode and nms
-    )
-)
+        decode_in_inference=
+        True  # set to False when test speed to ignore decode and nms
+    ))
 
 # s m l x
 img_scale = (640, 640)
