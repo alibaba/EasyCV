@@ -2,6 +2,7 @@
 from .classifier import TorchClassifier
 from .detector import (TorchFaceDetector, TorchYoloXClassifierPredictor,
                        TorchYoloXPredictor)
+from .face_keypoints_predictor import FaceKeypointsPredictor
 from .feature_extractor import (TorchFaceAttrExtractor,
                                 TorchFaceFeatureExtractor,
                                 TorchFeatureExtractor)

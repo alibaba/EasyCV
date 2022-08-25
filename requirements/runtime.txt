@@ -3,6 +3,7 @@ dataclasses
 einops
 future
 h5py
+imgaug
 json_tricks
 numpy
 opencv-python

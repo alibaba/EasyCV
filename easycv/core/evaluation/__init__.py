@@ -3,6 +3,7 @@ from .auc_eval import AucEvaluator
 from .base_evaluator import Evaluator
 from .classification_eval import ClsEvaluator
 from .coco_evaluation import CocoDetectionEvaluator, CoCoPoseTopDownEvaluator
+from .face_eval import FaceKeypointEvaluator
 from .faceid_pair_eval import FaceIDPairEvaluator
 from .keypoint_eval import KeyPointEvaluator
 from .mse_eval import MSEEvaluator

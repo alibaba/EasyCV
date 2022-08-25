@@ -5,6 +5,10 @@ from .conv_ws import ConvWS2d, conv_ws_2d
 from .dist_utils import (DistributedLossWrapper, DistributedMinerWrapper,
                          get_world_size, is_dist_avail_and_initialized,
                          reduce_mean)
+from .face_keypoint_utils import (ION, InvertedResidual, Residual, Softmax,
+                                  View, conv_bn, conv_no_relu,
+                                  get_keypoint_accuracy, get_pose_accuracy,
+                                  pose_accuracy)
 from .gather_layer import GatherLayer
 from .init_weights import _init_weights, trunc_normal_
 from .multi_pooling import GeMPooling, MultiAvgPooling, MultiPooling

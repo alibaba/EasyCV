@@ -113,6 +113,7 @@ class PredictorV2(object):
                  device=None,
                  save_results=False,
                  save_path=None,
+                 mode='rgb',
                  *args,
                  **kwargs):
         self.model_path = model_path
@@ -135,6 +136,7 @@ class PredictorV2(object):
         self.model = self.prepare_model()
         self.processor = self.build_processor()
         self._load_op = None
+        self.mode = mode
 
     def prepare_model(self):
         """Build model from config file by default.
@@ -182,7 +184,7 @@ class PredictorV2(object):
             }
         """
         if self._load_op is None:
-            load_cfg = dict(type='LoadImage', mode='rgb')
+            load_cfg = dict(type='LoadImage', mode=self.mode)
             self._load_op = build_from_cfg(load_cfg, PIPELINES)
 
         if not isinstance(input, str):
