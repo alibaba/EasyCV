@@ -18,7 +18,7 @@ class DetSourcePAITest(unittest.TestCase):
     def _test_base(self, data_source, cache_at_init, cache_on_the_fly):
         index_list = random.choices(list(range(20)), k=3)
         for idx in index_list:
-            data = data_source.get_sample(idx)
+            data = data_source[idx]
             self.assertIn('img_shape', data)
             self.assertEqual(data['img_fields'], ['img'])
             self.assertEqual(data['bbox_fields'], ['gt_bboxes'])
@@ -50,7 +50,7 @@ class DetSourcePAITest(unittest.TestCase):
             file_name = data_source.samples_list[idx]['filename']
             if file_name.endswith('000000060623.jpg'):
                 exists = True
-                data = data_source.get_sample(idx)
+                data = data_source[idx]
                 self.assertEqual(
                     data['gt_labels'].tolist(),
                     np.array([0, 0, 44, 45, 40, 60, 0],

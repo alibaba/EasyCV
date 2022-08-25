@@ -70,7 +70,7 @@ class SSLSourceImageNetFeature(object):
             self.labels_cache_dict = {}
             self.feature_per_block = np.load(self.embs_list[0]).shape[0]
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         if not self.dynamic_load:
             results = {'img': self.embs[idx], 'gt_labels': self.labels[idx]}
             return results

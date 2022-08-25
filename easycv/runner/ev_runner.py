@@ -97,6 +97,7 @@ class EVRunner(EpochBasedRunner):
 
         for i, data_batch in enumerate(self.data_loader):
             self._inner_iter = i
+
             self.call_hook('before_train_iter')
             # use amp from pytorch 1.6 or later, we should use amp.autocast
             if self.fp16_enable and LooseVersion(

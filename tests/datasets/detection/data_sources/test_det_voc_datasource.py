@@ -23,7 +23,7 @@ class DetSourceVOCTest(unittest.TestCase):
         index_list = random.choices(list(range(20)), k=3)
         exclude_list = [i for i in range(20) if i not in index_list]
         for idx in index_list:
-            data = data_source.get_sample(idx)
+            data = data_source[idx]
             self.assertIn('img_shape', data)
             self.assertIn('ori_img_shape', data)
             self.assertIn('filename', data)
@@ -53,7 +53,7 @@ class DetSourceVOCTest(unittest.TestCase):
 
         exists = False
         for idx in range(length):
-            result = data_source.get_sample(idx)
+            result = data_source[idx]
             file_name = result.get('filename', '')
             if file_name.endswith('000032.jpg'):
                 exists = True
@@ -129,7 +129,7 @@ class DetSourceVOCTest(unittest.TestCase):
         num_samples = data_source.num_samples
         with self.assertRaises(ValueError) as cm:
             for idx in range(num_samples - 1, num_samples * 2):
-                _ = data_source.get_sample(idx)
+                _ = data_source[idx]
 
         exception = cm.exception
 

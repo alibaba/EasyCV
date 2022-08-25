@@ -34,6 +34,10 @@ def bboxes_iou(bboxes_a, bboxes_b, xyxy=True):
     return area_i / (area_a[:, None] + area_b - area_i)
 
 
+# refer to easycv/models/detection/detectors/yolox/postprocess.py and test.py to rebuild a torch-blade-trtplugin NMS, which is checked by zhoulou in test.py
+# infer docker images is : registry.cn-shanghai.aliyuncs.com/pai-ai-test/eas-service:easycv_blade_181_export
+
+
 def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45):
     box_corner = prediction.new(prediction.shape)
     box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2

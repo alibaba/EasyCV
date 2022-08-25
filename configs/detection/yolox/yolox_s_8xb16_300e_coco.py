@@ -3,10 +3,17 @@ _base_ = '../../base.py'
 # model settings s m l x
 model = dict(
     type='YOLOX',
-    num_classes=80,
-    model_type='s',  # s m l x tiny nano
     test_conf=0.01,
-    nms_thre=0.65)
+    nms_thre=0.65,
+    backbone='CSPDarknet',
+    model_type='s',  # s m l x tiny nano
+    head=dict(
+        type='YOLOXHead',
+        model_type='s',
+        obj_loss_type='BCE',
+        reg_loss_type='giou',
+        num_classes=80,
+        decode_in_inference=True))
 
 # s m l x
 img_scale = (640, 640)
@@ -36,6 +43,7 @@ CLASSES = [
 
 # dataset settings
 data_root = 'data/coco/'
+
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -82,7 +90,7 @@ train_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         classes=CLASSES,
-        filter_empty_gt=False,
+        filter_empty_gt=True,
         iscrowd=False),
     pipeline=train_pipeline,
     dynamic_scale=img_scale)
@@ -100,6 +108,7 @@ val_dataset = dict(
         ],
         classes=CLASSES,
         filter_empty_gt=False,
+        test_mode=True,
         iscrowd=True),
     pipeline=test_pipeline,
     dynamic_scale=None,
@@ -179,4 +188,4 @@ log_config = dict(
         # dict(type='WandbLoggerHookV2'),
     ])
 
-export = dict(use_jit=False, export_blade=False, end2end=False)
+export = dict(export_type = 'raw', preprocess_jit = False, batch_size=1, blade_config=dict(enable_fp16=True, fp16_fallback_op_ratio=0.01), use_trt_efficientnms=False)

@@ -32,7 +32,7 @@ class SegDatasetTest(unittest.TestCase):
             dict(
                 type='SegRandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
             dict(type='MMNormalize', **IMG_NORM_CFG_255),
-            dict(type='MMPad', size=crop_size, pad_val=0, seg_pad_val=255),
+            dict(type='MMPad', size=crop_size),
             dict(type='DefaultFormatBundle'),
             dict(type='Collect', keys=['img', 'gt_semantic_seg']),
         ]
@@ -41,7 +41,7 @@ class SegDatasetTest(unittest.TestCase):
         data_source = build_datasource(data_source_cfg)
         gt_seg_maps = []
         for i in range(len(data_source)):
-            sample = data_source.get_sample(i)
+            sample = data_source[i]
             gt_seg_maps.append(sample['gt_semantic_seg'])
         results = {'seg_pred': gt_seg_maps}
 

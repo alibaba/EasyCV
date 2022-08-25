@@ -64,7 +64,7 @@ class SSLSourceImageList(object):
     def __len__(self):
         return len(self.fns)
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         img = None
         try_idx = 0
 
@@ -82,6 +82,6 @@ class SSLSourceImageList(object):
             try_idx += 1
 
         if img is None:
-            return self.get_sample(idx + 1)
+            return self[(idx + 1) % len(self.fns)]
 
         return {'img': img}
