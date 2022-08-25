@@ -23,11 +23,6 @@ img_scale = (640, 640)
 random_size = (14, 26)
 scale_ratio = (0.1, 2)
 
-# tiny nano without mixup
-# img_scale = (416, 416)
-# random_size = (10, 20)
-# scale_ratio = (0.5, 1.5)
-
 CLASSES = [
     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
     'truck', 'boat', 'traffic light', 'fire hydrant', 'stop sign',
