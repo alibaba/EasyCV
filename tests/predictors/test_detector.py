@@ -144,7 +144,7 @@ class DetectorTest(unittest.TestCase):
             decimal=1)
 
     def test_vitdet_detector(self):
-        model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/vitdet/vit_base/vitdet_maskrcnn_export2.pth'
+        model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/vitdet/vit_base/vitdet_maskrcnn_export.pth'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
         out_file = './result.jpg'
         vitdet = TorchViTDetPredictor(model_path)
