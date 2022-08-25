@@ -143,6 +143,7 @@ notebook
           <li><a href="configs/detection/detr">DETR (ECCV'2020)</a></li>
           <li><a href="configs/detection/dab_detr">DAB-DETR (ICLR'2022)</a></li>
           <li><a href="configs/detection/dab_detr">DN-DETR (CVPR'2022)</a></li>
+          <li><a href="configs/detection/dino">DINO (ArXiv'2022)</a></li>
         </ul>
       </td>
       <td>

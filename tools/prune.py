@@ -25,7 +25,8 @@ from easycv.file import io
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
-from easycv.utils.dist_utils import get_num_gpu_per_node, set_random_seed
+from easycv.utils.dist_utils import get_num_gpu_per_node
+from easycv.apis import set_random_seed
 from easycv.toolkit.prune.prune_utils import get_prune_layer, load_pruner
 
 
