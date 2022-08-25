@@ -17,7 +17,7 @@ except ImportError:
         'to install pai_nni')
 
 from easycv.models import build_model
-from easycv.apis import train_model, build_optimizer, set_random_seed
+from easycv.apis import set_random_seed, train_model, build_optimizer
 from easycv.apis.train_misc import build_yolo_optimizer
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.utils.logger import get_root_logger
