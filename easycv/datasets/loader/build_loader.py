@@ -10,8 +10,8 @@ from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader, RandomSampler
 
-from easycv.apis import init_random_seed
 from easycv.datasets.shared.odps_reader import set_dataloader_workid
+from easycv.utils.dist_utils import sync_random_seed
 from easycv.utils.torchacc_util import is_torchacc_enabled
 from .collate import CollateWrapper
 from .sampler import DistributedMPSampler, DistributedSampler
@@ -59,7 +59,7 @@ def build_dataloader(dataset,
     Returns:
         DataLoader: A PyTorch dataloader.
     """
-    seed = init_random_seed(seed)
+    seed = sync_random_seed(seed)
     rank, world_size = get_dist_info()
 
     if dist:
