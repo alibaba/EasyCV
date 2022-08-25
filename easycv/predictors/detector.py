@@ -39,7 +39,7 @@ except Exception:
 
 
 @PREDICTORS.register_module()
-class DetectorPredictor(PredictorInterface):
+class DetrPredictor(PredictorInterface):
     """Inference image(s) with the detector.
     Args:
         model_path (str): checkpoint model and export model are shared.
