@@ -3,14 +3,12 @@
 isort:skip_file
 """
 import os
-import tempfile
 import unittest
 
-import cv2
 import numpy as np
 from PIL import Image
 
-from easycv.predictors.detector import TorchYoloXPredictor, TorchViTDetPredictor
+from easycv.predictors.detector import TorchYoloXPredictor, DetrPredictor
 from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_EXPORT,
                              PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_JIT,
                              PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT,
@@ -147,8 +145,9 @@ class DetectorTest(unittest.TestCase):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/vitdet/vit_base/vitdet_maskrcnn_export.pth'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
         out_file = './result.jpg'
-        vitdet = TorchViTDetPredictor(model_path)
+        vitdet = DetrPredictor(model_path)
         output = vitdet.predict(img)
+        vitdet.visualize(img, output, out_file=out_file)
 
         self.assertIn('detection_boxes', output)
         self.assertIn('detection_scores', output)
@@ -213,8 +212,6 @@ class DetectorTest(unittest.TestCase):
                       [50.403812, 110.543495, 70.4368, 119.65186],
                       [373.50272, 134.27258, 432.18475, 187.81824]]),
             decimal=1)
-
-        vitdet.show_result_pyplot(img, output, out_file=out_file)
 
 
 if __name__ == '__main__':
