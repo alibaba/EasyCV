@@ -94,9 +94,6 @@ def to_ms_config(cfg,
             log_hook_i.update({'interval': log_config.interval})
             hooks.append(log_hook_i)
 
-    # process tensor type, convert to numpy for dump logs
-    hooks.append({'type': 'PreLoggerHook', 'interval': log_config.interval})
-
     ori_model_type = easycv_cfg.model.pop('type')
 
     ms_cfg = Config(
