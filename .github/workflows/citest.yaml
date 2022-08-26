@@ -67,7 +67,7 @@ jobs:
           PYTHONPATH=. python tests/run.py
 
 
-# blade test env will be updated!
+# blade test env will be updated in docker images!
 #  ut-torch181-blade:
 #    # The type of runner that the job will run on
 #    runs-on: [unittest-t4]
