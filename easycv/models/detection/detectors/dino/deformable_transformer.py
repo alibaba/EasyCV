@@ -264,7 +264,7 @@ class DeformableTransformer(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
         for m in self.modules():
-            from thirdparty.msdeformattn.modules import MSDeformAttn
+            from thirdparty.deformable_attention.modules import MSDeformAttn
             if isinstance(m, MSDeformAttn):
                 m._reset_parameters()
         if self.num_feature_levels > 1 and self.level_embed is not None:
@@ -938,7 +938,7 @@ class DeformableTransformerEncoderLayer(nn.Module):
         super().__init__()
 
         # self attention
-        from thirdparty.msdeformattn.modules import MSDeformAttn
+        from thirdparty.deformable_attention.modules import MSDeformAttn
         self.self_attn = MSDeformAttn(
             d_model, n_levels, n_heads, n_points, im2col_step=64)
         self.dropout1 = nn.Dropout(dropout)
@@ -1014,7 +1014,7 @@ class DeformableTransformerDecoderLayer(nn.Module):
         assert sorted(module_seq) == ['ca', 'ffn', 'sa']
 
         # cross attention
-        from thirdparty.msdeformattn.modules import MSDeformAttn
+        from thirdparty.deformable_attention.modules import MSDeformAttn
         self.cross_attn = MSDeformAttn(
             d_model, n_levels, n_heads, n_points, im2col_step=64)
         self.dropout1 = nn.Dropout(dropout)
@@ -1040,7 +1040,7 @@ class DeformableTransformerDecoderLayer(nn.Module):
         assert decoder_sa_type in ['sa', 'ca_label', 'ca_content']
 
         if decoder_sa_type == 'ca_content':
-            from thirdparty.msdeformattn.modules import MSDeformAttn
+            from thirdparty.deformable_attention.modules import MSDeformAttn
             self.self_attn = MSDeformAttn(
                 d_model, n_levels, n_heads, n_points, im2col_step=64)
 

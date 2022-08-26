@@ -110,7 +110,7 @@ class MSDeformAttnTransformerEncoderOnly(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
         for m in self.modules():
-            from thirdparty.msdeformattn.modules import MSDeformAttn
+            from thirdparty.deformable_attention.modules import MSDeformAttn
             if isinstance(m, MSDeformAttn):
                 m._reset_parameters()
         normal_(self.level_embed)
@@ -176,7 +176,7 @@ class MSDeformAttnTransformerEncoderLayer(nn.Module):
         super().__init__()
 
         # self attention
-        from thirdparty.msdeformattn.modules import MSDeformAttn
+        from thirdparty.deformable_attention.modules import MSDeformAttn
         self.self_attn = MSDeformAttn(d_model, n_levels, n_heads, n_points)
         self.dropout1 = nn.Dropout(dropout)
         self.norm1 = nn.LayerNorm(d_model)
