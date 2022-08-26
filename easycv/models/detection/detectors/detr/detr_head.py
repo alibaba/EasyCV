@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 
 from easycv.models.builder import HEADS, build_neck
-from easycv.models.detection.utils import (DetrPostProcess, HungarianMatcher,
-                                           SetCriterion, box_xyxy_to_cxcywh)
+from easycv.models.detection.utils import DetrPostProcess, box_xyxy_to_cxcywh
+from easycv.models.loss import HungarianMatcher, SetCriterion
 from easycv.models.utils import MLP
 
 

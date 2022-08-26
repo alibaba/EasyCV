@@ -5,9 +5,7 @@ from .boxes import (batched_nms, bbox2result, bbox_overlaps, bboxes_iou,
                     fp16_clamp, generalized_box_iou, postprocess)
 from .detr_utils import DetrPostProcess
 from .generator import MlvlPointGenerator
-from .matcher import HungarianMatcher
 from .misc import (accuracy, filter_scores_and_topk,
                    gen_encoder_output_proposals, gen_sineembed_for_position,
                    interpolate, inverse_sigmoid, output_postprocess,
                    select_single_mlvl)
-from .set_criterion import CDNCriterion, DNCriterion, SetCriterion

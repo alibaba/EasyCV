@@ -8,9 +8,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from easycv.models.builder import HEADS, build_neck
-from easycv.models.detection.utils import (CDNCriterion, DetrPostProcess,
-                                           HungarianMatcher, SetCriterion,
-                                           box_xyxy_to_cxcywh, inverse_sigmoid)
+from easycv.models.detection.utils import (DetrPostProcess, box_xyxy_to_cxcywh,
+                                           inverse_sigmoid)
+from easycv.models.loss import CDNCriterion, HungarianMatcher, SetCriterion
 from easycv.models.utils import (MLP, get_world_size,
                                  is_dist_avail_and_initialized)
 from ..dab_detr.dab_detr_transformer import PositionEmbeddingSineHW

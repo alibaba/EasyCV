@@ -6,9 +6,9 @@ import torch
 import torch.nn as nn
 
 from easycv.models.builder import HEADS, build_neck
-from easycv.models.detection.utils import (DetrPostProcess, DNCriterion,
-                                           HungarianMatcher, SetCriterion,
-                                           box_xyxy_to_cxcywh, inverse_sigmoid)
+from easycv.models.detection.utils import (DetrPostProcess, box_xyxy_to_cxcywh,
+                                           inverse_sigmoid)
+from easycv.models.loss import DNCriterion, HungarianMatcher, SetCriterion
 from easycv.models.utils import MLP
 from .dn_components import dn_post_process, prepare_for_dn
 
