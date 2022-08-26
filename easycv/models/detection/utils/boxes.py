@@ -7,6 +7,8 @@ import torch
 import torchvision
 from torchvision.ops.boxes import box_area, nms
 
+from easycv.models.detection.utils.misc import fp16_clamp
+
 
 def bboxes_iou(bboxes_a, bboxes_b, xyxy=True):
     if bboxes_a.shape[1] != 4 or bboxes_b.shape[1] != 4:
@@ -509,11 +511,3 @@ def batched_nms(boxes, scores, idxs, nms_cfg, class_agnostic=False):
 
     boxes = torch.cat([boxes, scores[:, None]], -1)
     return boxes, keep
-
-
-def fp16_clamp(x, min=None, max=None):
-    if not x.is_cuda and x.dtype == torch.float16:
-        # clamp for cpu float16, tensor fp16 has no clamp implementation
-        return x.float().clamp(min, max).half()
-
-    return x.clamp(min, max)
