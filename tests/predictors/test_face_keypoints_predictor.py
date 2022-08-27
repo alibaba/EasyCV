@@ -16,9 +16,9 @@ class FaceKeypointsPredictorWithoutDetectorTest(unittest.TestCase):
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
-        self.image_path = './data/test/face_2d_keypoints/data/002253.png'
-        self.save_image_path = './data/test/face_2d_keypoints/data/result_002253.png'
-        self.model_path = './data/test/face_2d_keypoints/models/epoch_580.pth'
+        self.image_path = './data/test/face_2d_keypoints/data/002258.png'
+        self.save_image_path = './data/test/face_2d_keypoints/data/result_002258.png'
+        self.model_path = './data/test/face_2d_keypoints/models/epoch_400.pth'
         self.model_config_path = './configs/face/face_96x96_wingloss.py'
 
     def test_single(self):
@@ -33,6 +33,10 @@ class FaceKeypointsPredictorWithoutDetectorTest(unittest.TestCase):
             output_keypoints,
             scale=2,
             save_path=self.save_image_path)
+        self.assertEqual(output_keypoints.shape[0], 1)
+        self.assertEqual(output_keypoints.shape[1], 212)
+        self.assertEqual(output_pose.shape[0], 1)
+        self.assertEqual(output_pose.shape[1], 3)
 
 
 if __name__ == '__main__':

@@ -334,16 +334,15 @@ class FaceKeypointNorm:
         # for key in results.get('img', []):
         if 'img' in results.keys():
             image = results['img']
+            h, w, c = image.shape
             image = cv2.resize(image, (self.input_size, self.input_size))
             results['img'] = np.array(image)
 
             # for key in results.get('target_point', []):
             if 'target_point' in results.keys():
                 points = results['target_point']
-                points[:, 0] = points[:, 0] / image.shape[1] * float(
-                    self.input_size)
-                points[:, 1] = points[:, 1] / image.shape[0] * float(
-                    self.input_size)
+                points[:, 0] = points[:, 0] / w * float(self.input_size)
+                points[:, 1] = points[:, 1] / h * float(self.input_size)
                 target_point = np.reshape(points,
                                           (points.shape[0] * points.shape[1]))
                 results['target_point'] = np.array(target_point, np.float32)
