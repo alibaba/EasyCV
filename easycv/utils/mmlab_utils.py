@@ -57,7 +57,9 @@ class MMAdapter:
             self.mmtype_list.add(mmtype)
 
         self.check_env()
-        self.fix_conflicts()
+
+        # Remove the annotation in feature
+        # self.fix_conflicts()
 
         self.MMTYPE_REGISTRY_MAP = self._get_mmtype_registry_map()
         self.modules_config = modules_config
