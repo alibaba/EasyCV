@@ -33,7 +33,7 @@ class OCRDetSource(object):
             data_lines.extend(lines)
         return data_lines
     
-    def detlabel_encode(self, data):
+    def label_encode(self, data):
         label = data['label']
         label = json.loads(label)
         nBox = len(label)
@@ -85,7 +85,7 @@ class OCRDetSource(object):
             img = load_image(img_path, mode='BGR')
             data['img'] = img.astype(np.float32)
             data['ori_img_shape'] = img.shape
-            outs = self.detlabel_encode(data)
+            outs = self.label_encode(data)
         except:
             logging.error(
                 "When parsing line {}, error happened with msg: {}".format(

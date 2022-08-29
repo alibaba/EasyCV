@@ -37,6 +37,11 @@ class OCRDetPredictor(PredictorInterface):
             'meta'], 'meta.config is missing from checkpoint'
         
         self.det_cfg = det_checkpoint['meta']['config']
+        #debug
+        self.det_cfg['model']['postprocess']['box_thresh']=0.4
+        # self.det_cfg['model']['postprocess']['thresh']=0.1
+        self.det_cfg['model']['postprocess']['unclip_ratio']=2
+        self.det_cfg['model']['postprocess']['score_mode']='slow'
         self.det_model = build_model(self.det_cfg.model)
         self.ckpt = load_checkpoint(
             self.det_model, self.det_model_path, map_location=self.device)
@@ -73,7 +78,8 @@ class OCRDetPredictor(PredictorInterface):
         data_dict = self.pipeline(data_dict)
         img = data_dict['img']
         img = torch.unsqueeze(img, 0).to(self.device)
-        res = self.det_model.extract_feat(img, )
+        with torch.no_grad():
+            res = self.det_model.extract_feat(img, )
         res = self.det_model.postprocess(res,[ori_shape])
         return res
     
@@ -113,18 +119,39 @@ class OCRRecPredictor(PredictorInterface):
         pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
         self.pipeline = Compose(pipeline)
         
+    # def predict(self, input_data_list):
+    #     """
+    #     Args:
+    #         input_data_list: a list of numpy array(in rgb order), each array is a sample
+    #     to be predicted
+    #     """
+    #     if isinstance(input_data_list,list):
+    #         output_list = []
+    #         for idx, img in enumerate(input_data_list):
+    #             res = self.predict_single(img)
+    #             output_list.append(res)
+    #         return output_list
+    #     else:
+    #         res = self.predict_single(input_data_list)
+    #         return res
+    
     def predict(self, input_data_list):
         """
         Args:
             input_data_list: a list of numpy array(in rgb order), each array is a sample
         to be predicted
         """
-        if isinstance(input_data_list,list):
+        if not input_data_list:
+            return {'preds_text': []}
+        elif isinstance(input_data_list,list):
+            img_list = []
             output_list = []
             for idx, img in enumerate(input_data_list):
-                res = self.predict_single(img)
-                output_list.append(res)
-            return output_list
+                img = self.preprocess(img)
+                img_list.append(img)
+            img_batch = torch.stack(img_list).to(self.device)
+            res = self.rec_model.forward_test(img_batch, )
+            return res
         else:
             res = self.predict_single(input_data_list)
             return res
@@ -143,12 +170,109 @@ class OCRRecPredictor(PredictorInterface):
         # res = self.rec_model.postprocess(res)
         return res
     
+    def preprocess(self, img):
+        if not isinstance(img, np.ndarray):
+            img = np.asarray(img)
+        ori_shape = img.shape
+        data_dict = {'img': img,
+                        'ori_shape': ori_shape}
+        data_dict = self.pipeline(data_dict)
+        img = data_dict['img']
+        return img
+
+@PREDICTORS.register_module()
+class OCRClsPredictor(PredictorInterface):
+    def __init__(self, cls_model_path):
+        
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        
+        # build detection model
+        self.cls_model_path = cls_model_path
+        self.cls_model = None
+        with io.open(self.cls_model_path, 'rb') as infile:
+            cls_checkpoint = torch.load(infile, map_location='cpu')
+        
+        assert 'meta' in cls_checkpoint and 'config' in cls_checkpoint[
+            'meta'], 'meta.config is missing from checkpoint'
+        
+        self.cls_cfg = cls_checkpoint['meta']['config']
+        self.cls_model = build_model(self.cls_cfg.model)
+        self.ckpt = load_checkpoint(
+            self.cls_model, self.cls_model_path, map_location=self.device)
+        self.cls_model.to(self.device)
+        self.cls_model.eval()
+        
+        # build pipeline
+        test_pipeline = self.cls_cfg.test_pipeline
+        pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
+        self.pipeline = Compose(pipeline)
+        
+    def predict(self, input_data_list):
+        """
+        Args:
+            input_data_list: a list of numpy array(in rgb order), each array is a sample
+        to be predicted
+        """
+        # if not input_data_list:
+        #     return {'class': []}
+        if isinstance(input_data_list,list):
+            img_list = []
+            output_list = []
+            for idx, img in enumerate(input_data_list):
+                img = self.preprocess(img)
+                img_list.append(img)
+            img_batch = torch.stack(img_list).to(self.device)
+            res = self.cls_model.forward_test(img_batch, )
+        else:
+            res = self.predict_single(input_data_list)
+        res = self.postprocess(res,input_data_list)
+        return res
+    
+    def predict_single(self, img):
+        
+        if not isinstance(img, np.ndarray):
+            img = np.asarray(img)
+        ori_shape = img.shape
+        data_dict = {'img': img,
+                        'ori_shape': ori_shape}
+        data_dict = self.pipeline(data_dict)
+        img = data_dict['img']
+        img = torch.unsqueeze(img, 0).to(self.device)
+        res = self.cls_model.forward_test(img, )
+        # res = self.rec_model.postprocess(res)
+        return res
+    
+    def preprocess(self, img):
+        if not isinstance(img, np.ndarray):
+            img = np.asarray(img)
+        ori_shape = img.shape
+        data_dict = {'img': img,
+                        'ori_shape': ori_shape}
+        data_dict = self.pipeline(data_dict)
+        img = data_dict['img']
+        return img
+    
+    def postprocess(self, result, img_list, threshold=0.9):
+        labels, logits = result['class'], result['neck']
+        result = {'labels':[], 'logits':[]}
+        img_list_out = []
+        for img, label,logit in zip(img_list, labels, logits):
+            result['labels'].append(label)
+            result['logits'].append(logit[label])
+            if label==1 and logit[label]>threshold:
+                img = cv2.flip(img,-1)
+            img_list_out.append(img)
+        return img_list_out, result
+            
 
 @PREDICTORS.register_module()
 class OCRPredictor(PredictorInterface):
     
-    def __init__(self, det_model_path, rec_model_path, drop_score=0.5):
+    def __init__(self, det_model_path, rec_model_path, cls_model_path=None, drop_score=0.5, use_angle_cls=False):
         
+        self.use_angle_cls = use_angle_cls
+        if use_angle_cls:
+            self.cls_predictor = OCRClsPredictor(cls_model_path)
         self.det_predictor = OCRDetPredictor(det_model_path)
         self.rec_predictor = OCRRecPredictor(rec_model_path)
         self.drop_score = drop_score
@@ -210,21 +334,29 @@ class OCRPredictor(PredictorInterface):
     def predict_single(self, img):
         ori_im = img.copy()
         # dt_boxes = self.det_predictor.predict(img[...,::-1])
+
         dt_boxes = self.det_predictor.predict(img)
         dt_boxes = self.sorted_boxes(dt_boxes)
         img_crop_list = []
         for bno in range(len(dt_boxes)):
             tmp_box = copy.deepcopy(dt_boxes[bno])
             img_crop = self.get_rotate_crop_image(ori_im, tmp_box)
-            cv2.imwrite(f"test_rgb_{bno}.jpg",img_crop)
+            # cv2.imwrite(f"test_rgb_{bno}.jpg",img_crop)
             img_crop_list.append(img_crop)
+        if self.use_angle_cls:
+            img_crop_list, cls_res = self.cls_predictor.predict(img_crop_list)
+                
+        for idx, img_crop in enumerate(img_crop_list):
+            cv2.imwrite(f"test_rgb_{idx}.jpg",img_crop)
         rec_res = self.rec_predictor.predict(img_crop_list)
         filter_boxes, filter_rec_res = [], []
-        for box, rec_reuslt in zip(dt_boxes, rec_res):
-            text, score = rec_reuslt['preds_text'][0]
+        for box, rec_reuslt in zip(dt_boxes, rec_res['preds_text']):
+            # text, score = rec_reuslt['preds_text'][0]
+            text, score = rec_reuslt
             if score >= self.drop_score:
                 filter_boxes.append(box)
-                filter_rec_res.append(rec_reuslt['preds_text'][0])
+                # filter_rec_res.append(rec_reuslt['preds_text'][0])
+                filter_rec_res.append(rec_reuslt)
         return filter_boxes, filter_rec_res
         
     def show(self, boxes, rec_res, img , drop_score=0.5, font_path="./doc/simfang.ttf"):
@@ -317,10 +449,19 @@ if __name__=="__main__":
     #     rec_out = predictor.predict(img)
     #     print(img_path,rec_out['preds_text'][0][0])
     
+    
+    #cls
+    # predictor = OCRClsPredictor(cls_model_path='/root/code/ocr/PaddleOCR/pretrain_models/ch_ppocr_mobile_v2.0_cls_train/best_accuracy_export.pth')
+    # img = cv2.imread('/root/code/ocr/ppocr_img/ch/word_1.jpg')
+    # cls_out = predictor.predict([img]*4)
+    # print(cls_out)
+    
     # system
-    predictor = OCRPredictor(det_model_path='/root/code/ocr/EasyCV/out/det_ocr_ch/epoch_4_export.pth', \
-                             rec_model_path='../../out/rec_ocr_ch/epoch_10_export.pth')
-    # predictor = OCRPredictor(det_model_path='/root/code/ocr/PaddleOCR/pretrain_models/ch_PP-OCRv3_det_distill_train/student_export.pth', \
+    predictor = OCRPredictor(det_model_path='../../out/det_ocr_ch/epoch_10_export.pth', \
+                             rec_model_path='/root/code/ocr/PaddleOCR/pretrain_models/ch_PP-OCRv3_rec_train/best_accuracy_student_export.pth',
+                             cls_model_path='/root/code/ocr/PaddleOCR/pretrain_models/ch_ppocr_mobile_v2.0_cls_train/best_accuracy_export.pth',
+                             use_angle_cls=True)
+    # predictor = OCRPredictor(det_model_path='/root/code/ocr/PaddleOCR/pretrain_models/Multilingual_PP-OCRv3_det_distill_train/student_export.pth', \
     #                          rec_model_path='/root/code/ocr/PaddleOCR/pretrain_models/ch_PP-OCRv3_rec_train/best_accuracy_student_export.pth')
     # img = cv2.imread('/root/code/ocr/test_img/test_ocr.jpg')
     # img = cv2.imread('/root/code/ocr/ppocr_img/ch/ch.jpg')
@@ -328,14 +469,17 @@ if __name__=="__main__":
     import glob
     import time
     img_list = glob.glob('/nas/database/ocr/det/pai/img/test/*')
+    # img_list = glob.glob('/nas/database/ocr/det/icdar2015/text_localization/ch4_test_images/*')
+    time_list = []
     img_list = ['/root/code/ocr/test_img/test_ocr.jpg']
     for img_path in img_list:
-        tic = time.time()
         img = cv2.imread(img_path)
+        tic = time.time()
         filter_boxes, filter_rec_res = predictor.predict_single(img)
+        print(time.time()-tic)
+        time_list.append(time.time()-tic)
         out_img = predictor.show(filter_boxes, filter_rec_res, img, font_path='/nas/code/ocr/PaddleOCR2Pytorch-main/doc/fonts/simfang.ttf')
-        
-        cv2.imwrite('test_easycv/'+img_path.split('/')[-1],out_img)
+        cv2.imwrite('test_paddle/'+img_path.split('/')[-1],out_img)
     
     
     

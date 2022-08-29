@@ -46,6 +46,7 @@ class DBPostProcess(object):
         '''
 
         bitmap = _bitmap
+        # cv2.imwrite('mask.jpg',(bitmap * 255).astype(np.uint8))
         height, width = bitmap.shape
 
         outs = cv2.findContours((bitmap * 255).astype(np.uint8), cv2.RETR_LIST,

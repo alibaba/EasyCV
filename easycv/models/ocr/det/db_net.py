@@ -14,6 +14,7 @@ from easycv.models.builder import MODELS
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 from easycv.models.ocr.backbones.det_mobilenet_v3 import MobileNetV3
+from easycv.models.ocr.backbones.det_resnet_vd import ResNet
 from easycv.models.ocr.postprocess.db_postprocess import DBPostProcess
 from easycv.models.ocr.loss.det_db_loss import DBLoss
 

@@ -3,20 +3,20 @@ _base_ = ['configs/base.py']
 model = dict(
     type='DBNet',
     backbone=dict(
-        type='MobileNetV3',
-        scale=0.5,
-        model_name='large',
-        disable_se=True),
+        type='ResNet',
+        in_channels=3,
+        layers=50),
     neck=dict(
-        type='RSEFPN',
-        in_channels=[16, 24, 56, 480],
-        out_channels=96,
-        # out_channels=256,
+        type='LKPAN',
+        in_channels=[256, 512, 1024, 2048],
+        # out_channels=96,
+        out_channels=256,
         shortcut=True),
     head=dict(
         type='DBHead',
-        in_channels=96,
-        # in_channels=256,
+        # in_channels=96,
+        in_channels=256,
+        kernel_list=[7, 2, 2],
         k=50),
     postprocess=dict(
         type='DBPostProcess',
@@ -37,7 +37,7 @@ model = dict(
     ),
     # pretrained='/mnt/workspace/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_det_infer.pth'
     # pretrained='/mnt/data/code/ocr/PaddleOCR/pretrain_models/MobileNetV3_large_x0_5_pretrained.pth'
-    pretrained='/root/code/ocr/PaddleOCR/pretrain_models/Multilingual_PP-OCRv3_det_distill_train/student.pth'
+    pretrained='/root/code/ocr/PaddleOCR/pretrain_models/ch_PP-OCRv3_det_distill_train/teacher.pth'
 )
 
 img_norm_cfg = dict(
@@ -62,7 +62,8 @@ train_pipeline = [
                 }
             }]),
     dict(type='EastRandomCropData',
-         size=[640,640],
+        #  size=[640,640],
+         size=[960,960],
          max_tries=50,
          keep_ratio=True),
     dict(type='MakeBorderMap',shrink_ratio=0.4, thresh_min=0.3, thresh_max=0.7),
@@ -81,14 +82,14 @@ train_pipeline = [
 # ]
 
 test_pipeline = [
-    dict(type='DetResizeForTest', limit_side_len=640,limit_type='min'),
+    dict(type='DetResizeForTest', limit_side_len=960),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
     dict(type='Collect', keys=['img'],meta_keys=['ori_img_shape','polys','ignore_tags']),
 ]
 
 val_pipeline = [
-    dict(type='DetResizeForTest', limit_side_len=640,limit_type='min'),
+    dict(type='DetResizeForTest', limit_side_len=960),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
     dict(type='Collect', keys=['img'],meta_keys=['ori_img_shape','polys','ignore_tags']),
@@ -98,7 +99,7 @@ train_dataset = dict(
     type = 'OCRDetDataset',
     data_source = dict(
         type='OCRPaiDetSource',
-         label_file = ['/nas/database/ocr/det/pai/label_file/train/20191218131226_npx_e2e_train.csv',
+        label_file = ['/nas/database/ocr/det/pai/label_file/train/20191218131226_npx_e2e_train.csv',
                       '/nas/database/ocr/det/pai/label_file/train/20191218131302_social_e2e_train.csv',
                       '/nas/database/ocr/det/pai/label_file/train/20191218233728_synth_e2e_english_train_2000.csv',
                       '/nas/database/ocr/det/pai/label_file/train/20191218122330_book_e2e_train.csv',],
@@ -119,12 +120,11 @@ val_dataset = dict(
 )
 
 data = dict(
-    imgs_per_gpu=16, workers_per_gpu=2, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=8, workers_per_gpu=2, train=train_dataset, val=val_dataset)
 
 total_epochs = 100
 optimizer = dict(
     type='Adam',
-    # lr=0.001,
     lr=0.001,
     betas=(0.9, 0.999))
 

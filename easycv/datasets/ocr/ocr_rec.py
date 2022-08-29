@@ -17,7 +17,7 @@ class OCRRecDataset(OCRDetDataset):
     
     def evaluate(self, results, evaluators, logger=None, **kwargs):
         assert len(evaluators) == 1, \
-            'ocrdet evaluation only support one evaluator'
+            'ocrrec evaluation only support one evaluator'
         preds_text = results.pop('preds_text')
         label_text = results.pop('label_text')
         eval_res = evaluators[0].evaluate(preds_text, label_text)

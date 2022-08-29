@@ -6,13 +6,13 @@ from easycv.models.builder import HEADS
 
 
 class Head(nn.Module):
-    def __init__(self, in_channels, **kwargs):
+    def __init__(self, in_channels, kernel_list=[3, 2, 2], **kwargs):
         super(Head, self).__init__()
         self.conv1 = nn.Conv2d(
             in_channels=in_channels,
             out_channels=in_channels // 4,
-            kernel_size=3,
-            padding=1,
+            kernel_size=kernel_list[0],
+            padding=int(kernel_list[0] // 2),
             bias=False)
         self.conv_bn1 = nn.BatchNorm2d(
             in_channels // 4)
@@ -21,7 +21,7 @@ class Head(nn.Module):
         self.conv2 = nn.ConvTranspose2d(
             in_channels=in_channels // 4,
             out_channels=in_channels // 4,
-            kernel_size=2,
+            kernel_size=kernel_list[1],
             stride=2)
         self.conv_bn2 = nn.BatchNorm2d(
             in_channels // 4)
@@ -30,7 +30,7 @@ class Head(nn.Module):
         self.conv3 = nn.ConvTranspose2d(
             in_channels=in_channels // 4,
             out_channels=1,
-            kernel_size=2,
+            kernel_size=kernel_list[2],
             stride=2)
 
     def forward(self, x):
@@ -64,8 +64,8 @@ class DBHead(nn.Module):
             'conv2d_57', 'batch_norm_49', 'conv2d_transpose_2', 'batch_norm_50',
             'conv2d_transpose_3', 'thresh'
         ]
-        self.binarize = Head(in_channels,)# binarize_name_list)
-        self.thresh = Head(in_channels, )#thresh_name_list)
+        self.binarize = Head(in_channels,**kwargs)# binarize_name_list)
+        self.thresh = Head(in_channels, **kwargs)#thresh_name_list)
 
     def step_function(self, x, y):
         return torch.reciprocal(1 + torch.exp(-self.k * (x - y)))

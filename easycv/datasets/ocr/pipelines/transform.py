@@ -1237,3 +1237,15 @@ def resize_norm_img_chinese(img, image_shape):
     padding_im[:, 0:resized_w, :] = resized_image
     valid_ratio = min(1.0, float(resized_w / imgW))
     return padding_im, valid_ratio
+
+
+@PIPELINES.register_module()
+class ClsResizeImg(object):
+    def __init__(self, img_shape, **kwargs):
+        self.img_shape = img_shape
+
+    def __call__(self, data):
+        img = data['img']
+        norm_img, _ = resize_norm_img(img, self.img_shape)
+        data['img'] = norm_img
+        return data
