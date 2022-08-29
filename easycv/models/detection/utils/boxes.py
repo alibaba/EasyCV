@@ -1,10 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) OpenMMLab. All rights reserved.
-from distutils.version import LooseVersion
-
 import numpy as np
 import torch
-import torchvision
 from torchvision.ops.boxes import box_area, nms
 
 from easycv.models.detection.utils.misc import fp16_clamp
