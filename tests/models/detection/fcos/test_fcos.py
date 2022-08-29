@@ -14,7 +14,7 @@ class FCOSTest(unittest.TestCase):
 
     def test_fcos(self):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/fcos/fcos_epoch_12.pth'
-        config_path = 'configs/detection/fcos/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_1x_coco.py'
+        config_path = 'configs/detection/fcos/fcos_r50_torch_1x_coco.py'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
         fcos = DetrPredictor(model_path, config_path)
         output = fcos.predict(img)
