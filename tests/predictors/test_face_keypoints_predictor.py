@@ -1,13 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import copy
-import os
-import tempfile
 import unittest
-
-import cv2
-import numpy as np
-from PIL import Image
 
 from easycv.predictors.face_keypoints_predictor import FaceKeypointsPredictor
 
@@ -23,7 +16,7 @@ class FaceKeypointsPredictorWithoutDetectorTest(unittest.TestCase):
 
     def test_single(self):
         predict_pipeline = FaceKeypointsPredictor(
-            model_path=self.model_path, model_config=self.model_config_path)
+            model_path=self.model_path, config_file=self.model_config_path)
 
         output = predict_pipeline(self.image_path)[0]
         output_keypoints = output['point']

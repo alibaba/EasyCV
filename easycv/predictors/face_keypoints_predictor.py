@@ -1,21 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import copy
-import os
-
 import cv2
-import numpy as np
-import torch
-from torchvision.transforms import Compose
 
-from easycv.datasets.registry import PIPELINES
-from easycv.models import build_model
 from easycv.predictors.builder import PREDICTORS
-from easycv.predictors.interface import PredictorInterface
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.config_tools import mmcv_config_fromfile
-from easycv.utils.registry import build_from_cfg
-from ..models import *
 from .base import PredictorV2
 
 face_contour_point_index = [
@@ -37,12 +24,12 @@ class FaceKeypointsPredictor(PredictorV2):
     """Predict pipeline for face keypoint
     Args:
         model_path (str): Path of model path
-        model_config (str): config file path for model and processor to init. Defaults to None.
+        config_file (str): config file path for model and processor to init. Defaults to None.
     """
 
     def __init__(self,
                  model_path,
-                 model_config,
+                 config_file,
                  batch_size=1,
                  device=None,
                  save_results=False,
@@ -50,7 +37,7 @@ class FaceKeypointsPredictor(PredictorV2):
                  mode='bgr'):
         super(FaceKeypointsPredictor, self).__init__(
             model_path,
-            model_config,
+            config_file,
             batch_size=batch_size,
             device=device,
             save_results=save_results,

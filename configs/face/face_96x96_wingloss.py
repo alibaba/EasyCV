@@ -213,6 +213,8 @@ log_config = dict(
         dict(type='TextLoggerHook'),
     ])
 
+predict = dict(type='FaceKeypointsPredictor')
+
 log_level = 'INFO'
 load_from = None
 resume_from = None
