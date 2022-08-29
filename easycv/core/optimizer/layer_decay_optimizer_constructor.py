@@ -7,17 +7,25 @@ from mmcv.runner import DefaultOptimizerConstructor, get_dist_info
 from .builder import OPTIMIZER_BUILDERS
 
 
-def get_num_layer_for_vit(var_name, num_max_layer, layer_sep=None):
-    if var_name in ('backbone.cls_token', 'backbone.mask_token',
-                    'backbone.pos_embed'):
-        return 0
-    elif var_name.startswith('backbone.patch_embed'):
-        return 0
-    elif var_name.startswith('backbone.blocks'):
-        layer_id = int(var_name.split('.')[2])
-        return layer_id + 1
-    else:
-        return num_max_layer - 1
+def get_vit_lr_decay_rate(name, lr_decay_rate=1.0, num_layers=12):
+    """
+    Calculate lr decay rate for different ViT blocks.
+    Args:
+        name (string): parameter name.
+        lr_decay_rate (float): base lr decay rate.
+        num_layers (int): number of ViT blocks.
+    Returns:
+        lr decay rate for the given parameter.
+    """
+    layer_id = num_layers + 1
+    if '.pos_embed' in name or '.patch_embed' in name:
+        layer_id = 0
+    elif '.blocks.' in name and '.residual.' not in name:
+        layer_id = int(name[name.find('.blocks.'):].split('.')[2]) + 1
+
+    scale = lr_decay_rate**(num_layers + 1 - layer_id)
+
+    return layer_id, scale
 
 
 @OPTIMIZER_BUILDERS.register_module()
@@ -40,45 +48,40 @@ class LayerDecayOptimizerConstructor(DefaultOptimizerConstructor):
 
         parameter_groups = {}
         print(self.paramwise_cfg)
-        num_layers = self.paramwise_cfg.get('num_layers') + 2
-        layer_sep = self.paramwise_cfg.get('layer_sep', None)
-        layer_decay_rate = self.paramwise_cfg.get('layer_decay_rate')
+        # layer_sep = self.paramwise_cfg.get('layer_sep', None)
+        lr_decay_rate = self.paramwise_cfg.get('layer_decay_rate')
+        num_layers = self.paramwise_cfg.get('num_layers')
         print('Build LayerDecayOptimizerConstructor %f - %d' %
-              (layer_decay_rate, num_layers))
+              (lr_decay_rate, num_layers))
+        lr = self.base_lr
         weight_decay = self.base_wd
 
         custom_keys = self.paramwise_cfg.get('custom_keys', {})
-        # first sort with alphabet order and then sort with reversed len of str
-        sorted_keys = sorted(custom_keys.keys())
+        # # first sort with alphabet order and then sort with reversed len of str
+        # sorted_keys = sorted(custom_keys.keys())
 
         for name, param in module.named_parameters():
 
             if not param.requires_grad:
                 continue  # frozen weights
 
-            if len(param.shape) == 1 or name.endswith('.bias') or (
-                    'pos_embed' in name) or ('cls_token'
-                                             in name) or ('rel_pos_' in name):
+            if '.norm' in name or '.pos_embed' in name or '.gn.' in name or '.ln.' in name:
                 group_name = 'no_decay'
                 this_weight_decay = 0.
             else:
                 group_name = 'decay'
                 this_weight_decay = weight_decay
 
-            layer_id = get_num_layer_for_vit(name, num_layers, layer_sep)
+            # layer_id = get_num_layer_for_vit(name, num_layers, layer_sep)
+
+            if name.startswith('backbone'):
+                layer_id, scale = get_vit_lr_decay_rate(
+                    name, lr_decay_rate=lr_decay_rate, num_layers=num_layers)
+            else:
+                layer_id, scale = -1, 1
             group_name = 'layer_%d_%s' % (layer_id, group_name)
 
-            # if the parameter match one of the custom keys, ignore other rules
-            this_lr_multi = 1.
-            for key in sorted_keys:
-                if key in f'{name}':
-                    lr_mult = custom_keys[key].get('lr_mult', 1.)
-                    this_lr_multi = lr_mult
-                    group_name = '%s_%s' % (group_name, key)
-                    break
-
             if group_name not in parameter_groups:
-                scale = layer_decay_rate**(num_layers - layer_id - 1)
 
                 parameter_groups[group_name] = {
                     'weight_decay': this_weight_decay,
@@ -86,7 +89,7 @@ class LayerDecayOptimizerConstructor(DefaultOptimizerConstructor):
                     'param_names': [],
                     'lr_scale': scale,
                     'group_name': group_name,
-                    'lr': scale * self.base_lr * this_lr_multi,
+                    'lr': scale * lr,
                 }
 
             parameter_groups[group_name]['params'].append(param)

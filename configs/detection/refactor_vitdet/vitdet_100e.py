@@ -12,7 +12,7 @@ log_config = dict(
 
 checkpoint_config = dict(interval=10)
 # optimizer
-paramwise_options = {
+custom_keys = {
     'norm': dict(weight_decay=0.),
     'pos_embed': dict(weight_decay=0.),
 }
@@ -21,7 +21,9 @@ optimizer = dict(
     lr=1e-4,
     betas=(0.9, 0.999),
     weight_decay=0.1,
-    paramwise_options=paramwise_options)
+    constructor='LayerDecayOptimizerConstructor',
+    paramwise_options=dict(
+        num_layers=12, layer_decay_rate=0.7, custom_keys=custom_keys))
 optimizer_config = dict(grad_clip=None)
 # learning policy
 lr_config = dict(
