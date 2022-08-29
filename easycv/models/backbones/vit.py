@@ -273,12 +273,10 @@ class ViT(nn.Module):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
 
-    def init_weights(self, pretrained=None):
-        pretrained = pretrained or self.pretrained
-        if isinstance(pretrained, str):
-            self.apply(self._init_weights)
+    def init_weights(self):
+        if isinstance(self.pretrained, str):
             logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
+            load_checkpoint(self, self.pretrained, strict=False, logger=logger)
 
     def forward(self, x):
         x = self.patch_embed(x)
