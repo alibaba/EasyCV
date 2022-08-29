@@ -14,7 +14,7 @@ from .test_util import run_in_subprocess
 
 try:
     from mmcv.runner.hooks import HOOKS
-    import mmdet
+    import mmdetl
     HOOKS._module_dict.pop('YOLOXLrUpdaterHook', None)
     from mmdet.models.builder import MODELS as MMMODELS
     from mmdet.models.builder import BACKBONES as MMBACKBONES
