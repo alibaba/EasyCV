@@ -47,13 +47,9 @@ class DeformableTransformer(nn.Module):
         num_feature_levels=1,
         enc_n_points=4,
         dec_n_points=4,
-        use_deformable_box_attn=False,
-        box_attn_type='roi_align',
         # init query
-        learnable_tgt_init=True,
         decoder_query_perturber=None,
         add_channel_attention=False,
-        add_pos_value=False,
         random_refpoints_xy=False,
         # two stage
         two_stage_type='no',  # ['no', 'standard', 'early', 'combine', 'enceachlayer', 'enclayer1']
@@ -63,7 +59,6 @@ class DeformableTransformer(nn.Module):
         two_stage_keep_all_tokens=False,
         # evo of #anchors
         dec_layer_number=None,
-        rm_enc_query_scale=True,
         rm_dec_query_scale=True,
         rm_self_attn_layers=None,
         key_aware_type=None,
@@ -92,8 +87,6 @@ class DeformableTransformer(nn.Module):
 
         if num_feature_levels > 1:
             assert deformable_encoder, 'only support deformable_encoder for num_feature_levels > 1'
-        if use_deformable_box_attn:
-            assert deformable_encoder or deformable_encoder
 
         assert layer_share_type in [None, 'encoder', 'decoder', 'both']
         if layer_share_type in ['encoder', 'both']:
@@ -119,9 +112,7 @@ class DeformableTransformer(nn.Module):
                 num_feature_levels,
                 nhead,
                 enc_n_points,
-                add_channel_attention=add_channel_attention,
-                use_deformable_box_attn=use_deformable_box_attn,
-                box_attn_type=box_attn_type)
+                add_channel_attention=add_channel_attention)
         else:
             raise NotImplementedError
         encoder_norm = nn.LayerNorm(d_model) if normalize_before else None
@@ -145,8 +136,6 @@ class DeformableTransformer(nn.Module):
                 num_feature_levels,
                 nhead,
                 dec_n_points,
-                use_deformable_box_attn=use_deformable_box_attn,
-                box_attn_type=box_attn_type,
                 key_aware_type=key_aware_type,
                 decoder_sa_type=decoder_sa_type,
                 module_seq=module_seq)
@@ -188,8 +177,6 @@ class DeformableTransformer(nn.Module):
             else:
                 self.level_embed = None
 
-        self.learnable_tgt_init = learnable_tgt_init
-        assert learnable_tgt_init, 'why not learnable_tgt_init'
         self.embed_init_tgt = embed_init_tgt
         if (two_stage_type != 'no' and embed_init_tgt) or (two_stage_type
                                                            == 'no'):
@@ -932,8 +919,6 @@ class DeformableTransformerEncoderLayer(nn.Module):
         n_heads=8,
         n_points=4,
         add_channel_attention=False,
-        use_deformable_box_attn=False,
-        box_attn_type='roi_align',
     ):
         super().__init__()
 
@@ -1003,8 +988,6 @@ class DeformableTransformerDecoderLayer(nn.Module):
         n_levels=4,
         n_heads=8,
         n_points=4,
-        use_deformable_box_attn=False,
-        box_attn_type='roi_align',
         key_aware_type=None,
         decoder_sa_type='ca',
         module_seq=['sa', 'ca', 'ffn'],

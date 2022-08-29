@@ -36,13 +36,9 @@ model = dict(
             num_feature_levels=4,
             enc_n_points=4,
             dec_n_points=4,
-            use_deformable_box_attn=False,
-            box_attn_type='roi_align',
             # init query
-            learnable_tgt_init=True,
             decoder_query_perturber=None,
             add_channel_attention=False,
-            add_pos_value=False,
             random_refpoints_xy=False,
             # two stage
             two_stage_type=
@@ -53,7 +49,6 @@ model = dict(
             two_stage_keep_all_tokens=False,
             # evo of #anchors
             dec_layer_number=None,
-            rm_enc_query_scale=True,
             rm_dec_query_scale=True,
             rm_self_attn_layers=None,
             key_aware_type=None,
