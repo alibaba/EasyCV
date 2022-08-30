@@ -172,6 +172,7 @@ class DistributedSampler(_DistributedSampler):
                 distributed training.
             rank (optional): Rank of the current process within num_replicas.
             shuffle (optional): If true (default), sampler will shuffle the indices
+            seed (int, Optional): The seed. Default to 0.
             split_huge_listfile_byrank: if split, return all indice for each rank, because list for each rank has been
                 split before build dataset in dist training
         """
@@ -300,6 +301,7 @@ class DistributedGroupSampler(Sampler):
         Dataset is assumed to be of constant size.
     Args:
         dataset: Dataset used for sampling.
+        seed (int, Optional): The seed. Default to 0.
         num_replicas (optional): Number of processes participating in
             distributed training.
         rank (optional): Rank of the current process within num_replicas.

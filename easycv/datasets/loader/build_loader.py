@@ -30,7 +30,7 @@ def build_dataloader(dataset,
                      dist=True,
                      shuffle=True,
                      replace=False,
-                     seed=0,
+                     seed=None,
                      reuse_worker_cache=False,
                      odps_config=None,
                      persistent_workers=False,
@@ -51,6 +51,7 @@ def build_dataloader(dataset,
             Default: True.
         replace (bool): Replace or not in random shuffle.
             It works on when shuffle is True.
+        seed (int, Optional): The seed. Default to None.
         reuse_worker_cache (bool): If set true, will reuse worker process so that cached
             data in worker process can be reused.
         persistent_workers (bool) : After pytorch1.7, could use persistent_workers=True to
@@ -62,6 +63,7 @@ def build_dataloader(dataset,
     rank, world_size = get_dist_info()
 
     if dist:
+        seed = sync_random_seed(seed)
         split_huge_listfile_byrank = getattr(dataset,
                                              'split_huge_listfile_byrank',
                                              False)
@@ -74,7 +76,6 @@ def build_dataloader(dataset,
                 shuffle=shuffle,
                 split_huge_listfile_byrank=split_huge_listfile_byrank)
         else:
-            seed = sync_random_seed(seed)
             sampler = DistributedSampler(
                 dataset,
                 world_size,
