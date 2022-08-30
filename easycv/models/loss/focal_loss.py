@@ -150,7 +150,6 @@ class VarifocalLoss(nn.Module):
         return loss_cls
 
 
-# This method is only for debugging
 def py_sigmoid_focal_loss(inputs,
                           targets,
                           weight=None,
@@ -161,9 +160,9 @@ def py_sigmoid_focal_loss(inputs,
     """PyTorch version of `Focal Loss <https://arxiv.org/abs/1708.02002>`_.
 
     Args:
-        pred (torch.Tensor): The prediction with shape (N, C), C is the
+        inputs (torch.Tensor): The prediction with shape (N, C), C is the
             number of classes
-        target (torch.Tensor): The learning label of the prediction.
+        targets (torch.Tensor): The learning label of the prediction.
         weight (torch.Tensor, optional): Sample-wise loss weight.
         gamma (float, optional): The gamma for calculating the modulating
             factor. Defaults to 2.0.
