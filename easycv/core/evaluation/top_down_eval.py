@@ -5,7 +5,7 @@ import warnings
 import cv2
 import numpy as np
 
-from easycv.core.post_processing import transform_preds
+from easycv.datasets.pose.pipelines.transform_utils import transform_preds
 
 
 def _calc_distances(preds, targets, mask, normalize):
