@@ -174,7 +174,8 @@ class EVRunner(EpochBasedRunner):
         if hasattr(self, 'current_lr_fn'):
             lr = self.current_lr_fn(self.optimizer)
         elif isinstance(self.optimizer, torch.optim.Optimizer):
-            lr = [group['lr'] for group in self.optimizer.param_groups]
+            lr = sorted([group['lr'] for group in self.optimizer.param_groups],
+                        reverse=True)  # avoid lr display error
         elif isinstance(self.optimizer, dict):
             lr = dict()
             for name, optim in self.optimizer.items():

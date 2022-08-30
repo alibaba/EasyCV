@@ -32,7 +32,6 @@ model = dict(
         in_channels=256,
         feat_channels=256,
         num_convs=2,
-        norm_cfg=norm_cfg,
         anchor_generator=dict(
             type='AnchorGenerator',
             scales=[8],
