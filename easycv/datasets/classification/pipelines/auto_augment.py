@@ -8,7 +8,8 @@ from typing import Sequence
 
 import mmcv
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter, ImageOps
+from torchvision import transforms
 
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.shared.pipelines import Compose
@@ -157,6 +158,14 @@ rand_increasing_policies = [
         direction='vertical')
 ]
 
+three_augment_policies = [[
+    dict(type='gaussianblur', prob=1.0, radius_min=0.1, radius_max=2.),
+], [
+    dict(type='solarization', prob=1.0),
+], [
+    dict(type='gray_scale', prob=1.0),
+]]
+
 
 def random_negative(value, random_negative_prob):
     """Randomly negate value based on random_negative_prob."""
@@ -180,6 +189,41 @@ def merge_hparams(policy: dict, hparams: dict):
         if key in inspect.getfullargspec(op.__init__).args:
             policy[key] = value
     return policy
+
+
+@PIPELINES.register_module()
+class ThreeAugment(object):
+
+    def __init__(self,
+                 policies=three_augment_policies,
+                 hparams=_HPARAMS_DEFAULT):
+        assert isinstance(policies, list) and len(policies) > 0, \
+            'Policies must be a non-empty list.'
+        for policy in policies:
+            assert isinstance(policy, list) and len(policy) > 0, \
+                'Each policy in policies must be a non-empty list.'
+            for augment in policy:
+                assert isinstance(augment, dict) and 'type' in augment, \
+                    'Each specific augmentation must be a dict with key' \
+                    ' "type".'
+
+        self.hparams = hparams
+        policies = copy.deepcopy(policies)
+        self.policies = []
+        for sub in policies:
+            merged_sub = [merge_hparams(policy, hparams) for policy in sub]
+            self.policies.append(merged_sub)
+
+        self.sub_policy = [Compose(policy) for policy in self.policies]
+
+    def __call__(self, results):
+        sub_policy = random.choice(self.sub_policy)
+        return sub_policy(results)
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(policies={self.policies})'
+        return repr_str
 
 
 @PIPELINES.register_module()
@@ -1042,4 +1086,87 @@ class Cutout(object):
         repr_str += f'(shape={self.shape}, '
         repr_str += f'pad_val={self.pad_val}, '
         repr_str += f'prob={self.prob})'
+        return repr_str
+
+
+@PIPELINES.register_module()
+class gaussianblur(object):
+
+    def __init__(self, prob=0.1, radius_min=0.1, radius_max=2.):
+        assert 0 <= prob <= 1.0, 'The prob should be in range [0,1], ' \
+            f'got {prob} instead.'
+        assert isinstance(radius_min, (int, float)), 'The radius_min type must '\
+            f'be int or float, but got {type(radius_min)} instead.'
+        assert isinstance(radius_max, (int, float)), 'The radius_max type must '\
+            f'be int or float, but got {type(radius_max)} instead.'
+
+        self.prob = prob
+        self.radius_min = radius_min
+        self.radius_max = radius_max
+
+    def __call__(self, results):
+        if np.random.rand() > self.prob:
+            return results
+
+        for key in results.get('img_fields', ['img']):
+            img = results[key].filter(
+                ImageFilter.GaussianBlur(
+                    radius=random.uniform(self.radius_min, self.radius_max)))
+            results[key] = img
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(prob={self.prob}, '
+        repr_str += f'radius_min={self.radius_min}, '
+        repr_str += f'radius_max={self.radius_max})'
+        return repr_str
+
+
+@PIPELINES.register_module()
+class solarization(object):
+
+    def __init__(self, prob=0.2):
+        assert 0 <= prob <= 1.0, 'The prob should be in range [0,1], ' \
+            f'got {prob} instead.'
+
+        self.prob = prob
+
+    def __call__(self, results):
+        if np.random.rand() > self.prob:
+            return results
+
+        for key in results.get('img_fields', ['img']):
+            img = ImageOps.solarize(results[key])
+            results[key] = img
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(prob={self.prob})'
+        return repr_str
+
+
+@PIPELINES.register_module()
+class gray_scale(object):
+
+    def __init__(self, prob=0.2):
+        assert 0 <= prob <= 1.0, 'The prob should be in range [0,1], ' \
+            f'got {prob} instead.'
+
+        self.prob = prob
+        self.transf = transforms.Grayscale(3)
+
+    def __call__(self, results):
+        if np.random.rand() > self.prob:
+            return results
+
+        for key in results.get('img_fields', ['img']):
+            img = self.transf(results[key])
+            results[key] = img
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(prob={self.prob})'
         return repr_str

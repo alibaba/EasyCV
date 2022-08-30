@@ -53,22 +53,8 @@ class Classification(BaseModel):
         if 'mixUp' in train_preprocess:
             rank, _ = get_dist_info()
             np.random.seed(rank + 12)
-            if not mixup_cfg:
-                num_classes = head.get(
-                    'num_classes',
-                    1000) if 'num_classes' in head else backbone.get(
-                        'num_classes', 1000)
-                mixup_cfg = dict(
-                    mixup_alpha=0.8,
-                    cutmix_alpha=1.0,
-                    cutmix_minmax=None,
-                    prob=1.0,
-                    switch_prob=0.5,
-                    mode='batch',
-                    label_smoothing=0.1,
-                    num_classes=num_classes)
-            self.mixup = Mixup(**mixup_cfg)
-            head.loss_config = {'type': 'SoftTargetCrossEntropy'}
+            if mixup_cfg is not None:
+                self.mixup = Mixup(**mixup_cfg)
             train_preprocess.remove('mixUp')
         self.train_preprocess = [
             self.preprocess_key_map[i] for i in train_preprocess
@@ -173,7 +159,7 @@ class Classification(BaseModel):
         for preprocess in self.train_preprocess:
             img = preprocess(img)
 
-        if hasattr(self, 'mixup'):
+        if hasattr(self, 'mixup') and len(img) % 2 == 0:
             img, gt_labels = self.mixup(img, gt_labels)
 
         x = self.forward_backbone(img)
