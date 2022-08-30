@@ -1043,6 +1043,7 @@ class MMResize:
             dict: Resized results, 'img_shape', 'pad_shape', 'scale_factor', \
                 'keep_ratio' keys are added into result dict.
         """
+
         if 'scale' not in results:
             if 'scale_factor' in results:
                 img_shape = results['img'].shape[:2]
@@ -2190,63 +2191,3 @@ class MMFilterAnnotations:
                f'(by_box={self.by_box},' \
                f'(by_mask={self.by_mask},' \
                f'always_keep={self.always_keep})'
-
-@PIPELINES.register_module()
-class ResizeDivisor:
-    
-    def __init__(self, size_divisor):
-        self.size_divisor = size_divisor
-        
-    def __call__(self, results):
-        img = results['img']
-        h,w,c = img.shape
-        resize_h = max(int(round(h / self.size_divisor) * self.size_divisor), self.size_divisor)
-        resize_w = max(int(round(w / self.size_divisor) * self.size_divisor), self.size_divisor)
-        
-        img = cv2.resize(img, (int(resize_w), int(resize_h)))
-        
-        results['img'] = img
-        
-        return results
-    
-    
-@PIPELINES.register_module()
-class OCRResizeNorm:
-    
-    def __init__(self, 
-                 img_shape=(48,320),
-                 limited_max_width=1280,
-                 limited_min_width=16,
-                 max_wh_ratio=None
-                 ):
-        self.img_shape = img_shape
-        self.limited_max_width = limited_max_width
-        self.limited_min_width = limited_min_width
-        self.max_wh_ratio = max_wh_ratio
-        
-    def __call__(self, results):
-        
-        img = results['img']
-        imgH, imgW = self.img_shape
-        
-        if self.max_wh_ratio:
-            max_wh_ratio = max(max_wh_ratio, imgW / imgH)
-            imgW = int((imgH * max_wh_ratio))
-            imgW = max(min(imgW, self.limited_max_width), self.limited_min_width)
-        h, w = img.shape[:2]
-        ratio = w / float(h)
-        ratio_imgH = math.ceil(imgH * ratio)
-        ratio_imgH = max(ratio_imgH, self.limited_min_width)
-        if ratio_imgH > imgW:
-            resized_w = imgW
-        else:
-            resized_w = int(ratio_imgH)
-        resized_image = cv2.resize(img, (resized_w, imgH))
-        resized_image = resized_image.astype('float32')
-        resized_image = resized_image / 255
-        resized_image -= 0.5
-        resized_image /= 0.5
-        padding_im = np.zeros((imgH, imgW, 3), dtype=np.float32)
-        padding_im[:, 0:resized_w, :] = resized_image
-        results['img'] = padding_im
-        return results
