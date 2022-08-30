@@ -265,8 +265,8 @@ def main():
                 reuse_worker_cache=cfg.data.get('reuse_worker_cache', False),
                 persistent_workers=cfg.data.get('persistent_workers', False),
                 collate_hooks=cfg.data.get('train_collate_hooks', []),
-                repeated_aug=cfg.data.get('repeated_aug', False))
-            for ds in datasets
+                use_repeated_augment_sampler=cfg.data.get(
+                    'use_repeated_augment_sampler', False)) for ds in datasets
         ]
     else:
         default_args = dict(

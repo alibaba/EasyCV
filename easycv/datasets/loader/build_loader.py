@@ -34,7 +34,7 @@ def build_dataloader(dataset,
                      odps_config=None,
                      persistent_workers=False,
                      collate_hooks=None,
-                     repeated_aug=False,
+                     use_repeated_augment_sampler=False,
                      **kwargs):
     """Build PyTorch DataLoader.
     In distributed training, each GPU/process has a dataloader.
@@ -55,6 +55,8 @@ def build_dataloader(dataset,
             data in worker process can be reused.
         persistent_workers (bool) : After pytorch1.7, could use persistent_workers=True to
             avoid reconstruct dataworker before each epoch, speed up before epoch
+        use_repeated_augment_sampler (bool) : If set true, it will use RASampler.
+            Default: False.
         kwargs: any keyword argument to be used to initialize DataLoader
     Returns:
         DataLoader: A PyTorch dataloader.
@@ -66,15 +68,15 @@ def build_dataloader(dataset,
                                              'split_huge_listfile_byrank',
                                              False)
 
-        if hasattr(dataset, 'm_per_class') and dataset.m_per_class > 1:
+        if use_repeated_augment_sampler:
+            sampler = RASampler(dataset, world_size, rank, shuffle=shuffle)
+        elif hasattr(dataset, 'm_per_class') and dataset.m_per_class > 1:
             sampler = DistributedMPSampler(
                 dataset,
                 world_size,
                 rank,
                 shuffle=shuffle,
                 split_huge_listfile_byrank=split_huge_listfile_byrank)
-        elif repeated_aug:
-            sampler = RASampler(dataset, world_size, rank, shuffle=shuffle)
         else:
             sampler = DistributedSampler(
                 dataset,
@@ -87,7 +89,10 @@ def build_dataloader(dataset,
     else:
         if replace:
             raise NotImplementedError
-        if hasattr(dataset, 'm_per_class') and dataset.m_per_class > 1:
+
+        if use_repeated_augment_sampler:
+            sampler = RASampler(dataset, 1, 0, shuffle=shuffle)
+        elif hasattr(dataset, 'm_per_class') and dataset.m_per_class > 1:
             sampler = DistributedMPSampler(
                 dataset, 1, 0, shuffle=shuffle, replace=replace)
         else:
