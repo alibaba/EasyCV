@@ -129,9 +129,12 @@ class SFP(BaseModule):
 
     def forward(self, inputs):
         """Forward function."""
+        features = inputs[0]
         outs = []
+
+        # part 1: build simple feature pyramid
         for stage in self.stages:
-            outs.append(stage(inputs))
+            outs.append(stage(features))
 
         # part 2: add extra levels
         if self.num_outs > self.num_ins:
