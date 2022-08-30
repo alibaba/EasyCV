@@ -84,7 +84,7 @@ class SFP(BaseModule):
                 layers = [
                     nn.ConvTranspose2d(dim, dim // 2, 2, stride=2, padding=0),
                     # Norm2d(dim // 2),
-                    nn.GroupNorm(1, dim // 2),
+                    nn.GroupNorm(1, dim // 2, eps=1e-6),
                     nn.GELU(),
                     nn.ConvTranspose2d(
                         dim // 2, dim // 4, 2, stride=2, padding=0)

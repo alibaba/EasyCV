@@ -1,6 +1,6 @@
 # model settings
 
-norm_cfg = dict(type='GN', num_groups=1, requires_grad=True)
+norm_cfg = dict(type='GN', num_groups=1, eps=1e-6, requires_grad=True)
 
 pretrained = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mae/vit-b-1600/warpper_mae_vit-base-p16-1600e.pth'
 model = dict(
