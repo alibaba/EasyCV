@@ -18,37 +18,29 @@ from timm.models.layers import trunc_normal_
 from ..registry import BACKBONES
 
 
-def drop_path(x,
-              drop_prob: float = 0.,
-              training: bool = False,
-              scale_by_keep: bool = True):
+def drop_path(x, drop_prob: float = 0., training: bool = False):
     if drop_prob == 0. or not training:
         return x
     keep_prob = 1 - drop_prob
     shape = (x.shape[0], ) + (1, ) * (
         x.ndim - 1)  # work with diff dim tensors, not just 2D ConvNets
-
-    random_tensor = x.new_empty(shape).bernoulli_(keep_prob)
-    if keep_prob > 0.0 and scale_by_keep:
-        random_tensor.div_(keep_prob)
-
-    return x * random_tensor
+    random_tensor = keep_prob + torch.rand(
+        shape, dtype=x.dtype, device=x.device)
+    random_tensor.floor_()  # binarize
+    output = x.div(keep_prob) * random_tensor
+    return output
 
 
 class DropPath(nn.Module):
     """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
     """
 
-    def __init__(self, drop_prob: float = 0., scale_by_keep: bool = True):
+    def __init__(self, drop_prob=None):
         super(DropPath, self).__init__()
         self.drop_prob = drop_prob
-        self.scale_by_keep = scale_by_keep
 
     def forward(self, x):
         return drop_path(x, self.drop_prob, self.training)
-
-    def extra_repr(self):
-        return f'drop_prob={round(self.drop_prob,3):0.3f}'
 
 
 class Mlp(nn.Module):
@@ -58,15 +50,13 @@ class Mlp(nn.Module):
                  hidden_features=None,
                  out_features=None,
                  act_layer=nn.GELU,
-                 bias=True,
                  drop=0.):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
-
-        self.fc1 = nn.Linear(in_features, hidden_features, bias=bias)
+        self.fc1 = nn.Linear(in_features, hidden_features)
         self.act = act_layer()
-        self.fc2 = nn.Linear(hidden_features, out_features, bias=bias)
+        self.fc2 = nn.Linear(hidden_features, out_features)
         self.drop = nn.Dropout(drop)
 
     def forward(self, x):
@@ -97,15 +87,17 @@ class Attention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
-    def forward(self, x):
+    def forward(self, x, rel_pos_bias=None):
         B, N, C = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads,
                                   C // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
 
-        q = q * self.scale
+        attn = (q @ k.transpose(-2, -1)) * self.scale
 
-        attn = (q @ k.transpose(-2, -1))
+        if rel_pos_bias is not None:
+            attn = attn + rel_pos_bias
+
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
 
@@ -127,55 +119,8 @@ class Block(nn.Module):
                  attn_drop=0.,
                  drop_path=0.,
                  act_layer=nn.GELU,
-                 norm_layer=nn.LayerNorm):
-        super().__init__()
-        self.norm1 = norm_layer(dim)
-        self.attn = Attention(
-            dim,
-            num_heads=num_heads,
-            qkv_bias=qkv_bias,
-            qk_scale=qk_scale,
-            attn_drop=attn_drop,
-            proj_drop=drop)
-        self.drop_path = DropPath(
-            drop_path) if drop_path > 0. else nn.Identity()
-        self.norm2 = norm_layer(dim)
-        mlp_hidden_dim = int(dim * mlp_ratio)
-        self.mlp = Mlp(
-            in_features=dim,
-            hidden_features=mlp_hidden_dim,
-            act_layer=act_layer,
-            drop=drop)
-
-    def forward(self, x, return_attention=False):
-        y, attn = self.attn(self.norm1(x))
-        if return_attention:
-            return attn
-        x = x + self.drop_path(y)
-        x = x + self.drop_path(self.mlp(self.norm2(x)))
-        return x
-
-    def forward_fea_and_attn(self, x):
-        y, attn = self.attn(self.norm1(x))
-        x = x + self.drop_path(y)
-        x = x + self.drop_path(self.mlp(self.norm2(x)))
-        return x, attn
-
-
-class Layer_scale_init_Block(nn.Module):
-    # taken from https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/vision_transformer.py
-    # with slight modifications
-    def __init__(self,
-                 dim,
-                 num_heads,
-                 mlp_ratio=4.,
-                 qkv_bias=False,
-                 qk_scale=None,
-                 drop=0.,
-                 attn_drop=0.,
-                 drop_path=0.,
-                 act_layer=nn.GELU,
                  norm_layer=nn.LayerNorm,
+                 use_layer_scale=False,
                  init_values=1e-4):
         super().__init__()
         self.norm1 = norm_layer(dim)
@@ -186,7 +131,6 @@ class Layer_scale_init_Block(nn.Module):
             qk_scale=qk_scale,
             attn_drop=attn_drop,
             proj_drop=drop)
-        # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
         self.drop_path = DropPath(
             drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
@@ -196,23 +140,33 @@ class Layer_scale_init_Block(nn.Module):
             hidden_features=mlp_hidden_dim,
             act_layer=act_layer,
             drop=drop)
-        self.gamma_1 = nn.Parameter(
-            init_values * torch.ones((dim)), requires_grad=True)
-        self.gamma_2 = nn.Parameter(
-            init_values * torch.ones((dim)), requires_grad=True)
+        self.use_layer_scale = use_layer_scale
+        if self.use_layer_scale:
+            self.gamma_1 = nn.Parameter(
+                init_values * torch.ones((dim)), requires_grad=True)
+            self.gamma_2 = nn.Parameter(
+                init_values * torch.ones((dim)), requires_grad=True)
 
-    def forward(self, x, return_attention=False):
-        y, attn = self.attn(self.norm1(x))
+    def forward(self, x, return_attention=False, rel_pos_bias=None):
+        y, attn = self.attn(self.norm1(x), rel_pos_bias=rel_pos_bias)
         if return_attention:
             return attn
-        x = x + self.drop_path(self.gamma_1 * y)
-        x = x + self.drop_path(self.gamma_2 * self.mlp(self.norm2(x)))
+        if self.use_layer_scale:
+            x = x + self.drop_path(self.gamma_1 * y)
+            x = x + self.drop_path(self.gamma_2 * self.mlp(self.norm2(x)))
+        else:
+            x = x + self.drop_path(y)
+            x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x
 
     def forward_fea_and_attn(self, x):
         y, attn = self.attn(self.norm1(x))
-        x = x + self.drop_path(self.gamma_1 * y)
-        x = x + self.drop_path(self.gamma_2 * self.mlp(self.norm2(x)))
+        if self.use_layer_scale:
+            x = x + self.drop_path(self.gamma_1 * y)
+            x = x + self.drop_path(self.gamma_2 * self.mlp(self.norm2(x)))
+        else:
+            x = x + self.drop_path(y)
+            x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x, attn
 
 
@@ -238,7 +192,36 @@ class PatchEmbed(nn.Module):
 
 @BACKBONES.register_module
 class DeiTIII(nn.Module):
-    """ Vision Transformer """
+    """ DeiT III is based on ViT. It uses some strategies to make the vit model
+    better, just like layer scale, stochastic depth, 3-Augment.
+
+    Paper link: https://arxiv.org/pdf/2204.07118.pdf (DeiT III: Revenge of the ViT)
+
+    Args:
+        img_size (list): Input image size. img_size=[224] means the image size is
+            224*224. img_size=[192, 224] means the image size is 192*224.
+        patch_size (int): The patch size. Default: 16
+        in_chans (int): The num of input channels. Default: 3
+        num_classes (int): The num of picture classes. Default: 1000
+        embed_dim (int): The dimensions of embedding. Default: 768
+        depth (int): The num of blocks. Default: 12
+        num_heads (int): Parallel attention heads. Default: 12
+        mlp_ratio (float): Mlp expansion ratio. Default: 4.0
+        qkv_bias (bool): Does kqv use bias. Default: False
+        qk_scale (float | None): In the step of self-attention, if qk_scale is not
+            None, it will use qk_scale to scale the q @ k. Otherwise it will use
+            head_dim**-0.5 instead of qk_scale. Default: None
+        drop_rate (float): Probability of an element to be zeroed after the feed
+            forward layer. Default: 0.0
+        drop_path_rate (float): Stochastic depth rate. Default: 0
+        norm_layer (nn.Module): normalization layer
+        use_dense_prediction (bool): If use_dense_prediction is True, the global
+            pool and norm will before head will be removed.(if any) Default: False
+        global_pool (bool): Global pool before head. Default: False
+        init_scale (float): It is used for layer scale in Block to scale the
+            gamma_1 and gamma_2.
+
+    """
 
     def __init__(self,
                  img_size=[224],
@@ -276,7 +259,7 @@ class DeiTIII(nn.Module):
 
         dpr = [drop_path_rate for i in range(depth)]
         self.blocks = nn.ModuleList([
-            Layer_scale_init_Block(
+            Block(
                 dim=embed_dim,
                 num_heads=num_heads,
                 mlp_ratio=mlp_ratio,
@@ -286,6 +269,7 @@ class DeiTIII(nn.Module):
                 attn_drop=attn_drop_rate,
                 drop_path=dpr[i],
                 norm_layer=norm_layer,
+                use_layer_scale=True,
                 init_values=init_scale) for i in range(depth)
         ])
         self.norm = norm_layer(embed_dim)
@@ -305,10 +289,10 @@ class DeiTIII(nn.Module):
             self.fc_norm = norm_layer(embed_dim)
             self.norm = None
 
+    def init_weights(self):
         trunc_normal_(self.pos_embed, std=.02)
         trunc_normal_(self.cls_token, std=.02)
 
-    def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 trunc_normal_(m.weight, std=.02)
@@ -317,17 +301,6 @@ class DeiTIII(nn.Module):
             elif isinstance(m, nn.LayerNorm):
                 nn.init.constant_(m.bias, 0)
                 nn.init.constant_(m.weight, 1.0)
-
-    def get_classifier(self):
-        return self.head
-
-    def get_num_layers(self):
-        return len(self.blocks)
-
-    def reset_classifier(self, num_classes, global_pool=''):
-        self.num_classes = num_classes
-        self.head = nn.Linear(
-            self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
 
     def forward(self, x):
 
