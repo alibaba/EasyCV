@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import copy
 import inspect
 import logging
 
@@ -12,6 +13,8 @@ from mmcv.cnn import ConvModule
 from easycv.models.registry import BACKBONES, HEADS, MODELS, NECKS
 from .test_util import run_in_subprocess
 
+MMDET = 'mmdet'
+
 try:
     from mmcv.runner.hooks import HOOKS
     HOOKS._module_dict.pop('YOLOXLrUpdaterHook', None)
@@ -21,6 +24,15 @@ try:
     from mmdet.models.builder import HEADS as MMHEADS
     from mmdet.core import BitmapMasks, PolygonMasks, encode_mask_results
     from mmdet.core.mask import mask2bbox
+    MM_REGISTRY = {
+        MMDET: {
+            'model': MMMODELS,
+            'backbone': MMBACKBONES,
+            'neck': MMNECKS,
+            'head': MMHEADS
+        }
+    }
+    MM_ORIGINAL_REGISTRY = copy.deepcopy(MM_REGISTRY)
 except ImportError:
     pass
 
@@ -30,7 +42,7 @@ EASYCV_REGISTRY_MAP = {
     'neck': NECKS,
     'head': HEADS
 }
-MMDET = 'mmdet'
+
 SUPPORT_MMLAB_TYPES = [MMDET]
 _MMLAB_COPIES = locals()
 
@@ -144,15 +156,12 @@ class MMAdapter:
         return module_obj
 
     def _get_mmtype_registry_map(self):
-        registry_map = {
-            MMDET: {
-                'model': MMMODELS,
-                'backbone': MMBACKBONES,
-                'neck': MMNECKS,
-                'head': MMHEADS
-            }
-        }
-        return registry_map
+        for mmtype, registries in MM_ORIGINAL_REGISTRY.items():
+            for k, ori_v in registries.items():
+                MM_REGISTRY[mmtype][k]._module_dict = copy.deepcopy(
+                    ori_v._module_dict)
+
+        return MM_REGISTRY
 
 
 class MMDetWrapper:

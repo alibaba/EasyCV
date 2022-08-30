@@ -89,24 +89,17 @@ class MMLabUtilTest(unittest.TestCase):
             pipeline=pipeline)
         return build_dataset(dataset_cfg)
 
-    def xxtest_model_train(self):
+    def test_model_train(self):
         model = self._get_model()
         model = model.cuda()
         model.train()
 
         dataset = self._get_dataset()
         data_loader = build_dataloader(
-            dataset, imgs_per_gpu=3, workers_per_gpu=1, num_gpus=1, dist=False)
+            dataset, imgs_per_gpu=1, workers_per_gpu=1, num_gpus=1, dist=False)
         for i, data_batch in enumerate(data_loader):
-            input_args, kwargs = scatter_kwargs(None, data_batch, [-1])
-            for key in ['img', 'gt_bboxes', 'gt_labels']:
-                if isinstance(kwargs[0][key], (list, tuple)):
-                    kwargs[0][key] = [
-                        kwargs[0][key][i].cuda()
-                        for i in range(len(kwargs[0][key]))
-                    ]
-                else:
-                    kwargs[0][key] = kwargs[0][key].cuda()
+            input_args, kwargs = scatter_kwargs(None, data_batch,
+                                                [torch.cuda.current_device()])
             output = model(**kwargs[0], mode='train')
             self.assertEqual(len(output['loss_rpn_cls']), 5)
             self.assertEqual(len(output['loss_rpn_bbox']), 5)
