@@ -10,7 +10,7 @@ In breif, our main contributions are:
 - Provide an easy way to use PAI-Blade to accelerate the inference process.
 - Provide a convenient way to train/evaluate/export YOLOX-PAI model and conduct end2end object detection.
 
-To learn more details of YOLOX-PAI, you can refer to our technical paper [technical report][arxiv].
+To learn more details of YOLOX-PAI, you can refer to our technical paper [technical report](https://arxiv.org/abs/2208.13040).
 
 ![image](../../../assets/result.jpg)
 

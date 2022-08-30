@@ -20,15 +20,15 @@ English | [简体中文](README_zh-CN.md)
 
 ## Introduction
 
-EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focus on self-supervised learning, transformer based models, and SOTA CV tasks including image classification, metric-learning, object detection, pose estimation and so on.
+EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focuses on self-supervised learning, transformer based models, and major CV tasks including image classification, metric-learning, object detection, pose estimation and so on.
 
-[🔥 Latest News] We have released our YOLOX-PAI that reveives SOTA results within 40~50 mAP (less than 1ms). And we also provide a convenient and fast export/predictor api for end2end object detection. To get a quick start of YOLOX-PAI, click [here](docs/source/tutorials/yolox.md)!
+[🔥 Latest News] We have released our YOLOX-PAI that achieves SOTA results within 40~50 mAP (less than 1ms). And we also provide a convenient and fast export/predictor api for end2end object detection. To get a quick start of YOLOX-PAI, click [here](docs/source/tutorials/yolox.md)!
 
 ### Major features
 
 - **SOTA SSL Algorithms**
 
-  EasyCV provides state-of-the-art algorithms in self-supervised learning based on contrastive learning such as SimCLR, MoCO V2, Swav, DINO and also MAE based on masked image modeling. We also provide standard benchmark tools for ssl model evaluation.
+  EasyCV provides state-of-the-art algorithms in self-supervised learning based on contrastive learning such as SimCLR, MoCO V2, Swav, DINO and also MAE based on masked image modeling. We also provide standard benchmarking tools for ssl model evaluation.
 
 - **Vision Transformers**
 
@@ -36,14 +36,14 @@ EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focus o
 
 - **Functionality & Extensibility**
 
-  In addition to SSL, EasyCV also support image classification, object detection, metric learning, and more area will be supported in the future. Although convering different area,
-  EasyCV decompose the framework into different componets such as dataset, model, running hook, making it easy to add new compoenets and combining it with existing modules.
+  In addition to SSL, EasyCV also supports image classification, object detection, metric learning, and more areas will be supported in the future. Although covering different areas,
+  EasyCV decomposes the framework into different components such as dataset, model and running hook, making it easy to add new components and combining it with existing modules.
 
-  EasyCV provide simple and comprehensive interface for inference. Additionaly,  all models are supported on [PAI-EAS](https://help.aliyun.com/document_detail/113696.html), which can be easily deployed as online service and support automatic scaling and service monitoring.
+  EasyCV provides simple and comprehensive interface for inference. Additionally,  all models are supported on [PAI-EAS](https://help.aliyun.com/document_detail/113696.html), which can be easily deployed as online service and support automatic scaling and service monitoring.
 
 - **Efficiency**
 
-  EasyCV support multi-gpu and multi worker training. EasyCV use [DALI](https://github.com/NVIDIA/DALI) to accelerate data io and preprocessing process, and use [TorchAccelerator](https://github.com/alibaba/EasyCV/tree/master/docs/source/tutorials/torchacc.md) and fp16 to accelerate training process. For inference optimization, EasyCV export model using jit script, which can be optimized by [PAI-Blade](https://help.aliyun.com/document_detail/205134.html)
+  EasyCV supports multi-gpu and multi worker training. EasyCV uses [DALI](https://github.com/NVIDIA/DALI) to accelerate data io and preprocessing process, and uses [TorchAccelerator](https://github.com/alibaba/EasyCV/tree/master/docs/source/tutorials/torchacc.md) and fp16 to accelerate training process. For inference optimization, EasyCV exports model using jit script, which can be optimized by [PAI-Blade](https://help.aliyun.com/document_detail/205134.html)
 
 ## Technical Articles
 
@@ -64,7 +64,7 @@ Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We
 
 * [self-supervised learning](docs/source/tutorials/ssl.md)
 * [image classification](docs/source/tutorials/cls.md)
-* [object detection with yolox](docs/source/tutorials/yolox.md)
+* [object detection with yolox-pai](docs/source/tutorials/yolox.md)
 * [model compression with yolox](docs/source/tutorials/compression.md)
 * [metric learning](docs/source/tutorials/metric_learning.md)
 * [torchacc](docs/source/tutorials/torchacc.md)
@@ -72,7 +72,7 @@ Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We
 notebook
 * [self-supervised learning](docs/source/tutorials/EasyCV图像自监督训练-MAE.ipynb)
 * [image classification](docs/source/tutorials/EasyCV图像分类resnet50.ipynb)
-* [object detection with yolox](docs/source/tutorials/EasyCV图像检测YoloX.ipynb)
+* [object detection with yolox-pai](docs/source/tutorials/EasyCV图像检测YoloX.ipynb)
 * [metric learning](docs/source/tutorials/EasyCV度量学习resnet50.ipynb)
 
 
@@ -140,6 +140,7 @@ notebook
         <ul>
           <li><a href="configs/detection/fcos">FCOS (ICCV'2019)</a></li>
           <li><a href="configs/detection/yolox">YOLOX (ArXiv'2021)</a></li>
+          <li><a href="configs/detection/yolox">YOLOX-PAI (ArXiv'2022)</a></li>
           <li><a href="configs/detection/detr">DETR (ECCV'2020)</a></li>
           <li><a href="configs/detection/dab_detr">DAB-DETR (ICLR'2022)</a></li>
           <li><a href="configs/detection/dab_detr">DN-DETR (CVPR'2022)</a></li>

@@ -22,6 +22,8 @@
 
 EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，聚焦自监督学习和视觉transformer关键技术，覆盖主流的视觉建模任务例如图像分类，度量学习，目标检测，关键点检测等。
 
+[🔥 Latest News] 近期我们开源了YOLOX-PAI，在40-50mAP(推理速度小于1ms)范围内达到了业界的SOTA水平。同时EasyCV提供了一套简洁高效的模型导出和预测接口，供用户快速完成端到端的图像检测任务。如果你想快速了解YOLOX-PAI, 点击 [这里](docs/source/tutorials/yolox.md)!
+
 ### 核心特性
 
 - **SOTA 自监督算法**
@@ -61,7 +63,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 * [自监督学习教程](docs/source/tutorials/ssl.md)
 * [图像分类教程](docs/source/tutorials/cls.md)
-* [使用YOLOX进行物体检测教程](docs/source/tutorials/yolox.md)
+* [使用YOLOX-PAI进行物体检测教程](docs/source/tutorials/yolox.md)
 * [YOLOX模型压缩教程](docs/source/tutorials/compression.md)
 * [torchacc](docs/source/tutorials/torchacc.md)
 
@@ -129,6 +131,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
         <ul>
           <li><a href="configs/detection/fcos">FCOS (ICCV'2019)</a></li>
           <li><a href="configs/detection/yolox">YOLOX (ArXiv'2021)</a></li>
+          <li><a href="configs/detection/yolox">YOLOX-PAI (ArXiv'2022)</a></li>
           <li><a href="configs/detection/detr">DETR (ECCV'2020)</a></li>
           <li><a href="configs/detection/dab_detr">DAB-DETR (ICLR'2022)</a></li>
           <li><a href="configs/detection/dab_detr">DN-DETR (CVPR'2022)</a></li>
