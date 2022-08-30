@@ -140,6 +140,7 @@ notebook
         <ul>
           <li><a href="configs/detection/fcos">FCOS (ICCV'2019)</a></li>
           <li><a href="configs/detection/yolox">YOLOX (ArXiv'2021)</a></li>
+          <li><a href="configs/detection/yolox">YOLOX-PAI (ArXiv'2022)</a></li>
           <li><a href="configs/detection/detr">DETR (ECCV'2020)</a></li>
           <li><a href="configs/detection/dab_detr">DAB-DETR (ICLR'2022)</a></li>
           <li><a href="configs/detection/dab_detr">DN-DETR (CVPR'2022)</a></li>
