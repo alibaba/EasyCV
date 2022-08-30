@@ -1,28 +1,30 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-#debug
+# debug
 import sys
-sys.path.append('/root/code/ocr/EasyCV')
 
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 import torch.nn.functional as F
 
 from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.logger import get_root_logger
 from easycv.models.ocr.backbones.det_mobilenet_v3 import MobileNetV3
 from easycv.models.ocr.backbones.det_resnet_vd import ResNet
-from easycv.models.ocr.postprocess.db_postprocess import DBPostProcess
 from easycv.models.ocr.loss.det_db_loss import DBLoss
+from easycv.models.ocr.postprocess.db_postprocess import DBPostProcess
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger
+
+sys.path.append('/root/code/ocr/EasyCV')
 
 
 @MODELS.register_module()
 class DBNet(BaseModel):
     """DBNet for text detection
     """
+
     def __init__(
         self,
         backbone,
@@ -34,24 +36,25 @@ class DBNet(BaseModel):
         **kwargs,
     ):
         super(DBNet, self).__init__()
-        
+
         self.pretrained = pretrained
-        
+
         self.backbone = eval(backbone.type)(**backbone)
         self.neck = builder.build_neck(neck)
         self.head = builder.build_head(head)
         self.loss = eval(loss.type)(**loss) if loss else None
         self.postprocess_op = DBPostProcess(**postprocess)
         self.init_weights()
-        
+
     def init_weights(self):
-        logger  = get_root_logger()
+        logger = get_root_logger()
         if self.pretrained:
             load_checkpoint(self, self.pretrained, strict=False, logger=logger)
         else:
             # weight initialization
             for m in self.modules():
-                if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+                if isinstance(m, nn.Conv2d) or isinstance(
+                        m, nn.ConvTranspose2d):
                     nn.init.kaiming_normal_(m.weight, mode='fan_out')
                     if m.bias is not None:
                         nn.init.zeros_(m.bias)
@@ -63,7 +66,7 @@ class DBNet(BaseModel):
                     nn.init.normal_(m.weight, 0, 0.01)
                     if m.bias is not None:
                         nn.init.zeros_(m.bias)
-                    
+
     def extract_feat(self, x):
         x = self.backbone(x)
         # y["backbone_out"] = x
@@ -71,15 +74,19 @@ class DBNet(BaseModel):
         # y["neck_out"] = x
         x = self.head(x)
         return x
-    
+
     def forward_train(self, img, **kwargs):
         predicts = self.extract_feat(img)
         loss = self.loss(predicts, kwargs)
         return loss
-    
-    def forward_test(self, img,**kwargs):
-        shape_list = [img_meta['ori_img_shape'] for img_meta in kwargs['img_metas']]
-        ignore_tags = [img_meta['ignore_tags'] for img_meta in kwargs['img_metas']]
+
+    def forward_test(self, img, **kwargs):
+        shape_list = [
+            img_meta['ori_img_shape'] for img_meta in kwargs['img_metas']
+        ]
+        ignore_tags = [
+            img_meta['ignore_tags'] for img_meta in kwargs['img_metas']
+        ]
         polys = [img_meta['polys'] for img_meta in kwargs['img_metas']]
         with torch.no_grad():
             preds = self.extract_feat(img)
@@ -88,7 +95,7 @@ class DBNet(BaseModel):
         post_results['polys'] = polys
         return post_results
         # return preds
-    
+
     def postprocess(self, preds, shape_list):
 
         post_results = self.postprocess_op(preds, shape_list)
@@ -113,7 +120,7 @@ class DBNet(BaseModel):
             dt_boxes_new.append(box)
         dt_boxes = np.array(dt_boxes_new)
         return dt_boxes
-                    
+
     def order_points_clockwise(self, pts):
         """
         reference from: https://github.com/jrosebr1/imutils/blob/master/imutils/perspective.py
@@ -135,7 +142,7 @@ class DBNet(BaseModel):
         rightMost = rightMost[np.argsort(rightMost[:, 1]), :]
         (tr, br) = rightMost
 
-        rect = np.array([tl, tr, br, bl], dtype="float32")
+        rect = np.array([tl, tr, br, bl], dtype='float32')
         return rect
 
     def clip_det_res(self, points, img_height, img_width):
@@ -144,11 +151,10 @@ class DBNet(BaseModel):
             points[pno, 1] = int(min(max(points[pno, 1], 0), img_height - 1))
         return points
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     from easycv.utils.config_tools import mmcv_config_fromfile
     from easycv.models import build_model
     cfg = mmcv_config_fromfile('configs/ocr/det_model.py')
     model = build_model(cfg.model)
     print(model)
-    
-    

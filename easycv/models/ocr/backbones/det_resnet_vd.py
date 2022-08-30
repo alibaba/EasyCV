@@ -1,18 +1,23 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from .det_mobilenet_v3 import Activation
 
+
 class ConvBNLayer(nn.Module):
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_size,
-                 stride=1,
-                 groups=1,
-                 is_vd_mode=False,
-                 act=None,
-                 name=None, ):
+
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride=1,
+        groups=1,
+        is_vd_mode=False,
+        act=None,
+        name=None,
+    ):
         super(ConvBNLayer, self).__init__()
 
         self.is_vd_mode = is_vd_mode
@@ -27,18 +32,17 @@ class ConvBNLayer(nn.Module):
             padding=(kernel_size - 1) // 2,
             groups=groups,
             bias=False)
-        if name == "conv1":
-            bn_name = "bn_" + name
+        if name == 'conv1':
+            bn_name = 'bn_' + name
         else:
-            bn_name = "bn" + name[3:]
+            bn_name = 'bn' + name[3:]
         self._batch_norm = nn.BatchNorm2d(
             out_channels,
             track_running_stats=True,
-            )
+        )
 
         if act is not None:
             self._act = Activation(act_type=act, inplace=True)
-
 
     def forward(self, inputs):
         if self.is_vd_mode:
@@ -51,6 +55,7 @@ class ConvBNLayer(nn.Module):
 
 
 class BottleneckBlock(nn.Module):
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -65,20 +70,20 @@ class BottleneckBlock(nn.Module):
             out_channels=out_channels,
             kernel_size=1,
             act='relu',
-            name=name + "_branch2a")
+            name=name + '_branch2a')
         self.conv1 = ConvBNLayer(
             in_channels=out_channels,
             out_channels=out_channels,
             kernel_size=3,
             stride=stride,
             act='relu',
-            name=name + "_branch2b")
+            name=name + '_branch2b')
         self.conv2 = ConvBNLayer(
             in_channels=out_channels,
             out_channels=out_channels * 4,
             kernel_size=1,
             act=None,
-            name=name + "_branch2c")
+            name=name + '_branch2c')
 
         if not shortcut:
             self.short = ConvBNLayer(
@@ -87,7 +92,7 @@ class BottleneckBlock(nn.Module):
                 kernel_size=1,
                 stride=1,
                 is_vd_mode=False if if_first else True,
-                name=name + "_branch1")
+                name=name + '_branch1')
 
         self.shortcut = shortcut
 
@@ -106,6 +111,7 @@ class BottleneckBlock(nn.Module):
 
 
 class BasicBlock(nn.Module):
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -121,13 +127,13 @@ class BasicBlock(nn.Module):
             kernel_size=3,
             stride=stride,
             act='relu',
-            name=name + "_branch2a")
+            name=name + '_branch2a')
         self.conv1 = ConvBNLayer(
             in_channels=out_channels,
             out_channels=out_channels,
             kernel_size=3,
             act=None,
-            name=name + "_branch2b")
+            name=name + '_branch2b')
 
         if not shortcut:
             self.short = ConvBNLayer(
@@ -136,7 +142,7 @@ class BasicBlock(nn.Module):
                 kernel_size=1,
                 stride=1,
                 is_vd_mode=False if if_first else True,
-                name=name + "_branch1")
+                name=name + '_branch1')
 
         self.shortcut = shortcut
 
@@ -154,13 +160,14 @@ class BasicBlock(nn.Module):
 
 
 class ResNet(nn.Module):
+
     def __init__(self, in_channels=3, layers=50, **kwargs):
         super(ResNet, self).__init__()
 
         self.layers = layers
         supported_layers = [18, 34, 50, 101, 152, 200]
         assert layers in supported_layers, \
-            "supported layers are {} but input layer is {}".format(
+            'supported layers are {} but input layer is {}'.format(
                 supported_layers, layers)
 
         if layers == 18:
@@ -173,8 +180,8 @@ class ResNet(nn.Module):
             depth = [3, 8, 36, 3]
         elif layers == 200:
             depth = [3, 12, 48, 3]
-        num_channels = [64, 256, 512,
-                        1024] if layers >= 50 else [64, 64, 128, 256]
+        num_channels = [64, 256, 512, 1024
+                        ] if layers >= 50 else [64, 64, 128, 256]
         num_filters = [64, 128, 256, 512]
 
         self.conv1_1 = ConvBNLayer(
@@ -183,21 +190,21 @@ class ResNet(nn.Module):
             kernel_size=3,
             stride=2,
             act='relu',
-            name="conv1_1")
+            name='conv1_1')
         self.conv1_2 = ConvBNLayer(
             in_channels=32,
             out_channels=32,
             kernel_size=3,
             stride=1,
             act='relu',
-            name="conv1_2")
+            name='conv1_2')
         self.conv1_3 = ConvBNLayer(
             in_channels=32,
             out_channels=64,
             kernel_size=3,
             stride=1,
             act='relu',
-            name="conv1_3")
+            name='conv1_3')
         self.pool2d_max = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
         self.stages = nn.ModuleList()
@@ -210,22 +217,23 @@ class ResNet(nn.Module):
                 for i in range(depth[block]):
                     if layers in [101, 152] and block == 2:
                         if i == 0:
-                            conv_name = "res" + str(block + 2) + "a"
+                            conv_name = 'res' + str(block + 2) + 'a'
                         else:
-                            conv_name = "res" + str(block + 2) + "b" + str(i)
+                            conv_name = 'res' + str(block + 2) + 'b' + str(i)
                     else:
-                        conv_name = "res" + str(block + 2) + chr(97 + i)
+                        conv_name = 'res' + str(block + 2) + chr(97 + i)
                     bottleneck_block = BottleneckBlock(
-                            in_channels=num_channels[block]
-                            if i == 0 else num_filters[block] * 4,
-                            out_channels=num_filters[block],
-                            stride=2 if i == 0 and block != 0 else 1,
-                            shortcut=shortcut,
-                            if_first=block == i == 0,
-                            name=conv_name)
+                        in_channels=num_channels[block]
+                        if i == 0 else num_filters[block] * 4,
+                        out_channels=num_filters[block],
+                        stride=2 if i == 0 and block != 0 else 1,
+                        shortcut=shortcut,
+                        if_first=block == i == 0,
+                        name=conv_name)
 
                     shortcut = True
-                    block_list.add_module('bb_%d_%d' % (block, i), bottleneck_block)
+                    block_list.add_module('bb_%d_%d' % (block, i),
+                                          bottleneck_block)
                 self.out_channels.append(num_filters[block] * 4)
                 # self.stages.append(nn.Sequential(*block_list))
                 self.stages.append(block_list)
@@ -235,15 +243,15 @@ class ResNet(nn.Module):
                 block_list = nn.Sequential()
                 shortcut = False
                 for i in range(depth[block]):
-                    conv_name = "res" + str(block + 2) + chr(97 + i)
+                    conv_name = 'res' + str(block + 2) + chr(97 + i)
                     basic_block = BasicBlock(
-                            in_channels=num_channels[block]
-                            if i == 0 else num_filters[block],
-                            out_channels=num_filters[block],
-                            stride=2 if i == 0 and block != 0 else 1,
-                            shortcut=shortcut,
-                            if_first=block == i == 0,
-                            name=conv_name)
+                        in_channels=num_channels[block]
+                        if i == 0 else num_filters[block],
+                        out_channels=num_filters[block],
+                        stride=2 if i == 0 and block != 0 else 1,
+                        shortcut=shortcut,
+                        if_first=block == i == 0,
+                        name=conv_name)
 
                     shortcut = True
                     block_list.add_module('bb_%d_%d' % (block, i), basic_block)
@@ -252,7 +260,6 @@ class ResNet(nn.Module):
                 self.stages.append(block_list)
 
                 # self.stages.append(nn.Sequential(*block_list))
-
 
     def forward(self, inputs):
         y = self.conv1_1(inputs)

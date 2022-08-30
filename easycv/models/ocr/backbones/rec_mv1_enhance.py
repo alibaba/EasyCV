@@ -1,10 +1,12 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from .det_mobilenet_v3 import Activation
 
 
 class ConvBNLayer(nn.Module):
+
     def __init__(self,
                  num_channels,
                  filter_size,
@@ -25,9 +27,7 @@ class ConvBNLayer(nn.Module):
             groups=num_groups,
             bias=False)
 
-        self._batch_norm = nn.BatchNorm2d(
-            num_filters,
-        )
+        self._batch_norm = nn.BatchNorm2d(num_filters, )
         if self.act is not None:
             self._act = Activation(act_type=act, inplace=True)
 
@@ -40,6 +40,7 @@ class ConvBNLayer(nn.Module):
 
 
 class DepthwiseSeparable(nn.Module):
+
     def __init__(self,
                  num_channels,
                  num_filters1,
@@ -77,6 +78,7 @@ class DepthwiseSeparable(nn.Module):
 
 
 class MobileNetV1Enhance(nn.Module):
+
     def __init__(self,
                  in_channels=3,
                  scale=0.5,
@@ -199,10 +201,13 @@ class MobileNetV1Enhance(nn.Module):
         y = self.pool(y)
         return y
 
+
 def hardsigmoid(x):
     return F.relu6(x + 3., inplace=True) / 6.
 
+
 class SEModule(nn.Module):
+
     def __init__(self, channel, reduction=4):
         super(SEModule, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)

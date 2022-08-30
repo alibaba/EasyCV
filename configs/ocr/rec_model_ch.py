@@ -5,7 +5,7 @@ model = dict(
     backbone=dict(
         type='MobileNetV1Enhance',
         scale=0.5,
-        last_conv_stride=[1,2],
+        last_conv_stride=[1, 2],
         last_pool_type='avg'),
     # neck=dict(
     #     type='SequenceEncoder',
@@ -21,7 +21,7 @@ model = dict(
     #     fc_decay=0.00001),
     head=dict(
         type='MultiHead',
-        in_channels = 512,
+        in_channels=512,
         out_channels_list=dict(
             CTCLabelDecode=6625,
             SARLabelDecode=6627,
@@ -34,63 +34,63 @@ model = dict(
                     dims=64,
                     depth=2,
                     hidden_dims=120,
-                    use_guide=True
-                ),
-                Head=dict(
-                    fc_decay=0.00001,
-                )
-            ),
-            dict(
-                type='SARHead',
-                enc_dim=512,
-                max_text_length=25
-            )
-        ]
-    ),
+                    use_guide=True),
+                Head=dict(fc_decay=0.00001, )),
+            dict(type='SARHead', enc_dim=512, max_text_length=25)
+        ]),
     postprocess=dict(
         type='CTCLabelDecode',
         # character_type='ch',
-        character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
+        character_dict_path=
+        '/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
         # character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/en_dict.txt',
-        use_space_char=True
-    ),
+        use_space_char=True),
     loss=dict(
         type='MultiLoss',
         ignore_index=6626,
         loss_config_list=[
             dict(CTCLoss=None),
             dict(SARLoss=None),
-            ]
-    ),
+        ]),
     # pretrained='/root/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_rec_infer.pth'
-    pretrained='/root/code/ocr/PaddleOCR/pretrain_models/ch_PP-OCRv3_rec_train/best_accuracy_student.pth'
+    pretrained=
+    '/root/code/ocr/PaddleOCR/pretrain_models/ch_PP-OCRv3_rec_train/best_accuracy_student.pth'
 )
 
-
 train_pipeline = [
-    dict(type='RecConAug', prob=0.5, image_shape=(48,320,3)),
+    dict(type='RecConAug', prob=0.5, image_shape=(48, 320, 3)),
     dict(type='RecAug'),
-    dict(type='MultiLabelEncode',
-         max_text_length=25,
-         use_space_char=True,
+    dict(
+        type='MultiLabelEncode',
+        max_text_length=25,
+        use_space_char=True,
         #  character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/en_dict.txt'
-         character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
-         ),
-    dict(type='RecResizeImg', image_shape=(3,48,320)),
+        character_dict_path=
+        '/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
+    ),
+    dict(type='RecResizeImg', image_shape=(3, 48, 320)),
     dict(type='MMToTensor'),
-    dict(type='Collect', keys=['img', 'label_ctc', 'label_sar', 'length', 'valid_ratio'],meta_keys=['img_path'])
+    dict(
+        type='Collect',
+        keys=['img', 'label_ctc', 'label_sar', 'length', 'valid_ratio'],
+        meta_keys=['img_path'])
 ]
 
 val_pipeline = [
-    dict(type='MultiLabelEncode',
-         max_text_length=25,
-         use_space_char=True,
+    dict(
+        type='MultiLabelEncode',
+        max_text_length=25,
+        use_space_char=True,
         #  character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/en_dict.txt'
-        character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
-         ),
-    dict(type='RecResizeImg', image_shape=(3,48,320)),
+        character_dict_path=
+        '/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
+    ),
+    dict(type='RecResizeImg', image_shape=(3, 48, 320)),
     dict(type='MMToTensor'),
-    dict(type='Collect', keys=['img', 'label_ctc', 'label_sar', 'length', 'valid_ratio'],meta_keys=['img_path'])
+    dict(
+        type='Collect',
+        keys=['img', 'label_ctc', 'label_sar', 'length', 'valid_ratio'],
+        meta_keys=['img_path'])
 ]
 
 # test_pipeline = [
@@ -100,32 +100,30 @@ val_pipeline = [
 # ]
 
 test_pipeline = [
-    dict(type='RecResizeImg', image_shape=(3,48,320)),
+    dict(type='RecResizeImg', image_shape=(3, 48, 320)),
     dict(type='MMToTensor'),
-    dict(type='Collect', keys=['img'],meta_keys=['img_path'])
+    dict(type='Collect', keys=['img'], meta_keys=['img_path'])
 ]
 
 train_dataset = dict(
-    type = 'OCRRecDataset',
-    data_source = dict(
-        type = 'OCRRecSource',
-        label_file = '/nas/database/ocr/rec/pai/label_file/train.txt',
-        data_dir = '/nas/database/ocr/rec/pai/img/train',
-        ext_data_num = 2,
+    type='OCRRecDataset',
+    data_source=dict(
+        type='OCRRecSource',
+        label_file='/nas/database/ocr/rec/pai/label_file/train.txt',
+        data_dir='/nas/database/ocr/rec/pai/img/train',
+        ext_data_num=2,
     ),
-    pipeline = train_pipeline
-)
+    pipeline=train_pipeline)
 
 val_dataset = dict(
-    type = 'OCRRecDataset',
-    data_source = dict(
-        type = 'OCRRecSource',
-        label_file = '/nas/database/ocr/rec/pai/label_file/test.txt',
-        data_dir = '/nas/database/ocr/rec/pai/img/test',
-        ext_data_num = 0,
+    type='OCRRecDataset',
+    data_source=dict(
+        type='OCRRecSource',
+        label_file='/nas/database/ocr/rec/pai/label_file/test.txt',
+        data_dir='/nas/database/ocr/rec/pai/img/test',
+        ext_data_num=0,
     ),
-    pipeline = val_pipeline
-)
+    pipeline=val_pipeline)
 
 data = dict(
     imgs_per_gpu=128, workers_per_gpu=4, train=train_dataset, val=val_dataset)
@@ -160,8 +158,6 @@ eval_pipelines = [
     dict(
         mode='test',
         dist_eval=False,
-        evaluators=[
-            dict(type='OCRRecEvaluator',ignore_space=False)
-        ],
+        evaluators=[dict(type='OCRRecEvaluator', ignore_space=False)],
     )
 ]

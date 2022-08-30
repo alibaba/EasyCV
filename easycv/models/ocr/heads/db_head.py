@@ -6,6 +6,7 @@ from easycv.models.builder import HEADS
 
 
 class Head(nn.Module):
+
     def __init__(self, in_channels, kernel_list=[3, 2, 2], **kwargs):
         super(Head, self).__init__()
         self.conv1 = nn.Conv2d(
@@ -14,8 +15,7 @@ class Head(nn.Module):
             kernel_size=kernel_list[0],
             padding=int(kernel_list[0] // 2),
             bias=False)
-        self.conv_bn1 = nn.BatchNorm2d(
-            in_channels // 4)
+        self.conv_bn1 = nn.BatchNorm2d(in_channels // 4)
         self.relu1 = nn.ReLU(inplace=True)
 
         self.conv2 = nn.ConvTranspose2d(
@@ -23,8 +23,7 @@ class Head(nn.Module):
             out_channels=in_channels // 4,
             kernel_size=kernel_list[1],
             stride=2)
-        self.conv_bn2 = nn.BatchNorm2d(
-            in_channels // 4)
+        self.conv_bn2 = nn.BatchNorm2d(in_channels // 4)
         self.relu2 = nn.ReLU(inplace=True)
 
         self.conv3 = nn.ConvTranspose2d(
@@ -44,6 +43,7 @@ class Head(nn.Module):
         x = torch.sigmoid(x)
         return x
 
+
 @HEADS.register_module()
 class DBHead(nn.Module):
     """
@@ -57,15 +57,15 @@ class DBHead(nn.Module):
         super(DBHead, self).__init__()
         self.k = k
         binarize_name_list = [
-            'conv2d_56', 'batch_norm_47', 'conv2d_transpose_0', 'batch_norm_48',
-            'conv2d_transpose_1', 'binarize'
+            'conv2d_56', 'batch_norm_47', 'conv2d_transpose_0',
+            'batch_norm_48', 'conv2d_transpose_1', 'binarize'
         ]
         thresh_name_list = [
-            'conv2d_57', 'batch_norm_49', 'conv2d_transpose_2', 'batch_norm_50',
-            'conv2d_transpose_3', 'thresh'
+            'conv2d_57', 'batch_norm_49', 'conv2d_transpose_2',
+            'batch_norm_50', 'conv2d_transpose_3', 'thresh'
         ]
-        self.binarize = Head(in_channels,**kwargs)# binarize_name_list)
-        self.thresh = Head(in_channels, **kwargs)#thresh_name_list)
+        self.binarize = Head(in_channels, **kwargs)
+        self.thresh = Head(in_channels, **kwargs)
 
     def step_function(self, x, y):
         return torch.reciprocal(1 + torch.exp(-self.k * (x - y)))

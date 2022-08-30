@@ -12,19 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 import copy
-import numpy as np
 import math
 
 import cv2
+import numpy as np
 
-from easycv.utils.logger import get_root_logger
 from easycv.datasets.registry import PIPELINES
+from easycv.utils.logger import get_root_logger
 
 
 @PIPELINES.register_module()
@@ -37,27 +34,27 @@ class BaseRecLabelEncode(object):
                  use_space_char=False):
 
         self.max_text_len = max_text_length
-        self.beg_str = "sos"
-        self.end_str = "eos"
+        self.beg_str = 'sos'
+        self.end_str = 'eos'
         self.lower = False
 
         if character_dict_path is None:
             logger = get_root_logger()
             logger.warning(
-                "The character_dict_path is None, model can only recognize number and lower letters"
+                'The character_dict_path is None, model can only recognize number and lower letters'
             )
-            self.character_str = "0123456789abcdefghijklmnopqrstuvwxyz"
+            self.character_str = '0123456789abcdefghijklmnopqrstuvwxyz'
             dict_character = list(self.character_str)
             self.lower = True
         else:
             self.character_str = []
-            with open(character_dict_path, "rb") as fin:
+            with open(character_dict_path, 'rb') as fin:
                 lines = fin.readlines()
                 for line in lines:
-                    line = line.decode('utf-8').strip("\n").strip("\r\n")
+                    line = line.decode('utf-8').strip('\n').strip('\r\n')
                     self.character_str.append(line)
             if use_space_char:
-                self.character_str.append(" ")
+                self.character_str.append(' ')
             dict_character = list(self.character_str)
         dict_character = self.add_special_char(dict_character)
         self.dict = {}
@@ -103,8 +100,9 @@ class CTCLabelEncode(BaseRecLabelEncode):
                  character_dict_path=None,
                  use_space_char=False,
                  **kwargs):
-        super(CTCLabelEncode, self).__init__(
-            max_text_length, character_dict_path, use_space_char)
+        super(CTCLabelEncode,
+              self).__init__(max_text_length, character_dict_path,
+                             use_space_char)
 
     def __call__(self, data):
         text = data['label']
@@ -135,13 +133,14 @@ class SARLabelEncode(BaseRecLabelEncode):
                  character_dict_path=None,
                  use_space_char=False,
                  **kwargs):
-        super(SARLabelEncode, self).__init__(
-            max_text_length, character_dict_path, use_space_char)
+        super(SARLabelEncode,
+              self).__init__(max_text_length, character_dict_path,
+                             use_space_char)
 
     def add_special_char(self, dict_character):
-        beg_end_str = "<BOS/EOS>"
-        unknown_str = "<UKN>"
-        padding_str = "<PAD>"
+        beg_end_str = '<BOS/EOS>'
+        unknown_str = '<UKN>'
+        padding_str = '<PAD>'
         dict_character = dict_character + [unknown_str]
         self.unknown_idx = len(dict_character) - 1
         dict_character = dict_character + [beg_end_str]
@@ -173,13 +172,15 @@ class SARLabelEncode(BaseRecLabelEncode):
 
 @PIPELINES.register_module()
 class MultiLabelEncode(BaseRecLabelEncode):
+
     def __init__(self,
                  max_text_length,
                  character_dict_path=None,
                  use_space_char=False,
                  **kwargs):
-        super(MultiLabelEncode, self).__init__(
-            max_text_length, character_dict_path, use_space_char)
+        super(MultiLabelEncode,
+              self).__init__(max_text_length, character_dict_path,
+                             use_space_char)
 
         self.ctc_encode = CTCLabelEncode(max_text_length, character_dict_path,
                                          use_space_char, **kwargs)

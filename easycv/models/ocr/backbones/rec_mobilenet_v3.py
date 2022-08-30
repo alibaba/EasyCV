@@ -1,10 +1,13 @@
 import torch.nn as nn
 
-from .det_mobilenet_v3 import ResidualUnit, ConvBNLayer, make_divisible, Activation
+from .det_mobilenet_v3 import (Activation, ConvBNLayer, ResidualUnit,
+                               make_divisible)
+
 
 class MobileNetV3(nn.Module):
     """mobilenetv3 backbone for ocr recognition
     """
+
     def __init__(self,
                  in_channels=3,
                  model_name='small',
@@ -18,16 +21,16 @@ class MobileNetV3(nn.Module):
         if large_stride is None:
             large_stride = [1, 2, 2, 2]
 
-        assert isinstance(large_stride, list), "large_stride type must " \
-                                               "be list but got {}".format(type(large_stride))
-        assert isinstance(small_stride, list), "small_stride type must " \
-                                               "be list but got {}".format(type(small_stride))
-        assert len(large_stride) == 4, "large_stride length must be " \
-                                       "4 but got {}".format(len(large_stride))
-        assert len(small_stride) == 4, "small_stride length must be " \
-                                       "4 but got {}".format(len(small_stride))
+        assert isinstance(large_stride, list), 'large_stride type must ' \
+                                               'be list but got {}'.format(type(large_stride))
+        assert isinstance(small_stride, list), 'small_stride type must ' \
+                                               'be list but got {}'.format(type(small_stride))
+        assert len(large_stride) == 4, 'large_stride length must be ' \
+                                       '4 but got {}'.format(len(large_stride))
+        assert len(small_stride) == 4, 'small_stride length must be ' \
+                                       '4 but got {}'.format(len(small_stride))
 
-        if model_name == "large":
+        if model_name == 'large':
             cfg = [
                 # k, exp, c,  se,     nl,  s,
                 [3, 16, 16, False, 'relu', large_stride[0]],
@@ -47,7 +50,7 @@ class MobileNetV3(nn.Module):
                 [5, 960, 160, True, 'hard_swish', 1],
             ]
             cls_ch_squeeze = 960
-        elif model_name == "small":
+        elif model_name == 'small':
             cfg = [
                 # k, exp, c,  se,     nl,  s,
                 [3, 16, 16, True, 'relu', (small_stride[0], 1)],
@@ -64,12 +67,12 @@ class MobileNetV3(nn.Module):
             ]
             cls_ch_squeeze = 576
         else:
-            raise NotImplementedError("mode[" + model_name +
-                                      "_model] is not implemented!")
+            raise NotImplementedError('mode[' + model_name +
+                                      '_model] is not implemented!')
 
         supported_scale = [0.35, 0.5, 0.75, 1.0, 1.25]
         assert scale in supported_scale, \
-            "supported scales are {} but input scale is {}".format(supported_scale, scale)
+            'supported scales are {} but input scale is {}'.format(supported_scale, scale)
 
         inplanes = 16
         # conv1

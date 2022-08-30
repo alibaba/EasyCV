@@ -2,7 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class BalanceLoss(nn.Module):
+
     def __init__(self,
                  balance_loss=True,
                  main_loss_type='DiceLoss',
@@ -27,22 +29,23 @@ class BalanceLoss(nn.Module):
         self.return_origin = return_origin
         self.eps = eps
 
-        if self.main_loss_type == "CrossEntropy":
+        if self.main_loss_type == 'CrossEntropy':
             self.loss = nn.CrossEntropyLoss()
-        elif self.main_loss_type == "Euclidean":
+        elif self.main_loss_type == 'Euclidean':
             self.loss = nn.MSELoss()
-        elif self.main_loss_type == "DiceLoss":
+        elif self.main_loss_type == 'DiceLoss':
             self.loss = DiceLoss(self.eps)
-        elif self.main_loss_type == "BCELoss":
+        elif self.main_loss_type == 'BCELoss':
             self.loss = BCELoss(reduction='none')
-        elif self.main_loss_type == "MaskL1Loss":
+        elif self.main_loss_type == 'MaskL1Loss':
             self.loss = MaskL1Loss(self.eps)
         else:
             loss_type = [
-                'CrossEntropy', 'DiceLoss', 'Euclidean', 'BCELoss', 'MaskL1Loss'
+                'CrossEntropy', 'DiceLoss', 'Euclidean', 'BCELoss',
+                'MaskL1Loss'
             ]
             raise Exception(
-                "main_loss_type in BalanceLoss() can only be one of {}".format(
+                'main_loss_type in BalanceLoss() can only be one of {}'.format(
                     loss_type))
 
     def forward(self, pred, gt, mask=None):
@@ -120,6 +123,7 @@ class DiceLoss(nn.Module):
 
 
 class MaskL1Loss(nn.Module):
+
     def __init__(self, eps=1e-6):
         super(MaskL1Loss, self).__init__()
         self.eps = eps
@@ -127,9 +131,10 @@ class MaskL1Loss(nn.Module):
     def forward(self, pred: torch.Tensor, gt, mask):
         loss = (torch.abs(pred - gt) * mask).sum() / (mask.sum() + self.eps)
         return loss
-    
-    
+
+
 class BCELoss(nn.Module):
+
     def __init__(self, reduction='mean'):
         super(BCELoss, self).__init__()
         self.reduction = reduction
@@ -137,8 +142,8 @@ class BCELoss(nn.Module):
     def forward(self, input, label, mask=None, weight=None, name=None):
         loss = F.binary_cross_entropy(input, label, reduction=self.reduction)
         return loss
-    
-    
+
+
 class DBLoss(nn.Module):
     """
     Differentiable Binarization (DB) Loss Function
@@ -168,8 +173,10 @@ class DBLoss(nn.Module):
         predict_maps = predicts['maps']
         # label_threshold_map, label_threshold_mask, label_shrink_map, label_shrink_mask = labels[
         #     1:]
-        label_threshold_map, label_threshold_mask, label_shrink_map, label_shrink_mask = labels['threshold_map'], labels['threshold_mask'], labels['shrink_map'],  labels['shrink_mask']
-        if len(label_threshold_map.shape)==4:
+        label_threshold_map, label_threshold_mask, label_shrink_map, label_shrink_mask = labels[
+            'threshold_map'], labels['threshold_mask'], labels[
+                'shrink_map'], labels['shrink_mask']
+        if len(label_threshold_map.shape) == 4:
             label_threshold_map = label_threshold_map.squeeze(1)
             label_threshold_mask = label_threshold_mask.squeeze(1)
             label_shrink_map = label_shrink_map.squeeze(1)
@@ -190,7 +197,8 @@ class DBLoss(nn.Module):
         # loss_all = loss_shrink_maps + loss_threshold_maps \
         #            + loss_binary_maps
         losses = {
-                  "loss_shrink_maps": loss_shrink_maps, \
-                  "loss_threshold_maps": loss_threshold_maps, \
-                  "loss_binary_maps": loss_binary_maps}
+            'loss_shrink_maps': loss_shrink_maps,
+            'loss_threshold_maps': loss_threshold_maps,
+            'loss_binary_maps': loss_binary_maps
+        }
         return losses

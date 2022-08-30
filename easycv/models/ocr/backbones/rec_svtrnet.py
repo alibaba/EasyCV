@@ -1,8 +1,9 @@
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 
 from .det_mobilenet_v3 import Activation
+
 
 def drop_path(x, drop_prob=0., training=False):
     """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks).
@@ -20,6 +21,7 @@ def drop_path(x, drop_prob=0., training=False):
 
 
 class ConvBNLayer(nn.Module):
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -61,6 +63,7 @@ class DropPath(nn.Module):
 
 
 class Identity(nn.Module):
+
     def __init__(self):
         super(Identity, self).__init__()
 
@@ -69,6 +72,7 @@ class Identity(nn.Module):
 
 
 class Mlp(nn.Module):
+
     def __init__(self,
                  in_features,
                  hidden_features=None,
@@ -93,12 +97,14 @@ class Mlp(nn.Module):
 
 
 class ConvMixer(nn.Module):
+
     def __init__(
-            self,
-            dim,
-            num_heads=8,
-            HW=[8, 25],
-            local_k=[3, 3], ):
+        self,
+        dim,
+        num_heads=8,
+        HW=[8, 25],
+        local_k=[3, 3],
+    ):
         super().__init__()
         self.HW = HW
         self.dim = dim
@@ -106,9 +112,10 @@ class ConvMixer(nn.Module):
             dim,
             dim,
             local_k,
-            1, [local_k[0] // 2, local_k[1] // 2],
+            1,
+            [local_k[0] // 2, local_k[1] // 2],
             groups=num_heads,
-            )
+        )
 
     def forward(self, x):
         h = self.HW[0]
@@ -120,6 +127,7 @@ class ConvMixer(nn.Module):
 
 
 class Attention(nn.Module):
+
     def __init__(self,
                  dim,
                  num_heads=8,
@@ -147,13 +155,16 @@ class Attention(nn.Module):
         if mixer == 'Local' and HW is not None:
             hk = local_k[0]
             wk = local_k[1]
-            mask = torch.ones(H * W, H + hk - 1, W + wk - 1, dtype=torch.float32)
+            mask = torch.ones(
+                H * W, H + hk - 1, W + wk - 1, dtype=torch.float32)
             for h in range(0, H):
                 for w in range(0, W):
                     mask[h * W + w, h:h + hk, w:w + wk] = 0.
-            mask_paddle = mask[:, hk // 2:H + hk // 2, wk // 2:W + wk //
-                               2].flatten(1)
-            mask_inf = torch.full([H * W, H * W], fill_value=float("-Inf"), dtype=torch.float32)
+            mask_paddle = mask[:, hk // 2:H + hk // 2,
+                               wk // 2:W + wk // 2].flatten(1)
+            mask_inf = torch.full([H * W, H * W],
+                                  fill_value=float('-Inf'),
+                                  dtype=torch.float32)
             mask = torch.where(mask_paddle < 1, mask_paddle, mask_inf)
             self.mask = mask.unsqueeze(1).unsqueeze(0)
             # self.mask = mask[None, None, :]
@@ -166,7 +177,9 @@ class Attention(nn.Module):
         else:
             _, N, C = x.shape
 
-        qkv = self.qkv(x).reshape((-1, N, 3, self.num_heads, C // self.num_heads)).permute(2, 0, 3, 1, 4)
+        qkv = self.qkv(x).reshape(
+            (-1, N, 3, self.num_heads,
+             C // self.num_heads)).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0] * self.scale, qkv[1], qkv[2]
 
         attn = (q.matmul(k.permute(0, 1, 3, 2)))
@@ -182,6 +195,7 @@ class Attention(nn.Module):
 
 
 class Block(nn.Module):
+
     def __init__(self,
                  dim,
                  num_heads,
@@ -218,7 +232,7 @@ class Block(nn.Module):
             self.mixer = ConvMixer(
                 dim, num_heads=num_heads, HW=HW, local_k=local_mixer)
         else:
-            raise TypeError("The mixer must be one of [Global, Local, Conv]")
+            raise TypeError('The mixer must be one of [Global, Local, Conv]')
 
         self.drop_path = DropPath(drop_path) if drop_path > 0. else Identity()
         if isinstance(norm_layer, str):
@@ -227,10 +241,11 @@ class Block(nn.Module):
             self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp_ratio = mlp_ratio
-        self.mlp = Mlp(in_features=dim,
-                       hidden_features=mlp_hidden_dim,
-                       act_layer=act_layer,
-                       drop=drop)
+        self.mlp = Mlp(
+            in_features=dim,
+            hidden_features=mlp_hidden_dim,
+            act_layer=act_layer,
+            drop=drop)
         self.prenorm = prenorm
 
     def forward(self, x):
@@ -308,13 +323,14 @@ class PatchEmbed(nn.Module):
         B, C, H, W = x.shape
         assert H == self.img_size[0] and W == self.img_size[1], \
             "Input image size ({}*{}) doesn't match model ({}*{}).".format(
-                H,W,self.img_size[0],self.img_size[1]
+                H, W, self.img_size[0], self.img_size[1]
             )
         x = self.proj(x).flatten(2).permute(0, 2, 1)
         return x
 
 
 class SubSample(nn.Module):
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -337,7 +353,7 @@ class SubSample(nn.Module):
                 kernel_size=3,
                 stride=stride,
                 padding=1,
-                )
+            )
         self.norm = eval(sub_norm)(out_channels)
         if act is not None:
             self.act = act()
@@ -362,6 +378,7 @@ class SubSample(nn.Module):
 
 
 class SVTRNet(nn.Module):
+
     def __init__(
             self,
             img_size=[32, 100],
@@ -369,8 +386,8 @@ class SVTRNet(nn.Module):
             embed_dim=[64, 128, 256],
             depth=[3, 6, 3],
             num_heads=[2, 4, 8],
-            mixer=['Local'] * 6 + ['Global'] *
-            6,  # Local atten, Global atten, Conv
+            mixer=['Local'] * 6 +
+        ['Global'] * 6,  # Local atten, Global atten, Conv
             local_mixer=[[7, 11], [7, 11], [7, 11]],
             patch_merging='Conv',  # Conv, Pool, None
             mlp_ratio=4,
@@ -405,7 +422,8 @@ class SVTRNet(nn.Module):
             sub_num=sub_num)
         num_patches = self.patch_embed.num_patches
         self.HW = [img_size[0] // (2**sub_num), img_size[1] // (2**sub_num)]
-        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, embed_dim[0]))
+        self.pos_embed = nn.Parameter(
+            torch.zeros(1, num_patches, embed_dim[0]))
         self.pos_drop = nn.Dropout(p=drop_rate)
         Block_unit = eval(block_unit)
 
@@ -495,7 +513,7 @@ class SVTRNet(nn.Module):
                 stride=1,
                 padding=0,
                 bias=False)
-            self.hardswish = Activation('hard_swish', inplace=True) #nn.Hardswish()
+            self.hardswish = Activation('hard_swish', inplace=True)
             # self.dropout = nn.Dropout(p=last_drop, mode="downscale_in_infer")
             self.dropout = nn.Dropout(p=last_drop)
         if not prenorm:
@@ -503,9 +521,9 @@ class SVTRNet(nn.Module):
         self.use_lenhead = use_lenhead
         if use_lenhead:
             self.len_conv = nn.Linear(embed_dim[2], self.out_channels)
-            self.hardswish_len = Activation('hard_swish', inplace=True)# nn.Hardswish()
-            self.dropout_len = nn.Dropout(
-                p=last_drop)
+            self.hardswish_len = Activation(
+                'hard_swish', inplace=True)  # nn.Hardswish()
+            self.dropout_len = nn.Dropout(p=last_drop)
 
         torch.nn.init.xavier_normal_(self.pos_embed)
         self.apply(self._init_weights)
@@ -564,8 +582,8 @@ class SVTRNet(nn.Module):
             else:
                 h = self.HW[0]
             x = self.avg_pool(
-                x.permute(0, 2, 1).reshape(
-                    [-1, self.embed_dim[2], h, self.HW[1]]))
+                x.permute(0, 2,
+                          1).reshape([-1, self.embed_dim[2], h, self.HW[1]]))
             x = self.last_conv(x)
             x = self.hardswish(x)
             x = self.dropout(x)

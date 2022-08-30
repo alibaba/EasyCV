@@ -1,11 +1,12 @@
 import torch
 import torch.nn as nn
 
-from ..backbones.rec_svtrnet import Block, ConvBNLayer
 from easycv.models.registry import NECKS
+from ..backbones.rec_svtrnet import Block, ConvBNLayer
 
 
 class Im2Seq(nn.Module):
+
     def __init__(self, in_channels, **kwargs):
         super().__init__()
         self.out_channels = in_channels
@@ -15,16 +16,27 @@ class Im2Seq(nn.Module):
         # assert H == 1
         x = x.squeeze(dim=2)
         # x = x.transpose([0, 2, 1])  # paddle (NTC)(batch, width, channels)
-        x = x.permute(0,2,1)
+        x = x.permute(0, 2, 1)
         return x
 
 
 class EncoderWithRNN_(nn.Module):
+
     def __init__(self, in_channels, hidden_size):
         super(EncoderWithRNN_, self).__init__()
         self.out_channels = hidden_size * 2
-        self.rnn1 = nn.LSTM(in_channels, hidden_size, bidirectional=False, batch_first=True, num_layers=2)
-        self.rnn2 = nn.LSTM(in_channels, hidden_size, bidirectional=False, batch_first=True, num_layers=2)
+        self.rnn1 = nn.LSTM(
+            in_channels,
+            hidden_size,
+            bidirectional=False,
+            batch_first=True,
+            num_layers=2)
+        self.rnn2 = nn.LSTM(
+            in_channels,
+            hidden_size,
+            bidirectional=False,
+            batch_first=True,
+            num_layers=2)
 
     def forward(self, x):
         self.rnn1.flatten_parameters()
@@ -35,11 +47,16 @@ class EncoderWithRNN_(nn.Module):
 
 
 class EncoderWithRNN(nn.Module):
+
     def __init__(self, in_channels, hidden_size):
         super(EncoderWithRNN, self).__init__()
         self.out_channels = hidden_size * 2
         self.lstm = nn.LSTM(
-            in_channels, hidden_size, num_layers=2, batch_first=True, bidirectional=True) # batch_first:=True
+            in_channels,
+            hidden_size,
+            num_layers=2,
+            batch_first=True,
+            bidirectional=True)  # batch_first:=True
 
     def forward(self, x):
         x, _ = self.lstm(x)
@@ -47,6 +64,7 @@ class EncoderWithRNN(nn.Module):
 
 
 class EncoderWithFC(nn.Module):
+
     def __init__(self, in_channels, hidden_size):
         super(EncoderWithFC, self).__init__()
         self.out_channels = hidden_size
@@ -54,7 +72,7 @@ class EncoderWithFC(nn.Module):
             in_channels,
             hidden_size,
             bias=True,
-            )
+        )
 
     def forward(self, x):
         x = self.fc(x)
@@ -62,6 +80,7 @@ class EncoderWithFC(nn.Module):
 
 
 class EncoderWithSVTR(nn.Module):
+
     def __init__(
             self,
             in_channels,
@@ -166,6 +185,7 @@ class EncoderWithSVTR(nn.Module):
 
 @NECKS.register_module()
 class SequenceEncoder(nn.Module):
+
     def __init__(self, in_channels, encoder_type, hidden_size=48, **kwargs):
         super(SequenceEncoder, self).__init__()
         self.encoder_reshape = Im2Seq(in_channels)
@@ -183,7 +203,7 @@ class SequenceEncoder(nn.Module):
             assert encoder_type in support_encoder_dict, '{} must in {}'.format(
                 encoder_type, support_encoder_dict.keys())
 
-            if encoder_type == "svtr":
+            if encoder_type == 'svtr':
                 self.encoder = support_encoder_dict[encoder_type](
                     self.encoder_reshape.out_channels, **kwargs)
             else:

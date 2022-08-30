@@ -1,11 +1,11 @@
-import sys
-import numpy as np
-import random
 import math
+import random
+import sys
 
 import cv2
 import imgaug
 import imgaug.augmenters as iaa
+import numpy as np
 import pyclipper
 from shapely.geometry import Polygon
 
@@ -13,6 +13,7 @@ from easycv.datasets.registry import PIPELINES
 
 
 class AugmenterBuilder(object):
+
     def __init__(self):
         pass
 
@@ -24,14 +25,15 @@ class AugmenterBuilder(object):
                 sequence = [self.build(value, root=False) for value in args]
                 return iaa.Sequential(sequence)
             else:
-                return getattr(iaa, args[0])(
-                    *[self.to_tuple_if_list(a) for a in args[1:]])
+                return getattr(
+                    iaa,
+                    args[0])(*[self.to_tuple_if_list(a) for a in args[1:]])
         elif isinstance(args, dict):
             cls = getattr(iaa, args['type'])
-            return cls(**{
-                k: self.to_tuple_if_list(v)
-                for k, v in args['args'].items()
-            })
+            return cls(
+                **
+                {k: self.to_tuple_if_list(v)
+                 for k, v in args['args'].items()})
         else:
             raise RuntimeError('unknown augmenter arg: ' + str(args))
 
@@ -39,10 +41,11 @@ class AugmenterBuilder(object):
         if isinstance(obj, list):
             return tuple(obj)
         return obj
-    
-    
+
+
 @PIPELINES.register_module()
 class IaaAugment():
+
     def __init__(self, augmenter_args=None, **kwargs):
         if augmenter_args is None:
             augmenter_args = [{
@@ -87,12 +90,11 @@ class IaaAugment():
     def may_augment_poly(self, aug, img_shape, poly):
         keypoints = [imgaug.Keypoint(p[0], p[1]) for p in poly]
         keypoints = aug.augment_keypoints(
-            [imgaug.KeypointsOnImage(
-                keypoints, shape=img_shape)])[0].keypoints
+            [imgaug.KeypointsOnImage(keypoints, shape=img_shape)])[0].keypoints
         poly = [(p.x, p.y) for p in keypoints]
         return poly
 
-    
+
 def is_poly_in_rect(poly, x, y, w, h):
     poly = np.array(poly)
     if poly[:, 0].min() < x or poly[:, 0].max() > x + w:
@@ -193,6 +195,7 @@ def crop_area(im, text_polys, min_crop_side_ratio, max_tries):
 
 @PIPELINES.register_module()
 class EastRandomCropData(object):
+
     def __init__(self,
                  size=(640, 640),
                  max_tries=10,
@@ -213,8 +216,9 @@ class EastRandomCropData(object):
             text_polys[i] for i, tag in enumerate(ignore_tags) if not tag
         ]
         # 计算crop区域
-        crop_x, crop_y, crop_w, crop_h = crop_area(
-            img, all_care_polys, self.min_crop_side_ratio, self.max_tries)
+        crop_x, crop_y, crop_w, crop_h = crop_area(img, all_care_polys,
+                                                   self.min_crop_side_ratio,
+                                                   self.max_tries)
         # crop 图片 保持比例填充
         scale_w = self.size[0] / crop_w
         scale_h = self.size[1] / crop_h
@@ -250,6 +254,7 @@ class EastRandomCropData(object):
 
 @PIPELINES.register_module()
 class MakeBorderMap(object):
+
     def __init__(self,
                  shrink_ratio=0.4,
                  thresh_min=0.3,
@@ -264,7 +269,7 @@ class MakeBorderMap(object):
         img = data['img']
         text_polys = data['polys']
         ignore_tags = data['ignore_tags']
-        
+
         canvas = np.zeros(img.shape[:2], dtype=np.float32)
         mask = np.zeros(img.shape[:2], dtype=np.float32)
 
@@ -290,7 +295,8 @@ class MakeBorderMap(object):
             1 - np.power(self.shrink_ratio, 2)) / polygon_shape.length
         subject = [tuple(l) for l in polygon]
         padding = pyclipper.PyclipperOffset()
-        padding.AddPath(subject, pyclipper.JT_ROUND, pyclipper.ET_CLOSEDPOLYGON)
+        padding.AddPath(subject, pyclipper.JT_ROUND,
+                        pyclipper.ET_CLOSEDPOLYGON)
         padded_polygon = np.array(padding.Execute(distance)[0])
         cv2.fillPoly(mask, [padded_polygon.astype(np.int32)], 1.0)
 
@@ -305,14 +311,14 @@ class MakeBorderMap(object):
         polygon[:, 1] = polygon[:, 1] - ymin
 
         xs = np.broadcast_to(
-            np.linspace(
-                0, width - 1, num=width).reshape(1, width), (height, width))
+            np.linspace(0, width - 1, num=width).reshape(1, width),
+            (height, width))
         ys = np.broadcast_to(
-            np.linspace(
-                0, height - 1, num=height).reshape(height, 1), (height, width))
+            np.linspace(0, height - 1, num=height).reshape(height, 1),
+            (height, width))
 
-        distance_map = np.zeros(
-            (polygon.shape[0], height, width), dtype=np.float32)
+        distance_map = np.zeros((polygon.shape[0], height, width),
+                                dtype=np.float32)
         for i in range(polygon.shape[0]):
             j = (i + 1) % polygon.shape[0]
             absolute_distance = self._distance(xs, ys, polygon[i], polygon[j])
@@ -336,12 +342,13 @@ class MakeBorderMap(object):
         point_1, point_2: (x, y), the end of the line
         '''
         height, width = xs.shape[:2]
-        square_distance_1 = np.square(xs - point_1[0]) + np.square(ys - point_1[
-            1])
-        square_distance_2 = np.square(xs - point_2[0]) + np.square(ys - point_2[
-            1])
-        square_distance = np.square(point_1[0] - point_2[0]) + np.square(
-            point_1[1] - point_2[1])
+        square_distance_1 = np.square(xs - point_1[0]) + np.square(ys -
+                                                                   point_1[1])
+        square_distance_2 = np.square(xs - point_2[0]) + np.square(ys -
+                                                                   point_2[1])
+        square_distance = np.square(point_1[0] -
+                                    point_2[0]) + np.square(point_1[1] -
+                                                            point_2[1])
 
         cosin = (square_distance - square_distance_1 - square_distance_2) / (
             2 * np.sqrt(square_distance_1 * square_distance_2))
@@ -350,18 +357,18 @@ class MakeBorderMap(object):
         result = np.sqrt(square_distance_1 * square_distance_2 * square_sin /
                          square_distance)
 
-        result[cosin <
-               0] = np.sqrt(np.fmin(square_distance_1, square_distance_2))[cosin
-                                                                           < 0]
+        result[cosin < 0] = np.sqrt(
+            np.fmin(square_distance_1, square_distance_2))[cosin < 0]
         # self.extend_line(point_1, point_2, result)
         return result
 
     def extend_line(self, point_1, point_2, result, shrink_ratio):
         ex_point_1 = (int(
-            round(point_1[0] + (point_1[0] - point_2[0]) * (1 + shrink_ratio))),
+            round(point_1[0] + (point_1[0] - point_2[0]) *
+                  (1 + shrink_ratio))),
                       int(
-                          round(point_1[1] + (point_1[1] - point_2[1]) * (
-                              1 + shrink_ratio))))
+                          round(point_1[1] + (point_1[1] - point_2[1]) *
+                                (1 + shrink_ratio))))
         cv2.line(
             result,
             tuple(ex_point_1),
@@ -371,10 +378,11 @@ class MakeBorderMap(object):
             lineType=cv2.LINE_AA,
             shift=0)
         ex_point_2 = (int(
-            round(point_2[0] + (point_2[0] - point_1[0]) * (1 + shrink_ratio))),
+            round(point_2[0] + (point_2[0] - point_1[0]) *
+                  (1 + shrink_ratio))),
                       int(
-                          round(point_2[1] + (point_2[1] - point_1[1]) * (
-                              1 + shrink_ratio))))
+                          round(point_2[1] + (point_2[1] - point_1[1]) *
+                                (1 + shrink_ratio))))
         cv2.line(
             result,
             tuple(ex_point_2),
@@ -384,7 +392,7 @@ class MakeBorderMap(object):
             lineType=cv2.LINE_AA,
             shift=0)
         return ex_point_1, ex_point_2
-    
+
 
 @PIPELINES.register_module()
 class MakeShrinkMap(object):
@@ -403,8 +411,8 @@ class MakeShrinkMap(object):
         ignore_tags = data['ignore_tags']
 
         h, w = image.shape[:2]
-        text_polys, ignore_tags = self.validate_polygons(text_polys,
-                                                         ignore_tags, h, w)
+        text_polys, ignore_tags = self.validate_polygons(
+            text_polys, ignore_tags, h, w)
         gt = np.zeros((h, w), dtype=np.float32)
         mask = np.ones((h, w), dtype=np.float32)
         for i in range(len(text_polys)):
@@ -483,6 +491,7 @@ class MakeShrinkMap(object):
 
 @PIPELINES.register_module()
 class DetResizeForTest(object):
+
     def __init__(self, **kwargs):
         super(DetResizeForTest, self).__init__()
         self.resize_type = 0
@@ -595,10 +604,11 @@ class DetResizeForTest(object):
         ratio_w = resize_w / float(w)
 
         return img, [ratio_h, ratio_w]
-    
+
 
 @PIPELINES.register_module()
 class RecConAug(object):
+
     def __init__(self,
                  prob=0.5,
                  image_shape=(32, 320, 3),
@@ -616,31 +626,31 @@ class RecConAug(object):
                       self.image_shape[0])
         data['img'] = cv2.resize(data['img'], (ori_w, self.image_shape[0]))
         ext_data['img'] = cv2.resize(ext_data['img'],
-                                       (ext_w, self.image_shape[0]))
-        data['img'] = np.concatenate(
-            [data['img'], ext_data['img']], axis=1)
-        data["label"] += ext_data["label"]
+                                     (ext_w, self.image_shape[0]))
+        data['img'] = np.concatenate([data['img'], ext_data['img']], axis=1)
+        data['label'] += ext_data['label']
         return data
 
     def __call__(self, data):
         rnd_num = random.random()
         if rnd_num > self.prob:
             return data
-        for idx, ext_data in enumerate(data["ext_data"]):
-            if len(data["label"]) + len(ext_data[
-                    "label"]) > self.max_text_length:
+        for idx, ext_data in enumerate(data['ext_data']):
+            if len(data['label']) + len(
+                    ext_data['label']) > self.max_text_length:
                 break
             concat_ratio = data['img'].shape[1] / data['img'].shape[
                 0] + ext_data['img'].shape[1] / ext_data['img'].shape[0]
             if concat_ratio > self.max_wh_ratio:
                 break
             data = self.merge_ext_data(data, ext_data)
-        data.pop("ext_data")
+        data.pop('ext_data')
         return data
-    
+
 
 @PIPELINES.register_module()
 class RecAug(object):
+
     def __init__(self, use_tia=True, aug_prob=0.4, **kwargs):
         self.use_tia = use_tia
         self.aug_prob = aug_prob
@@ -650,7 +660,7 @@ class RecAug(object):
         img = warp(img, 10, self.use_tia, self.aug_prob)
         data['img'] = img
         return data
-    
+
 
 def flag():
     """
@@ -789,23 +799,22 @@ def get_warpR(config):
 
     z = np.sqrt(w**2 + h**2) / 2 / np.tan(rad(fov / 2))
     # Homogeneous coordinate transformation matrix
-    rx = np.array([[1, 0, 0, 0],
-                   [0, np.cos(rad(anglex)), -np.sin(rad(anglex)), 0], [
-                       0,
-                       -np.sin(rad(anglex)),
-                       np.cos(rad(anglex)),
-                       0,
-                   ], [0, 0, 0, 1]], np.float32)
-    ry = np.array([[np.cos(rad(angley)), 0, np.sin(rad(angley)), 0],
-                   [0, 1, 0, 0], [
+    rx = np.array(
+        [[1, 0, 0, 0], [0, np.cos(rad(anglex)), -np.sin(rad(anglex)), 0],
+         [0, -np.sin(rad(anglex)),
+          np.cos(rad(anglex)), 0], [0, 0, 0, 1]], np.float32)
+    ry = np.array([[np.cos(rad(angley)), 0,
+                    np.sin(rad(angley)), 0], [0, 1, 0, 0],
+                   [
                        -np.sin(rad(angley)),
                        0,
                        np.cos(rad(angley)),
                        0,
                    ], [0, 0, 0, 1]], np.float32)
-    rz = np.array([[np.cos(rad(anglez)), np.sin(rad(anglez)), 0, 0],
-                   [-np.sin(rad(anglez)), np.cos(rad(anglez)), 0, 0],
-                   [0, 0, 1, 0], [0, 0, 0, 1]], np.float32)
+    rz = np.array(
+        [[np.cos(rad(anglez)), np.sin(rad(anglez)), 0, 0],
+         [-np.sin(rad(anglez)),
+          np.cos(rad(anglez)), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32)
     r = rx.dot(ry).dot(rz)
     # generate 4 points
     pcenter = np.array([h / 2, w / 2, 0, 0], np.float32)
@@ -851,8 +860,9 @@ def get_warpAffine(config):
     get_warpAffine
     """
     anglez = config.anglez
-    rz = np.array([[np.cos(rad(anglez)), np.sin(rad(anglez)), 0],
-                   [-np.sin(rad(anglez)), np.cos(rad(anglez)), 0]], np.float32)
+    rz = np.array(
+        [[np.cos(rad(anglez)), np.sin(rad(anglez)), 0],
+         [-np.sin(rad(anglez)), np.cos(rad(anglez)), 0]], np.float32)
     return rz
 
 
@@ -901,8 +911,8 @@ def warp(img, ang, use_tia=True, prob=0.4):
     return new_img
 
 
-
 class WarpMLS:
+
     def __init__(self, src, src_pts, dst_pts, dst_w, dst_h, trans_ratio=1.):
         self.src = src
         self.src_pts = src_pts
@@ -955,9 +965,10 @@ class WarpMLS:
                     if i == self.dst_pts[k][0] and j == self.dst_pts[k][1]:
                         break
 
-                    w[k] = 1. / (
-                        (i - self.dst_pts[k][0]) * (i - self.dst_pts[k][0]) +
-                        (j - self.dst_pts[k][1]) * (j - self.dst_pts[k][1]))
+                    w[k] = 1. / ((i - self.dst_pts[k][0]) *
+                                 (i - self.dst_pts[k][0]) +
+                                 (j - self.dst_pts[k][1]) *
+                                 (j - self.dst_pts[k][1]))
 
                     sw += w[k]
                     swp = swp + w[k] * np.array(self.dst_pts[k])
@@ -985,10 +996,11 @@ class WarpMLS:
                         pt_j = np.array([-pt_i[1], pt_i[0]])
 
                         tmp_pt = np.zeros(2, dtype=np.float32)
-                        tmp_pt[0] = np.sum(pt_i * cur_pt) * self.src_pts[k][0] - \
-                                    np.sum(pt_j * cur_pt) * self.src_pts[k][1]
-                        tmp_pt[1] = -np.sum(pt_i * cur_pt_j) * self.src_pts[k][0] + \
-                                    np.sum(pt_j * cur_pt_j) * self.src_pts[k][1]
+                        tmp_pt[0] = np.sum(
+                            pt_i * cur_pt) * self.src_pts[k][0] - np.sum(
+                                pt_j * cur_pt) * self.src_pts[k][1]
+                        tmp_pt[1] = -np.sum(pt_i * cur_pt_j) * self.src_pts[k][
+                            0] + np.sum(pt_j * cur_pt_j) * self.src_pts[k][1]
                         tmp_pt *= (w[k] / miu_s)
                         new_pt += tmp_pt
 
@@ -1020,12 +1032,16 @@ class WarpMLS:
 
                 di = np.reshape(np.arange(h), (-1, 1))
                 dj = np.reshape(np.arange(w), (1, -1))
-                delta_x = self.__bilinear_interp(
-                    di / h, dj / w, self.rdx[i, j], self.rdx[i, nj],
-                    self.rdx[ni, j], self.rdx[ni, nj])
-                delta_y = self.__bilinear_interp(
-                    di / h, dj / w, self.rdy[i, j], self.rdy[i, nj],
-                    self.rdy[ni, j], self.rdy[ni, nj])
+                delta_x = self.__bilinear_interp(di / h, dj / w,
+                                                 self.rdx[i, j], self.rdx[i,
+                                                                          nj],
+                                                 self.rdx[ni, j], self.rdx[ni,
+                                                                           nj])
+                delta_y = self.__bilinear_interp(di / h, dj / w,
+                                                 self.rdy[i, j], self.rdy[i,
+                                                                          nj],
+                                                 self.rdy[ni, j], self.rdy[ni,
+                                                                           nj])
                 nx = j + dj + delta_x * self.trans_ratio
                 ny = i + di + delta_y * self.trans_ratio
                 nx = np.clip(nx, 0, src_w - 1)
@@ -1041,16 +1057,18 @@ class WarpMLS:
                 else:
                     x = ny - nyi
                     y = nx - nxi
-                dst[i:i + h, j:j + w] = self.__bilinear_interp(
-                    x, y, self.src[nyi, nxi], self.src[nyi, nxi1],
-                    self.src[nyi1, nxi], self.src[nyi1, nxi1])
+                dst[i:i + h,
+                    j:j + w] = self.__bilinear_interp(x, y, self.src[nyi, nxi],
+                                                      self.src[nyi, nxi1],
+                                                      self.src[nyi1, nxi],
+                                                      self.src[nyi1, nxi1])
 
         dst = np.clip(dst, 0, 255)
         dst = np.array(dst, dtype=np.uint8)
 
         return dst
-    
-    
+
+
 def tia_distort(src, segment=4):
     img_h, img_w = src.shape[:2]
 
@@ -1067,7 +1085,8 @@ def tia_distort(src, segment=4):
 
     dst_pts.append([np.random.randint(thresh), np.random.randint(thresh)])
     dst_pts.append(
-        [img_w - np.random.randint(thresh), np.random.randint(thresh)])
+        [img_w - np.random.randint(thresh),
+         np.random.randint(thresh)])
     dst_pts.append(
         [img_w - np.random.randint(thresh), img_h - np.random.randint(thresh)])
     dst_pts.append(
@@ -1153,12 +1172,14 @@ def tia_perspective(src):
 
 @PIPELINES.register_module()
 class RecResizeImg(object):
-    def __init__(self,
-                 image_shape,
-                 infer_mode=False,
-                 character_dict_path='./easycv/datasets/ocr/dict/ppocr_keys_v1.txt',
-                 padding=True,
-                 **kwargs):
+
+    def __init__(
+            self,
+            image_shape,
+            infer_mode=False,
+            character_dict_path='./easycv/datasets/ocr/dict/ppocr_keys_v1.txt',
+            padding=True,
+            **kwargs):
         self.image_shape = image_shape
         self.infer_mode = infer_mode
         self.character_dict_path = character_dict_path
@@ -1167,16 +1188,16 @@ class RecResizeImg(object):
     def __call__(self, data):
         img = data['img']
         if self.infer_mode and self.character_dict_path is not None:
-            norm_img, valid_ratio = resize_norm_img_chinese(img,
-                                                            self.image_shape)
+            norm_img, valid_ratio = resize_norm_img_chinese(
+                img, self.image_shape)
         else:
             norm_img, valid_ratio = resize_norm_img(img, self.image_shape,
                                                     self.padding)
         data['img'] = norm_img
         data['valid_ratio'] = valid_ratio
         return data
-    
-    
+
+
 def resize_norm_img(img, image_shape, padding=True):
     imgC, imgH, imgW = image_shape
     h = img.shape[0]
@@ -1241,6 +1262,7 @@ def resize_norm_img_chinese(img, image_shape):
 
 @PIPELINES.register_module()
 class ClsResizeImg(object):
+
     def __init__(self, img_shape, **kwargs):
         self.img_shape = img_shape
 

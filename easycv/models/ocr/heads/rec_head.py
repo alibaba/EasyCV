@@ -61,7 +61,7 @@ class SAREncoder(nn.Module):
             batch_first=True,
             dropout=enc_drop_rnn,
             bidirectional=enc_bi_rnn)
-        
+
         if enc_gru:
             self.rnn_encoder = nn.GRU(**kwargs)
         else:
@@ -85,8 +85,8 @@ class SAREncoder(nn.Module):
             T = holistic_feat.size(1)
             for i, valid_ratio in enumerate(valid_ratios):
                 valid_step = min(T, math.ceil(T * valid_ratio)) - 1
-            # for i in range(valid_ratios.size(0)):
-            #     valid_step = torch.min(T, torch.ceil(T * valid_ratios[i])) - 1
+                # for i in range(valid_ratios.size(0)):
+                #     valid_step = torch.min(T, torch.ceil(T * valid_ratios[i])) - 1
                 valid_hf.append(holistic_feat[i, valid_step, :])
             valid_hf = torch.stack(valid_hf, dim=0)
         else:
@@ -97,6 +97,7 @@ class SAREncoder(nn.Module):
 
 
 class BaseDecoder(nn.Module):
+
     def __init__(self, **kwargs):
         super().__init__()
 
@@ -324,6 +325,7 @@ class ParallelSARDecoder(BaseDecoder):
 
 
 class SARHead(nn.Module):
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -381,10 +383,11 @@ class SARHead(nn.Module):
                 train_mode=False)
 
         return final_out
-    
+
 
 @HEADS.register_module()
 class CTCHead(nn.Module):
+
     def __init__(self,
                  in_channels,
                  out_channels=6625,
@@ -397,7 +400,8 @@ class CTCHead(nn.Module):
             self.fc = nn.Linear(
                 in_channels,
                 out_channels,
-                bias=True,)
+                bias=True,
+            )
         else:
             self.fc1 = nn.Linear(
                 in_channels,
@@ -413,7 +417,6 @@ class CTCHead(nn.Module):
         self.out_channels = out_channels
         self.mid_channels = mid_channels
         self.return_feats = return_feats
-
 
     def forward(self, x, labels=None):
         if self.mid_channels is None:
@@ -432,10 +435,11 @@ class CTCHead(nn.Module):
             result = predicts
 
         return result
-    
+
 
 @HEADS.register_module()
 class MultiHead(nn.Module):
+
     def __init__(self, in_channels, out_channels_list, **kwargs):
         super().__init__()
         self.head_list = kwargs.pop('head_list')
@@ -446,8 +450,10 @@ class MultiHead(nn.Module):
             if name == 'SARHead':
                 # sar head
                 sar_args = self.head_list[idx]
-                self.sar_head = eval(name)(in_channels=in_channels, \
-                    out_channels=out_channels_list['SARLabelDecode'], **sar_args)
+                self.sar_head = eval(name)(
+                    in_channels=in_channels,
+                    out_channels=out_channels_list['SARLabelDecode'],
+                    **sar_args)
             elif name == 'CTCHead':
                 # ctc neck
                 self.encoder_reshape = Im2Seq(in_channels)
@@ -455,12 +461,16 @@ class MultiHead(nn.Module):
                 # encoder_type = neck_args.pop('type')
                 encoder_type = neck_args.get('type')
                 self.encoder = encoder_type
-                self.ctc_encoder = SequenceEncoder(in_channels=in_channels, \
-                    encoder_type=encoder_type, **neck_args)
+                self.ctc_encoder = SequenceEncoder(
+                    in_channels=in_channels,
+                    encoder_type=encoder_type,
+                    **neck_args)
                 # ctc head
                 head_args = self.head_list[idx].Head
-                self.ctc_head = eval(name)(in_channels=self.ctc_encoder.out_channels, \
-                    out_channels=out_channels_list['CTCLabelDecode'], **head_args)
+                self.ctc_head = eval(name)(
+                    in_channels=self.ctc_encoder.out_channels,
+                    out_channels=out_channels_list['CTCLabelDecode'],
+                    **head_args)
             else:
                 raise NotImplementedError(
                     '{} is not supported in MultiHead yet'.format(name))

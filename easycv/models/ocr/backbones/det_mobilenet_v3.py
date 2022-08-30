@@ -4,6 +4,7 @@ import torch.nn.functional as F
 
 
 class Hswish(nn.Module):
+
     def __init__(self, inplace=True):
         super(Hswish, self).__init__()
         self.inplace = inplace
@@ -11,9 +12,11 @@ class Hswish(nn.Module):
     def forward(self, x):
         return x * F.relu6(x + 3., inplace=self.inplace) / 6.
 
+
 # out = max(0, min(1, slop*x+offset))
 # paddle.fluid.layers.hard_sigmoid(x, slope=0.2, offset=0.5, name=None)
 class Hsigmoid(nn.Module):
+
     def __init__(self, inplace=True):
         super(Hsigmoid, self).__init__()
         self.inplace = inplace
@@ -23,7 +26,9 @@ class Hsigmoid(nn.Module):
         # paddle: F.relu6(1.2 * x + 3., inplace=self.inplace) / 6.
         return F.relu6(1.2 * x + 3., inplace=self.inplace) / 6.
 
+
 class GELU(nn.Module):
+
     def __init__(self, inplace=True):
         super(GELU, self).__init__()
         self.inplace = inplace
@@ -33,6 +38,7 @@ class GELU(nn.Module):
 
 
 class Swish(nn.Module):
+
     def __init__(self, inplace=True):
         super(Swish, self).__init__()
         self.inplace = inplace
@@ -42,10 +48,11 @@ class Swish(nn.Module):
             x.mul_(torch.sigmoid(x))
             return x
         else:
-            return x*torch.sigmoid(x)
+            return x * torch.sigmoid(x)
 
 
 class Activation(nn.Module):
+
     def __init__(self, act_type, inplace=True):
         super(Activation, self).__init__()
         act_type = act_type.lower()
@@ -70,7 +77,7 @@ class Activation(nn.Module):
 
     def forward(self, inputs):
         return self.act(inputs)
-    
+
 
 def make_divisible(v, divisor=8, min_value=None):
     if min_value is None:
@@ -82,6 +89,7 @@ def make_divisible(v, divisor=8, min_value=None):
 
 
 class ConvBNLayer(nn.Module):
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -103,9 +111,7 @@ class ConvBNLayer(nn.Module):
             groups=groups,
             bias=False)
 
-        self.bn = nn.BatchNorm2d(
-            out_channels,
-            )
+        self.bn = nn.BatchNorm2d(out_channels, )
         if self.if_act:
             self.act = Activation(act_type=act, inplace=True)
 
@@ -118,7 +124,8 @@ class ConvBNLayer(nn.Module):
 
 
 class SEModule(nn.Module):
-    def __init__(self, in_channels, reduction=4, name=""):
+
+    def __init__(self, in_channels, reduction=4, name=''):
         super(SEModule, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.conv1 = nn.Conv2d(
@@ -149,6 +156,7 @@ class SEModule(nn.Module):
 
 
 class ResidualUnit(nn.Module):
+
     def __init__(self,
                  in_channels,
                  mid_channels,
@@ -170,7 +178,7 @@ class ResidualUnit(nn.Module):
             padding=0,
             if_act=True,
             act=act,
-            name=name + "_expand")
+            name=name + '_expand')
         self.bottleneck_conv = ConvBNLayer(
             in_channels=mid_channels,
             out_channels=mid_channels,
@@ -180,9 +188,9 @@ class ResidualUnit(nn.Module):
             groups=mid_channels,
             if_act=True,
             act=act,
-            name=name + "_depthwise")
+            name=name + '_depthwise')
         if self.if_se:
-            self.mid_se = SEModule(mid_channels, name=name + "_se")
+            self.mid_se = SEModule(mid_channels, name=name + '_se')
         self.linear_conv = ConvBNLayer(
             in_channels=mid_channels,
             out_channels=out_channels,
@@ -191,7 +199,7 @@ class ResidualUnit(nn.Module):
             padding=0,
             if_act=False,
             act=None,
-            name=name + "_linear")
+            name=name + '_linear')
 
     def forward(self, inputs):
         x = self.expand_conv(inputs)
@@ -205,6 +213,7 @@ class ResidualUnit(nn.Module):
 
 
 class MobileNetV3(nn.Module):
+
     def __init__(self,
                  in_channels=3,
                  model_name='large',
@@ -220,7 +229,7 @@ class MobileNetV3(nn.Module):
 
         self.disable_se = disable_se
 
-        if model_name == "large":
+        if model_name == 'large':
             cfg = [
                 # k, exp, c,  se,     nl,  s,
                 [3, 16, 16, False, 'relu', 1],
@@ -240,7 +249,7 @@ class MobileNetV3(nn.Module):
                 [5, 960, 160, True, 'hard_swish', 1],
             ]
             cls_ch_squeeze = 960
-        elif model_name == "small":
+        elif model_name == 'small':
             cfg = [
                 # k, exp, c,  se,     nl,  s,
                 [3, 16, 16, True, 'relu', 2],
@@ -257,12 +266,12 @@ class MobileNetV3(nn.Module):
             ]
             cls_ch_squeeze = 576
         else:
-            raise NotImplementedError("mode[" + model_name +
-                                      "_model] is not implemented!")
+            raise NotImplementedError('mode[' + model_name +
+                                      '_model] is not implemented!')
 
         supported_scale = [0.35, 0.5, 0.75, 1.0, 1.25]
         assert scale in supported_scale, \
-            "supported scale are {} but input scale is {}".format(supported_scale, scale)
+            'supported scale are {} but input scale is {}'.format(supported_scale, scale)
         inplanes = 16
         # conv1
         self.conv = ConvBNLayer(
@@ -296,7 +305,7 @@ class MobileNetV3(nn.Module):
                     stride=s,
                     use_se=se,
                     act=nl,
-                    name="conv" + str(i + 2)))
+                    name='conv' + str(i + 2)))
             inplanes = make_divisible(scale * c)
             i += 1
         block_list.append(

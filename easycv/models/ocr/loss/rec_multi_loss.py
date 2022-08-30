@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import torch
 from torch import nn
 
 
 class CTCLoss(nn.Module):
+
     def __init__(self, use_focal_loss=False, **kwargs):
         super(CTCLoss, self).__init__()
         self.loss_func = nn.CTCLoss(blank=0, reduction='none')
@@ -30,14 +29,13 @@ class CTCLoss(nn.Module):
         if isinstance(predicts, (list, tuple)):
             predicts = predicts[-1]
         # predicts = predicts.transpose(1, 0, 2)
-        predicts = predicts.permute(1, 0, 2).contiguous() 
+        predicts = predicts.permute(1, 0, 2).contiguous()
         predicts = predicts.log_softmax(2)
         N, B, _ = predicts.shape
-        preds_lengths = torch.tensor(
-            [N] * B, dtype=torch.int32)
+        preds_lengths = torch.tensor([N] * B, dtype=torch.int32)
         labels = labels.type(torch.int32)
         label_lengths = label_lengths.type(torch.int64)
-        
+
         loss = self.loss_func(predicts, labels, preds_lengths, label_lengths)
         if self.use_focal_loss:
             weight = torch.exp(-loss)
@@ -46,19 +44,22 @@ class CTCLoss(nn.Module):
             loss = torch.multiply(loss, weight)
         loss = loss.mean()
         return {'loss': loss}
-    
+
 
 class SARLoss(nn.Module):
+
     def __init__(self, **kwargs):
         super(SARLoss, self).__init__()
         ignore_index = kwargs.get('ignore_index', 92)  # 6626
         self.loss_func = torch.nn.CrossEntropyLoss(
-            reduction="mean", ignore_index=ignore_index)
+            reduction='mean', ignore_index=ignore_index)
 
     def forward(self, predicts, label):
         predict = predicts[:, :
                            -1, :]  # ignore last index of outputs to be in same seq_len with targets
-        label = label.type(torch.int64)[:, 1:]  # ignore first index of target in loss calculation
+        label = label.type(
+            torch.int64
+        )[:, 1:]  # ignore first index of target in loss calculation
         batch_size, num_steps, num_classes = predict.shape[0], predict.shape[
             1], predict.shape[2]
         assert len(label.shape) == len(list(predict.shape)) - 1, \
@@ -68,9 +69,10 @@ class SARLoss(nn.Module):
         targets = torch.reshape(label, [-1])
         loss = self.loss_func(inputs, targets)
         return {'loss': loss}
-    
-    
+
+
 class MultiLoss(nn.Module):
+
     def __init__(self, **kwargs):
         super().__init__()
         self.loss_funcs = {}
@@ -91,9 +93,11 @@ class MultiLoss(nn.Module):
         # batch [image, label_ctc, label_sar, length, valid_ratio]
         for name, loss_func in self.loss_funcs.items():
             if name == 'CTCLoss':
-                loss = loss_func(predicts['ctc'], label_ctc, length)['loss'] * self.weight_1
+                loss = loss_func(predicts['ctc'], label_ctc,
+                                 length)['loss'] * self.weight_1
             elif name == 'SARLoss':
-                loss = loss_func(predicts['sar'], label_sar)['loss'] * self.weight_2
+                loss = loss_func(predicts['sar'],
+                                 label_sar)['loss'] * self.weight_2
             else:
                 raise NotImplementedError(
                     '{} is not supported in MultiLoss yet'.format(name))

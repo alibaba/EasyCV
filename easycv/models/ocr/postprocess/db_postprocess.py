@@ -2,15 +2,13 @@
 This code is refered from:
 https://github.com/WenmuZhou/DBNet.pytorch/blob/master/post_processing/seg_detector_representer.py
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
-import numpy as np
 import cv2
+import numpy as np
+import pyclipper
 import torch
 from shapely.geometry import Polygon
-import pyclipper
 
 
 class DBPostProcess(object):
@@ -24,7 +22,7 @@ class DBPostProcess(object):
                  max_candidates=1000,
                  unclip_ratio=2.0,
                  use_dilation=False,
-                 score_mode="fast",
+                 score_mode='fast',
                  **kwargs):
         self.thresh = thresh
         self.box_thresh = box_thresh
@@ -33,11 +31,11 @@ class DBPostProcess(object):
         self.min_size = 3
         self.score_mode = score_mode
         assert score_mode in [
-            "slow", "fast"
-        ], "Score mode must be in [slow, fast] but got: {}".format(score_mode)
+            'slow', 'fast'
+        ], 'Score mode must be in [slow, fast] but got: {}'.format(score_mode)
 
-        self.dilation_kernel = None if not use_dilation else np.array(
-            [[1, 1], [1, 1]])
+        self.dilation_kernel = None if not use_dilation else np.array([[1, 1],
+                                                                       [1, 1]])
 
     def boxes_from_bitmap(self, pred, _bitmap, dest_width, dest_height):
         '''
@@ -66,7 +64,7 @@ class DBPostProcess(object):
             if sside < self.min_size:
                 continue
             points = np.array(points)
-            if self.score_mode == "fast":
+            if self.score_mode == 'fast':
                 score = self.box_score_fast(pred, points.reshape(-1, 2))
             else:
                 score = self.box_score_slow(pred, contour)

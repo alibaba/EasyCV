@@ -1,17 +1,18 @@
-from collections import namedtuple
-import numpy as np
 import string
+from collections import namedtuple
 
-from shapely.geometry import Polygon
+import numpy as np
 from rapidfuzz.distance import Levenshtein
+from shapely.geometry import Polygon
 
 from .base_evaluator import Evaluator
 from .builder import EVALUATORS
 from .metric_registry import METRICS
 
+
 @EVALUATORS.register_module()
 class OCRDetEvaluator(Evaluator):
-    
+
     def __init__(self, dataset_name=None, metric_names=['hmean']):
         self.iou_constraint = 0.5
         self.area_precision_constraint = 0.5
@@ -21,6 +22,7 @@ class OCRDetEvaluator(Evaluator):
         pass
 
     def evaluate_image(self, gt, pred):
+
         def get_union(pD, pG):
             return Polygon(pD).union(Polygon(pG)).area
 
@@ -87,7 +89,7 @@ class OCRDetEvaluator(Evaluator):
         arrSampleConfidences = []
         arrSampleMatch = []
 
-        evaluationLog = ""
+        evaluationLog = ''
 
         # print(len(gt))
         for n in range(len(gt)):
@@ -105,9 +107,9 @@ class OCRDetEvaluator(Evaluator):
             if dontCare:
                 gtDontCarePolsNum.append(len(gtPols) - 1)
 
-        evaluationLog += "GT polygons: " + str(len(gtPols)) + (
-            " (" + str(len(gtDontCarePolsNum)) + " don't care)\n"
-            if len(gtDontCarePolsNum) > 0 else "\n")
+        evaluationLog += 'GT polygons: ' + str(len(gtPols)) + (
+            ' (' + str(len(gtDontCarePolsNum)) +
+            " don't care)\n" if len(gtDontCarePolsNum) > 0 else '\n')
 
         for n in range(len(pred)):
             points = pred[n]['points']
@@ -129,9 +131,9 @@ class OCRDetEvaluator(Evaluator):
                         detDontCarePolsNum.append(len(detPols) - 1)
                         break
 
-        evaluationLog += "DET polygons: " + str(len(detPols)) + (
-            " (" + str(len(detDontCarePolsNum)) + " don't care)\n"
-            if len(detDontCarePolsNum) > 0 else "\n")
+        evaluationLog += 'DET polygons: ' + str(len(detPols)) + (
+            ' (' + str(len(detDontCarePolsNum)) +
+            " don't care)\n" if len(detDontCarePolsNum) > 0 else '\n')
 
         if len(gtPols) > 0 and len(detPols) > 0:
             # Calculate IoU and precision matrixs
@@ -155,8 +157,8 @@ class OCRDetEvaluator(Evaluator):
                             detMatched += 1
                             pairs.append({'gt': gtNum, 'det': detNum})
                             detMatchedNums.append(detNum)
-                            evaluationLog += "Match GT #" + \
-                                             str(gtNum) + " with Det #" + str(detNum) + "\n"
+                            evaluationLog += 'Match GT #' + \
+                                             str(gtNum) + ' with Det #' + str(detNum) + '\n'
 
         numGtCare = (len(gtPols) - len(gtDontCarePolsNum))
         numDetCare = (len(detPols) - len(detDontCarePolsNum))
@@ -165,10 +167,12 @@ class OCRDetEvaluator(Evaluator):
             precision = float(0) if numDetCare > 0 else float(1)
         else:
             recall = float(detMatched) / numGtCare
-            precision = 0 if numDetCare == 0 else float(detMatched) / numDetCare
+            precision = 0 if numDetCare == 0 else float(
+                detMatched) / numDetCare
 
-        hmean = 0 if (precision + recall) == 0 else 2.0 * \
-                                                    precision * recall / (precision + recall)
+        hmean = 0 if (precision +
+                      recall) == 0 else 2.0 * precision * recall / (
+                          precision + recall)
 
         matchedSum += detMatched
         numGlobalCareGt += numGtCare
@@ -194,9 +198,8 @@ class OCRDetEvaluator(Evaluator):
             matchedSum) / numGlobalCareGt
         methodPrecision = 0 if numGlobalCareDet == 0 else float(
             matchedSum) / numGlobalCareDet
-        methodHmean = 0 if methodRecall + methodPrecision == 0 else 2 * \
-                                                                    methodRecall * methodPrecision / (
-                                                                            methodRecall + methodPrecision)
+        methodHmean = 0 if methodRecall + methodPrecision == 0 else 2 * methodRecall * methodPrecision / (
+            methodRecall + methodPrecision)
         # print(methodRecall, methodPrecision, methodHmean)
         # sys.exit(-1)
         methodMetrics = {
@@ -209,7 +212,8 @@ class OCRDetEvaluator(Evaluator):
 
     def evaluate(self, preds, gt_polyons_batch, ignore_tags_batch, **kwargs):
         results = []
-        for pred, gt_polyons, ignore_tags in zip(preds, gt_polyons_batch, ignore_tags_batch):
+        for pred, gt_polyons, ignore_tags in zip(preds, gt_polyons_batch,
+                                                 ignore_tags_batch):
             # prepare gt
             gt_info_list = [{
                 'points': gt_polyon,
@@ -226,33 +230,38 @@ class OCRDetEvaluator(Evaluator):
         results = self.combine_results(results)
         print(results)
         return results
-    
+
 
 @EVALUATORS.register_module()
 class OCRRecEvaluator(Evaluator):
-    
-    def __init__(self, is_filter=False, ignore_space=True, dataset_name=None, metric_names=['acc']):
+
+    def __init__(self,
+                 is_filter=False,
+                 ignore_space=True,
+                 dataset_name=None,
+                 metric_names=['acc']):
         super().__init__(dataset_name, metric_names)
         self.is_filter = is_filter
         self.ignore_space = ignore_space
         self.eps = 1e-5
-        
+
     def _evaluate_impl(self, predictions, labels, **kwargs):
         pass
-        
+
     def _normalize_text(self, text):
         text = ''.join(
-            filter(lambda x: x in (string.digits + string.ascii_letters), text))
+            filter(lambda x: x in (string.digits + string.ascii_letters),
+                   text))
         return text.lower()
-    
+
     def evaluate(self, preds, labels, **kwargs):
         correct_num = 0
         all_num = 0
         norm_edit_dis = 0.0
         for (pred, pred_conf), (target, _) in zip(preds, labels):
             if self.ignore_space:
-                pred = pred.replace(" ", "")
-                target = target.replace(" ", "")
+                pred = pred.replace(' ', '')
+                target = target.replace(' ', '')
             if self.is_filter:
                 pred = self._normalize_text(pred)
                 target = self._normalize_text(target)
@@ -260,11 +269,13 @@ class OCRRecEvaluator(Evaluator):
             if pred == target:
                 correct_num += 1
             all_num += 1
-        print(correct_num / (all_num + self.eps),1 - norm_edit_dis / (all_num + self.eps))
+        print(correct_num / (all_num + self.eps),
+              1 - norm_edit_dis / (all_num + self.eps))
         return {
             'acc': correct_num / (all_num + self.eps),
             'norm_edit_dis': 1 - norm_edit_dis / (all_num + self.eps)
         }
-          
+
+
 METRICS.register_default_best_metric(OCRDetEvaluator, 'hmean', 'max')
-METRICS.register_default_best_metric(OCRRecEvaluator, 'acc', 'max')   
+METRICS.register_default_best_metric(OCRRecEvaluator, 'acc', 'max')

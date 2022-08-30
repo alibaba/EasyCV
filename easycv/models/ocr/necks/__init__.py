@@ -1,2 +1,2 @@
-from .db_fpn import DBFPN,RSEFPN,LKPAN
+from .db_fpn import DBFPN, LKPAN, RSEFPN
 from .squence_encoder import SequenceEncoder

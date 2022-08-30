@@ -1,15 +1,19 @@
 from tkinter import N
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..backbones.det_mobilenet_v3 import SEModule
 from easycv.models.registry import NECKS
+from ..backbones.det_mobilenet_v3 import SEModule
+
 
 def hard_swish(x, inplace=True):
     return x * F.relu6(x + 3., inplace=inplace) / 6.
 
+
 class DSConv(nn.Module):
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -18,7 +22,7 @@ class DSConv(nn.Module):
                  stride=1,
                  groups=None,
                  if_act=True,
-                 act="relu",
+                 act='relu',
                  **kwargs):
         super(DSConv, self).__init__()
         if groups == None:
@@ -68,12 +72,12 @@ class DSConv(nn.Module):
         x = self.conv2(x)
         x = self.bn2(x)
         if self.if_act:
-            if self.act == "relu":
+            if self.act == 'relu':
                 x = F.relu(x)
-            elif self.act == "hardswish":
+            elif self.act == 'hardswish':
                 x = hard_swish(x)
             else:
-                print("The activation function({}) is selected incorrectly.".
+                print('The activation function({}) is selected incorrectly.'.
                       format(self.act))
                 exit()
 
@@ -85,6 +89,7 @@ class DSConv(nn.Module):
 
 @NECKS.register_module()
 class DBFPN(nn.Module):
+
     def __init__(self, in_channels, out_channels, **kwargs):
         super(DBFPN, self).__init__()
         self.out_channels = out_channels
@@ -143,25 +148,47 @@ class DBFPN(nn.Module):
         in2 = self.in2_conv(c2)
 
         out4 = in4 + F.interpolate(
-            in5, scale_factor=2, mode="nearest", )#align_mode=1)  # 1/16
+            in5,
+            scale_factor=2,
+            mode='nearest',
+        )
         out3 = in3 + F.interpolate(
-            out4, scale_factor=2, mode="nearest", )#align_mode=1)  # 1/8
+            out4,
+            scale_factor=2,
+            mode='nearest',
+        )
         out2 = in2 + F.interpolate(
-            out3, scale_factor=2, mode="nearest", )#align_mode=1)  # 1/4
+            out3,
+            scale_factor=2,
+            mode='nearest',
+        )
 
         p5 = self.p5_conv(in5)
         p4 = self.p4_conv(out4)
         p3 = self.p3_conv(out3)
         p2 = self.p2_conv(out2)
-        p5 = F.interpolate(p5, scale_factor=8, mode="nearest", )#align_mode=1)
-        p4 = F.interpolate(p4, scale_factor=4, mode="nearest", )#align_mode=1)
-        p3 = F.interpolate(p3, scale_factor=2, mode="nearest", )#align_mode=1)
+        p5 = F.interpolate(
+            p5,
+            scale_factor=8,
+            mode='nearest',
+        )
+        p4 = F.interpolate(
+            p4,
+            scale_factor=4,
+            mode='nearest',
+        )
+        p3 = F.interpolate(
+            p3,
+            scale_factor=2,
+            mode='nearest',
+        )
 
         fuse = torch.cat([p5, p4, p3, p2], dim=1)
         return fuse
 
 
 class RSELayer(nn.Module):
+
     def __init__(self, in_channels, out_channels, kernel_size, shortcut=True):
         super(RSELayer, self).__init__()
         self.out_channels = out_channels
@@ -185,6 +212,7 @@ class RSELayer(nn.Module):
 
 @NECKS.register_module()
 class RSEFPN(nn.Module):
+
     def __init__(self, in_channels, out_channels, shortcut=True, **kwargs):
         super(RSEFPN, self).__init__()
         self.out_channels = out_channels
@@ -213,21 +241,18 @@ class RSEFPN(nn.Module):
         in3 = self.ins_conv[1](c3)
         in2 = self.ins_conv[0](c2)
 
-        out4 = in4 + F.upsample(
-            in5, scale_factor=2, mode="nearest")  # 1/16
-        out3 = in3 + F.upsample(
-            out4, scale_factor=2, mode="nearest")  # 1/8
-        out2 = in2 + F.upsample(
-            out3, scale_factor=2, mode="nearest")  # 1/4
+        out4 = in4 + F.upsample(in5, scale_factor=2, mode='nearest')  # 1/16
+        out3 = in3 + F.upsample(out4, scale_factor=2, mode='nearest')  # 1/8
+        out2 = in2 + F.upsample(out3, scale_factor=2, mode='nearest')  # 1/4
 
         p5 = self.inp_conv[3](in5)
         p4 = self.inp_conv[2](out4)
         p3 = self.inp_conv[1](out3)
         p2 = self.inp_conv[0](out2)
 
-        p5 = F.upsample(p5, scale_factor=8, mode="nearest")
-        p4 = F.upsample(p4, scale_factor=4, mode="nearest")
-        p3 = F.upsample(p3, scale_factor=2, mode="nearest")
+        p5 = F.upsample(p5, scale_factor=8, mode='nearest')
+        p4 = F.upsample(p4, scale_factor=4, mode='nearest')
+        p3 = F.upsample(p3, scale_factor=2, mode='nearest')
 
         fuse = torch.cat([p5, p4, p3, p2], dim=1)
         return fuse
@@ -235,6 +260,7 @@ class RSEFPN(nn.Module):
 
 @NECKS.register_module()
 class LKPAN(nn.Module):
+
     def __init__(self, in_channels, out_channels, mode='large', **kwargs):
         super(LKPAN, self).__init__()
         self.out_channels = out_channels
@@ -295,12 +321,9 @@ class LKPAN(nn.Module):
         in3 = self.ins_conv[1](c3)
         in2 = self.ins_conv[0](c2)
 
-        out4 = in4 + F.upsample(
-            in5, scale_factor=2, mode="nearest")  # 1/16
-        out3 = in3 + F.upsample(
-            out4, scale_factor=2, mode="nearest")  # 1/8
-        out2 = in2 + F.upsample(
-            out3, scale_factor=2, mode="nearest")  # 1/4
+        out4 = in4 + F.upsample(in5, scale_factor=2, mode='nearest')  # 1/16
+        out3 = in3 + F.upsample(out4, scale_factor=2, mode='nearest')  # 1/8
+        out2 = in2 + F.upsample(out3, scale_factor=2, mode='nearest')  # 1/4
 
         f5 = self.inp_conv[3](in5)
         f4 = self.inp_conv[2](out4)
@@ -316,9 +339,9 @@ class LKPAN(nn.Module):
         p4 = self.pan_lat_conv[2](pan4)
         p5 = self.pan_lat_conv[3](pan5)
 
-        p5 = F.upsample(p5, scale_factor=8, mode="nearest")
-        p4 = F.upsample(p4, scale_factor=4, mode="nearest")
-        p3 = F.upsample(p3, scale_factor=2, mode="nearest")
+        p5 = F.upsample(p5, scale_factor=8, mode='nearest')
+        p4 = F.upsample(p4, scale_factor=4, mode='nearest')
+        p3 = F.upsample(p3, scale_factor=2, mode='nearest')
 
         fuse = torch.cat([p5, p4, p3, p2], dim=1)
         return fuse
