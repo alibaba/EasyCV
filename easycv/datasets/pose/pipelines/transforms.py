@@ -5,10 +5,10 @@ import numpy as np
 from mmcv.parallel import DataContainer as DC
 from torchvision.transforms import functional as F
 
-from easycv.core.post_processing import (affine_transform, fliplr_joints,
-                                         get_affine_transform, get_warp_matrix,
-                                         warp_affine_joints)
 from easycv.datasets.registry import PIPELINES
+from .transform_utils import (affine_transform, fliplr_joints,
+                              get_affine_transform, get_warp_matrix,
+                              warp_affine_joints)
 
 
 @PIPELINES.register_module()

@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 
-from easycv.core.post_processing.nms import oks_iou, oks_nms, soft_oks_nms
+from easycv.models.pose.utils import oks_iou, oks_nms, soft_oks_nms
 
 
 class NMSTest(unittest.TestCase):

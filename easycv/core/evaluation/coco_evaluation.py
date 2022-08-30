@@ -29,8 +29,8 @@ from xtcocotools.cocoeval import COCOeval
 
 from easycv.core import standard_fields
 from easycv.core.evaluation import coco_tools
-from easycv.core.post_processing.nms import oks_nms, soft_oks_nms
 from easycv.core.standard_fields import DetectionResultFields, InputDataFields
+from easycv.models.pose.utils import oks_nms, soft_oks_nms
 from easycv.utils.json_utils import MyEncoder
 from .base_evaluator import Evaluator
 from .builder import EVALUATORS
