@@ -67,7 +67,6 @@ def _export_common(model, cfg, filename):
     # json will dump int as str
     if isinstance(cfg, Config):
         cfg = cfg._cfg_dict
-
     meta = dict(config=cfg)
     checkpoint = dict(
         state_dict=model.state_dict(), meta=meta, author='EvTorch')

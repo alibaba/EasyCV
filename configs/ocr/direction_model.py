@@ -2,59 +2,56 @@ _base_ = ['configs/base.py']
 
 model = dict(
     type='TextClassifier',
-    backbone=dict(
-        type='MobileNetV3',
-        scale=0.35,
-        model_name='small'),
+    backbone=dict(type='MobileNetV3', scale=0.35, model_name='small'),
     head=dict(
         type='ClsHead',
         in_channels=200,
         class_dim=2,
     ),
-    pretrained='/root/code/ocr/PaddleOCR/pretrain_models/ch_ppocr_mobile_v2.0_cls_train/best_accuracy.pth'
+    pretrained=
+    '/root/code/ocr/PaddleOCR/pretrain_models/ch_ppocr_mobile_v2.0_cls_train/best_accuracy.pth'
 )
 
-train_pipeline=[
+train_pipeline = [
     dict(type='RecAug', use_tia=False),
-    dict(type='ClsResizeImg', img_shape=(3,48,192)),
+    dict(type='ClsResizeImg', img_shape=(3, 48, 192)),
     dict(type='MMToTensor'),
     dict(type='Collect', keys=['img', 'label'], meta_keys=['img_path'])
 ]
 
 val_pipeline = [
-    dict(type='ClsResizeImg', img_shape=(3,48,192)),
+    dict(type='ClsResizeImg', img_shape=(3, 48, 192)),
     dict(type='MMToTensor'),
     dict(type='Collect', keys=['img', 'label'], meta_keys=['img_path'])
 ]
 
 test_pipeline = [
-    dict(type='ClsResizeImg', img_shape=(3,48,192)),
+    dict(type='ClsResizeImg', img_shape=(3, 48, 192)),
     dict(type='MMToTensor'),
     dict(type='Collect', keys=['img'], meta_keys=['img_path'])
 ]
 
 train_dataset = dict(
-    type = 'OCRClsDataset',
-    data_source = dict(
-        type = 'OCRClsSource',
-        label_file = '/nas/database/ocr/direction/pai/label_file/test_direction.txt',
-        data_dir = '/nas/database/ocr/direction/pai/img/test',
-        label_list = ['0','180'],
+    type='OCRClsDataset',
+    data_source=dict(
+        type='OCRClsSource',
+        label_file=
+        '/nas/database/ocr/direction/pai/label_file/test_direction.txt',
+        data_dir='/nas/database/ocr/direction/pai/img/test',
+        label_list=['0', '180'],
     ),
-    pipeline = train_pipeline
-)
+    pipeline=train_pipeline)
 
 val_dataset = dict(
-    type = 'OCRClsDataset',
-    data_source = dict(
-        type = 'OCRClsSource',
-        label_file = '/nas/database/ocr/direction/pai/label_file/test_direction.txt',
-        data_dir = '/nas/database/ocr/direction/pai/img/test',
-        label_list = ['0','180'],
-        test_mode=True
-    ),
-    pipeline = val_pipeline
-)
+    type='OCRClsDataset',
+    data_source=dict(
+        type='OCRClsSource',
+        label_file=
+        '/nas/database/ocr/direction/pai/label_file/test_direction.txt',
+        data_dir='/nas/database/ocr/direction/pai/img/test',
+        label_list=['0', '180'],
+        test_mode=True),
+    pipeline=val_pipeline)
 
 data = dict(
     imgs_per_gpu=512, workers_per_gpu=8, train=train_dataset, val=val_dataset)
@@ -87,12 +84,12 @@ log_config = dict(
         # dict(type='TensorboardLoggerHook')
     ])
 
-eval_config = dict(initial=True, interval=1, gpu_collect=True)
+eval_config = dict(initial=True, interval=1, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',
         data=data['val'],
-        dist_eval=True,
-        evaluators=[dict(type='ClsEvaluator', topk=(1,))],
+        dist_eval=False,
+        evaluators=[dict(type='ClsEvaluator', topk=(1, ))],
     )
 ]
