@@ -15,10 +15,10 @@ model = dict(
         drop_rate=0.,
         drop_path_rate=0.05))
 
-data_train_list = '/dev/imagenet1k/train.txt'
-data_train_root = '/dev/imagenet1k/train/'
-data_test_list = '/dev/imagenet1k/val.txt'
-data_test_root = '/dev/imagenet1k/val/'
+data_train_list = 'data/imagenet1k/train.txt'
+data_train_root = 'data/imagenet1k/train/'
+data_test_list = 'data/imagenet1k/val.txt'
+data_test_root = 'data/imagenet1k/val/'
 
 dataset_type = 'ClsDataset'
 img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
