@@ -54,7 +54,14 @@ class Classification(BaseModel):
             rank, _ = get_dist_info()
             np.random.seed(rank + 12)
             if mixup_cfg is not None:
-                self.mixup = Mixup(**mixup_cfg)
+                if 'num_classes' in mixup_cfg:
+                    self.mixup = Mixup(**mixup_cfg)
+                elif 'num_classes' in head or 'num_classes' in backbone:
+                    num_classes = head.get(
+                        'num_classes'
+                    ) if 'num_classes' in head else backbone.get('num_classes')
+                    mixup_cfg['num_classes'] = num_classes
+                    self.mixup = Mixup(**mixup_cfg)
             train_preprocess.remove('mixUp')
         self.train_preprocess = [
             self.preprocess_key_map[i] for i in train_preprocess
