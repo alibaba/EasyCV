@@ -30,7 +30,7 @@ def build_dataloader(dataset,
                      dist=True,
                      shuffle=True,
                      replace=False,
-                     seed=None,
+                     seed=0,
                      reuse_worker_cache=False,
                      odps_config=None,
                      persistent_workers=False,
@@ -59,7 +59,6 @@ def build_dataloader(dataset,
     Returns:
         DataLoader: A PyTorch dataloader.
     """
-    seed = sync_random_seed(seed)
     rank, world_size = get_dist_info()
 
     if dist:
@@ -75,6 +74,7 @@ def build_dataloader(dataset,
                 shuffle=shuffle,
                 split_huge_listfile_byrank=split_huge_listfile_byrank)
         else:
+            seed = sync_random_seed(seed)
             sampler = DistributedSampler(
                 dataset,
                 world_size,
