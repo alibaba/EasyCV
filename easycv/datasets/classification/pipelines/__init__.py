@@ -1,7 +1,4 @@
 from .auto_augment import MMAutoAugment, MMRandAugment, ThreeAugment
-from .transform import MMRandomErasing, SimpleRandomCrop
+from .transform import MMRandomErasing
 
-__all__ = [
-    'MMAutoAugment', 'MMRandAugment', 'ThreeAugment', 'MMRandomErasing',
-    'SimpleRandomCrop'
-]
+__all__ = ['MMAutoAugment', 'MMRandAugment', 'ThreeAugment', 'MMRandomErasing']
