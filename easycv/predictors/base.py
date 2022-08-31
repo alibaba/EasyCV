@@ -14,6 +14,7 @@ from easycv.models.builder import build_model
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
+from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.registry import build_from_cfg
 
 
@@ -151,7 +152,8 @@ class PredictorV2(object):
     def _build_model(self):
         if self.cfg is None:
             raise ValueError('Please provide "config_file"!')
-
+        # Use mmdet model
+        dynamic_adapt_for_mmlab(self.cfg)
         model = build_model(self.cfg.model)
         return model
 

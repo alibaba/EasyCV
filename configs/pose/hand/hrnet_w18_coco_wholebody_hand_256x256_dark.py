@@ -187,3 +187,4 @@ eval_pipelines = [
 ]
 export = dict(use_jit=False)
 checkpoint_sync_export = True
+predict = dict(type='HandKeypointsPredictor')
