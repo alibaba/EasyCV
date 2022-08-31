@@ -1,4 +1,5 @@
 # Copyright (c) 2014-2021 Megvii Inc And Alibaba PAI-Teams. All rights reserved.
+import logging
 from typing import Dict
 
 import numpy as np
@@ -7,9 +8,8 @@ import torch.nn as nn
 from torch import Tensor
 
 from easycv.models.base import BaseModel
-from easycv.models.builder import MODELS
+from easycv.models.builder import MODELS, build_head
 from easycv.models.detection.utils import postprocess
-from .yolo_head import YOLOXHead
 from .yolo_pafpn import YOLOPAFPN
 
 
@@ -36,32 +36,55 @@ class YOLOX(BaseModel):
         'x': [1.33, 1.25]
     }
 
-    # TODO configs support more params
-    # backbone(Darknet)、neck(YOLOXPAFPN)、head(YOLOXHead)
     def __init__(self,
-                 model_type: str = 's',
-                 num_classes: int = 80,
-                 test_size: tuple = (640, 640),
-                 test_conf: float = 0.01,
-                 nms_thre: float = 0.65,
-                 pretrained: str = None):
+                 model_type='s',
+                 test_conf=0.01,
+                 nms_thre=0.65,
+                 backbone='CSPDarknet',
+                 use_att=None,
+                 asff_channel=2,
+                 neck_type='yolo',
+                 neck_mode='all',
+                 head=None,
+                 pretrained=True):
         super(YOLOX, self).__init__()
+
         assert model_type in self.param_map, f'invalid model_type for yolox {model_type}, valid ones are {list(self.param_map.keys())}'
+
+        self.pretrained = pretrained
 
         in_channels = [256, 512, 1024]
         depth = self.param_map[model_type][0]
         width = self.param_map[model_type][1]
 
-        self.backbone = YOLOPAFPN(depth, width, in_channels=in_channels)
-        self.head = YOLOXHead(num_classes, width, in_channels=in_channels)
+        self.backbone = YOLOPAFPN(
+            depth,
+            width,
+            backbone=backbone,
+            neck_type=neck_type,
+            neck_mode=neck_mode,
+            in_channels=in_channels,
+            asff_channel=asff_channel,
+            use_att=use_att)
+
+        if head is not None:
+            # head is None for YOLOX-edge to define a special head
+            self.head = build_head(head)
+            self.num_classes = self.head.num_classes
 
         self.apply(init_yolo)  # init_yolo(self)
-        self.head.initialize_biases(1e-2)
-
-        self.num_classes = num_classes
         self.test_conf = test_conf
         self.nms_thre = nms_thre
-        self.test_size = test_size
+        self.use_trt_efficientnms = False  # TRT NMS only will be convert during export
+        self.trt_efficientnms = None
+
+    def get_nmsboxes_num(self, img_scale=(640, 640)):
+        """ Detection neck or head should provide nms box count information
+        """
+        if getattr(self, 'neck', None) is not None:
+            return self.neck.get_nmsboxes_num(img_scale=(640, 640))
+        else:
+            return self.head.get_nmsboxes_num(img_scale=(640, 640))
 
     def forward_train(self,
                       img: Tensor,
@@ -102,6 +125,7 @@ class YOLOX(BaseModel):
             torch.tensor(img_metas[0]['img_shape'][1],
                          device=loss.device).float()
         }
+
         return outputs
 
     def forward_test(self, img: Tensor, img_metas=None) -> Tensor:
@@ -114,10 +138,8 @@ class YOLOX(BaseModel):
         with torch.no_grad():
             fpn_outs = self.backbone(img)
             outputs = self.head(fpn_outs)
-
             outputs = postprocess(outputs, self.num_classes, self.test_conf,
                                   self.nms_thre)
-
             detection_boxes = []
             detection_scores = []
             detection_classes = []
@@ -170,7 +192,16 @@ class YOLOX(BaseModel):
             fpn_outs = self.backbone(img)
             outputs = self.head(fpn_outs)
 
-            outputs = postprocess(outputs, self.num_classes, self.test_conf,
-                                  self.nms_thre)
+            if self.head.decode_in_inference:
+                if self.use_trt_efficientnms:
+                    if self.trt_efficientnms is not None:
+                        outputs = self.trt_efficientnms.forward(outputs)
+                    else:
+                        logging.error(
+                            'PAI-YOLOX : using trt_efficientnms set to be True, but model has not attr(trt_efficientnms)'
+                        )
+                # else:
+                #     outputs = postprocess(outputs, self.num_classes,
+                #                           self.test_conf, self.nms_thre)
 
         return outputs

@@ -7,7 +7,6 @@
 model = dict(
     stage='EDGE',
     type='YOLOX_EDGE',
-    num_classes=1,
     model_type='customized',
     test_conf=0.01,
     nms_thre=0.65,
@@ -16,14 +15,19 @@ model = dict(
     max_model_params=-1,
     max_model_flops=-1,
     activation='relu',
-)
+    head=dict(
+        type='YOLOXHead',
+        model_type='customized',
+        num_classes=1,
+        reg_loss_type='iou',
+        width=1.0))
 
 # train setting
 samples_per_gpu = 16  # batch size per gpu
 test_samples_per_gpu = 16  # test batch size per gpu
 gpu_num = 2  # gpu number for one worker
 total_epochs = 11  # train epoch
-interval = 5
+interval = 5  # eval interval
 
 # tiny nano without mixup
 img_scale = (256, 256)

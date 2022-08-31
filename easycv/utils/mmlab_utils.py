@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+# flake8: noqa
 import inspect
 import logging
 
@@ -14,6 +15,7 @@ from .test_util import run_in_subprocess
 
 try:
     from mmcv.runner.hooks import HOOKS
+    import mmdet
     HOOKS._module_dict.pop('YOLOXLrUpdaterHook', None)
     from mmdet.models.builder import MODELS as MMMODELS
     from mmdet.models.builder import BACKBONES as MMBACKBONES
@@ -55,7 +57,9 @@ class MMAdapter:
             self.mmtype_list.add(mmtype)
 
         self.check_env()
-        self.fix_conflicts()
+
+        # Remove the annotation in feature
+        # self.fix_conflicts()
 
         self.MMTYPE_REGISTRY_MAP = self._get_mmtype_registry_map()
         self.modules_config = modules_config

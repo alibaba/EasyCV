@@ -78,12 +78,12 @@ class ClsSourceImageListByClass(object):
     def __len__(self):
         return len(self.fns_by_labels)
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         label = self.labels[idx]
         image_list = self.fns_by_labels[idx]
         if len(image_list) < 1:
             logging.info('%s :image list contain < 1 image' % idx)
-            return self.get_sample(self, idx + 1)
+            return self[idx + 1]
 
         if self.m_per_class > len(image_list):
             image_list = int(self.m_per_class / len(image_list) +
@@ -111,7 +111,7 @@ class ClsSourceImageListByClass(object):
                 try_idx += 1
 
             if img is None:
-                return self.get_sample(idx + 1)
+                return self[idx + 1]
 
             return_img.append(img)
             return_label.append(label)

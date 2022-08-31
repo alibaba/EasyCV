@@ -1,8 +1,7 @@
 # model settings
 model = dict(
     type='Detection',
-    pretrained=
-    'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/resnet/detectron/resnet50_caffe.pth',
+    pretrained=True,
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -11,7 +10,7 @@ model = dict(
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
-        style='caffe'),
+        style='pytorch'),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],

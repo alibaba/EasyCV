@@ -65,7 +65,7 @@ train_pipeline = [
     dict(type='MMRandomFlip', flip_ratio=0.5),
     dict(type='MMPhotoMetricDistortion'),
     dict(type='MMNormalize', **img_norm_cfg),
-    dict(type='MMPad', size=crop_size, pad_val=0, seg_pad_val=255),
+    dict(type='MMPad', size=crop_size),
     dict(type='DefaultFormatBundle'),
     dict(
         type='Collect',
