@@ -1,8 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-# debug
 import copy
 import math
-import sys
 
 import cv2
 import numpy as np
@@ -17,8 +15,6 @@ from easycv.predictors.builder import PREDICTORS
 from easycv.predictors.interface import PredictorInterface
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.registry import build_from_cfg
-
-sys.path.append('/root/code/ocr/EasyCV')
 
 
 @PREDICTORS.register_module()
@@ -79,7 +75,6 @@ class OCRDetPredictor(PredictorInterface):
         return res
 
     def show(self, dt_boxes, img):
-        # img = img[...,::-1]
         img = img.astype(np.uint8)
         for box in dt_boxes:
             box = np.array(box).astype(np.int32).reshape(-1, 2)
@@ -115,31 +110,15 @@ class OCRRecPredictor(PredictorInterface):
         pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
         self.pipeline = Compose(pipeline)
 
-    # def predict(self, input_data_list):
-    #     """
-    #     Args:
-    #         input_data_list: a list of numpy array(in rgb order), each array is a sample
-    #     to be predicted
-    #     """
-    #     if isinstance(input_data_list,list):
-    #         output_list = []
-    #         for idx, img in enumerate(input_data_list):
-    #             res = self.predict_single(img)
-    #             output_list.append(res)
-    #         return output_list
-    #     else:
-    #         res = self.predict_single(input_data_list)
-    #         return res
-
     def predict(self, input_data_list):
         """
         Args:
             input_data_list: a list of numpy array(in rgb order), each array is a sample
         to be predicted
         """
-        if not input_data_list:
-            return {'preds_text': []}
-        elif isinstance(input_data_list, list):
+        # if not input_data_list:
+        #     return {'preds_text': []}
+        if isinstance(input_data_list, list):
             img_list = []
             output_list = []
             for idx, img in enumerate(input_data_list):
@@ -162,7 +141,6 @@ class OCRRecPredictor(PredictorInterface):
         img = data_dict['img']
         img = torch.unsqueeze(img, 0).to(self.device)
         res = self.rec_model.forward_test(img, )
-        # res = self.rec_model.postprocess(res)
         return res
 
     def preprocess(self, img):
@@ -209,8 +187,6 @@ class OCRClsPredictor(PredictorInterface):
             input_data_list: a list of numpy array(in rgb order), each array is a sample
         to be predicted
         """
-        # if not input_data_list:
-        #     return {'class': []}
         if isinstance(input_data_list, list):
             img_list = []
             output_list = []
@@ -234,7 +210,6 @@ class OCRClsPredictor(PredictorInterface):
         img = data_dict['img']
         img = torch.unsqueeze(img, 0).to(self.device)
         res = self.cls_model.forward_test(img, )
-        # res = self.rec_model.postprocess(res)
         return res
 
     def preprocess(self, img):
@@ -332,7 +307,6 @@ class OCRPredictor(PredictorInterface):
 
     def predict_single(self, img):
         ori_im = img.copy()
-        # dt_boxes = self.det_predictor.predict(img[...,::-1])
 
         dt_boxes = self.det_predictor.predict(img)
         dt_boxes = self.sorted_boxes(dt_boxes)
@@ -340,21 +314,16 @@ class OCRPredictor(PredictorInterface):
         for bno in range(len(dt_boxes)):
             tmp_box = copy.deepcopy(dt_boxes[bno])
             img_crop = self.get_rotate_crop_image(ori_im, tmp_box)
-            # cv2.imwrite(f"test_rgb_{bno}.jpg",img_crop)
             img_crop_list.append(img_crop)
         if self.use_angle_cls:
             img_crop_list, cls_res = self.cls_predictor.predict(img_crop_list)
 
-        for idx, img_crop in enumerate(img_crop_list):
-            cv2.imwrite(f'test_rgb_{idx}.jpg', img_crop)
         rec_res = self.rec_predictor.predict(img_crop_list)
         filter_boxes, filter_rec_res = [], []
         for box, rec_reuslt in zip(dt_boxes, rec_res['preds_text']):
-            # text, score = rec_reuslt['preds_text'][0]
             text, score = rec_reuslt
             if score >= self.drop_score:
                 filter_boxes.append(box)
-                # filter_rec_res.append(rec_reuslt['preds_text'][0])
                 filter_rec_res.append(rec_reuslt)
         return filter_boxes, filter_rec_res
 

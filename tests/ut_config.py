@@ -120,3 +120,10 @@ PRETRAINED_MODEL_MAE = os.path.join(
 PRETRAINED_MODEL_MASK2FORMER = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/segmentation/mask2former/mask2former_r50_instance.pth')
+PRETRAINED_MODEL_OCRDET = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/ocr/det/student_export.pth')
+PRETRAINED_MODEL_OCRREC = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/ocr/rec/best_accuracy_student_export.pth')
+PRETRAINED_MODEL_OCRCLS = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/ocr/cls/best_accuracy_export.pth')
