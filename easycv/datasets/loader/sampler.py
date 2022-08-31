@@ -221,6 +221,7 @@ class DistributedSampler(_DistributedSampler):
     def set_uniform_indices(self, labels, num_classes):
         self.unif_sampling_flag = True
         assert self.shuffle, 'Using uniform sampling, the indices must be shuffled.'
+        np.random.seed(self.epoch)
         assert (len(labels) == len(self.dataset))
         N = len(labels)
         size_per_label = int(N / num_classes) + 1
@@ -409,6 +410,7 @@ class DistributedGivenIterationSampler(Sampler):
         return iter(self.indices[(self.last_iter + 1) * self.batch_size:])
 
     def set_uniform_indices(self, labels, num_classes):
+        np.random.seed(0)
         assert (len(labels) == len(self.dataset))
         N = len(labels)
         size_per_label = int(N / num_classes) + 1
@@ -440,6 +442,8 @@ class DistributedGivenIterationSampler(Sampler):
         self.indices = indices
 
     def gen_new_list(self):
+        # each process shuffle all list with same seed, and pick one piece according to rank
+        np.random.seed(0)
 
         all_size = self.total_size * self.world_size
         indices = np.arange(len(self.dataset))
