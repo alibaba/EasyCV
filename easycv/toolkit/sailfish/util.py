@@ -19,12 +19,12 @@ import math
 
 import torch
 
-from easycv.core.sailfish.function import (all_cat, all_log_softmax,
-                                           all_nll_loss, all_sum,
-                                           shard_correct_mask,
-                                           shard_correct_predictions,
-                                           shard_target_and_mask,
-                                           shard_topk_correct_predictions)
+from easycv.toolkit.sailfish.function import (all_cat, all_log_softmax,
+                                              all_nll_loss, all_sum,
+                                              shard_correct_mask,
+                                              shard_correct_predictions,
+                                              shard_target_and_mask,
+                                              shard_topk_correct_predictions)
 
 
 class DistributedParallel:

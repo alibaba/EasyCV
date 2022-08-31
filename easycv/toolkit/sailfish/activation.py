@@ -18,7 +18,7 @@ from __future__ import absolute_import, division, print_function
 
 import torch
 
-from easycv.core.sailfish.util import ModelParallel
+from easycv.toolkit.sailfish.util import ModelParallel
 
 
 class LogSoftmax(torch.nn.Module):

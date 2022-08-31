@@ -22,7 +22,7 @@ import unittest
 import numpy as np
 import torch
 
-from easycv.core import sailfish
+from easycv.toolkit import sailfish
 
 
 class MockLinear(torch.nn.Module):

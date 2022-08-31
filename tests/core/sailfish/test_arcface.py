@@ -21,7 +21,7 @@ import unittest
 import numpy as np
 import torch
 
-from easycv.core import sailfish
+from easycv.toolkit import sailfish
 
 
 def mp_vs_ddp_main(gpu, gpus_per_worker):

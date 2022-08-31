@@ -19,9 +19,10 @@ import math
 
 import torch
 
-from easycv.core.sailfish.util import (BiasUniformInitializer,
-                                       KaimingUniformInitializer,
-                                       ModelParallel, RenormUniformInitializer)
+from easycv.toolkit.sailfish.util import (BiasUniformInitializer,
+                                          KaimingUniformInitializer,
+                                          ModelParallel,
+                                          RenormUniformInitializer)
 
 
 class Linear(torch.nn.Module):

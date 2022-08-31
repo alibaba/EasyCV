@@ -18,9 +18,9 @@ from __future__ import absolute_import, division, print_function
 
 import torch
 
-from easycv.core.sailfish.activation import LogSoftmax
-from easycv.core.sailfish.linear import ArcFaceLinear, Linear
-from easycv.core.sailfish.util import ModelParallel
+from easycv.toolkit.sailfish.activation import LogSoftmax
+from easycv.toolkit.sailfish.linear import ArcFaceLinear, Linear
+from easycv.toolkit.sailfish.util import ModelParallel
 
 
 class NLLLoss(torch.nn.Module):
