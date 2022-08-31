@@ -196,26 +196,17 @@ Please refer to [data_hub.md](docs/source/data_hub.md).
 
 ## ChangeLog
 
+* 31/08/2022 EasyCV v0.6.0 was released.
+  -  Release YOLOX-PAI which achieves SOTA results within 40~50 mAP (less than 1ms) (#154 #172  #174 )
+  -  Add detection algo DINO (#144)
+  -  Add mask2former algo (#115)
+  -  Releases imagenet1k, imagenet22k, coco, lvis, voc2012 data with BaiduDisk to accelerate downloading (#145 )
+
 * 28/07/2022 EasyCV v0.5.0 was released.
-    * Self-Supervised support ConvMAE algorithm
-    * Classification support EfficientFormer algorithm
-    * Detection support FCOS、DETR、DAB-DETR and DN-DETR algorithm
-    * Segmentation support UperNet algorithm
-    * Support use [torchacc](docs/source/tutorials/torchacc.md) to speed up training
-    * Support use analyze tools
 
 * 23/06/2022 EasyCV v0.4.0 was released.
-    * Add semantic segmentation modules, support FCN algorithm
-    * Expand classification model zoo
-    * Support export model with [blade](https://help.aliyun.com/document_detail/205134.html) for yolox
-    * Support ViTDet algorithm
-    * Add sailfish for extensible fully sharded data parallel training
-    * Support run with [mmdetection](https://github.com/open-mmlab/mmdetection) models
 
 * 31/04/2022 EasyCV v0.3.0 was released.
-    * Update moby pretrained model to deit small
-    * Add mae vit-large benchmark and pretrained models
-    * Support image visualization for tensorboard and wandb
 
 * 07/04/2022 EasyCV v0.2.2 was released.
 
