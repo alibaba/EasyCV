@@ -12,8 +12,10 @@ oss2
 packaging
 Pillow
 prettytable
+pyclipper
 pycocotools
 pytorch_metric_learning==0.9.89
+rapidfuzz
 scikit-image
 sklearn
 tensorboard
