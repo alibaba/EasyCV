@@ -1,7 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import random
+
 import numpy as np
 
+from easycv.core.evaluation.coco_evaluation import CocoPanopticEvaluator
 from easycv.core.visualization.image import imshow_bboxes
+from easycv.datasets.detection.data_sources import DetSourceCoco
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
 from easycv.file.image import load_image
@@ -35,11 +39,14 @@ class DetDataset(BaseDataset):
         while True:
             if count > 10:
                 raise RuntimeError('Loops timeout')
-            data_dict = self.data_source.get_sample(idx)
+            data_dict = self.data_source[idx]
             data_dict = self.pipeline(data_dict)
             if data_dict is None:
                 count += 1
-                idx = self.data_source._rand_another(idx)
+                if isinstance(self.data_source, DetSourceCoco):
+                    idx = self.data_source._rand_another(idx)
+                else:
+                    idx = random.randint(0, self.num_samples - 1)
                 continue
             return data_dict
 
@@ -82,7 +89,16 @@ class DetDataset(BaseDataset):
         ]
 
         for evaluator in evaluators:
-            eval_result.update(evaluator.evaluate(results, groundtruth_dict))
+            if isinstance(evaluator, CocoPanopticEvaluator):
+                result_files = self.data_source.results2json(results)
+                gt_json, gt_folder, pred_json, pred_folder, categories = self.data_source.get_gt_json(
+                    result_files)
+                eval_result.update(
+                    evaluator.evaluate(gt_json, gt_folder, pred_json,
+                                       pred_folder, categories))
+            else:
+                eval_result.update(
+                    evaluator.evaluate(results, groundtruth_dict))
 
         return eval_result
 

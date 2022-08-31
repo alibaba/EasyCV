@@ -46,7 +46,7 @@ class FashionGenH5(object):
     def __len__(self):
         return h5py.File(self.h5file, 'r')[H5_KEYS[0]][:].shape[0]
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         with h5py.File(self.h5file, 'r') as db:
             img = db[H5_KEYS[1]][idx]
             name = db[H5_KEYS[0]][idx]

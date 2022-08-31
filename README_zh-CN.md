@@ -22,6 +22,8 @@
 
 EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，聚焦自监督学习和视觉transformer关键技术，覆盖主流的视觉建模任务例如图像分类，度量学习，目标检测，关键点检测等。
 
+[🔥 Latest News] 近期我们开源了YOLOX-PAI，在40-50mAP(推理速度小于1ms)范围内达到了业界的SOTA水平。同时EasyCV提供了一套简洁高效的模型导出和预测接口，供用户快速完成端到端的图像检测任务。如果你想快速了解YOLOX-PAI, 点击 [这里](docs/source/tutorials/yolox.md)!
+
 ### 核心特性
 
 - **SOTA 自监督算法**
@@ -40,9 +42,15 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 - **高性能**
 
-  EasyCV支持多机多卡训练，同时支持[TorchAccelerator](https://github.com/alibaba/EasyCV/tree/master/docs/source/tutorials/torchacc.md)和fp16进行训练加速。在数据读取和预处理方面，EasyCV使用[DALI](https://github.com/NVIDIA/DALI)进行加速。对于模型推理优化，EasyCV支持使用jit script导出模型，使用[PAI-Blade](https://help.aliyun.com/document_detail/205134.html)进行模型优化。
+  EasyCV支持多机多卡训练，同时支持[TorchAccelerator](docs/source/tutorials/torchacc.md)和fp16进行训练加速。在数据读取和预处理方面，EasyCV使用[DALI](https://github.com/NVIDIA/DALI)进行加速。对于模型推理优化，EasyCV支持使用jit script导出模型，使用[PAI-Blade](https://help.aliyun.com/document_detail/205134.html)进行模型优化。
 
+## 技术文章
 
+我们有一系列关于EasyCV功能的技术文章。
+* [EasyCV开源｜开箱即用的视觉自监督+Transformer算法库](https://zhuanlan.zhihu.com/p/505219993)
+* [MAE自监督算法介绍和基于EasyCV的复现](https://zhuanlan.zhihu.com/p/515859470)
+* [基于EasyCV复现ViTDet：单层特征超越FPN](https://zhuanlan.zhihu.com/p/528733299)
+* [基于EasyCV复现DETR和DAB-DETR，Object Query的正确打开方式](https://zhuanlan.zhihu.com/p/543129581)
 
 ## 安装
 
@@ -55,11 +63,112 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 * [自监督学习教程](docs/source/tutorials/ssl.md)
 * [图像分类教程](docs/source/tutorials/cls.md)
-* [使用YOLOX进行物体检测教程](docs/source/tutorials/yolox.md)
+* [使用YOLOX-PAI进行物体检测教程](docs/source/tutorials/yolox.md)
 * [YOLOX模型压缩教程](docs/source/tutorials/compression.md)
-
+* [torchacc](docs/source/tutorials/torchacc.md)
 
 ## 模型库
+
+<div align="center">
+  <b>模型</b>
+</div>
+<table align="center">
+  <tbody>
+    <tr align="center">
+      <td>
+        <b>自监督学习</b>
+      </td>
+      <td>
+        <b>图像分类</b>
+      </td>
+      <td>
+        <b>目标检测</b>
+      </td>
+      <td>
+        <b>分割</b>
+      </td>
+    </tr>
+    <tr valign="top">
+      <td>
+        <ul>
+            <li><a href="configs/selfsup/byol">BYOL (NeurIPS'2020)</a></li>
+            <li><a href="configs/selfsup/dino">DINO (ICCV'2021)</a></li>
+            <li><a href="configs/selfsup/mixco">MiXCo (NeurIPS'2020)</a></li>
+            <li><a href="configs/selfsup/moby">MoBY (ArXiv'2021)</a></li>
+            <li><a href="configs/selfsup/mocov2">MoCov2 (ArXiv'2020)</a></li>
+            <li><a href="configs/selfsup/simclr">SimCLR (ICML'2020)</a></li>
+            <li><a href="configs/selfsup/swav">SwAV (NeurIPS'2020)</a></li>
+            <li><a href="configs/selfsup/mae">MAE (CVPR'2022)</a></li>
+            <li><a href="configs/selfsup/fast_convmae">FastConvMAE (ArXiv'2022)</a></li>
+      </ul>
+      </td>
+      <td>
+        <ul>
+          <li><a href="configs/classification/imagenet/resnet">ResNet (CVPR'2016)</a></li>
+          <li><a href="configs/classification/imagenet/resnext">ResNeXt (CVPR'2017)</a></li>
+          <li><a href="configs/classification/imagenet/hrnet">HRNet (CVPR'2019)</a></li>
+          <li><a href="configs/classification/imagenet/vit">ViT (ICLR'2021)</a></li>
+          <li><a href="configs/classification/imagenet/swint">SwinT (ICCV'2021)</a></li>
+          <li><a href="configs/classification/imagenet/efficientformer">EfficientFormer (ArXiv'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/deit">DeiT (ICML'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/xcit">XCiT (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/tnt">TNT (NeurIPS'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/convit">ConViT (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/cait">CaiT (ICCV'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/levit">LeViT (ICCV'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/convnext">ConvNeXt (CVPR'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/resmlp">ResMLP (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/coat">CoaT (ICCV'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/convmixer">ConvMixer (ICLR'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/mlp-mixer">MLP-Mixer (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/nest">NesT (AAAI'2022)</a></li>
+          <li><a href="configs/classification/imagenet/timm/pit">PiT (ArXiv'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/twins">Twins (NeurIPS'2021)</a></li>
+          <li><a href="configs/classification/imagenet/timm/shuffle_transformer">Shuffle Transformer (ArXiv'2021)</a></li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li><a href="configs/detection/fcos">FCOS (ICCV'2019)</a></li>
+          <li><a href="configs/detection/yolox">YOLOX (ArXiv'2021)</a></li>
+          <li><a href="configs/detection/yolox">YOLOX-PAI (ArXiv'2022)</a></li>
+          <li><a href="configs/detection/detr">DETR (ECCV'2020)</a></li>
+          <li><a href="configs/detection/dab_detr">DAB-DETR (ICLR'2022)</a></li>
+          <li><a href="configs/detection/dab_detr">DN-DETR (CVPR'2022)</a></li>
+        </ul>
+      </td>
+      <td>
+        </ul>
+          <li><b>实例分割</b></li>
+        <ul>
+        <ul>
+          <li><a href="configs/detection/mask_rcnn">Mask R-CNN (ICCV'2017)</a></li>
+          <li><a href="configs/detection/vitdet">ViTDet (ArXiv'2022)</a></li>
+          <li><a href="configs/segmentation/mask2former">Mask2Former (CVPR'2022)</a></li>
+        </ul>
+        </ul>
+        </ul>
+          <li><b>语义分割</b></li>
+        <ul>
+        <ul>
+          <li><a href="configs/segmentation/fcn">FCN (CVPR'2015)</a></li>
+          <li><a href="configs/segmentation/upernet">UperNet (ECCV'2018)</a></li>
+        </ul>
+        </ul>
+        </ul>
+          <li><b>全景分割</b></li>
+        <ul>
+        <ul>
+          <li><a href="configs/segmentation/mask2former">Mask2Former (CVPR'2022)</a></li>
+        </ul>
+        </ul>
+      </ul>
+      </td>
+    </tr>
+</td>
+    </tr>
+  </tbody>
+</table>
 
 不同领域的模型仓库和benchmark指标如下
 
@@ -75,7 +184,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
     * 图像分类增加EfficientFormer
     * 目标检测增加FCOS、DETR、DAB-DETR和DN-DETR算法
     * 语义分割增加了UperNet算法
-    * 支持使用[torchacc](https://github.com/alibaba/EasyCV/blob/master/docs/source/tutorials/torchacc.md)加快训练速度
+    * 支持使用[torchacc](docs/source/tutorials/torchacc.md)加快训练速度
     * 增加模型分析工具
 
 * 23/06/2022 EasyCV v0.4.0 版本发布。

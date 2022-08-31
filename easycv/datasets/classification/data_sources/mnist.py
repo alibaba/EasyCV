@@ -26,7 +26,7 @@ class ClsSourceMnist(MNIST):
             root=root, train=(split == 'train'), download=download)
         self.labels = self.targets
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         img = Image.fromarray(self.data[idx])
         label = self.labels[idx]
         result_dict = {'img': img, 'gt_labels': label}

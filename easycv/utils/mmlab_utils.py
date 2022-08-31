@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+# flake8: noqa
 import inspect
 import logging
 
@@ -11,6 +12,19 @@ from mmcv.cnn import ConvModule
 
 from easycv.models.registry import BACKBONES, HEADS, MODELS, NECKS
 from .test_util import run_in_subprocess
+
+try:
+    from mmcv.runner.hooks import HOOKS
+    import mmdet
+    HOOKS._module_dict.pop('YOLOXLrUpdaterHook', None)
+    from mmdet.models.builder import MODELS as MMMODELS
+    from mmdet.models.builder import BACKBONES as MMBACKBONES
+    from mmdet.models.builder import NECKS as MMNECKS
+    from mmdet.models.builder import HEADS as MMHEADS
+    from mmdet.core import BitmapMasks, PolygonMasks, encode_mask_results
+    from mmdet.core.mask import mask2bbox
+except ImportError:
+    pass
 
 EASYCV_REGISTRY_MAP = {
     'model': MODELS,
@@ -43,7 +57,9 @@ class MMAdapter:
             self.mmtype_list.add(mmtype)
 
         self.check_env()
-        self.fix_conflicts()
+
+        # Remove the annotation in feature
+        # self.fix_conflicts()
 
         self.MMTYPE_REGISTRY_MAP = self._get_mmtype_registry_map()
         self.modules_config = modules_config
@@ -132,10 +148,6 @@ class MMAdapter:
         return module_obj
 
     def _get_mmtype_registry_map(self):
-        from mmdet.models.builder import MODELS as MMMODELS
-        from mmdet.models.builder import BACKBONES as MMBACKBONES
-        from mmdet.models.builder import NECKS as MMNECKS
-        from mmdet.models.builder import HEADS as MMHEADS
         registry_map = {
             MMDET: {
                 'model': MMMODELS,
@@ -189,7 +201,6 @@ class MMDetWrapper:
         setattr(cls, 'forward', _new_forward)
 
     def _wrap_model_forward_test(self, cls):
-        from mmdet.core import encode_mask_results
 
         origin_forward_test = cls.forward_test
 
@@ -230,6 +241,7 @@ class MMDetWrapper:
                 # draw segmentation masks
                 segms = []
                 if segm_result is not None and len(labels) > 0:  # non empty
+
                     segms = mmcv.concat_list(segm_result)
                     if isinstance(segms[0], torch.Tensor):
                         segms = torch.stack(

@@ -21,7 +21,7 @@ class ClsOdpsDataset(BaseDataset):
         self.label_key = label_key
 
     def __getitem__(self, idx):
-        data_dict = self.data_source.get_sample(idx)
+        data_dict = self.data_source[idx]
         assert (self.image_key in data_dict.keys())
         assert (self.label_key in data_dict.keys())
 
