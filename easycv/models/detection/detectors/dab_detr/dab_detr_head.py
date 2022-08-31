@@ -2,23 +2,23 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import math
 
-import numpy as np
 import torch
 import torch.nn as nn
 
 from easycv.models.builder import HEADS, build_neck
-from easycv.models.detection.utils import (HungarianMatcher, SetCriterion,
-                                           box_cxcywh_to_xyxy,
-                                           box_xyxy_to_cxcywh, inverse_sigmoid)
+from easycv.models.detection.utils import (DetrPostProcess, box_xyxy_to_cxcywh,
+                                           inverse_sigmoid)
+from easycv.models.loss import DNCriterion, HungarianMatcher, SetCriterion
 from easycv.models.utils import MLP
 from .dn_components import dn_post_process, prepare_for_dn
 
 
 @HEADS.register_module()
 class DABDETRHead(nn.Module):
-    """Implements the DETR transformer head.
-    See `paper: End-to-End Object Detection with Transformers
-    <https://arxiv.org/pdf/2005.12872>`_ for details.
+    """Implements the DAB-DETR head.
+    See `paper: DAB-DETR: Dynamic Anchor Boxes are Better Queries for DETR
+    <https://arxiv.org/abs/2201.12329> and DN-DETR: Accelerate DETR Training by Introducing Query DeNoising
+    <https://arxiv.org/abs/2203.01305>`_ for details.
     Args:
         num_classes (int): Number of categories excluding the background.
     """
@@ -56,9 +56,10 @@ class DABDETRHead(nn.Module):
             matcher=self.matcher,
             weight_dict=weight_dict,
             losses=['labels', 'boxes'],
-            loss_class_type='focal_loss',
-            dn_components=dn_components)
-        self.postprocess = PostProcess(num_select=num_select)
+            loss_class_type='focal_loss')
+        if dn_components is not None:
+            self.dn_criterion = DNCriterion(weight_dict)
+        self.postprocess = DetrPostProcess(num_select=num_select)
         self.transformer = build_neck(transformer)
 
         self.class_embed = nn.Linear(embed_dims, num_classes)
@@ -256,7 +257,10 @@ class DABDETRHead(nn.Module):
             attn_mask=attn_mask,
             mask_dict=mask_dict)
 
-        losses = self.criterion(outputs, targets, mask_dict)
+        losses = self.criterion(outputs, targets)
+        if self.dn_components:
+            losses.update(
+                self.dn_criterion(mask_dict, len(outputs['aux_outputs'])))
 
         return losses
 
@@ -278,52 +282,4 @@ class DABDETRHead(nn.Module):
         orig_target_sizes = torch.stack(ori_shape_list, dim=0)
 
         results = self.postprocess(outputs, orig_target_sizes, img_metas)
-        return results
-
-
-class PostProcess(nn.Module):
-    """ This module converts the model's output into the format expected by the coco api"""
-
-    def __init__(self, num_select=100) -> None:
-        super().__init__()
-        self.num_select = num_select
-
-    @torch.no_grad()
-    def forward(self, outputs, target_sizes, img_metas):
-        """ Perform the computation
-        Parameters:
-            outputs: raw outputs of the model
-            target_sizes: tensor of dimension [batch_size x 2] containing the size of each images of the batch
-                          For evaluation, this must be the original image size (before any data augmentation)
-                          For visualization, this should be the image size after data augment, but before padding
-        """
-        num_select = self.num_select
-        out_logits, out_bbox = outputs['pred_logits'], outputs['pred_boxes']
-
-        assert len(out_logits) == len(target_sizes)
-        assert target_sizes.shape[1] == 2
-
-        prob = out_logits.sigmoid()
-        topk_values, topk_indexes = torch.topk(
-            prob.view(out_logits.shape[0], -1), num_select, dim=1)
-        scores = topk_values
-        topk_boxes = topk_indexes // out_logits.shape[2]
-        labels = topk_indexes % out_logits.shape[2]
-        boxes = box_cxcywh_to_xyxy(out_bbox)
-        boxes = torch.gather(boxes, 1,
-                             topk_boxes.unsqueeze(-1).repeat(1, 1, 4))
-
-        # and from relative [0, 1] to absolute [0, height] coordinates
-        img_h, img_w = target_sizes.unbind(1)
-        scale_fct = torch.stack([img_w, img_h, img_w, img_h],
-                                dim=1).to(boxes.device)
-        boxes = boxes * scale_fct[:, None, :]
-
-        results = {
-            'detection_boxes': [boxes[0].cpu().numpy()],
-            'detection_scores': [scores[0].cpu().numpy()],
-            'detection_classes': [labels[0].cpu().numpy().astype(np.int32)],
-            'img_metas': img_metas
-        }
-
         return results

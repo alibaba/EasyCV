@@ -22,7 +22,6 @@ English | [简体中文](README_zh-CN.md)
 
 EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focuses on self-supervised learning, transformer based models, and major CV tasks including image classification, metric-learning, object detection, pose estimation and so on.
 
-[🔥 Latest News] We have released our YOLOX-PAI that achieves SOTA results within 40~50 mAP (less than 1ms). And we also provide a convenient and fast export/predictor api for end2end object detection. To get a quick start of YOLOX-PAI, click [here](docs/source/tutorials/yolox.md)!
 
 ### Major features
 
@@ -32,7 +31,7 @@ EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focuses
 
 - **Vision Transformers**
 
-  EasyCV aims to provide an easy way to use the off-the-shelf SOTA transformer models trained either using supervised learning or self-supervised learning, such as ViT, Swin-Transformer and Shuffle Transformer. More models will be added in the future. In addition, we support all the pretrained models from [timm](https://github.com/rwightman/pytorch-image-models).
+  EasyCV aims to provide an easy way to use the off-the-shelf SOTA transformer models trained either using supervised learning or self-supervised learning, such as ViT, Swin Transformer and DETR Series. More models will be added in the future. In addition, we support all the pretrained models from [timm](https://github.com/rwightman/pytorch-image-models).
 
 - **Functionality & Extensibility**
 
@@ -44,6 +43,20 @@ EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focuses
 - **Efficiency**
 
   EasyCV supports multi-gpu and multi worker training. EasyCV uses [DALI](https://github.com/NVIDIA/DALI) to accelerate data io and preprocessing process, and uses [TorchAccelerator](https://github.com/alibaba/EasyCV/tree/master/docs/source/tutorials/torchacc.md) and fp16 to accelerate training process. For inference optimization, EasyCV exports model using jit script, which can be optimized by [PAI-Blade](https://help.aliyun.com/document_detail/205134.html)
+
+
+## What's New
+
+[🔥 Latest News] We have released our YOLOX-PAI that achieves SOTA results within 40~50 mAP (less than 1ms). And we also provide a convenient and fast export/predictor api for end2end object detection. To get a quick start of YOLOX-PAI, click [here](docs/source/tutorials/yolox.md)!
+
+* 31/08/2022 EasyCV v0.6.0 was released.
+  -  Release YOLOX-PAI which achieves SOTA results within 40~50 mAP (less than 1ms)
+  -  Add detection algo DINO which achieves 58.5 mAP on COCO
+  -  Add mask2former algo
+  -  Releases imagenet1k, imagenet22k, coco, lvis, voc2012 data with BaiduDisk to accelerate downloading
+
+Please refer to [change_log.md](docs/source/change_log.md) for more details and history.
+
 
 ## Technical Articles
 
@@ -144,6 +157,7 @@ notebook
           <li><a href="configs/detection/detr">DETR (ECCV'2020)</a></li>
           <li><a href="configs/detection/dab_detr">DAB-DETR (ICLR'2022)</a></li>
           <li><a href="configs/detection/dab_detr">DN-DETR (CVPR'2022)</a></li>
+          <li><a href="configs/detection/dino">DINO (ArXiv'2022)</a></li>
         </ul>
       </td>
       <td>
@@ -192,33 +206,6 @@ Please refer to the following model zoo for more details.
 EasyCV have collected dataset info for different senarios, making it easy for users to fintune or evaluate models in EasyCV modelzoo.
 
 Please refer to [data_hub.md](docs/source/data_hub.md).
-
-## ChangeLog
-
-* 28/07/2022 EasyCV v0.5.0 was released.
-    * Self-Supervised support ConvMAE algorithm
-    * Classification support EfficientFormer algorithm
-    * Detection support FCOS、DETR、DAB-DETR and DN-DETR algorithm
-    * Segmentation support UperNet algorithm
-    * Support use [torchacc](docs/source/tutorials/torchacc.md) to speed up training
-    * Support use analyze tools
-
-* 23/06/2022 EasyCV v0.4.0 was released.
-    * Add semantic segmentation modules, support FCN algorithm
-    * Expand classification model zoo
-    * Support export model with [blade](https://help.aliyun.com/document_detail/205134.html) for yolox
-    * Support ViTDet algorithm
-    * Add sailfish for extensible fully sharded data parallel training
-    * Support run with [mmdetection](https://github.com/open-mmlab/mmdetection) models
-
-* 31/04/2022 EasyCV v0.3.0 was released.
-    * Update moby pretrained model to deit small
-    * Add mae vit-large benchmark and pretrained models
-    * Support image visualization for tensorboard and wandb
-
-* 07/04/2022 EasyCV v0.2.2 was released.
-
-Please refer to [change_log.md](docs/source/change_log.md) for more details and history.
 
 
 ## License

@@ -1,5 +1,5 @@
 _base_ = [
-    './detr.py', '../_base_/dataset/autoaug_coco_detection.py',
+    './detr.py', '../common/dataset/autoaug_coco_detection.py',
     'configs/base.py'
 ]
 

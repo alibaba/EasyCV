@@ -32,7 +32,7 @@ def _is_power_of_2(n):
 
 class MSDeformAttn(nn.Module):
 
-    def __init__(self, d_model=256, n_levels=4, n_heads=8, n_points=4):
+    def __init__(self, d_model=256, n_levels=4, n_heads=8, n_points=4, im2col_step=128):
         """
         Multi-Scale Deformable Attention Module
         :param d_model      hidden dimension
@@ -52,7 +52,7 @@ class MSDeformAttn(nn.Module):
                 "You'd better set d_model in MSDeformAttn to make the dimension of each attention head a power of 2 "
                 'which is more efficient in our CUDA implementation.')
 
-        self.im2col_step = 128
+        self.im2col_step = im2col_step
 
         self.d_model = d_model
         self.n_levels = n_levels
@@ -140,11 +140,21 @@ class MSDeformAttn(nn.Module):
                 'Last dim of reference_points must be 2 or 4, but get {} instead.'
                 .format(reference_points.shape[-1]))
         try:
-            output = MSDeformAttnFunction.apply(value, input_spatial_shapes,
-                                                input_level_start_index,
-                                                sampling_locations,
-                                                attention_weights,
-                                                self.im2col_step)
+            # for amp
+            if value.dtype == torch.float16:
+                # for mixed precision
+                output = MSDeformAttnFunction.apply(
+                    value.to(torch.float32),
+                    input_spatial_shapes, input_level_start_index,
+                    sampling_locations.to(torch.float32), attention_weights,
+                    self.im2col_step)
+                output = output.to(torch.float16)
+            else:
+                output = MSDeformAttnFunction.apply(value, input_spatial_shapes,
+                                                    input_level_start_index,
+                                                    sampling_locations,
+                                                    attention_weights,
+                                                    self.im2col_step)
         except:
             # CPU
             output = ms_deform_attn_core_pytorch(value, input_spatial_shapes,

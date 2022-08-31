@@ -237,6 +237,81 @@ class DETRTest(unittest.TestCase):
                       ]]),
             decimal=1)
 
+    def test_dino(self):
+        model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/dino/dino_4sc_r50_36e/epoch_29.pth'
+        config_path = 'configs/detection/dino/dino_4sc_r50_36e_coco.py'
+        img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
+        dino = DetrPredictor(model_path, config_path)
+        output = dino.predict(img)
+        dino.visualize(img, output, out_file=None)
+
+        self.assertIn('detection_boxes', output)
+        self.assertIn('detection_scores', output)
+        self.assertIn('detection_classes', output)
+        self.assertIn('img_metas', output)
+        self.assertEqual(len(output['detection_boxes'][0]), 300)
+        self.assertEqual(len(output['detection_scores'][0]), 300)
+        self.assertEqual(len(output['detection_classes'][0]), 300)
+
+        self.assertListEqual(
+            output['detection_classes'][0][:10].tolist(),
+            np.array([13, 2, 2, 2, 2, 2, 2, 2, 2, 2], dtype=np.int32).tolist())
+
+        assert_array_almost_equal(
+            output['detection_scores'][0][:10],
+            np.array([
+                0.8808171153068542, 0.8584598898887634, 0.8214247226715088,
+                0.8156911134719849, 0.7707086801528931, 0.6717984080314636,
+                0.6578451991081238, 0.6269607543945312, 0.6063129901885986,
+                0.5223093628883362
+            ],
+                     dtype=np.float32),
+            decimal=2)
+
+        assert_array_almost_equal(
+            output['detection_boxes'][0][:10],
+            np.array([[
+                222.15492248535156, 175.9025421142578, 456.3177490234375,
+                382.48211669921875
+            ],
+                      [
+                          295.12115478515625, 115.97019958496094,
+                          378.97119140625, 150.2149658203125
+                      ],
+                      [
+                          190.94241333007812, 108.94568634033203,
+                          298.280517578125, 155.6221160888672
+                      ],
+                      [
+                          167.8346405029297, 109.49150085449219,
+                          211.50537109375, 140.08895874023438
+                      ],
+                      [
+                          482.0719909667969, 110.47320556640625,
+                          523.1851806640625, 130.19410705566406
+                      ],
+                      [
+                          609.3395385742188, 113.26068115234375,
+                          635.8460083007812, 136.93771362304688
+                      ],
+                      [
+                          266.5657958984375, 105.04171752929688,
+                          326.9735107421875, 127.39012145996094
+                      ],
+                      [
+                          431.43096923828125, 105.18028259277344,
+                          484.13787841796875, 131.9821319580078
+                      ],
+                      [
+                          60.43342971801758, 94.02497100830078,
+                          86.346435546875, 106.31623840332031
+                      ],
+                      [
+                          139.32015991210938, 96.0668716430664,
+                          167.1505126953125, 105.44377899169922
+                      ]]),
+            decimal=1)
+
 
 if __name__ == '__main__':
     unittest.main()
