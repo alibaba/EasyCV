@@ -7,14 +7,9 @@ model = dict(
     neck=dict(
         type='RSEFPN',
         in_channels=[16, 24, 56, 480],
-        # out_channels=96,
-        out_channels=256,
+        out_channels=96,
         shortcut=True),
-    head=dict(
-        type='DBHead',
-        # in_channels=96,
-        in_channels=256,
-        k=50),
+    head=dict(type='DBHead', in_channels=256, k=50),
     postprocess=dict(
         type='DBPostProcess',
         thresh=0.3,
@@ -30,9 +25,8 @@ model = dict(
         alpha=5,
         beta=10,
         ohem_ratio=3),
-    # pretrained='/mnt/workspace/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_det_infer.pth'
     pretrained=
-    '/mnt/data/code/ocr/PaddleOCR/pretrain_models/MobileNetV3_large_x0_5_pretrained.pth'
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/Multilingual_PP-OCRv3_det/student.pth'
 )
 
 img_norm_cfg = dict(
@@ -129,7 +123,6 @@ optimizer = dict(type='Adam', lr=0.001, betas=(0.9, 0.999))
 
 # learning policy
 lr_config = dict(policy='fixed')
-
 # lr_config = dict(
 #     policy='CosineAnnealing',
 #     min_lr=1e-5,
@@ -142,10 +135,8 @@ lr_config = dict(policy='fixed')
 checkpoint_config = dict(interval=100)
 
 log_config = dict(
-    interval=10,
-    hooks=[
+    interval=10, hooks=[
         dict(type='TextLoggerHook'),
-        # dict(type='TensorboardLoggerHook')
     ])
 
 eval_config = dict(initial=False, interval=1, gpu_collect=False)

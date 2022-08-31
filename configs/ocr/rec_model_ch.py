@@ -40,10 +40,8 @@ model = dict(
         ]),
     postprocess=dict(
         type='CTCLabelDecode',
-        # character_type='ch',
         character_dict_path=
         '/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
-        # character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/en_dict.txt',
         use_space_char=True),
     loss=dict(
         type='MultiLoss',
@@ -52,9 +50,8 @@ model = dict(
             dict(CTCLoss=None),
             dict(SARLoss=None),
         ]),
-    # pretrained='/root/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_rec_infer.pth'
     pretrained=
-    '/root/code/ocr/PaddleOCR/pretrain_models/ch_PP-OCRv3_rec_train/best_accuracy_student.pth'
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/rec/ch_PP-OCRv3_rec/best_accuracy_student.pth'
 )
 
 train_pipeline = [
@@ -64,7 +61,6 @@ train_pipeline = [
         type='MultiLabelEncode',
         max_text_length=25,
         use_space_char=True,
-        #  character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/en_dict.txt'
         character_dict_path=
         '/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
     ),
@@ -81,7 +77,6 @@ val_pipeline = [
         type='MultiLabelEncode',
         max_text_length=25,
         use_space_char=True,
-        #  character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/en_dict.txt'
         character_dict_path=
         '/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
     ),
@@ -92,12 +87,6 @@ val_pipeline = [
         keys=['img', 'label_ctc', 'label_sar', 'length', 'valid_ratio'],
         meta_keys=['img_path'])
 ]
-
-# test_pipeline = [
-#     dict(type='OCRResizeNorm', img_shape=(48,320)),
-#     dict(type='ImageToTensor', keys=['img']),
-#     dict(type='Collect', keys=['img']),
-# ]
 
 test_pipeline = [
     dict(type='RecResizeImg', image_shape=(3, 48, 320)),
@@ -129,11 +118,7 @@ data = dict(
     imgs_per_gpu=128, workers_per_gpu=4, train=train_dataset, val=val_dataset)
 
 total_epochs = 10
-optimizer = dict(
-    type='Adam',
-    # lr=0.001,
-    lr=0.0001,
-    betas=(0.9, 0.999))
+optimizer = dict(type='Adam', lr=0.001, betas=(0.9, 0.999))
 
 lr_config = dict(
     policy='CosineAnnealing',
@@ -147,10 +132,8 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 
 log_config = dict(
-    interval=10,
-    hooks=[
+    interval=10, hooks=[
         dict(type='TextLoggerHook'),
-        # dict(type='TensorboardLoggerHook')
     ])
 
 eval_config = dict(initial=True, interval=1, gpu_collect=False)

@@ -40,8 +40,6 @@ model = dict(
         ]),
     postprocess=dict(
         type='CTCLabelDecode',
-        # character_type='ch',
-        # character_dict_path='/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
         character_dict_path=
         '/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/en_dict.txt',
         use_space_char=True),
@@ -54,7 +52,7 @@ model = dict(
         ]),
     # pretrained='/root/code/ocr/paddle_to_torch_tools/paddle_weights/ch_ptocr_v3_rec_infer.pth'
     pretrained=
-    '/root/code/ocr/PaddleOCR/pretrain_models/en_PP-OCRv3_rec_train/best_accuracy.pth'
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/rec/en_PP-OCRv3_rec/best_accuracy.pth'
 )
 
 train_pipeline = [
@@ -132,10 +130,8 @@ lr_config = dict(
 checkpoint_config = dict(interval=100)
 
 log_config = dict(
-    interval=1,
-    hooks=[
+    interval=1, hooks=[
         dict(type='TextLoggerHook'),
-        # dict(type='TensorboardLoggerHook')
     ])
 
 eval_config = dict(initial=True, interval=1, gpu_collect=False)

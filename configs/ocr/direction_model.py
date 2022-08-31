@@ -9,7 +9,7 @@ model = dict(
         class_dim=2,
     ),
     pretrained=
-    '/root/code/ocr/PaddleOCR/pretrain_models/ch_ppocr_mobile_v2.0_cls_train/best_accuracy.pth'
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/cls/ch_ppocr_mobile_v2.0_cls/best_accuracy.pth'
 )
 
 train_pipeline = [
@@ -57,15 +57,9 @@ data = dict(
     imgs_per_gpu=512, workers_per_gpu=8, train=train_dataset, val=val_dataset)
 
 total_epochs = 100
-optimizer = dict(
-    type='Adam',
-    # lr=0.001,
-    lr=0.001,
-    betas=(0.9, 0.999))
+optimizer = dict(type='Adam', lr=0.001, betas=(0.9, 0.999))
 
 # learning policy
-# lr_config = dict(policy='fixed')
-
 lr_config = dict(
     policy='CosineAnnealing',
     min_lr=1e-5,
@@ -78,10 +72,8 @@ lr_config = dict(
 checkpoint_config = dict(interval=10)
 
 log_config = dict(
-    interval=10,
-    hooks=[
+    interval=10, hooks=[
         dict(type='TextLoggerHook'),
-        # dict(type='TensorboardLoggerHook')
     ])
 
 eval_config = dict(initial=True, interval=1, gpu_collect=False)
