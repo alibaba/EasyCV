@@ -1,5 +1,7 @@
 _base_ = ['configs/base.py']
 
+character_dict_path = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/dict/ppocr_keys_v1.txt'
+
 model = dict(
     type='OCRRecNet',
     backbone=dict(
@@ -40,8 +42,7 @@ model = dict(
         ]),
     postprocess=dict(
         type='CTCLabelDecode',
-        character_dict_path=
-        '/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
+        character_dict_path=character_dict_path,
         use_space_char=True),
     loss=dict(
         type='MultiLoss',
@@ -61,8 +62,7 @@ train_pipeline = [
         type='MultiLabelEncode',
         max_text_length=25,
         use_space_char=True,
-        character_dict_path=
-        '/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
+        character_dict_path=character_dict_path,
     ),
     dict(type='RecResizeImg', image_shape=(3, 48, 320)),
     dict(type='MMToTensor'),
@@ -77,8 +77,7 @@ val_pipeline = [
         type='MultiLabelEncode',
         max_text_length=25,
         use_space_char=True,
-        character_dict_path=
-        '/nas/code/ocr/PaddleOCR2Pytorch-main/pytorchocr/utils/ppocr_keys_v1.txt',
+        character_dict_path=character_dict_path,
     ),
     dict(type='RecResizeImg', image_shape=(3, 48, 320)),
     dict(type='MMToTensor'),

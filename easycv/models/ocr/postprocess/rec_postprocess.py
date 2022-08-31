@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # Modified from https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/ppocr/postprocess/rec_postprocess.py
+import os.path as osp
 import re
 import string
 
 import numpy as np
+import requests
 import torch
 
 
@@ -31,6 +33,16 @@ class BaseRecLabelDecode(object):
             self.character_str = '0123456789abcdefghijklmnopqrstuvwxyz'
             dict_character = list(self.character_str)
         else:
+            if character_dict_path.startswith('http'):
+                r = requests.get(character_dict_path)
+                tpath = character_dict_path.split('/')[-1]
+                while not osp.exists(tpath):
+                    try:
+                        with open(tpath, 'wb') as code:
+                            code.write(r.content)
+                    except:
+                        pass
+                character_dict_path = tpath
             with open(character_dict_path, 'rb') as fin:
                 lines = fin.readlines()
                 for line in lines:
