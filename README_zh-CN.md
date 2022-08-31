@@ -22,7 +22,6 @@
 
 EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，聚焦自监督学习和视觉transformer关键技术，覆盖主流的视觉建模任务例如图像分类，度量学习，目标检测，关键点检测等。
 
-[🔥 Latest News] 近期我们开源了YOLOX-PAI，在40-50mAP(推理速度小于1ms)范围内达到了业界的SOTA水平。同时EasyCV提供了一套简洁高效的模型导出和预测接口，供用户快速完成端到端的图像检测任务。如果你想快速了解YOLOX-PAI, 点击 [这里](docs/source/tutorials/yolox.md)!
 
 ### 核心特性
 
@@ -43,6 +42,21 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 - **高性能**
 
   EasyCV支持多机多卡训练，同时支持[TorchAccelerator](docs/source/tutorials/torchacc.md)和fp16进行训练加速。在数据读取和预处理方面，EasyCV使用[DALI](https://github.com/NVIDIA/DALI)进行加速。对于模型推理优化，EasyCV支持使用jit script导出模型，使用[PAI-Blade](https://help.aliyun.com/document_detail/205134.html)进行模型优化。
+
+
+## 最新进展
+
+[🔥 Latest News] 近期我们开源了YOLOX-PAI，在40-50mAP(推理速度小于1ms)范围内达到了业界的SOTA水平。同时EasyCV提供了一套简洁高效的模型导出和预测接口，供用户快速完成端到端的图像检测任务。如果你想快速了解YOLOX-PAI, 点击 [这里](docs/source/tutorials/yolox.md)!
+
+* 31/08/2022 EasyCV v0.6.0 版本发布。
+  -  发布YOLOX-PAI，在轻量级模型中取得SOTA效果
+  -  增加检测算法DINO， COCO mAP 58.5
+  -  增加Mask2Former算法
+  -  Datahub新增imagenet1k, imagenet22k, coco, lvis, voc2012 数据的百度网盘链接，加速下载
+
+
+更多版本的详细信息请参考[变更记录](docs/source/change_log.md)。
+
 
 ## 技术文章
 
@@ -176,26 +190,6 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 - [自监督模型库](docs/source/model_zoo_ssl.md)
 - [图像分类模型库](docs/source/model_zoo_cls.md)
 - [目标检测模型库](docs/source/model_zoo_det.md)
-
-
-## 变更日志
-
-* 31/08/2022 EasyCV v0.6.0 版本发布。
-  -  发布YOLOX-PAI，在轻量级模型中取得SOTA效果 (#154 #172  #174 )
-  -  增加检测算法DINO (#144)
-  -  增加Mask2Former算法 (#115)
-  -  Datahub新增imagenet1k, imagenet22k, coco, lvis, voc2012 数据的百度网盘链接，加速下载 (#145 )
-
-
-* 28/07/2022 EasyCV v0.5.0 版本发布。
-
-* 23/06/2022 EasyCV v0.4.0 版本发布。
-
-* 31/04/2022 EasyCV v0.3.0 版本发布。
-
-* 2022/04/07 EasyCV v0.2.2 版本发布。
-
-更多详细变更日志请参考[变更记录](docs/source/change_log.md)。
 
 
 ## 开源许可证
