@@ -1,3 +1,4 @@
+# Modified from https://github.com/PaddlePaddle/PaddleOCR/tree/release/2.6/ppocr/modeling/necks
 import torch
 import torch.nn as nn
 

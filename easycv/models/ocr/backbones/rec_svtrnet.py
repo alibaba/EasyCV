@@ -1,3 +1,4 @@
+# Modified from https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/ppocr/modeling/backbones/rec_svtrnet.py
 import numpy as np
 import torch
 import torch.nn as nn

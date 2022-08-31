@@ -1,3 +1,4 @@
+# Modified from https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/ppocr/modeling/backbones/rec_mobilenet_v3.py
 import torch.nn as nn
 
 from .det_mobilenet_v3 import (Activation, ConvBNLayer, ResidualUnit,

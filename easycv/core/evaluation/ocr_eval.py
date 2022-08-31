@@ -1,3 +1,4 @@
+# Modified from https://github.com/PaddlePaddle/PaddleOCR/tree/release/2.6/ppocr/metrics
 import string
 from collections import namedtuple
 

@@ -1,3 +1,4 @@
+# Modified from https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/ppocr/modeling/backbones/rec_mv1_enhance.py
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

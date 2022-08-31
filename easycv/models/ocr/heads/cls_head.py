@@ -1,3 +1,4 @@
+# Modified from https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/ppocr/modeling/heads/cls_head.py
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

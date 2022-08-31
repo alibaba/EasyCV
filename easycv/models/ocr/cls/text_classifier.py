@@ -94,11 +94,3 @@ class TextClassifier(BaseModel):
         result['neck'] = preds['head_out'].cpu()
         result['class'] = torch.argmax(preds['head_out'], dim=1).cpu()
         return result
-
-
-if __name__ == '__main__':
-    from easycv.utils.config_tools import mmcv_config_fromfile
-    from easycv.models import build_model
-    cfg = mmcv_config_fromfile('configs/ocr/direction_model.py')
-    model = build_model(cfg.model)
-    print(model)

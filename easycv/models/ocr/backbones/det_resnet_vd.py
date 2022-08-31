@@ -1,3 +1,4 @@
+# Modified from https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/ppocr/modeling/backbones/det_resnet_vd.py
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

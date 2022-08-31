@@ -1,7 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-# debug
-import sys
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -16,8 +13,6 @@ from easycv.models.ocr.loss.det_db_loss import DBLoss
 from easycv.models.ocr.postprocess.db_postprocess import DBPostProcess
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
-
-sys.path.append('/root/code/ocr/EasyCV')
 
 
 @MODELS.register_module()
@@ -150,11 +145,3 @@ class DBNet(BaseModel):
             points[pno, 0] = int(min(max(points[pno, 0], 0), img_width - 1))
             points[pno, 1] = int(min(max(points[pno, 1], 0), img_height - 1))
         return points
-
-
-if __name__ == '__main__':
-    from easycv.utils.config_tools import mmcv_config_fromfile
-    from easycv.models import build_model
-    cfg = mmcv_config_fromfile('configs/ocr/det_model.py')
-    model = build_model(cfg.model)
-    print(model)
