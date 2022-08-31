@@ -24,7 +24,7 @@ try:
     from mmdet.core import BitmapMasks, PolygonMasks, encode_mask_results
     from mmdet.core.mask import mask2bbox
 except ImportError:
-    from easycv.hooks.yolox_lr_hook import YOLOXLrUpdaterHook
+    pass
 
 EASYCV_REGISTRY_MAP = {
     'model': MODELS,
