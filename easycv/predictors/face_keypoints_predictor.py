@@ -47,28 +47,42 @@ class FaceKeypointsPredictor(PredictorV2):
         self.input_size = self.cfg.IMAGE_SIZE
         self.point_number = self.cfg.POINT_NUMBER
 
+    def preprocess(self, inputs, *args, **kwargs):
+        batch_outputs = super().preprocess(inputs, *args, **kwargs)
+        self.img_metas = batch_outputs['img_metas']
+        return batch_outputs
+
+    def postprocess(self, inputs, *args, **kwargs):
+        results = []
+
+        points = inputs['point'].cpu().numpy()
+        poses = inputs['pose'].cpu().numpy()
+
+        for idx, point in enumerate(points):
+            h, w, c = self.img_metas[idx]['img_shape']
+            scale_h = h / self.input_size
+            scale_w = w / self.input_size
+
+            point = point.reshape((self.point_number, 2))
+            for index in range(len(point)):
+                point[index][0] *= scale_w
+                point[index][1] *= scale_h
+
+            results.append({'point': point, 'pose': poses[idx]})
+
+        return results
+
     def show_result(self, img, points, scale=4.0, save_path=None):
         """Draw `result` over `img`.
 
         Args:
-            img (str or Tensor): The image to be displayed.
-            result (Tensor): The face keypoints to draw over `img`.
+            img ( ndarray ): The image to be displayed.
+            result (list): The face keypoints to draw over `img`.
             scale: zoom in or out scale
             save_path: path to save drawned 'img'
         Returns:
-            img (Tensor): Only if not `show` or `out_file`
+            img (ndarray): Only if not `show` or `out_file`
         """
-
-        img = cv2.imread(img)
-        img = img.copy()
-        h, w, c = img.shape
-        scale_h = h / self.input_size
-        scale_w = w / self.input_size
-
-        points = points.view(-1, self.point_number, 2).cpu().numpy()[0]
-        for index in range(len(points)):
-            points[index][0] *= scale_w
-            points[index][1] *= scale_h
 
         image = cv2.resize(img, dsize=None, fx=scale, fy=scale)
 
