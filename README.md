@@ -32,7 +32,7 @@ EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focuses
 
 - **Vision Transformers**
 
-  EasyCV aims to provide an easy way to use the off-the-shelf SOTA transformer models trained either using supervised learning or self-supervised learning, such as ViT, Swin-Transformer and Shuffle Transformer. More models will be added in the future. In addition, we support all the pretrained models from [timm](https://github.com/rwightman/pytorch-image-models).
+  EasyCV aims to provide an easy way to use the off-the-shelf SOTA transformer models trained either using supervised learning or self-supervised learning, such as ViT, Swin Transformer and DETR Series. More models will be added in the future. In addition, we support all the pretrained models from [timm](https://github.com/rwightman/pytorch-image-models).
 
 - **Functionality & Extensibility**
 
@@ -144,6 +144,7 @@ notebook
           <li><a href="configs/detection/detr">DETR (ECCV'2020)</a></li>
           <li><a href="configs/detection/dab_detr">DAB-DETR (ICLR'2022)</a></li>
           <li><a href="configs/detection/dab_detr">DN-DETR (CVPR'2022)</a></li>
+          <li><a href="configs/detection/dino">DINO (ArXiv'2022)</a></li>
         </ul>
       </td>
       <td>
