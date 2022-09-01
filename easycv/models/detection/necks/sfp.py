@@ -2,26 +2,12 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmcv.runner import BaseModule
 
 from easycv.models.builder import NECKS
 
 
-class Norm2d(nn.Module):
-
-    def __init__(self, embed_dim, eps=1e-6):
-        super().__init__()
-        self.ln = nn.LayerNorm(embed_dim, eps=eps)
-
-    def forward(self, x):
-        x = x.permute(0, 2, 3, 1)
-        x = self.ln(x)
-        x = x.permute(0, 3, 1, 2).contiguous()
-        return x
-
-
 @NECKS.register_module()
-class SFP(BaseModule):
+class SFP(nn.Module):
     r"""Simple Feature Pyramid.
     This is an implementation of paper `Exploring Plain Vision Transformer Backbones for Object Detection <https://arxiv.org/abs/2203.16527>`_.
     Args:
@@ -38,7 +24,6 @@ class SFP(BaseModule):
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         act_cfg (str): Config dict for activation layer in ConvModule.
             Default: None.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
     Example:
         >>> import torch
         >>> in_channels = [2, 3, 5, 7]
@@ -62,15 +47,8 @@ class SFP(BaseModule):
                  num_outs,
                  conv_cfg=None,
                  norm_cfg=None,
-                 act_cfg=None,
-                 init_cfg=[
-                     dict(
-                         type='Xavier',
-                         layer=['Conv2d'],
-                         distribution='uniform'),
-                     dict(type='Constant', layer=['LayerNorm'], val=1, bias=0)
-                 ]):
-        super(SFP, self).__init__(init_cfg)
+                 act_cfg=None):
+        super(SFP, self).__init__()
         dim = in_channels
         self.out_channels = out_channels
         self.scale_factors = scale_factors
@@ -83,7 +61,6 @@ class SFP(BaseModule):
             if scale == 4.0:
                 layers = [
                     nn.ConvTranspose2d(dim, dim // 2, 2, stride=2, padding=0),
-                    # Norm2d(dim // 2),
                     nn.GroupNorm(1, dim // 2, eps=1e-6),
                     nn.GELU(),
                     nn.ConvTranspose2d(
@@ -126,6 +103,9 @@ class SFP(BaseModule):
             layers = nn.Sequential(*layers)
             self.add_module(f'sfp_{idx}', layers)
             self.stages.append(layers)
+
+    def init_weights(self):
+        pass
 
     def forward(self, inputs):
         """Forward function."""
