@@ -29,16 +29,15 @@ class TorchOCRTest(unittest.TestCase):
         img = cv2.imread(os.path.join(TEST_IMAGES_DIR, 'ocr_rec.jpg'))
         rec_out = predictor.predict(img)
         self.assertEqual(rec_out['preds_text'][0][0], '韩国小馆')  # 韩国小馆
-
-        self.assertEqual(rec_out['preds_text'][0][1],
-                         0.9944670796394348)  # 0.9944670796394348
+        self.assertGreater(rec_out['preds_text'][0][1],
+                           0.9944)  # 0.9944670796394348
 
     def test_ocr_direction(self):
         predictor = OCRClsPredictor(cls_model_path=PRETRAINED_MODEL_OCRCLS)
         img = cv2.imread(os.path.join(TEST_IMAGES_DIR, 'ocr_rec.jpg'))
         _, cls_out = predictor.predict(img)
         self.assertEqual(int(cls_out['labels'][0]), 0)
-        self.assertEqual(float(cls_out['logits'][0]), 0.9998784065246582)
+        self.assertGreater(float(cls_out['logits'][0]), 0.9998)  # 0.99987
 
     def test_ocr_system(self):
         predictor = OCRPredictor(
