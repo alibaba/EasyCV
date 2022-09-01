@@ -91,7 +91,7 @@ def run_in_subprocess(cmd):
 
             return_code = return_info.wait()
             if return_code:
-                raise ValueError(err_lines)
+                raise RuntimeError(err_lines)
     except Exception as e:
         raise e
 
