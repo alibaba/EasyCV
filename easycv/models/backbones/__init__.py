@@ -18,6 +18,6 @@ from .resnet import ResNet
 from .resnet_jit import ResNetJIT
 from .resnext import ResNeXt
 from .shuffle_transformer import ShuffleTransformer
-from .swin_transformer_dynamic import SwinTransformer
+from .swin_transformer import SwinTransformer
 from .vit import ViT
 from .vitdet import ViTDet

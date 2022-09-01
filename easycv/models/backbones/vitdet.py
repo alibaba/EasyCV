@@ -9,54 +9,14 @@ import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 from mmcv.cnn import build_norm_layer, constant_init, kaiming_init
 from mmcv.runner import get_dist_info
-from timm.models.layers import drop_path, to_2tuple, trunc_normal_
+from timm.models.layers import to_2tuple, trunc_normal_
 from torch.nn.modules.batchnorm import _BatchNorm
 
+from easycv.models.utils import DropPath, Mlp
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 from ..registry import BACKBONES
 from ..utils import build_conv_layer
-
-
-class DropPath(nn.Module):
-    """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
-    """
-
-    def __init__(self, drop_prob=None):
-        super(DropPath, self).__init__()
-        self.drop_prob = drop_prob
-
-    def forward(self, x):
-        return drop_path(x, self.drop_prob, self.training)
-
-    def extra_repr(self):
-        return 'p={}'.format(self.drop_prob)
-
-
-class Mlp(nn.Module):
-
-    def __init__(self,
-                 in_features,
-                 hidden_features=None,
-                 out_features=None,
-                 act_layer=nn.GELU,
-                 drop=0.):
-        super().__init__()
-        out_features = out_features or in_features
-        hidden_features = hidden_features or in_features
-        self.fc1 = nn.Linear(in_features, hidden_features)
-        self.act = act_layer()
-        self.fc2 = nn.Linear(hidden_features, out_features)
-        self.drop = nn.Dropout(drop)
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.act(x)
-        # x = self.drop(x)
-        # commit this for the orignal BERT implement
-        x = self.fc2(x)
-        x = self.drop(x)
-        return x
 
 
 class BasicBlock(nn.Module):
