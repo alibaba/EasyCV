@@ -24,15 +24,18 @@ class DeiTIIITest(unittest.TestCase):
         self.assertIn('class', output)
         self.assertEqual(len(output['prob'][0]), 1000)
 
-        self.assertListEqual(
-            output['prob'][0][:10].numpy().tolist(),
+        assert_array_almost_equal(
+            output['prob'][0][:10],
             torch.Tensor([
                 2.04629918698628899e-06, 5.27398606209317222e-06,
                 5.52915162188583054e-06, 3.60625563189387321e-06,
                 3.29447357216849923e-06, 5.61309570912271738e-06,
                 8.93703327164985240e-06, 4.89157764604897238e-06,
                 4.39371024185675196e-06, 5.21611764270346612e-06
-            ]).numpy().tolist())
+            ]),
+            decimal=8)
+
+        self.assertEqual(int(output['class']), 948)
 
 
 if __name__ == '__main__':
