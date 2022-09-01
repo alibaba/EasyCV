@@ -1,15 +1,69 @@
-__base__ = './vitdet.py'
+# model settings
 
 norm_cfg = dict(type='GN', num_groups=1, eps=1e-6, requires_grad=True)
 
-# model settings
+pretrained = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mae/vit-b-1600/warpper_mae_vit-base-p16-1600e.pth'
 model = dict(
+    type='CascadeRCNN',
+    pretrained=pretrained,
+    backbone=dict(
+        type='ViT',
+        img_size=1024,
+        patch_size=16,
+        embed_dim=768,
+        depth=12,
+        num_heads=12,
+        drop_path_rate=0.1,
+        window_size=14,
+        mlp_ratio=4,
+        qkv_bias=True,
+        window_block_indexes=[
+            # 2, 5, 8 11 for global attention
+            0,
+            1,
+            3,
+            4,
+            6,
+            7,
+            9,
+            10,
+        ],
+        residual_block_indexes=[],
+        use_rel_pos=True,
+        out_feature='last_feat'),
+    neck=dict(
+        type='SFP',
+        in_channels=768,
+        out_channels=256,
+        scale_factors=(4.0, 2.0, 1.0, 0.5),
+        norm_cfg=norm_cfg,
+        num_outs=5),
     rpn_head=dict(
+        type='RPNHead',
+        in_channels=256,
+        feat_channels=256,
+        num_convs=2,
+        anchor_generator=dict(
+            type='AnchorGenerator',
+            scales=[8],
+            ratios=[0.5, 1.0, 2.0],
+            strides=[4, 8, 16, 32, 64]),
+        bbox_coder=dict(
+            type='DeltaXYWHBBoxCoder',
+            target_means=[.0, .0, .0, .0],
+            target_stds=[1.0, 1.0, 1.0, 1.0]),
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0)),
     roi_head=dict(
         type='CascadeRoIHead',
         num_stages=3,
         stage_loss_weights=[1, 0.5, 0.25],
+        bbox_roi_extractor=dict(
+            type='SingleRoIExtractor',
+            roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
+            out_channels=256,
+            featmap_strides=[4, 8, 16, 32]),
         bbox_head=[
             dict(
                 type='Shared4Conv1FCBBoxHead',
@@ -67,7 +121,21 @@ model = dict(
                     use_sigmoid=False,
                     loss_weight=1.0),
                 loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))
-        ]),
+        ],
+        mask_roi_extractor=dict(
+            type='SingleRoIExtractor',
+            roi_layer=dict(type='RoIAlign', output_size=14, sampling_ratio=0),
+            out_channels=256,
+            featmap_strides=[4, 8, 16, 32]),
+        mask_head=dict(
+            type='FCNMaskHead',
+            norm_cfg=norm_cfg,
+            num_convs=4,
+            in_channels=256,
+            conv_out_channels=256,
+            num_classes=80,
+            loss_mask=dict(
+                type='CrossEntropyLoss', use_mask=True, loss_weight=1.0))),
     # model training and testing settings
     train_cfg=dict(
         rpn=dict(
@@ -144,4 +212,21 @@ model = dict(
                 mask_size=28,
                 pos_weight=-1,
                 debug=False)
-        ]))
+        ]),
+    test_cfg=dict(
+        rpn=dict(
+            nms_pre=1000,
+            max_per_img=1000,
+            nms=dict(type='nms', iou_threshold=0.7),
+            min_bbox_size=0),
+        rcnn=dict(
+            score_thr=0.05,
+            nms=dict(type='nms', iou_threshold=0.5),
+            max_per_img=100,
+            mask_thr_binary=0.5)))
+
+mmlab_modules = [
+    dict(type='mmdet', name='CascadeRCNN', module='model'),
+    dict(type='mmdet', name='RPNHead', module='head'),
+    dict(type='mmdet', name='CascadeRoIHead', module='head'),
+]
