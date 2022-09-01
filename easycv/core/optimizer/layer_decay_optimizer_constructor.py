@@ -54,8 +54,6 @@ class LayerDecayOptimizerConstructor(DefaultOptimizerConstructor):
         lr = self.base_lr
         weight_decay = self.base_wd
 
-        custom_keys = self.paramwise_cfg.get('custom_keys', {})
-
         for name, param in module.named_parameters():
 
             if not param.requires_grad:
