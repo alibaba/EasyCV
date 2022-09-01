@@ -4,8 +4,9 @@ from functools import partial
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
-from timm.models.layers import DropPath, Mlp, trunc_normal_
+from timm.models.layers import DropPath, trunc_normal_
 
+from easycv.models.utils import Mlp
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 from ..registry import BACKBONES
@@ -159,7 +160,7 @@ class Block(nn.Module):
 
 
 @BACKBONES.register_module()
-class ViT(nn.Module):
+class VisionTransformer(nn.Module):
     """
     This module implements Vision Transformer (ViT) backbone in :paper:`vitdet`.
     "Exploring Plain Vision Transformer Backbones for Object Detection",
