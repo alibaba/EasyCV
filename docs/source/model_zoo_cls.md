@@ -21,6 +21,7 @@
 | hrnetw64 | [hrnetw64](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/hrnet/imagenet_hrnetw64_jpg.py) | 79.884    | 95.04    | 5120    | 54.74    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/resnet/hrnetw64/epoch_100.pth) |
 | vit-base-patch16 | [vit-base-patch16](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/vit/imagenet_vit_base_patch16_224_jpg.py) | 76.082    | 92.026    | 346    | 8.03    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/vit/vit-base-patch16/epoch_300.pth) |
 | swin-tiny-patch4-window7 | [swin-tiny-patch4-window7](https://github.com/alibaba/EasyCV/tree/master/configs/classification/imagenet/swint/imagenet_swin_tiny_patch4_window7_224_jpg.py) | 80.528    | 94.822    | 132    | 12.94    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/swint/swin-tiny-patch4-window7/epoch_300.pth) |
+| deitiii-large-patch16-192 | [deitiii-large-patch16-192](https://github.com/zzoneee/EasyCV/blob/DeiTIII/configs/classification/imagenet/vit/imagenet_deitiii_large_patch16_192_jpg.py) | 83.902    | 96.296    | 1170    | 10.17    | [model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/deitiii/imagenet_deitiii_large_patch16_192/deitiii_large.pth) |
 
 (ps: 通过EasyCV训练得到模型结果，推理的输入尺寸默认为224，机器默认为V100 16G，其中gpu memory记录的是gpu peak memory)
 
