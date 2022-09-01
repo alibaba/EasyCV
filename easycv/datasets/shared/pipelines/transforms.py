@@ -77,10 +77,10 @@ class LoadImage:
         if img is not None:
             if not isinstance(img, np.ndarray):
                 img = np.asarray(img, dtype=np.uint8)
-        elif filename is None:
-            raise ValueError('Please provide "filename" or "img"!')
+        else:
+            assert filename is not None, 'Please provide "filename" or "img"!'
+            img = load_image(filename, mode=self.mode)
 
-        img = load_image(filename, mode=self.mode)
         if self.to_float32:
             img = img.astype(np.float32)
 
