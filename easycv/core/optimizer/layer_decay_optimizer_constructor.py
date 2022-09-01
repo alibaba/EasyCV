@@ -61,7 +61,8 @@ class LayerDecayOptimizerConstructor(DefaultOptimizerConstructor):
             if not param.requires_grad:
                 continue  # frozen weights
 
-            if '.norm' in name or '.pos_embed' in name or '.gn.' in name or '.ln.' in name:
+            if 'backbone' in name and ('.norm' in name or '.pos_embed' in name
+                                       or '.gn.' in name or '.ln.' in name):
                 group_name = 'no_decay'
                 this_weight_decay = 0.
             else:
