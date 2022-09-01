@@ -44,11 +44,9 @@ class LayerDecayOptimizerConstructor(DefaultOptimizerConstructor):
                 submodule of DCN, `is_dcn_module` will be passed to
                 control conv_offset layer's learning rate. Defaults to None.
         """
-        # get param-wise options
 
         parameter_groups = {}
         print(self.paramwise_cfg)
-        # layer_sep = self.paramwise_cfg.get('layer_sep', None)
         lr_decay_rate = self.paramwise_cfg.get('layer_decay_rate')
         num_layers = self.paramwise_cfg.get('num_layers')
         print('Build LayerDecayOptimizerConstructor %f - %d' %
@@ -57,8 +55,6 @@ class LayerDecayOptimizerConstructor(DefaultOptimizerConstructor):
         weight_decay = self.base_wd
 
         custom_keys = self.paramwise_cfg.get('custom_keys', {})
-        # # first sort with alphabet order and then sort with reversed len of str
-        # sorted_keys = sorted(custom_keys.keys())
 
         for name, param in module.named_parameters():
 
@@ -71,8 +67,6 @@ class LayerDecayOptimizerConstructor(DefaultOptimizerConstructor):
             else:
                 group_name = 'decay'
                 this_weight_decay = weight_decay
-
-            # layer_id = get_num_layer_for_vit(name, num_layers, layer_sep)
 
             if name.startswith('backbone'):
                 layer_id, scale = get_vit_lr_decay_rate(
