@@ -29,6 +29,7 @@ class TorchOCRTest(unittest.TestCase):
         img = cv2.imread(os.path.join(TEST_IMAGES_DIR, 'ocr_rec.jpg'))
         rec_out = predictor.predict(img)
         self.assertEqual(rec_out['preds_text'][0][0], '韩国小馆')  # 韩国小馆
+
         self.assertEqual(rec_out['preds_text'][0][1],
                          0.9944670796394348)  # 0.9944670796394348
 
