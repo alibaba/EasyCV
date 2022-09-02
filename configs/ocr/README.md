@@ -1,6 +1,6 @@
 # OCR algorithm
 ## PP-OCRv3
-&ensp;&ensp;We convert [PaddleOCRv3](https://github.com/PaddlePaddle/PaddleOCR) models to pytorch style, and fintuned on icdar2015 dataset. Futhermore, we provide end2end interface to recognize in images, by simplely load exported models.
+&ensp;&ensp;We convert [PaddleOCRv3](https://github.com/PaddlePaddle/PaddleOCR) models to pytorch style, and fintuned on icdar2015 dataset. Futhermore, we provide end2end interface to recognize text in images, by simplely load exported models.
 ### detection
 |Algorithm|backbone|configs|precison|recall|Hmean|Download|
 |---|---|---|---|---|---|---|
@@ -17,6 +17,7 @@
 ||[en_PP-OCRv3_rec_student](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/rec/en_PP-OCRv3_rec/best_accuracy.pth)|
 |direction_cls|[ch_ppocr_mobile_v2.0_cls](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/cls/ch_ppocr_mobile_v2.0_cls/best_accuracy.pth)|
 ```
+import cv2
 from easycv.predictors.ocr import OCRPredictor
 ! wget http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/simfang.ttf
 ! wget http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/ocr_det.jpg
