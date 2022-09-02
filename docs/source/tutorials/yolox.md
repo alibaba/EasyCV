@@ -32,8 +32,15 @@ To use COCO format data, use config file `configs/detection/yolox/yolox_s_8xb16_
 To use PAI-Itag format data, use config file `configs/detection/yolox/yolox_s_8xb16_300e_coco_pai.py`
 
 You can use the [quick_start.md](../quick_start.md) for local installation or use our provided doker images (for both training and inference).
+
+### Pull Docker
 ```shell
-registry.cn-shanghai.aliyuncs.com/pai-ai-test/eas-service:blade_cu111_easycv
+sudo docker pull registry.cn-shanghai.aliyuncs.com/pai-ai-test/eas-service:blade_cu111_easycv
+```
+
+### Start Container
+```shell
+sudo nvidia-docker run -it -v path:path --name easycv_yolox_pai --shm-size=10g --network=host registry.cn-shanghai.aliyuncs.com/pai-ai-test/eas-service:blade_cu111_easycv
 ```
 
 ### Train
