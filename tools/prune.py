@@ -225,7 +225,7 @@ def main():
     model.cuda()
     model.eval()
 
-    m_speedup = ModelSpeedup(model, dummy_input, mask_path, 'cuda')
+    m_speedup = ModelSpeedup(model, dummy_input, mask_path, 'cuda', usr_defined_modules=['SiLU'])
     m_speedup.speedup_model()
 
     # eport prune model
