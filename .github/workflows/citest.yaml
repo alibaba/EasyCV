@@ -67,36 +67,36 @@ jobs:
           PYTHONPATH=. python tests/run.py
 
 
-# blade test env will be updated!
-#  ut-torch181-blade:
-#    # The type of runner that the job will run on
-#    runs-on: [unittest-t4]
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v2
-#      - name: Run unittest
-#        shell: bash
-#        run: |
-#          set -e
-#          UNITTEST_OSS_CONFIG=~/.ossutilconfig.unittest
-#          if [ ! -e $UNITTEST_OSS_CONFIG ]; then
-#              echo "$UNITTEST_OSS_CONFIG does not exists"
-#              exit
-#          fi
-#
-#          export OSS_CONFIG_FILE=$UNITTEST_OSS_CONFIG
-#
-#          export PYTHONPATH=.
-#          export CUDA_HOME=/apsarapangu/disk6/xinyi.zxy/cuda-10.2
-#          export LD_LIBRARY_PATH=${CUDA_HOME}/lib64
-#          export PATH=${CUDA_HOME}/bin:${PATH}
-#          export TEST_DIR="/tmp/easycv_test_${USER}_`date +%s`"
-#
-#          # do not uncomments, casue faild in Online UT, install requirements by yourself on UT machine
-#          # pip install -r requirements.txt
-#          #run test
-#          export CUDA_VISIBLE_DEVICES=6
-#          source ~/workspace/anaconda2/etc/profile.d/conda.sh
-#          conda activate torch1.8.1_blade
-#          PYTHONPATH=. python tests/predictors/test_detector_blade.py
-#          PYTHONPATH=. python tests/apis/test_export_blade.py
+# blade test env will be updated! we do not support test with trt_efficient_nms
+  ut-torch181-blade:
+    # The type of runner that the job will run on
+    runs-on: [unittest-t4]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Run unittest
+        shell: bash
+        run: |
+          set -e
+          UNITTEST_OSS_CONFIG=~/.ossutilconfig.unittest
+          if [ ! -e $UNITTEST_OSS_CONFIG ]; then
+              echo "$UNITTEST_OSS_CONFIG does not exists"
+              exit
+          fi
+
+          export OSS_CONFIG_FILE=$UNITTEST_OSS_CONFIG
+
+          export PYTHONPATH=.
+          export CUDA_HOME=/apsarapangu/disk6/xinyi.zxy/cuda-10.2
+          export LD_LIBRARY_PATH=${CUDA_HOME}/lib64
+          export PATH=${CUDA_HOME}/bin:${PATH}
+          export TEST_DIR="/tmp/easycv_test_${USER}_`date +%s`"
+
+          # do not uncomments, casue faild in Online UT, install requirements by yourself on UT machine
+          # pip install -r requirements.txt
+          #run test
+          export CUDA_VISIBLE_DEVICES=6
+          source ~/workspace/anaconda2/etc/profile.d/conda.sh
+          conda activate torch1.8.1_blade
+          PYTHONPATH=. python tests/predictors/test_detector_blade.py
+          PYTHONPATH=. python tests/apis/test_export_blade.py
