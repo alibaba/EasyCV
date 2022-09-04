@@ -171,7 +171,7 @@ notebook
         </ul>
         </ul>
         </ul>
-          <li><b>Sementic Segmentation</b></li>
+          <li><b>Semantic Segmentation</b></li>
         <ul>
         <ul>
           <li><a href="configs/segmentation/fcn">FCN (CVPR'2015)</a></li>
@@ -203,7 +203,7 @@ Please refer to the following model zoo for more details.
 
 ## Data Hub
 
-EasyCV have collected dataset info for different senarios, making it easy for users to fintune or evaluate models in EasyCV modelzoo.
+EasyCV have collected dataset info for different senarios, making it easy for users to fintune or evaluate models in EasyCV model zoo.
 
 Please refer to [data_hub.md](docs/source/data_hub.md).
 
