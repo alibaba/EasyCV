@@ -13,4 +13,5 @@ model = dict(
         mlp_ratio=4,
         qkv_bias=True,
         drop_rate=0.,
-        drop_path_rate=0.2))
+        drop_path_rate=0.2,
+        use_layer_scale=True))

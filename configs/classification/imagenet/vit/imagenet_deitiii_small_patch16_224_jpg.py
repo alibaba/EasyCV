@@ -13,7 +13,8 @@ model = dict(
         mlp_ratio=4,
         qkv_bias=True,
         drop_rate=0.,
-        drop_path_rate=0.05))
+        drop_path_rate=0.05,
+        use_layer_scale=True))
 
 data_train_list = 'data/imagenet1k/train.txt'
 data_train_root = 'data/imagenet1k/train/'

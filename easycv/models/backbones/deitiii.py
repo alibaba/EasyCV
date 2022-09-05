@@ -3,9 +3,6 @@
 Mostly copy-paste from timm library.
 https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/vision_transformer.py
 
-dynamic Input support borrow from
-https://github.com/microsoft/esvit/blob/main/models/vision_transformer.py
-
 """
 import math
 from functools import partial
@@ -15,57 +12,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from timm.models.layers import trunc_normal_
 
+from easycv.models.utils import DropPath, Mlp
 from ..registry import BACKBONES
-
-
-def drop_path(x, drop_prob: float = 0., training: bool = False):
-    if drop_prob == 0. or not training:
-        return x
-    keep_prob = 1 - drop_prob
-    shape = (x.shape[0], ) + (1, ) * (
-        x.ndim - 1)  # work with diff dim tensors, not just 2D ConvNets
-    random_tensor = keep_prob + torch.rand(
-        shape, dtype=x.dtype, device=x.device)
-    random_tensor.floor_()  # binarize
-    output = x.div(keep_prob) * random_tensor
-    return output
-
-
-class DropPath(nn.Module):
-    """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
-    """
-
-    def __init__(self, drop_prob=None):
-        super(DropPath, self).__init__()
-        self.drop_prob = drop_prob
-
-    def forward(self, x):
-        return drop_path(x, self.drop_prob, self.training)
-
-
-class Mlp(nn.Module):
-
-    def __init__(self,
-                 in_features,
-                 hidden_features=None,
-                 out_features=None,
-                 act_layer=nn.GELU,
-                 drop=0.):
-        super().__init__()
-        out_features = out_features or in_features
-        hidden_features = hidden_features or in_features
-        self.fc1 = nn.Linear(in_features, hidden_features)
-        self.act = act_layer()
-        self.fc2 = nn.Linear(hidden_features, out_features)
-        self.drop = nn.Dropout(drop)
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.act(x)
-        x = self.drop(x)
-        x = self.fc2(x)
-        x = self.drop(x)
-        return x
 
 
 class Attention(nn.Module):
@@ -218,6 +166,8 @@ class DeiTIII(nn.Module):
         use_dense_prediction (bool): If use_dense_prediction is True, the global
             pool and norm will before head will be removed.(if any) Default: False
         global_pool (bool): Global pool before head. Default: False
+        use_layer_scale (bool): If use_layer_scale is True, it will use layer
+            scale. Default: False
         init_scale (float): It is used for layer scale in Block to scale the
             gamma_1 and gamma_2.
 
@@ -240,10 +190,10 @@ class DeiTIII(nn.Module):
                  norm_layer=partial(nn.LayerNorm, eps=1e-6),
                  use_dense_prediction=False,
                  global_pool=False,
+                 use_layer_scale=False,
                  init_scale=1e-4,
                  **kwargs):
         super().__init__()
-        self.dropout_rate = drop_rate
 
         self.num_features = self.embed_dim = embed_dim
 
@@ -256,6 +206,7 @@ class DeiTIII(nn.Module):
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, embed_dim))
+        self.pos_drop = nn.Dropout(p=drop_rate)
 
         dpr = [drop_path_rate for i in range(depth)]
         self.blocks = nn.ModuleList([
@@ -269,7 +220,7 @@ class DeiTIII(nn.Module):
                 attn_drop=attn_drop_rate,
                 drop_path=dpr[i],
                 norm_layer=norm_layer,
-                use_layer_scale=True,
+                use_layer_scale=use_layer_scale,
                 init_values=init_scale) for i in range(depth)
         ])
         self.norm = norm_layer(embed_dim)
@@ -305,11 +256,7 @@ class DeiTIII(nn.Module):
     def forward(self, x):
 
         x = self.forward_features(x)
-
-        if self.dropout_rate:
-            x = F.dropout(
-                x, p=float(self.dropout_rate), training=self.training)
-
+        x = self.pos_drop(x)
         x = self.head(x)
 
         return [x]

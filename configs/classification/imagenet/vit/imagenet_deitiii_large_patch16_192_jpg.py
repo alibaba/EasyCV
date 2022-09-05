@@ -14,4 +14,4 @@ model = dict(
         qkv_bias=True,
         drop_rate=0.,
         drop_path_rate=0.45,
-    ))
+        use_layer_scale=True))
