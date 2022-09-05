@@ -160,7 +160,7 @@ class Block(nn.Module):
 
 
 @BACKBONES.register_module()
-class VisionTransformer(nn.Module):
+class ViTDet(nn.Module):
     """
     This module implements Vision Transformer (ViT) backbone in :paper:`vitdet`.
     "Exploring Plain Vision Transformer Backbones for Object Detection",
@@ -189,7 +189,6 @@ class VisionTransformer(nn.Module):
         use_act_checkpoint=False,
         pretrain_img_size=224,
         pretrain_use_cls_token=True,
-        out_feature='last_feat',
         pretrained=None,
     ):
         """
@@ -214,7 +213,6 @@ class VisionTransformer(nn.Module):
             use_act_checkpoint (bool): If True, use activation checkpointing.
             pretrain_img_size (int): input image size for pretraining models.
             pretrain_use_cls_token (bool): If True, pretrainig models use class token.
-            out_feature (str): name of the feature from the last block.
         """
         super().__init__()
         self.pretrain_use_cls_token = pretrain_use_cls_token

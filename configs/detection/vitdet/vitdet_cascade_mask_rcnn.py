@@ -7,7 +7,7 @@ model = dict(
     type='CascadeRCNN',
     pretrained=pretrained,
     backbone=dict(
-        type='VisionTransformer',
+        type='ViTDet',
         img_size=1024,
         patch_size=16,
         embed_dim=768,
@@ -29,8 +29,7 @@ model = dict(
             10,
         ],
         residual_block_indexes=[],
-        use_rel_pos=True,
-        out_feature='last_feat'),
+        use_rel_pos=True),
     neck=dict(
         type='SFP',
         in_channels=768,
