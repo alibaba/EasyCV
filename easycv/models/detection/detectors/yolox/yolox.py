@@ -45,6 +45,7 @@ class YOLOX(BaseModel):
                  asff_channel=2,
                  neck_type='yolo',
                  neck_mode='all',
+                 num_classes=None,
                  head=None,
                  pretrained=True):
         super(YOLOX, self).__init__()
@@ -66,6 +67,14 @@ class YOLOX(BaseModel):
             in_channels=in_channels,
             asff_channel=asff_channel,
             use_att=use_att)
+
+        if num_classes is not None:
+            # adapt to previous export model
+            head = dict(
+                type='YOLOXHead',
+                model_type=model_type,
+                num_classes=num_classes,
+            )
 
         if head is not None:
             # head is None for YOLOX-edge to define a special head
