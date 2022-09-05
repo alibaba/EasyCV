@@ -162,6 +162,7 @@ class DistributedSampler(_DistributedSampler):
         num_replicas=None,
         rank=None,
         shuffle=True,
+        seed=0,
         replace=False,
         split_huge_listfile_byrank=False,
     ):
@@ -172,11 +173,13 @@ class DistributedSampler(_DistributedSampler):
                 distributed training.
             rank (optional): Rank of the current process within num_replicas.
             shuffle (optional): If true (default), sampler will shuffle the indices
+            seed (int, Optional): The seed. Default to 0.
             split_huge_listfile_byrank: if split, return all indice for each rank, because list for each rank has been
                 split before build dataset in dist training
         """
         super().__init__(dataset, num_replicas=num_replicas, rank=rank)
         self.shuffle = shuffle
+        self.seed = seed
         self.replace = replace
         self.unif_sampling_flag = False
         self.split_huge_listfile_byrank = split_huge_listfile_byrank
@@ -198,7 +201,7 @@ class DistributedSampler(_DistributedSampler):
     def generate_new_list(self):
         if self.shuffle:
             g = torch.Generator()
-            g.manual_seed(self.epoch)
+            g.manual_seed(self.epoch + self.seed)
             if self.replace:
                 indices = torch.randint(
                     low=0,
@@ -300,6 +303,7 @@ class DistributedGroupSampler(Sampler):
         Dataset is assumed to be of constant size.
     Args:
         dataset: Dataset used for sampling.
+        seed (int, Optional): The seed. Default to 0.
         num_replicas (optional): Number of processes participating in
             distributed training.
         rank (optional): Rank of the current process within num_replicas.
@@ -308,6 +312,7 @@ class DistributedGroupSampler(Sampler):
     def __init__(self,
                  dataset,
                  samples_per_gpu=1,
+                 seed=0,
                  num_replicas=None,
                  rank=None):
         _rank, _num_replicas = get_dist_info()
@@ -317,6 +322,7 @@ class DistributedGroupSampler(Sampler):
             rank = _rank
         self.dataset = dataset
         self.samples_per_gpu = samples_per_gpu
+        self.seed = seed
         self.num_replicas = num_replicas
         self.rank = rank
         self.epoch = 0
@@ -335,7 +341,7 @@ class DistributedGroupSampler(Sampler):
     def __iter__(self):
         # deterministically shuffle based on epoch
         g = torch.Generator()
-        g.manual_seed(self.epoch)
+        g.manual_seed(self.epoch + self.seed)
 
         indices = []
         for i, size in enumerate(self.group_sizes):
@@ -437,7 +443,6 @@ class DistributedGivenIterationSampler(Sampler):
         self.indices = indices
 
     def gen_new_list(self):
-
         # each process shuffle all list with same seed, and pick one piece according to rank
         np.random.seed(0)
 

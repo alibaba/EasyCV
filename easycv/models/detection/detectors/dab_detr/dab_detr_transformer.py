@@ -15,17 +15,11 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 
 from easycv.models.builder import NECKS
+from easycv.models.detection.utils import inverse_sigmoid
 from easycv.models.utils import (MLP, TransformerEncoder,
                                  TransformerEncoderLayer, _get_activation_fn,
                                  _get_clones)
 from .attention import MultiheadAttention
-
-
-def inverse_sigmoid(x, eps=1e-3):
-    x = x.clamp(min=0, max=1)
-    x1 = x.clamp(min=eps)
-    x2 = (1 - x).clamp(min=eps)
-    return torch.log(x1 / x2)
 
 
 @NECKS.register_module

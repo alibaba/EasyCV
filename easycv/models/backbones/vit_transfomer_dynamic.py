@@ -14,55 +14,7 @@ import torch
 import torch.nn as nn
 from timm.models.layers import trunc_normal_
 
-
-def drop_path(x, drop_prob: float = 0., training: bool = False):
-    if drop_prob == 0. or not training:
-        return x
-    keep_prob = 1 - drop_prob
-    shape = (x.shape[0], ) + (1, ) * (
-        x.ndim - 1)  # work with diff dim tensors, not just 2D ConvNets
-    random_tensor = keep_prob + torch.rand(
-        shape, dtype=x.dtype, device=x.device)
-    random_tensor.floor_()  # binarize
-    output = x.div(keep_prob) * random_tensor
-    return output
-
-
-class DropPath(nn.Module):
-    """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
-    """
-
-    def __init__(self, drop_prob=None):
-        super(DropPath, self).__init__()
-        self.drop_prob = drop_prob
-
-    def forward(self, x):
-        return drop_path(x, self.drop_prob, self.training)
-
-
-class Mlp(nn.Module):
-
-    def __init__(self,
-                 in_features,
-                 hidden_features=None,
-                 out_features=None,
-                 act_layer=nn.GELU,
-                 drop=0.):
-        super().__init__()
-        out_features = out_features or in_features
-        hidden_features = hidden_features or in_features
-        self.fc1 = nn.Linear(in_features, hidden_features)
-        self.act = act_layer()
-        self.fc2 = nn.Linear(hidden_features, out_features)
-        self.drop = nn.Dropout(drop)
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.act(x)
-        x = self.drop(x)
-        x = self.fc2(x)
-        x = self.drop(x)
-        return x
+from easycv.models.utils import DropPath, Mlp
 
 
 class Attention(nn.Module):
@@ -171,8 +123,8 @@ class PatchEmbed(nn.Module):
         return x
 
 
-class VisionTransformer(nn.Module):
-    """ Vision Transformer """
+class DynamicVisionTransformer(nn.Module):
+    """Dynamic Vision Transformer """
 
     def __init__(self,
                  img_size=[224],
@@ -449,7 +401,7 @@ class VisionTransformer(nn.Module):
 
 
 def dynamic_deit_tiny_p16(patch_size=16, **kwargs):
-    model = VisionTransformer(
+    model = DynamicVisionTransformer(
         patch_size=patch_size,
         embed_dim=192,
         depth=12,
@@ -462,7 +414,7 @@ def dynamic_deit_tiny_p16(patch_size=16, **kwargs):
 
 
 def dynamic_deit_small_p16(patch_size=16, **kwargs):
-    model = VisionTransformer(
+    model = DynamicVisionTransformer(
         patch_size=patch_size,
         embed_dim=384,
         depth=12,
@@ -475,7 +427,7 @@ def dynamic_deit_small_p16(patch_size=16, **kwargs):
 
 
 def dynamic_vit_base_p16(patch_size=16, **kwargs):
-    model = VisionTransformer(
+    model = DynamicVisionTransformer(
         patch_size=patch_size,
         embed_dim=768,
         depth=12,
@@ -488,7 +440,7 @@ def dynamic_vit_base_p16(patch_size=16, **kwargs):
 
 
 def dynamic_vit_large_p16(patch_size=16, **kwargs):
-    model = VisionTransformer(
+    model = DynamicVisionTransformer(
         patch_size=patch_size,
         embed_dim=1024,
         depth=24,
@@ -501,7 +453,7 @@ def dynamic_vit_large_p16(patch_size=16, **kwargs):
 
 
 def dynamic_vit_huge_p14(patch_size=14, **kwargs):
-    model = VisionTransformer(
+    model = DynamicVisionTransformer(
         patch_size=patch_size,
         embed_dim=1280,
         depth=32,

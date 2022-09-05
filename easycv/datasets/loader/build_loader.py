@@ -11,6 +11,7 @@ from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader, RandomSampler
 
 from easycv.datasets.shared.odps_reader import set_dataloader_workid
+from easycv.utils.dist_utils import sync_random_seed
 from easycv.utils.torchacc_util import is_torchacc_enabled
 from .collate import CollateWrapper
 from .sampler import DistributedMPSampler, DistributedSampler, RASampler
@@ -51,6 +52,7 @@ def build_dataloader(dataset,
             Default: True.
         replace (bool): Replace or not in random shuffle.
             It works on when shuffle is True.
+        seed (int, Optional): The seed. Default to None.
         reuse_worker_cache (bool): If set true, will reuse worker process so that cached
             data in worker process can be reused.
         persistent_workers (bool) : After pytorch1.7, could use persistent_workers=True to
@@ -61,9 +63,10 @@ def build_dataloader(dataset,
     Returns:
         DataLoader: A PyTorch dataloader.
     """
+    rank, world_size = get_dist_info()
 
     if dist:
-        rank, world_size = get_dist_info()
+        seed = sync_random_seed(seed)
         split_huge_listfile_byrank = getattr(dataset,
                                              'split_huge_listfile_byrank',
                                              False)
@@ -83,6 +86,7 @@ def build_dataloader(dataset,
                 world_size,
                 rank,
                 shuffle=shuffle,
+                seed=seed,
                 split_huge_listfile_byrank=split_huge_listfile_byrank)
         batch_size = imgs_per_gpu
         num_workers = workers_per_gpu
@@ -101,7 +105,12 @@ def build_dataloader(dataset,
         batch_size = num_gpus * imgs_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
-    init_fn = partial(worker_init_fn, seed=seed, odps_config=odps_config)
+    init_fn = partial(
+        worker_init_fn,
+        num_workers=num_workers,
+        rank=rank,
+        seed=seed,
+        odps_config=odps_config) if seed is not None else None
     collate_fn = dataset.collate_fn if hasattr(
         dataset, 'collate_fn') else partial(
             collate, samples_per_gpu=imgs_per_gpu)
@@ -153,12 +162,13 @@ def build_dataloader(dataset,
     return data_loader
 
 
-def worker_init_fn(worker_id, seed=None, odps_config=None):
-    if seed is not None:
-        worker_seed = worker_id + seed
-        np.random.seed(worker_seed)
-        random.seed(worker_seed)
-        torch.manual_seed(worker_seed)
+def worker_init_fn(worker_id, num_workers, rank, seed, odps_config=None):
+    # The seed of each worker equals to
+    # num_worker * rank + worker_id + user_seed
+    worker_seed = num_workers * rank + worker_id + seed
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+    torch.manual_seed(worker_seed)
 
     if odps_config is not None:
         # for odps to set correct offset in multi-process pytorch dataloader
