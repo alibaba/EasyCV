@@ -23,11 +23,11 @@ data_test_root = 'data/imagenet1k/val/'
 dataset_type = 'ClsDataset'
 img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 three_augment_policies = [[
-    dict(type='GaussianBlur', kernel_size=23, sigma=(0.1, 2.0)),
+    dict(type='DeiTIIIGaussianBlur', prob=1.0, radius_min=0.1, radius_max=2.0),
 ], [
     dict(type='Solarization', threshold=128),
 ], [
-    dict(type='RandomGrayscale', p=1.0),
+    dict(type='Grayscale', num_output_channels=3),
 ]]
 train_pipeline = [
     dict(
