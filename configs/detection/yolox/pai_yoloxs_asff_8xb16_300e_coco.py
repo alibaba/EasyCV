@@ -1,22 +1,27 @@
-# model settings
-# models s m l x
+_base_ = '../../base.py'
 
+# model settings s m l x
 model = dict(
     type='YOLOX',
-    num_classes=80,
-    model_type='tiny',  # s m l x tiny nano
     test_conf=0.01,
-    nms_thre=0.65)
+    nms_thre=0.65,
+    backbone='RepVGGYOLOX',
+    model_type='s',  # s m l x tiny nano
+    use_att='ASFF',
+    head=dict(
+        type='YOLOXHead',
+        model_type='s',
+        obj_loss_type='BCE',
+        reg_loss_type='giou',
+        num_classes=80,
+        decode_in_inference=
+        False  # set to False when test speed to ignore decode and nms
+    ))
 
 # s m l x
-# img_scale = (640, 640)
-# random_size = (14, 26)
-# scale_ratio = (0.1, 2)
-
-# tiny nano ; without mixup
-img_scale = (416, 416)
-random_size = (10, 20)
-scale_ratio = (0.5, 1.5)
+img_scale = (640, 640)
+random_size = (14, 26)
+scale_ratio = (0.1, 2)
 
 CLASSES = [
     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
@@ -36,6 +41,7 @@ CLASSES = [
 
 # dataset settings
 data_root = 'data/coco/'
+
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -45,6 +51,11 @@ train_pipeline = [
         type='MMRandomAffine',
         scaling_ratio_range=scale_ratio,
         border=(-img_scale[0] // 2, -img_scale[1] // 2)),
+    dict(
+        type='MMMixUp',  # s m x l; tiny nano will detele
+        img_scale=img_scale,
+        ratio_range=(0.8, 1.6),
+        pad_val=114.0),
     dict(
         type='MMPhotoMetricDistortion',
         brightness_delta=32,
@@ -125,7 +136,14 @@ custom_hooks = [
 ]
 
 # evaluation
-eval_config = dict(interval=10, gpu_collect=False)
+eval_config = dict(
+    interval=10,
+    gpu_collect=False,
+    visualization_config=dict(
+        vis_num=10,
+        score_thr=0.5,
+    )  # show by TensorboardLoggerHookV2 and WandbLoggerHookV2
+)
 eval_pipelines = [
     dict(
         mode='test',
@@ -137,9 +155,8 @@ eval_pipelines = [
 checkpoint_config = dict(interval=interval)
 
 # optimizer
-# basic_lr_per_img = 0.01 / 64.0
 optimizer = dict(
-    type='SGD', lr=0.01, momentum=0.9, weight_decay=5e-4, nesterov=True)
+    type='SGD', lr=0.02, momentum=0.9, weight_decay=5e-4, nesterov=True)
 optimizer_config = {}
 
 # learning policy
@@ -164,15 +181,8 @@ log_config = dict(
     interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHook')
+        dict(type='TensorboardLoggerHookV2'),
+        # dict(type='WandbLoggerHookV2'),
     ])
-# yapf:enable
-# runtime settings
-dist_params = dict(backend='nccl')
-cudnn_benchmark = True
-log_level = 'INFO'
-load_from = None
-resume_from = None
-workflow = [('train', 1)]
 
-export = dict(use_jit=False)
+export = dict(export_type = 'ori', preprocess_jit = False, batch_size=1, blade_config=dict(enable_fp16=True, fp16_fallback_op_ratio=0.01), use_trt_efficientnms=False)

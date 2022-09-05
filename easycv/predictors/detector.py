@@ -3,7 +3,6 @@ import json
 import os
 from glob import glob
 
-import cv2
 import numpy as np
 import torch
 from mmcv.ops import RoIPool
@@ -22,6 +21,7 @@ from easycv.models.detection.utils import postprocess
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
+from easycv.utils.logger import get_root_logger
 from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.registry import build_from_cfg
 from .builder import PREDICTORS
@@ -36,6 +36,190 @@ try:
     from thirdparty.mtcnn import FaceDetector
 except Exception:
     from easycv.thirdparty.mtcnn import FaceDetector
+
+
+@PREDICTORS.register_module()
+class DetrPredictor(PredictorInterface):
+    """Inference image(s) with the detector.
+    Args:
+        model_path (str): checkpoint model and export model are shared.
+        config_path (str): If config_path is specified, both checkpoint model and export model can be used; if config_path=None, the export model is used by default.
+    """
+
+    def __init__(self, model_path, config_path=None):
+
+        self.model_path = model_path
+
+        if config_path is not None:
+            self.cfg = mmcv_config_fromfile(config_path)
+        else:
+            logger = get_root_logger()
+            logger.warning('please use export model!')
+            if is_url_path(self.model_path) and url_path_exists(
+                    self.model_path):
+                checkpoint = load_state_dict_from_url(model_path)
+            else:
+                assert io.exists(
+                    self.model_path), f'{self.model_path} does not exists'
+
+                with io.open(self.model_path, 'rb') as infile:
+                    checkpoint = torch.load(infile, map_location='cpu')
+
+            assert 'meta' in checkpoint and 'config' in checkpoint[
+                'meta'], 'meta.config is missing from checkpoint'
+
+            config_str = checkpoint['meta']['config']
+            if isinstance(config_str, dict):
+                config_str = json.dumps(config_str)
+
+            # get config
+            basename = os.path.basename(self.model_path)
+            fname, _ = os.path.splitext(basename)
+            self.local_config_file = os.path.join(CACHE_DIR,
+                                                  f'{fname}_config.json')
+            if not os.path.exists(CACHE_DIR):
+                os.makedirs(CACHE_DIR)
+            with open(self.local_config_file, 'w') as ofile:
+                ofile.write(config_str)
+            self.cfg = mmcv_config_fromfile(self.local_config_file)
+
+        # dynamic adapt mmdet models
+        dynamic_adapt_for_mmlab(self.cfg)
+
+        # build model
+        self.model = build_model(self.cfg.model)
+
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        map_location = 'cpu' if self.device == 'cpu' else 'cuda'
+        self.ckpt = load_checkpoint(
+            self.model, self.model_path, map_location=map_location)
+
+        self.model.to(self.device)
+        self.model.eval()
+
+        self.CLASSES = self.cfg.CLASSES
+
+    def predict(self, imgs):
+        """
+        Args:
+            imgs (str/ndarray or list[str/ndarray] or tuple[str/ndarray]):
+            Either image files or loaded images.
+        Returns:
+            If imgs is a list or tuple, the same length list type results
+            will be returned, otherwise return the detection results directly.
+        """
+
+        if isinstance(imgs, (list, tuple)):
+            is_batch = True
+        else:
+            imgs = [imgs]
+            is_batch = False
+
+        cfg = self.cfg
+        device = next(self.model.parameters()).device  # model device
+
+        if isinstance(imgs[0], np.ndarray):
+            cfg = cfg.copy()
+            # set loading pipeline type
+            cfg.data.val.pipeline.insert(0, dict(type='LoadImageFromWebcam'))
+        else:
+            cfg = cfg.copy()
+            # set loading pipeline type
+            cfg.data.val.pipeline.insert(
+                0,
+                dict(
+                    type='LoadImageFromFile',
+                    file_client_args=dict(
+                        backend=('http' if imgs[0].startswith('http'
+                                                              ) else 'disk'))))
+
+        cfg.data.val.pipeline = replace_ImageToTensor(cfg.data.val.pipeline)
+
+        transforms = []
+        for transform in cfg.data.val.pipeline:
+            if 'img_scale' in transform:
+                transform['img_scale'] = tuple(transform['img_scale'])
+            if isinstance(transform, dict):
+                transform = build_from_cfg(transform, PIPELINES)
+                transforms.append(transform)
+            elif callable(transform):
+                transforms.append(transform)
+            else:
+                raise TypeError('transform must be callable or a dict')
+        test_pipeline = Compose(transforms)
+
+        datas = []
+        for img in imgs:
+            # prepare data
+            if isinstance(img, np.ndarray):
+                # directly add img
+                data = dict(img=img)
+            else:
+                # add information into dict
+                data = dict(img_info=dict(filename=img), img_prefix=None)
+            # build the data pipeline
+            data = test_pipeline(data)
+            datas.append(data)
+
+        data = collate(datas, samples_per_gpu=len(imgs))
+        # just get the actual data from DataContainer
+        data['img_metas'] = [
+            img_metas.data[0] for img_metas in data['img_metas']
+        ]
+        data['img'] = [img.data[0] for img in data['img']]
+        if next(self.model.parameters()).is_cuda:
+            # scatter to specified GPU
+            data = scatter(data, [device])[0]
+        else:
+            for m in self.model.modules():
+                assert not isinstance(
+                    m, RoIPool
+                ), 'CPU inference with RoIPool is not supported currently.'
+
+        # forward the model
+        with torch.no_grad():
+            results = self.model(mode='test', **data)
+
+        return results
+
+    def visualize(self,
+                  img,
+                  results,
+                  score_thr=0.3,
+                  show=False,
+                  out_file=None):
+        bboxes = results['detection_boxes'][0]
+        scores = results['detection_scores'][0]
+        labels = results['detection_classes'][0].tolist()
+
+        # If self.CLASSES is not None, class_id will be converted to self.CLASSES for visualization,
+        # otherwise the class_id will be displayed.
+        # And don't try to modify the value in results, it may cause some bugs or even precision problems,
+        # because `self.evaluate` will also use the results, refer to: https://github.com/alibaba/EasyCV/pull/67
+
+        if self.CLASSES is not None and len(self.CLASSES) > 0:
+            for i, classes_id in enumerate(labels):
+                if classes_id is None:
+                    labels[i] = None
+                else:
+                    labels[i] = self.CLASSES[int(classes_id)]
+
+        if scores is not None and score_thr > 0:
+            inds = scores > score_thr
+            bboxes = bboxes[inds]
+            labels = np.array(labels)[inds]
+
+        imshow_bboxes(
+            img,
+            bboxes,
+            labels=labels,
+            colors='green',
+            text_color='white',
+            font_size=20,
+            thickness=1,
+            font_scale=0.5,
+            show=show,
+            out_file=out_file)
 
 
 @PREDICTORS.register_module()
@@ -275,182 +459,6 @@ class TorchYoloXPredictor(PredictorInterface):
             output_list.append(out)
 
         return output_list
-
-
-@PREDICTORS.register_module()
-class TorchViTDetPredictor(PredictorInterface):
-
-    def __init__(self, model_path):
-
-        self.model_path = model_path
-
-        if is_url_path(self.model_path) and url_path_exists(self.model_path):
-            checkpoint = load_state_dict_from_url(model_path)
-        else:
-            assert io.exists(
-                self.model_path), f'{self.model_path} does not exists'
-
-            with io.open(self.model_path, 'rb') as infile:
-                checkpoint = torch.load(infile, map_location='cpu')
-
-        assert 'meta' in checkpoint and 'config' in checkpoint[
-            'meta'], 'meta.config is missing from checkpoint'
-
-        config_str = checkpoint['meta']['config']
-        if isinstance(config_str, dict):
-            config_str = json.dumps(config_str)
-
-        # get config
-        basename = os.path.basename(self.model_path)
-        fname, _ = os.path.splitext(basename)
-        self.local_config_file = os.path.join(CACHE_DIR,
-                                              f'{fname}_config.json')
-        if not os.path.exists(CACHE_DIR):
-            os.makedirs(CACHE_DIR)
-        with open(self.local_config_file, 'w') as ofile:
-            ofile.write(config_str)
-        self.cfg = mmcv_config_fromfile(self.local_config_file)
-
-        # dynamic adapt mmdet models
-        dynamic_adapt_for_mmlab(self.cfg)
-
-        # build model
-        self.model = build_model(self.cfg.model)
-
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        map_location = 'cpu' if self.device == 'cpu' else 'cuda'
-        self.ckpt = load_checkpoint(
-            self.model, self.model_path, map_location=map_location)
-
-        self.model.to(self.device)
-        self.model.eval()
-
-        self.CLASSES = self.cfg.CLASSES
-
-    def predict(self, imgs):
-        """Inference image(s) with the detector.
-        Args:
-            model (nn.Module): The loaded detector.
-            imgs (str/ndarray or list[str/ndarray] or tuple[str/ndarray]):
-            Either image files or loaded images.
-        Returns:
-            If imgs is a list or tuple, the same length list type results
-            will be returned, otherwise return the detection results directly.
-        """
-
-        if isinstance(imgs, (list, tuple)):
-            is_batch = True
-        else:
-            imgs = [imgs]
-            is_batch = False
-
-        print(imgs)
-
-        cfg = self.cfg
-        device = next(self.model.parameters()).device  # model device
-
-        if isinstance(imgs[0], np.ndarray):
-            cfg = cfg.copy()
-            # set loading pipeline type
-            cfg.data.val.pipeline.insert(0, dict(type='LoadImageFromWebcam'))
-        else:
-            cfg = cfg.copy()
-            # set loading pipeline type
-            cfg.data.val.pipeline.insert(
-                0,
-                dict(
-                    type='LoadImageFromFile',
-                    file_client_args=dict(
-                        backend=('http' if imgs[0].startswith('http'
-                                                              ) else 'disk'))))
-
-        cfg.data.val.pipeline = replace_ImageToTensor(cfg.data.val.pipeline)
-
-        transforms = []
-        for transform in cfg.data.val.pipeline:
-            if 'img_scale' in transform:
-                transform['img_scale'] = tuple(transform['img_scale'])
-            if isinstance(transform, dict):
-                transform = build_from_cfg(transform, PIPELINES)
-                transforms.append(transform)
-            elif callable(transform):
-                transforms.append(transform)
-            else:
-                raise TypeError('transform must be callable or a dict')
-        test_pipeline = Compose(transforms)
-
-        datas = []
-        for img in imgs:
-            # prepare data
-            if isinstance(img, np.ndarray):
-                # directly add img
-                data = dict(img=img)
-            else:
-                # add information into dict
-                data = dict(img_info=dict(filename=img), img_prefix=None)
-            # build the data pipeline
-            data = test_pipeline(data)
-            datas.append(data)
-
-        data = collate(datas, samples_per_gpu=len(imgs))
-        # just get the actual data from DataContainer
-        data['img_metas'] = [
-            img_metas.data[0] for img_metas in data['img_metas']
-        ]
-        data['img'] = [img.data[0] for img in data['img']]
-        if next(self.model.parameters()).is_cuda:
-            # scatter to specified GPU
-            data = scatter(data, [device])[0]
-        else:
-            for m in self.model.modules():
-                assert not isinstance(
-                    m, RoIPool
-                ), 'CPU inference with RoIPool is not supported currently.'
-
-        # forward the model
-        with torch.no_grad():
-            results = self.model(mode='test', **data)
-
-        return results
-
-    def show_result_pyplot(self,
-                           img,
-                           results,
-                           score_thr=0.3,
-                           show=False,
-                           out_file=None):
-        bboxes = results['detection_boxes'][0]
-        scores = results['detection_scores'][0]
-        labels = results['detection_classes'][0].tolist()
-
-        # If self.CLASSES is not None, class_id will be converted to self.CLASSES for visualization,
-        # otherwise the class_id will be displayed.
-        # And don't try to modify the value in results, it may cause some bugs or even precision problems,
-        # because `self.evaluate` will also use the results, refer to: https://github.com/alibaba/EasyCV/pull/67
-
-        if self.CLASSES is not None and len(self.CLASSES) > 0:
-            for i, classes_id in enumerate(labels):
-                if classes_id is None:
-                    labels[i] = None
-                else:
-                    labels[i] = self.CLASSES[int(classes_id)]
-
-        if scores is not None and score_thr > 0:
-            inds = scores > score_thr
-            bboxes = bboxes[inds]
-            labels = np.array(labels)[inds]
-
-        imshow_bboxes(
-            img,
-            bboxes,
-            labels=labels,
-            colors='green',
-            text_color='white',
-            font_size=20,
-            thickness=1,
-            font_scale=0.5,
-            show=show,
-            out_file=out_file)
 
 
 @PREDICTORS.register_module()

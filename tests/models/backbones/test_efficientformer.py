@@ -11,7 +11,7 @@ class EfficientFormerTest(unittest.TestCase):
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
-    def test_vitdet(self):
+    def test_efficientformer(self):
         model = EfficientFormer(
             layers=[3, 2, 6, 4],
             embed_dims=[48, 96, 224, 448],
