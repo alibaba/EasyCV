@@ -166,6 +166,9 @@ class Classification(BaseModel):
         for preprocess in self.train_preprocess:
             img = preprocess(img)
 
+        # When the number of samples in the dataset is odd, the last batch size of each epoch will be odd,
+        #  which will cause mixup to report an error. To avoid this situation, mixup is applied only when
+        #  the batch size is even.
         if hasattr(self, 'mixup') and len(img) % 2 == 0:
             img, gt_labels = self.mixup(img, gt_labels)
 
