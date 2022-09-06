@@ -1,4 +1,10 @@
-# v 0.6.0 (31/08/202)
+# v 0.6.1 (06/09/2022)
+
+## Bug Fixes
+
+- Fix missing utils ([#183](https://github.com/alibaba/EasyCV/pull/183))
+
+# v 0.6.0 (31/08/2022)
 
 ## Highlights
 - Release YOLOX-PAI which achieves SOTA results within 40~50 mAP (less than 1ms) ([#154](https://github.com/alibaba/EasyCV/pull/154) [#172](https://github.com/alibaba/EasyCV/pull/172) [#174](https://github.com/alibaba/EasyCV/pull/174) )
