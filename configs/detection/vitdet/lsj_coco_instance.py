@@ -15,7 +15,7 @@ CLASSES = [
 ]
 
 # dataset settings
-data_root = '/root/data/coco/'
+data_root = 'data/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -101,7 +101,8 @@ val_dataset = dict(
     pipeline=test_pipeline)
 
 data = dict(
-    imgs_per_gpu=4, workers_per_gpu=2, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=4, workers_per_gpu=2, train=train_dataset, val=val_dataset
+)  # 64(total batch size) = 4 (batch size/per gpu) x 8 (gpu num) x 2(node)
 
 # evaluation
 # eval_config = dict(initial=True, interval=1, gpu_collect=False)
