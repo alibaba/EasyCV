@@ -23,7 +23,6 @@ from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
 from easycv.utils.logger import get_root_logger
-from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.registry import build_from_cfg
 from .base import Predictor
 from .builder import PREDICTORS
@@ -189,9 +188,6 @@ class ClsPredictor(PredictorInterface):
             with open(self.local_config_file, 'w') as ofile:
                 ofile.write(config_str)
             self.cfg = mmcv_config_fromfile(self.local_config_file)
-
-        # dynamic adapt mmdet models
-        dynamic_adapt_for_mmlab(self.cfg)
 
         # build model
         self.model = build_model(self.cfg.model)

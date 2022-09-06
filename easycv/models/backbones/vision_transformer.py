@@ -208,6 +208,8 @@ class VisionTransformer(nn.Module):
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, embed_dim))
         self.pos_drop = nn.Dropout(p=drop_rate)
 
+        self.drop_path_rate = drop_path_rate
+        self.depth = depth
         dpr = [drop_path_rate for i in range(depth)]
         self.blocks = nn.ModuleList([
             Block(
@@ -216,7 +218,7 @@ class VisionTransformer(nn.Module):
                 mlp_ratio=mlp_ratio,
                 qkv_bias=qkv_bias,
                 qk_scale=qk_scale,
-                drop=0.0,
+                drop=drop_rate,
                 attn_drop=attn_drop_rate,
                 drop_path=dpr[i],
                 norm_layer=norm_layer,

@@ -27,6 +27,11 @@ class DynamicVisionTransformer(VisionTransformer):
         self.pos_embed = nn.Parameter(
             torch.zeros(1, num_patches + 1, self.embed_dim))
 
+        dpr = [
+            x.item()
+            for x in torch.linspace(0, self.drop_path_rate, self.depth)
+        ]
+
     def forward(self, x):
         # convert to list
         if not isinstance(x, list):
