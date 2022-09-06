@@ -139,7 +139,7 @@ class PatchEmbed(nn.Module):
 
 
 @BACKBONES.register_module
-class DeiTIII(nn.Module):
+class VisionTransformer(nn.Module):
     """ DeiT III is based on ViT. It uses some strategies to make the vit model
     better, just like layer scale, stochastic depth, 3-Augment.
 

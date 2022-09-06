@@ -13,10 +13,10 @@ from functools import partial
 import torch
 import torch.nn as nn
 
-from easycv.models.backbones.deitiii import DeiTIII
+from easycv.models.backbones.vision_transformer import VisionTransformer
 
 
-class DynamicVisionTransformer(DeiTIII):
+class DynamicVisionTransformer(VisionTransformer):
     """Dynamic Vision Transformer """
 
     def __init__(self, **kwargs):
