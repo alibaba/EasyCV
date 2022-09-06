@@ -225,6 +225,7 @@ def main():
     model.cuda()
     model.eval()
 
+    # for pai-nni >= 2.6.1 the usr_defined_module should be set and .clone is not supported
     m_speedup = ModelSpeedup(
         model, dummy_input, mask_path, 'cuda', usr_defined_modules=['SiLU'])
     m_speedup.speedup_model()

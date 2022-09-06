@@ -69,7 +69,10 @@ class YOLOX(BaseModel):
             use_att=use_att)
 
         if num_classes is not None:
-            # adapt to previous export model
+            # adapt to previous export model (before easycv0.6.0)
+            logging.warning(
+                'Warning: You are now attend to use an old YOLOX model before easycv0.6.0 with key num_classes'
+            )
             head = dict(
                 type='YOLOXHead',
                 model_type=model_type,
