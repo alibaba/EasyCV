@@ -1,3 +1,9 @@
+# v 0.6.1 (06/09/202)
+
+## Bug Fixes
+
+- Fix missing segmentation utils ( [#183](https://github.com/alibaba/EasyCV/pull/183) )
+
 # v 0.6.0 (31/08/202)
 
 ## Highlights
