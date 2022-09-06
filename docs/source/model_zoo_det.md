@@ -4,7 +4,7 @@ Inference default use V100 16G.
 
 ## YOLOX-PAI
 
-Pretrained on COCO2017 dataset.
+Pretrained on COCO2017 dataset. (The result has been optimized with PAI-Blade, and only computes the model inference time. To learn about end2end inference time,  you can refer to [export.md](./tutorials/export.md).)
 
 | Algorithm             | Config                                                                                                                                                  | Params | Speed<sup>V100<br/><sub>fp16 b32 </sub> | mAP<sup>val<br/><sub>0.5:0.95</sub> | AP<sup>val<br/><sub>50</sub> | Download                                                                                                                                                                                                                                                                         |
 |-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|--------|-----------------------------------------|-------------------------------------|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
