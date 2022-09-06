@@ -10,6 +10,7 @@ from PIL import Image
 
 from easycv.predictors.detector import TorchYoloXPredictor, DetrPredictor
 from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_EXPORT,
+                             PRETRAINED_MODEL_YOLOXS_EXPORT_OLD,
                              PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_JIT,
                              PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT,
                              DET_DATA_SMALL_COCO_LOCAL)
@@ -20,6 +21,18 @@ class DetectorTest(unittest.TestCase):
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
+
+    def test_yolox_old_detector(self):
+        detection_model_path = PRETRAINED_MODEL_YOLOXS_EXPORT_OLD
+
+        img = os.path.join(DET_DATA_SMALL_COCO_LOCAL,
+                           'val2017/000000522713.jpg')
+
+        input_data_list = [np.asarray(Image.open(img))]
+        predictor = TorchYoloXPredictor(
+            model_path=detection_model_path, score_thresh=0.5)
+
+        output = predictor.predict(input_data_list)[0]
 
     def test_yolox_detector(self):
         detection_model_path = PRETRAINED_MODEL_YOLOXS_EXPORT

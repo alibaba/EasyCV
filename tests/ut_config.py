@@ -83,6 +83,8 @@ PRETRAINED_MODEL_FACEID = os.path.join(BASE_LOCAL_PATH,
                                        'pretrained_models/faceid')
 PRETRAINED_MODEL_YOLOXS_EXPORT = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/detection/infer_yolox/epoch_300.pt')
+PRETRAINED_MODEL_YOLOXS_EXPORT_OLD = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/detection/infer_yolox/old.pt')
 PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_JIT = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/detection/infer_yolox/epoch_300_nopre_notrt.pt.jit')

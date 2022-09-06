@@ -10,7 +10,7 @@ In breif, our main contributions are:
 - Provide an easy way to use PAI-Blade to accelerate the inference process.
 - Provide a convenient way to train/evaluate/export YOLOX-PAI model and conduct end2end object detection.
 
-To learn more details of YOLOX-PAI, you can refer to our technical paper [technical report](https://arxiv.org/abs/2208.13040).
+To learn more details of YOLOX-PAI, you can refer to our [technical report](https://zhuanlan.zhihu.com/p/560597953 ) or [arxiv paper](https://arxiv.org/abs/2208.13040).
 
 ![image](../../../assets/result.jpg)
 
@@ -31,9 +31,16 @@ To use COCO format data, use config file `configs/detection/yolox/yolox_s_8xb16_
 
 To use PAI-Itag format data, use config file `configs/detection/yolox/yolox_s_8xb16_300e_coco_pai.py`
 
-You can use the [quick_start.md](../quick_start.md) for local installation or use our provided doker images.
+You can use the [quick_start.md](../quick_start.md) for local installation or use our provided doker images (for both training and inference).
+
+### Pull Docker
 ```shell
-registry.cn-shanghai.aliyuncs.com/pai-ai-test/eas-service:blade_cu111_easycv
+sudo docker pull registry.cn-shanghai.aliyuncs.com/pai-ai-test/pai-easycv:yolox-pai
+```
+
+### Start Container
+```shell
+sudo nvidia-docker run -it -v path:path --name easycv_yolox_pai --shm-size=10g --network=host registry.cn-shanghai.aliyuncs.com/pai-ai-test/pai-easycv:yolox-pai
 ```
 
 ### Train
@@ -75,6 +82,7 @@ bash tools/dist_train.sh configs/detection/yolox/yolox_s_8xb16_300e_coco.py $GPU
 ```
 
 ### Evaluation
+The pretrained model of YOLOX-PAI can be found [here](../model_zoo_det.md).
 
 **Single gpu:**
 
