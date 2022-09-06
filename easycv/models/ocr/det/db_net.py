@@ -15,7 +15,7 @@ from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 
 
-@MODELS.register_module()
+@MODELS.register_module(force=True)
 class DBNet(BaseModel):
     """DBNet for text detection
     """

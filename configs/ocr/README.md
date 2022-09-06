@@ -4,8 +4,8 @@
 ### detection
 |Algorithm|backbone|configs|precison|recall|Hmean|Download|
 |---|---|---|---|---|---|---|
-|DB|MobileNetv3|[det_model_en.py](configs/ocr/det_model_en.py)|0.7803|0.7250|0.7516|[log]()-[model]()|
-|DB|R50|[det_model_en_r50.py](configs/ocr/det_model_en_r50.py)|0.7729|0.7308|0.7512|[log]()-[model]()|
+|DB|MobileNetv3|[det_model_en.py](configs/ocr/det_model_en.py)|0.7803|0.7250|0.7516|[log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/fintune_icdar2015_mobilev3/20220902_140307.log.json)-[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/fintune_icdar2015_mobilev3/epoch_70.pth)|
+|DB|R50|[det_model_en_r50.py](configs/ocr/det_model_en_r50.py)|0.8622|0.8218|0.8415|[log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/fintune_icdar2015_r50/20220906_110252.log.json)-[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/fintune_icdar2015_r50/epoch_1150.pth)|
 ### recognition
 ### predict
 &ensp;&ensp;We provide exported models contains weight and process config for easyly predict, which convert from PaddleOCRv3.

@@ -1,3 +1,4 @@
+# Copyright (c) Alibaba, Inc. and its affiliates.
 from .cls import *
 from .det import *
 from .heads import *

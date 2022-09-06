@@ -1,1 +1,1 @@
-from .db_net import *
+from .db_net import DBNet
