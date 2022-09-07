@@ -1046,7 +1046,7 @@ class Cutout(object):
 
 
 @PIPELINES.register_module()
-class DeiTIIIGaussianBlur(object):
+class PILGaussianBlur(object):
 
     def __init__(self, prob=0.1, radius_min=0.1, radius_max=2.):
         assert 0 <= prob <= 1.0, 'The prob should be in range [0,1], ' \
