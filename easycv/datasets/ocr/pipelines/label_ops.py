@@ -16,9 +16,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 import copy
 import math
+import os.path as osp
 
 import cv2
 import numpy as np
+import requests
 
 from easycv.datasets.registry import PIPELINES
 from easycv.utils.logger import get_root_logger
@@ -48,6 +50,16 @@ class BaseRecLabelEncode(object):
             self.lower = True
         else:
             self.character_str = []
+            if character_dict_path.startswith('http'):
+                r = requests.get(character_dict_path)
+                tpath = character_dict_path.split('/')[-1]
+                while not osp.exists(tpath):
+                    try:
+                        with open(tpath, 'wb') as code:
+                            code.write(r.content)
+                    except:
+                        pass
+                character_dict_path = tpath
             with open(character_dict_path, 'rb') as fin:
                 lines = fin.readlines()
                 for line in lines:

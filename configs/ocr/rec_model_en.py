@@ -108,6 +108,7 @@ val_dataset = dict(
         label_file='/mnt/data/database/ocr/rec/ic15_data/rec_gt_test.txt',
         data_dir='/mnt/data/database/ocr/rec/ic15_data',
         ext_data_num=0,
+        test_mode=True,
     ),
     pipeline=val_pipeline)
 
@@ -115,7 +116,8 @@ data = dict(
     imgs_per_gpu=128, workers_per_gpu=4, train=train_dataset, val=val_dataset)
 
 total_epochs = 500
-optimizer = dict(type='Adam', lr=0.001, betas=(0.9, 0.999))
+optimizer = dict(
+    type='Adam', lr=0.001, betas=(0.9, 0.999), weight_decay=0.0001)
 
 lr_config = dict(
     policy='CosineAnnealing',
