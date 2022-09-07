@@ -65,6 +65,7 @@ We have a series of technical articles on the functionalities of EasyCV.
 * [MAE自监督算法介绍和基于EasyCV的复现](https://zhuanlan.zhihu.com/p/515859470)
 * [基于EasyCV复现ViTDet：单层特征超越FPN](https://zhuanlan.zhihu.com/p/528733299)
 * [基于EasyCV复现DETR和DAB-DETR，Object Query的正确打开方式](https://zhuanlan.zhihu.com/p/543129581)
+* [YOLOX-PAI: 加速YOLOX, 比YOLOv6更快更强](https://zhuanlan.zhihu.com/p/560597953)
 
 ## Installation
 
