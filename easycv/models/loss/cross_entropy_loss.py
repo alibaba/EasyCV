@@ -115,6 +115,7 @@ def binary_cross_entropy(pred,
                          class_weight=None,
                          ignore_index=-100,
                          avg_non_ignore=False,
+                         use_bce_label_ceil=False,
                          **kwargs):
     """Calculate the binary CrossEntropy loss.
 
@@ -132,11 +133,14 @@ def binary_cross_entropy(pred,
         avg_non_ignore (bool): The flag decides to whether the loss is
             only averaged over non-ignored targets. Default: False.
             `New in version 0.23.0.`
+        use_bce_label_ceil (bool): When use bce and set use_bce_label_ceil=True,
+            it will make elements belong to (0, 1] in label change to 1.
+            Default: False.
 
     Returns:
         torch.Tensor: The calculated loss
     """
-    if len(pred.shape) > 1 and pred.shape(1) == 1:
+    if len(pred.shape) > 1 and pred.shape[1] == 1:
         # For binary class segmentation, the shape of pred is
         # [N, 1, H, W] and that of label is [N, H, W].
         # As the ignore_index often set as 255, so the
@@ -162,6 +166,8 @@ def binary_cross_entropy(pred,
             weight = weight * valid_mask
         else:
             weight = valid_mask
+    if use_bce_label_ceil:
+        label = label.gt(0.0).type(label.dtype)
     # average loss over non-ignored and valid elements
     if reduction == 'mean' and avg_factor is None and avg_non_ignore:
         avg_factor = valid_mask.sum().item()
@@ -234,6 +240,9 @@ class CrossEntropyLoss(nn.Module):
         avg_non_ignore (bool): The flag decides to whether the loss is
             only averaged over non-ignored targets. Default: False.
             `New in version 0.23.0.`
+        use_bce_label_ceil (bool): When use bce and set use_bce_label_ceil=True,
+            it will make elements belong to (0, 1] in label change to 1.
+            Default: False.
     """
 
     def __init__(self,
@@ -243,7 +252,8 @@ class CrossEntropyLoss(nn.Module):
                  class_weight=None,
                  loss_weight=1.0,
                  loss_name='loss_ce',
-                 avg_non_ignore=False):
+                 avg_non_ignore=False,
+                 use_bce_label_ceil=False):
         super(CrossEntropyLoss, self).__init__()
         assert (use_sigmoid is False) or (use_mask is False)
         self.use_sigmoid = use_sigmoid
@@ -266,6 +276,7 @@ class CrossEntropyLoss(nn.Module):
         else:
             self.cls_criterion = cross_entropy
         self._loss_name = loss_name
+        self.use_bce_label_ceil = use_bce_label_ceil
 
     def extra_repr(self):
         """Extra repr."""
@@ -289,16 +300,29 @@ class CrossEntropyLoss(nn.Module):
         else:
             class_weight = None
         # Note: for BCE loss, label < 0 is invalid.
-        loss_cls = self.loss_weight * self.cls_criterion(
-            cls_score,
-            label,
-            weight,
-            class_weight=class_weight,
-            reduction=reduction,
-            avg_factor=avg_factor,
-            avg_non_ignore=self.avg_non_ignore,
-            ignore_index=ignore_index,
-            **kwargs)
+        if self.use_sigmoid:
+            loss_cls = self.loss_weight * self.cls_criterion(
+                cls_score,
+                label,
+                weight,
+                class_weight=class_weight,
+                reduction=reduction,
+                avg_factor=avg_factor,
+                avg_non_ignore=self.avg_non_ignore,
+                ignore_index=ignore_index,
+                use_bce_label_ceil=self.use_bce_label_ceil,
+                **kwargs)
+        else:
+            loss_cls = self.loss_weight * self.cls_criterion(
+                cls_score,
+                label,
+                weight,
+                class_weight=class_weight,
+                reduction=reduction,
+                avg_factor=avg_factor,
+                avg_non_ignore=self.avg_non_ignore,
+                ignore_index=ignore_index,
+                **kwargs)
         return loss_cls
 
     @property

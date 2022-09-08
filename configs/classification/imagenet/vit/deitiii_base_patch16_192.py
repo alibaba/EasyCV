@@ -36,10 +36,13 @@ model = dict(
         use_layer_scale=True),
     head=dict(
         type='ClsHead',
-        loss_config={
-            'type': 'BinaryCrossEntropyWithLogitsLoss',
-        },
-        with_fc=False))
+        loss_config=dict(
+            type='CrossEntropyLoss',
+            use_sigmoid=True,
+            loss_weight=1.0,
+            use_bce_label_ceil=True),
+        with_fc=False,
+        use_num_classes=False))
 
 data_train_list = 'data/imagenet1k/train.txt'
 data_train_root = 'data/imagenet1k/train/'
