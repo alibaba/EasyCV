@@ -43,6 +43,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+            lfs: 'true'
       - name: Run unittest
         shell: bash
         run: |
