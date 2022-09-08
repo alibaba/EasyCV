@@ -40,7 +40,7 @@ model = dict(
             type='CrossEntropyLoss',
             use_sigmoid=True,
             loss_weight=1.0,
-            use_bce_label_ceil=True),
+            label_ceil=True),
         with_fc=False,
         use_num_classes=False))
 
