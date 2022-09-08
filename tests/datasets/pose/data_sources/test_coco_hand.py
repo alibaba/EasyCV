@@ -30,7 +30,7 @@ class HandCocoPoseSourceCocoTest(unittest.TestCase):
             img_prefix=f'{SMALL_COCO_WHOLE_BODY_HAND_ROOT}/train2017/')
         index_list = random.choices(list(range(4)), k=3)
         for idx in index_list:
-            data = data_source.get_sample(idx)
+            data = data_source[idx]
             self.assertIn('image_file', data)
             self.assertIn('image_id', data)
             self.assertIn('bbox_score', data)
