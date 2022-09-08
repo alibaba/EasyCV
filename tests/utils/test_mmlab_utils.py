@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
 import unittest
+from inspect import signature
 
 import torch
 from mmcv.parallel import scatter_kwargs
@@ -11,7 +12,9 @@ from easycv.apis.test import single_gpu_test
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.models.builder import build_model
 from easycv.utils.config_tools import mmcv_config_fromfile
-from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
+from easycv.utils.mmlab_utils import (MM_REGISTRY, MMDET,
+                                      dynamic_adapt_for_mmlab,
+                                      remove_adapt_for_mmlab)
 
 
 class MMLabUtilTest(unittest.TestCase):
@@ -24,6 +27,7 @@ class MMLabUtilTest(unittest.TestCase):
         cfg = mmcv_config_fromfile(config_path)
         dynamic_adapt_for_mmlab(cfg)
         model = build_model(cfg.model)
+        self.cfg = cfg
 
         return model
 
@@ -120,6 +124,19 @@ class MMLabUtilTest(unittest.TestCase):
         self.assertEqual(len(results['detection_classes']), 20)
         self.assertEqual(len(results['detection_masks']), 20)
         self.assertEqual(len(results['img_metas']), 20)
+
+    def test_reset(self):
+        model = self._get_model()
+        remove_adapt_for_mmlab(self.cfg)
+        mmdet_registry = MM_REGISTRY[MMDET]
+        for module, registry in mmdet_registry.items():
+            for k, v in registry.module_dict.items():
+                self.assertTrue('easycv' not in str(v))
+
+        models = mmdet_registry['model']
+        mask_rcnn = models.get('MaskRCNN')
+        sig_str = str(signature(mask_rcnn.forward))
+        self.assertTrue('mode' not in sig_str)
 
 
 if __name__ == '__main__':
