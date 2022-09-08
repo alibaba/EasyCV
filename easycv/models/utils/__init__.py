@@ -19,8 +19,9 @@ from .scale import Scale
 # from .weight_init import (bias_init_with_prob, kaiming_init, normal_init,
 #                          uniform_init, xavier_init)
 from .sobel import Sobel
-from .transformer import (MLP, TransformerEncoder, TransformerEncoderLayer,
-                          _get_activation_fn, _get_clones)
+from .transformer import (MLP, DropPath, Mlp, TransformerEncoder,
+                          TransformerEncoderLayer, _get_activation_fn,
+                          _get_clones)
 
 # __all__ = [
 #    'conv_ws_2d', 'ConvWS2d', 'build_conv_layer', 'ConvModule',

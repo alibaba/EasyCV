@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2021 Megvii Inc And Alibaba PAI Team. All rights reserved.
+# Copyright (c) 2014-2021 Megvii Inc, AlanLi And Alibaba PAI Team. All rights reserved.
 
 import torch
 import torch.nn as nn
@@ -13,9 +13,10 @@ class SiLU(nn.Module):
 
     @staticmethod
     def forward(x):
-        result = x.clone()
-        torch.sigmoid_(x)
-        return x * result
+        # clone is not supported with nni 2.6.1
+        # result = x.clone()
+        # torch.sigmoid_(x)
+        return x * torch.sigmoid(x)
 
 
 class HSiLU(nn.Module):
@@ -30,9 +31,10 @@ class HSiLU(nn.Module):
 
     @staticmethod
     def forward(x):
-        result = x.clone()
-        torch.hardsigmoid(x)
-        return x * result
+        # clone is not supported with nni 2.6.1
+        # result = x.clone()
+        # torch.hardsigmoid(x)
+        return x * torch.hardsigmoid(x)
 
 
 def get_activation(name='silu', inplace=True):
@@ -46,6 +48,8 @@ def get_activation(name='silu', inplace=True):
         module = nn.LeakyReLU(0.1, inplace=inplace)
     elif name == 'hsilu':
         module = HSiLU(inplace=inplace)
+    elif name == 'identity':
+        module = nn.Identity(inplace=inplace)
     else:
         raise AttributeError('Unsupported act type: {}'.format(name))
     return module
@@ -145,6 +149,35 @@ class ResLayer(nn.Module):
     def forward(self, x):
         out = self.layer2(self.layer1(x))
         return x + out
+
+
+class SPPFBottleneck(nn.Module):
+    """Spatial pyramid pooling layer used in YOLOv3-SPP"""
+
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size=5,
+                 activation='silu'):
+        super().__init__()
+        hidden_channels = in_channels // 2
+        self.conv1 = BaseConv(
+            in_channels, hidden_channels, 1, stride=1, act=activation)
+
+        self.m = nn.MaxPool2d(
+            kernel_size=kernel_size, stride=1, padding=kernel_size // 2)
+
+        conv2_channels = hidden_channels * 4
+        self.conv2 = BaseConv(
+            conv2_channels, out_channels, 1, stride=1, act=activation)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x1 = self.m(x)
+        x2 = self.m(x1)
+        x = self.conv2(torch.cat([x, x1, x2, self.m(x2)], 1))
+
+        return x
 
 
 class SPPBottleneck(nn.Module):
@@ -250,3 +283,63 @@ class Focus(nn.Module):
             dim=1,
         )
         return self.conv(x)
+
+
+class GSConv(nn.Module):
+    """
+        GSConv is used to merge the channel information of DSConv and BaseConv
+        You can refer to https://github.com/AlanLi1997/slim-neck-by-gsconv for more details
+    """
+
+    def __init__(self, c1, c2, k=1, s=1, g=1, act='silu'):
+        super().__init__()
+        c_ = c2 // 2
+        self.cv1 = BaseConv(c1, c_, k, s, g, act)
+        self.cv2 = BaseConv(c_, c_, 5, 1, c_, act)
+
+    def forward(self, x):
+        x1 = self.cv1(x)
+        x2 = torch.cat((x1, self.cv2(x1)), 1)
+        # shuffle
+        b, n, h, w = x2.data.size()
+        b_n = b * n // 2
+        y = x2.reshape(b_n, 2, h * w)
+        y = y.permute(1, 0, 2)
+        y = y.reshape(2, -1, n // 2, h, w)
+
+        return torch.cat((y[0], y[1]), 1)
+
+
+class GSBottleneck(nn.Module):
+    """
+        The use of GSBottleneck is to stack the GSConv layer
+        You can refer to https://github.com/AlanLi1997/slim-neck-by-gsconv for more details
+    """
+
+    def __init__(self, c1, c2, k=3, s=1):
+        super().__init__()
+        c_ = c2 // 2
+
+        self.conv_lighting = nn.Sequential(
+            GSConv(c1, c_, 1, 1), GSConv(c_, c2, 1, 1, act='identity'))
+
+    def forward(self, x):
+        return self.conv_lighting(x)
+
+
+class VoVGSCSP(nn.Module):
+    """
+        VoVGSCSP is a new neck structure used in CSPNet
+        You can refer to https://github.com/AlanLi1997/slim-neck-by-gsconv for more details
+    """
+
+    def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):
+        super().__init__()
+        c_ = int(c2 * e)
+        self.cv1 = BaseConv(c1, c_, 1, 1)
+        self.cv2 = BaseConv(2 * c_, c2, 1, 1)
+        self.m = nn.Sequential(*(GSBottleneck(c_, c_) for _ in range(n)))
+
+    def forward(self, x):
+        x1 = self.cv1(x)
+        return self.cv2(torch.cat((self.m(x1), x1), dim=1))

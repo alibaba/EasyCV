@@ -10,12 +10,14 @@ from mmcv.parallel import collate, scatter
 from torch.hub import load_state_dict_from_url
 from torchvision.transforms import Compose
 
+from easycv.apis.export import reparameterize_models
 from easycv.core.visualization import imshow_bboxes
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.utils import replace_ImageToTensor
 from easycv.file import io
 from easycv.file.utils import is_url_path, url_path_exists
 from easycv.models import build_model
+from easycv.models.detection.utils import postprocess
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
@@ -77,64 +79,39 @@ class DetectionPredictor(PredictorV2):
         return inputs
 
 
-@PREDICTORS.register_module()
-class TorchYoloXPredictor(PredictorInterface):
+class DetrPredictor(PredictorInterface):
+    """Inference image(s) with the detector.
+    Args:
+        model_path (str): checkpoint model and export model are shared.
+        config_path (str): If config_path is specified, both checkpoint model and export model can be used; if config_path=None, the export model is used by default.
+    """
 
-    def __init__(self,
-                 model_path,
-                 max_det=100,
-                 score_thresh=0.5,
-                 model_config=None):
-        """
-        init model
+    def __init__(self, model_path, config_path=None):
 
-        Args:
-          model_path: model file path
-          max_det: maximum number of detection
-          score_thresh:  score_thresh to filter box
-          model_config: config string for model to init, in json format
-        """
         self.model_path = model_path
-        self.max_det = max_det
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.use_jit = model_path.endswith('jit') or model_path.endswith(
-            'blade')
 
-        self.use_blade = model_path.endswith('blade')
-
-        if self.use_blade:
-            import torch_blade
-
-        if model_config:
-            model_config = json.loads(model_config)
+        if config_path is not None:
+            self.cfg = mmcv_config_fromfile(config_path)
         else:
-            model_config = {}
+            logger = get_root_logger()
+            logger.warning('please use export model!')
+            if is_url_path(self.model_path) and url_path_exists(
+                    self.model_path):
+                checkpoint = load_state_dict_from_url(model_path)
+            else:
+                assert io.exists(
+                    self.model_path), f'{self.model_path} does not exists'
 
-        self.score_thresh = model_config[
-            'score_thresh'] if 'score_thresh' in model_config else score_thresh
-
-        if self.use_jit:
-            with io.open(model_path, 'rb') as infile:
-                map_location = 'cpu' if self.device == 'cpu' else 'cuda'
-                self.model = torch.jit.load(infile, map_location)
-
-            with io.open(model_path + '.config.json', 'r') as infile:
-                self.cfg = json.load(infile)
-                test_pipeline = self.cfg['test_pipeline']
-                self.CLASSES = self.cfg['classes']
-                self.end2end = self.cfg['export']['end2end']
-
-            self.traceable = True
-
-        else:
-            self.end2end = False
-            with io.open(self.model_path, 'rb') as infile:
-                checkpoint = torch.load(infile, map_location='cpu')
+                with io.open(self.model_path, 'rb') as infile:
+                    checkpoint = torch.load(infile, map_location='cpu')
 
             assert 'meta' in checkpoint and 'config' in checkpoint[
                 'meta'], 'meta.config is missing from checkpoint'
 
             config_str = checkpoint['meta']['config']
+            if isinstance(config_str, dict):
+                config_str = json.dumps(config_str)
+
             # get config
             basename = os.path.basename(self.model_path)
             fname, _ = os.path.splitext(basename)
@@ -144,195 +121,7 @@ class TorchYoloXPredictor(PredictorInterface):
                 os.makedirs(CACHE_DIR)
             with open(self.local_config_file, 'w') as ofile:
                 ofile.write(config_str)
-
             self.cfg = mmcv_config_fromfile(self.local_config_file)
-
-            # build model
-            self.model = build_model(self.cfg.model)
-
-            self.traceable = getattr(self.model, 'trace_able', False)
-
-            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-            map_location = 'cpu' if self.device == 'cpu' else 'cuda'
-            self.ckpt = load_checkpoint(
-                self.model, self.model_path, map_location=map_location)
-
-            self.model.to(self.device)
-            self.model.eval()
-
-            test_pipeline = self.cfg.test_pipeline
-            self.CLASSES = self.cfg.CLASSES
-
-        # build pipeline
-        pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
-        self.pipeline = Compose(pipeline)
-
-    def post_assign(self, outputs, img_metas):
-        detection_boxes = []
-        detection_scores = []
-        detection_classes = []
-        img_metas_list = []
-
-        for i in range(len(outputs)):
-            if img_metas:
-                img_metas_list.append(img_metas[i])
-            if outputs[i].requires_grad == True:
-                outputs[i] = outputs[i].detach()
-            if outputs[i] is not None:
-                bboxes = outputs[i][:, 0:4] if outputs[i] is not None else None
-                if img_metas:
-                    bboxes /= img_metas[i]['scale_factor'][0]
-                detection_boxes.append(bboxes.cpu().numpy())
-                detection_scores.append(
-                    (outputs[i][:, 4] * outputs[i][:, 5]).cpu().numpy())
-                detection_classes.append(outputs[i][:, 6].cpu().numpy().astype(
-                    np.int32))
-            else:
-                detection_boxes.append(None)
-                detection_scores.append(None)
-                detection_classes.append(None)
-
-        test_outputs = {
-            'detection_boxes': detection_boxes,
-            'detection_scores': detection_scores,
-            'detection_classes': detection_classes,
-            'img_metas': img_metas_list
-        }
-        return test_outputs
-
-    def predict(self, input_data_list, batch_size=-1, to_numpy=True):
-        """
-    using session run predict a number of samples using batch_size
-
-    Args:
-      input_data_list:  a list of numpy array(in rgb order), each array is a sample
-        to be predicted
-      batch_size: batch_size passed by the caller, you can also ignore this param and
-        use a fixed number if you do not want to adjust batch_size in runtime
-    Return:
-      result: a list of dict, each dict is the prediction result of one sample
-        eg, {"output1": value1, "output2": value2}, the value type can be
-        python int str float, and numpy array
-    """
-        output_list = []
-        for idx, img in enumerate(input_data_list):
-            if type(img) is not np.ndarray:
-                img = np.asarray(img)
-
-            ori_img_shape = img.shape[:2]
-
-            if self.end2end:
-                # the input should also be as the type of uint8 as mmcv
-                img = torch.from_numpy(img).to(self.device)
-                det_out = self.model(img)
-
-                detection_scores = det_out['detection_scores']
-
-                if detection_scores is not None:
-                    sel_ids = detection_scores > self.score_thresh
-                    detection_scores = detection_scores[sel_ids]
-                    detection_boxes = det_out['detection_boxes'][sel_ids]
-                    detection_classes = det_out['detection_classes'][sel_ids]
-                else:
-                    detection_boxes = []
-                    detection_classes = []
-
-                if to_numpy:
-                    detection_scores = detection_scores.detach().numpy()
-                    detection_boxes = detection_boxes.detach().numpy()
-                    detection_classes = detection_classes.detach().numpy()
-
-            else:
-                data_dict = {'img': img}
-                data_dict = self.pipeline(data_dict)
-                img = data_dict['img']
-                img = torch.unsqueeze(img._data, 0).to(self.device)
-                data_dict.pop('img')
-
-                if self.traceable:
-                    with torch.no_grad():
-                        det_out = self.post_assign(
-                            self.model(img),
-                            img_metas=[data_dict['img_metas']._data])
-                else:
-                    with torch.no_grad():
-                        det_out = self.model(
-                            img,
-                            mode='test',
-                            img_metas=[data_dict['img_metas']._data])
-
-                # det_out = det_out[:self.max_det]
-                # scale box to original image scale, this logic has some operation
-                # that can not be traced, see
-                # https://discuss.pytorch.org/t/windows-libtorch-c-load-cuda-module-with-std-runtime-error-message-shape-4-is-invalid-for-input-if-size-40/63073/4
-                # det_out = scale_coords(img.shape[2:], det_out, ori_img_shape, (scale_factor, pad))
-
-                detection_scores = det_out['detection_scores'][0]
-
-                if detection_scores is not None:
-                    sel_ids = detection_scores > self.score_thresh
-                    detection_scores = detection_scores[sel_ids]
-                    detection_boxes = det_out['detection_boxes'][0][sel_ids]
-                    detection_classes = det_out['detection_classes'][0][
-                        sel_ids]
-                else:
-                    detection_boxes = None
-                    detection_classes = None
-
-            num_boxes = detection_classes.shape[
-                0] if detection_classes is not None else 0
-
-            detection_classes_names = [
-                self.CLASSES[detection_classes[idx]]
-                for idx in range(num_boxes)
-            ]
-
-            out = {
-                'ori_img_shape': list(ori_img_shape),
-                'detection_boxes': detection_boxes,
-                'detection_scores': detection_scores,
-                'detection_classes': detection_classes,
-                'detection_class_names': detection_classes_names,
-            }
-
-            output_list.append(out)
-
-        return output_list
-
-
-@PREDICTORS.register_module()
-class TorchViTDetPredictor(PredictorInterface):
-
-    def __init__(self, model_path):
-
-        self.model_path = model_path
-
-        if is_url_path(self.model_path) and url_path_exists(self.model_path):
-            checkpoint = load_state_dict_from_url(model_path)
-        else:
-            assert io.exists(
-                self.model_path), f'{self.model_path} does not exists'
-
-            with io.open(self.model_path, 'rb') as infile:
-                checkpoint = torch.load(infile, map_location='cpu')
-
-        assert 'meta' in checkpoint and 'config' in checkpoint[
-            'meta'], 'meta.config is missing from checkpoint'
-
-        config_str = checkpoint['meta']['config']
-        if isinstance(config_str, dict):
-            config_str = json.dumps(config_str)
-
-        # get config
-        basename = os.path.basename(self.model_path)
-        fname, _ = os.path.splitext(basename)
-        self.local_config_file = os.path.join(CACHE_DIR,
-                                              f'{fname}_config.json')
-        if not os.path.exists(CACHE_DIR):
-            os.makedirs(CACHE_DIR)
-        with open(self.local_config_file, 'w') as ofile:
-            ofile.write(config_str)
-        self.cfg = mmcv_config_fromfile(self.local_config_file)
 
         # dynamic adapt mmdet models
         dynamic_adapt_for_mmlab(self.cfg)
@@ -351,9 +140,8 @@ class TorchViTDetPredictor(PredictorInterface):
         self.CLASSES = self.cfg.CLASSES
 
     def predict(self, imgs):
-        """Inference image(s) with the detector.
+        """
         Args:
-            model (nn.Module): The loaded detector.
             imgs (str/ndarray or list[str/ndarray] or tuple[str/ndarray]):
             Either image files or loaded images.
         Returns:
@@ -366,8 +154,6 @@ class TorchViTDetPredictor(PredictorInterface):
         else:
             imgs = [imgs]
             is_batch = False
-
-        print(imgs)
 
         cfg = self.cfg
         device = next(self.model.parameters()).device  # model device
@@ -436,12 +222,12 @@ class TorchViTDetPredictor(PredictorInterface):
 
         return results
 
-    def show_result_pyplot(self,
-                           img,
-                           results,
-                           score_thr=0.3,
-                           show=False,
-                           out_file=None):
+    def visualize(self,
+                  img,
+                  results,
+                  score_thr=0.3,
+                  show=False,
+                  out_file=None):
         bboxes = results['detection_boxes'][0]
         scores = results['detection_scores'][0]
         labels = results['detection_classes'][0].tolist()
@@ -474,6 +260,245 @@ class TorchViTDetPredictor(PredictorInterface):
             font_scale=0.5,
             show=show,
             out_file=out_file)
+
+
+@PREDICTORS.register_module()
+class TorchYoloXPredictor(PredictorInterface):
+
+    def __init__(self,
+                 model_path,
+                 max_det=100,
+                 score_thresh=0.5,
+                 use_trt_efficientnms=False,
+                 model_config=None):
+        """
+        init model
+
+        Args:
+          model_path: model file path
+          max_det: maximum number of detection
+          score_thresh:  score_thresh to filter box
+          model_config: config string for model to init, in json format
+        """
+        self.model_path = model_path
+        self.max_det = max_det
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        # set type
+        self.model_type = 'raw'
+        if model_path.endswith('jit'):
+            self.model_type = 'jit'
+        if model_path.endswith('blade'):
+            self.model_type = 'blade'
+
+        self.use_trt_efficientnms = use_trt_efficientnms
+
+        if self.model_type == 'blade' or self.use_trt_efficientnms:
+            import torch_blade
+
+        if model_config:
+            model_config = json.loads(model_config)
+        else:
+            model_config = {}
+
+        self.score_thresh = model_config[
+            'score_thresh'] if 'score_thresh' in model_config else score_thresh
+
+        if self.model_type != 'raw':
+            # jit or blade model
+            preprocess_path = '.'.join(
+                model_path.split('.')[:-1] + ['preprocess'])
+            if os.path.exists(preprocess_path):
+                # use a preprocess jit model to speed up
+                with io.open(preprocess_path, 'rb') as infile:
+                    map_location = 'cpu' if self.device == 'cpu' else 'cuda'
+                    self.preprocess = torch.jit.load(infile, map_location)
+
+            with io.open(model_path, 'rb') as infile:
+                map_location = 'cpu' if self.device == 'cpu' else 'cuda'
+                self.model = torch.jit.load(infile, map_location)
+            with io.open(model_path + '.config.json', 'r') as infile:
+                self.cfg = json.load(infile)
+                test_pipeline = self.cfg['test_pipeline']
+                self.CLASSES = self.cfg['classes']
+                self.preprocess_jit = self.cfg['export']['preprocess_jit']
+
+            self.traceable = True
+
+        else:
+            self.preprocess_jit = False
+            with io.open(self.model_path, 'rb') as infile:
+                checkpoint = torch.load(infile, map_location='cpu')
+
+            assert 'meta' in checkpoint and 'config' in checkpoint[
+                'meta'], 'meta.config is missing from checkpoint'
+
+            config_str = checkpoint['meta']['config']
+            # get config
+            basename = os.path.basename(self.model_path)
+            fname, _ = os.path.splitext(basename)
+            self.local_config_file = os.path.join(CACHE_DIR,
+                                                  f'{fname}_config.json')
+            if not os.path.exists(CACHE_DIR):
+                os.makedirs(CACHE_DIR)
+            with open(self.local_config_file, 'w') as ofile:
+                ofile.write(config_str)
+
+            self.cfg = mmcv_config_fromfile(self.local_config_file)
+
+            # build model
+            self.model = build_model(self.cfg.model)
+
+            self.traceable = getattr(self.model, 'trace_able', False)
+
+            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            map_location = 'cpu' if self.device == 'cpu' else 'cuda'
+            self.ckpt = load_checkpoint(
+                self.model, self.model_path, map_location=map_location)
+
+            self.model = reparameterize_models(self.model)
+
+            self.model.to(self.device)
+            self.model.eval()
+            test_pipeline = self.cfg.test_pipeline
+            self.CLASSES = self.cfg.CLASSES
+
+        # build pipeline
+        pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
+        self.pipeline = Compose(pipeline)
+
+        self.test_conf = self.cfg['model'].get('test_conf', 0.01)
+        self.nms_thre = self.cfg['model'].get('nms_thre', 0.65)
+        self.num_classes = len(self.CLASSES)
+
+    def post_assign(self, outputs, img_metas):
+        detection_boxes = []
+        detection_scores = []
+        detection_classes = []
+        img_metas_list = []
+
+        for i in range(len(outputs)):
+            if img_metas:
+                img_metas_list.append(img_metas[i])
+            if outputs[i].requires_grad == True:
+                outputs[i] = outputs[i].detach()
+
+            if outputs[i] is not None:
+                bboxes = outputs[i][:, 0:4] if outputs[i] is not None else None
+                if img_metas:
+                    bboxes /= img_metas[i]['scale_factor'][0]
+                detection_boxes.append(bboxes.cpu().numpy())
+                detection_scores.append(
+                    (outputs[i][:, 4] * outputs[i][:, 5]).cpu().numpy())
+                detection_classes.append(outputs[i][:, 6].cpu().numpy().astype(
+                    np.int32))
+            else:
+                detection_boxes.append(None)
+                detection_scores.append(None)
+                detection_classes.append(None)
+
+        test_outputs = {
+            'detection_boxes': detection_boxes,
+            'detection_scores': detection_scores,
+            'detection_classes': detection_classes,
+            'img_metas': img_metas_list
+        }
+        return test_outputs
+
+    def predict(self, input_data_list, batch_size=-1, to_numpy=True):
+        """
+    using session run predict a number of samples using batch_size
+
+    Args:
+      input_data_list:  a list of numpy array(in rgb order), each array is a sample
+        to be predicted
+      batch_size: batch_size passed by the caller, you can also ignore this param and
+        use a fixed number if you do not want to adjust batch_size in runtime
+    Return:
+      result: a list of dict, each dict is the prediction result of one sample
+        eg, {"output1": value1, "output2": value2}, the value type can be
+        python int str float, and numpy array
+    """
+        output_list = []
+        for idx, img in enumerate(input_data_list):
+            if type(img) is not np.ndarray:
+                img = np.asarray(img)
+
+            ori_img_shape = img.shape[:2]
+            if self.preprocess_jit:
+                # the input should also be as the type of uint8 as mmcv
+                img = torch.from_numpy(img).to(self.device)
+                img = img.unsqueeze(0)
+
+                if hasattr(self, 'preprocess'):
+                    img, img_info = self.preprocess(img)
+
+            else:
+                data_dict = {'img': img}
+                data_dict = self.pipeline(data_dict)
+                img = data_dict['img']
+                img = torch.unsqueeze(img._data, 0).to(self.device)
+                data_dict.pop('img')
+                img_info = data_dict['img_metas']._data
+
+            if self.traceable:
+                if self.use_trt_efficientnms:
+                    with torch.no_grad():
+                        tmp_out = self.model(img)
+                        det_out = {}
+                        det_out['detection_boxes'] = tmp_out[1] / img_info[
+                            'scale_factor'][0]
+                        det_out['detection_scores'] = tmp_out[2]
+                        det_out['detection_classes'] = tmp_out[3]
+
+                else:
+                    with torch.no_grad():
+                        det_out = self.post_assign(
+                            postprocess(
+                                self.model(img), self.num_classes,
+                                self.test_conf, self.nms_thre),
+                            img_metas=[img_info])
+            else:
+                with torch.no_grad():
+                    det_out = self.model(
+                        img, mode='test', img_metas=[img_info])
+
+            # print(det_out)
+            # det_out = det_out[:self.max_det]
+            # scale box to original image scale, this logic has some operation
+            # that can not be traced, see
+            # https://discuss.pytorch.org/t/windows-libtorch-c-load-cuda-module-with-std-runtime-error-message-shape-4-is-invalid-for-input-if-size-40/63073/4
+            # det_out = scale_coords(img.shape[2:], det_out, ori_img_shape, (scale_factor, pad))
+
+            detection_scores = det_out['detection_scores'][0]
+
+            if detection_scores is not None:
+                sel_ids = detection_scores > self.score_thresh
+                detection_scores = detection_scores[sel_ids]
+                detection_boxes = det_out['detection_boxes'][0][sel_ids]
+                detection_classes = det_out['detection_classes'][0][sel_ids]
+            else:
+                detection_boxes = None
+                detection_classes = None
+
+            num_boxes = detection_classes.shape[
+                0] if detection_classes is not None else 0
+
+            detection_classes_names = [
+                self.CLASSES[detection_classes[idx]]
+                for idx in range(num_boxes)
+            ]
+
+            out = {
+                'ori_img_shape': list(ori_img_shape),
+                'detection_boxes': detection_boxes,
+                'detection_scores': detection_scores,
+                'detection_classes': detection_classes,
+                'detection_class_names': detection_classes_names,
+            }
+
+            output_list.append(out)
+
+        return output_list
 
 
 @PREDICTORS.register_module()

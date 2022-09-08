@@ -23,10 +23,11 @@ if is_torchacc_enabled():
 import time
 import requests
 import torch
+import torch.distributed as dist
 from mmcv.runner import init_dist
 
 from easycv import __version__
-from easycv.apis import set_random_seed, train_model
+from easycv.apis import init_random_seed, set_random_seed, train_model
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.datasets.utils import is_dali_dataset_type
 from easycv.file import io
@@ -37,6 +38,7 @@ from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.config_tools import traverse_replace
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
+from easycv.utils.dist_utils import get_device
 from easycv.utils.setup_env import setup_multi_processes
 
 
@@ -61,6 +63,10 @@ def parse_args():
         help='number of gpus to use '
         '(only applicable to non-distributed training)')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
+    parser.add_argument(
+        '--diff-seed',
+        action='store_true',
+        help='Whether or not set different seeds for different ranks')
     parser.add_argument('--fp16', action='store_true', help='use fp16')
     parser.add_argument(
         '--deterministic',
@@ -207,15 +213,18 @@ def main():
     logger.info('GPU INFO : {}'.format(torch.cuda.get_device_name(0)))
 
     # set random seeds
+    # Using different seeds for different ranks may reduce accuracy
+    seed = init_random_seed(args.seed, device=get_device())
+    seed = seed + dist.get_rank() if args.diff_seed else seed
     if is_torchacc_enabled():
-        assert args.seed is not None, 'Must provide `seed` to sync model initializer if use torchacc!'
+        assert seed is not None, 'Must provide `seed` to sync model initializer if use torchacc!'
 
-    if args.seed is not None:
+    if seed is not None:
         logger.info('Set random seed to {}, deterministic: {}'.format(
-            args.seed, args.deterministic))
-        set_random_seed(args.seed, deterministic=args.deterministic)
-    cfg.seed = args.seed
-    meta['seed'] = args.seed
+            seed, args.deterministic))
+        set_random_seed(seed, deterministic=args.deterministic)
+    cfg.seed = seed
+    meta['seed'] = seed
 
     if args.pretrained is not None:
         assert isinstance(args.pretrained, str)
