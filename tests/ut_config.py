@@ -45,7 +45,8 @@ SMALL_IMAGENET_TFRECORD_OSS = os.path.join(
     BASE_OSS_PATH, 'data/classification/small_imagenet_tfrecord/')
 
 IO_DATA_TXTX_OSS = os.path.join(BASE_OSS_PATH, 'data/io_test_dir/txts/')
-
+IO_DATA_MULTI_DIRS_OSS = os.path.join(BASE_OSS_PATH,
+                                      'data/io_test_dir/multi_dirs/')
 DET_DATA_SMALL_COCO_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                          'data/detection/small_coco')
 
