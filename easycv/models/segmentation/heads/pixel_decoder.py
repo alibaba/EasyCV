@@ -1,19 +1,14 @@
 import copy
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Union
 
 import numpy as np
 import torch
 from torch import nn
 from torch.cuda.amp import autocast
 from torch.nn import functional as F
-from torch.nn.init import constant_, normal_, uniform_, xavier_uniform_
+from torch.nn.init import normal_
 
 from .transformer_decoder import PositionEmbeddingSine, _get_activation_fn
-
-try:
-    from thirdparty.deformable_transformer.modules import MSDeformAttn
-except:
-    pass
 
 
 def _get_clones(module, N):
@@ -115,6 +110,7 @@ class MSDeformAttnTransformerEncoderOnly(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
         for m in self.modules():
+            from thirdparty.deformable_attention.modules import MSDeformAttn
             if isinstance(m, MSDeformAttn):
                 m._reset_parameters()
         normal_(self.level_embed)
@@ -180,6 +176,7 @@ class MSDeformAttnTransformerEncoderLayer(nn.Module):
         super().__init__()
 
         # self attention
+        from thirdparty.deformable_attention.modules import MSDeformAttn
         self.self_attn = MSDeformAttn(d_model, n_levels, n_heads, n_points)
         self.dropout1 = nn.Dropout(dropout)
         self.norm1 = nn.LayerNorm(d_model)

@@ -13,9 +13,10 @@ class SiLU(nn.Module):
 
     @staticmethod
     def forward(x):
-        result = x.clone()
-        torch.sigmoid_(x)
-        return x * result
+        # clone is not supported with nni 2.6.1
+        # result = x.clone()
+        # torch.sigmoid_(x)
+        return x * torch.sigmoid(x)
 
 
 class HSiLU(nn.Module):
@@ -30,9 +31,10 @@ class HSiLU(nn.Module):
 
     @staticmethod
     def forward(x):
-        result = x.clone()
-        torch.hardsigmoid(x)
-        return x * result
+        # clone is not supported with nni 2.6.1
+        # result = x.clone()
+        # torch.hardsigmoid(x)
+        return x * torch.hardsigmoid(x)
 
 
 def get_activation(name='silu', inplace=True):

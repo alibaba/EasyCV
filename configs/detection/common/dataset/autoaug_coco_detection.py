@@ -23,36 +23,41 @@ train_pipeline = [
     dict(type='MMRandomFlip', flip_ratio=0.5),
     dict(
         type='MMAutoAugment',
-        policies=[[
-            dict(
-                type='MMResize',
-                img_scale=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
-                           (608, 1333), (640, 1333), (672, 1333), (704, 1333),
-                           (736, 1333), (768, 1333), (800, 1333)],
-                multiscale_mode='value',
-                keep_ratio=True)
-        ],
-                  [
-                      dict(
-                          type='MMResize',
-                          img_scale=[(400, 1333), (500, 1333), (600, 1333)],
-                          multiscale_mode='value',
-                          keep_ratio=True),
-                      dict(
-                          type='MMRandomCrop',
-                          crop_type='absolute_range',
-                          crop_size=(384, 600),
-                          allow_negative_crop=True),
-                      dict(
-                          type='MMResize',
-                          img_scale=[(480, 1333), (512, 1333), (544, 1333),
-                                     (576, 1333), (608, 1333), (640, 1333),
-                                     (672, 1333), (704, 1333), (736, 1333),
-                                     (768, 1333), (800, 1333)],
-                          multiscale_mode='value',
-                          override=True,
-                          keep_ratio=True)
-                  ]]),
+        policies=[
+            [
+                dict(
+                    type='MMResize',
+                    img_scale=[(480, 1333), (512, 1333), (544, 1333),
+                               (576, 1333), (608, 1333), (640, 1333),
+                               (672, 1333), (704, 1333), (736, 1333),
+                               (768, 1333), (800, 1333)],
+                    multiscale_mode='value',
+                    keep_ratio=True)
+            ],
+            [
+                dict(
+                    type='MMResize',
+                    # The radio of all image in train dataset < 7
+                    # follow the original impl
+                    img_scale=[(400, 4200), (500, 4200), (600, 4200)],
+                    multiscale_mode='value',
+                    keep_ratio=True),
+                dict(
+                    type='MMRandomCrop',
+                    crop_type='absolute_range',
+                    crop_size=(384, 600),
+                    allow_negative_crop=True),
+                dict(
+                    type='MMResize',
+                    img_scale=[(480, 1333), (512, 1333), (544, 1333),
+                               (576, 1333), (608, 1333), (640, 1333),
+                               (672, 1333), (704, 1333), (736, 1333),
+                               (768, 1333), (800, 1333)],
+                    multiscale_mode='value',
+                    override=True,
+                    keep_ratio=True)
+            ]
+        ]),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='MMPad', size_divisor=1),
     dict(type='DefaultFormatBundle'),
@@ -96,7 +101,7 @@ train_dataset = dict(
         ],
         classes=CLASSES,
         test_mode=False,
-        filter_empty_gt=True,
+        filter_empty_gt=False,
         iscrowd=False),
     pipeline=train_pipeline)
 
@@ -118,13 +123,18 @@ val_dataset = dict(
     pipeline=test_pipeline)
 
 data = dict(
-    imgs_per_gpu=2, workers_per_gpu=2, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=2,
+    workers_per_gpu=2,
+    train=train_dataset,
+    val=val_dataset,
+    drop_last=True)
 
 # evaluation
 eval_config = dict(interval=1, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',
+        dist_eval=True,
         evaluators=[
             dict(type='CocoDetectionEvaluator', classes=CLASSES),
         ],

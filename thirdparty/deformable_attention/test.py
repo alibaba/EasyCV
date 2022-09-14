@@ -110,5 +110,6 @@ if __name__ == '__main__':
     check_forward_equal_with_pytorch_double()
     check_forward_equal_with_pytorch_float()
 
-    for channels in [30, 32, 64, 71, 1025, 2048, 3096]:
+    # If out of memory occurs, reduce the number of channels
+    for channels in [30, 32, 64, 71, 1025, 2048, 3096]: 
         check_gradient_numerical(channels, True, True, True)
