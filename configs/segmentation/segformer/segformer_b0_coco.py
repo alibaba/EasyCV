@@ -209,14 +209,14 @@ optimizer_config = dict()
 lr_config = dict(
     policy='poly',
     warmup='linear',
-    warmup_iters=800,
+    warmup_iters=1500,
     warmup_ratio=1e-06,
     power=1.0,
     min_lr=0.0,
     by_epoch=False)
 
 # runtime settings
-total_epochs = 20
+total_epochs = 30
 checkpoint_config = dict(interval=1)
 eval_config = dict(interval=1, gpu_collect=False)
 eval_pipelines = [
