@@ -123,3 +123,11 @@ PRETRAINED_MODEL_MAE = os.path.join(
 PRETRAINED_MODEL_MASK2FORMER = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/segmentation/mask2former/mask2former_r50_instance.pth')
+
+PRETRAINED_MODEL_SEGFORMER = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/segmentation/segformer/segformer_b0/SegmentationEvaluator_mIoU_best.pth'
+)
+MODEL_CONFIG_SEGFORMER = (
+    './configs/segmentation/segformer/segformer_b0_coco.py')
+SMALL_COCO_WHOLE_BODY_HAND_ROOT = 'data/test/pose/hand/small_whole_body_hand_coco'

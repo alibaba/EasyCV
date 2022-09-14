@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
 import unittest
+from inspect import signature
 
 import torch
 from mmcv.parallel import scatter_kwargs
@@ -11,7 +12,9 @@ from easycv.apis.test import single_gpu_test
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.models.builder import build_model
 from easycv.utils.config_tools import mmcv_config_fromfile
-from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
+from easycv.utils.mmlab_utils import (MM_REGISTRY, MMDET,
+                                      dynamic_adapt_for_mmlab,
+                                      remove_adapt_for_mmlab)
 
 
 class MMLabUtilTest(unittest.TestCase):
@@ -24,6 +27,7 @@ class MMLabUtilTest(unittest.TestCase):
         cfg = mmcv_config_fromfile(config_path)
         dynamic_adapt_for_mmlab(cfg)
         model = build_model(cfg.model)
+        self.cfg = cfg
 
         return model
 
@@ -89,24 +93,17 @@ class MMLabUtilTest(unittest.TestCase):
             pipeline=pipeline)
         return build_dataset(dataset_cfg)
 
-    def xxtest_model_train(self):
+    def test_model_train(self):
         model = self._get_model()
         model = model.cuda()
         model.train()
 
         dataset = self._get_dataset()
         data_loader = build_dataloader(
-            dataset, imgs_per_gpu=3, workers_per_gpu=1, num_gpus=1, dist=False)
+            dataset, imgs_per_gpu=1, workers_per_gpu=1, num_gpus=1, dist=False)
         for i, data_batch in enumerate(data_loader):
-            input_args, kwargs = scatter_kwargs(None, data_batch, [-1])
-            for key in ['img', 'gt_bboxes', 'gt_labels']:
-                if isinstance(kwargs[0][key], (list, tuple)):
-                    kwargs[0][key] = [
-                        kwargs[0][key][i].cuda()
-                        for i in range(len(kwargs[0][key]))
-                    ]
-                else:
-                    kwargs[0][key] = kwargs[0][key].cuda()
+            input_args, kwargs = scatter_kwargs(None, data_batch,
+                                                [torch.cuda.current_device()])
             output = model(**kwargs[0], mode='train')
             self.assertEqual(len(output['loss_rpn_cls']), 5)
             self.assertEqual(len(output['loss_rpn_bbox']), 5)
@@ -127,6 +124,19 @@ class MMLabUtilTest(unittest.TestCase):
         self.assertEqual(len(results['detection_classes']), 20)
         self.assertEqual(len(results['detection_masks']), 20)
         self.assertEqual(len(results['img_metas']), 20)
+
+    def test_reset(self):
+        model = self._get_model()
+        remove_adapt_for_mmlab(self.cfg)
+        mmdet_registry = MM_REGISTRY[MMDET]
+        for module, registry in mmdet_registry.items():
+            for k, v in registry.module_dict.items():
+                self.assertTrue('easycv' not in str(v))
+
+        models = mmdet_registry['model']
+        mask_rcnn = models.get('MaskRCNN')
+        sig_str = str(signature(mask_rcnn.forward))
+        self.assertTrue('mode' not in sig_str)
 
 
 if __name__ == '__main__':
