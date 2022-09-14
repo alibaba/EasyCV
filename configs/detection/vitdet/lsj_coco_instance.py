@@ -105,8 +105,7 @@ data = dict(
 )  # 64(total batch size) = 4 (batch size/per gpu) x 8 (gpu num) x 2(node)
 
 # evaluation
-# eval_config = dict(initial=True, interval=1, gpu_collect=False)
-eval_config = dict(interval=10, gpu_collect=False)
+eval_config = dict(initial=False, interval=1, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',
