@@ -153,7 +153,7 @@ class Mask2formerPredictor(SegmentationPredictor):
                  save_path=None,
                  mode='bgr',
                  pipelines=None,
-                 output_mode='panoptic',
+                 task_mode='panoptic',
                  *args,
                  **kwargs):
         super(Mask2formerPredictor, self).__init__(
@@ -167,7 +167,7 @@ class Mask2formerPredictor(SegmentationPredictor):
             pipelines=pipelines,
             *args,
             **kwargs)
-        self.output_mode = output_mode
+        self.task_mode = task_mode
 
     def forward(self, inputs):
         """Model forward.
@@ -178,15 +178,15 @@ class Mask2formerPredictor(SegmentationPredictor):
 
     def postprocess(self, inputs):
         output = {}
-        if self.output_mode == 'panoptic':
+        if self.task_mode == 'panoptic':
             output['pan'] = inputs['pan_results'][0]
-        elif self.output_mode == 'instance':
+        elif self.task_mode == 'instance':
             output['segms'] = inputs['detection_masks'][0]
             output['bboxes'] = inputs['detection_boxes'][0]
             output['scores'] = inputs['detection_scores'][0]
             output['labels'] = inputs['detection_classes'][0]
         else:
-            raise ValueError(f'Not support model {self.output_mode}')
+            raise ValueError(f'Not support model {self.task_mode}')
         return output
 
     def show_panoptic(self, img, pan_mask):
