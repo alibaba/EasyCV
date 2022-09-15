@@ -1,4 +1,5 @@
 # Reference from https://github.com/ViTAE-Transformer/ViTDet/blob/main/mmcv_custom/layer_decay_optimizer_constructor.py
+# Reference from https://github.com/facebookresearch/detectron2/blob/main/detectron2/modeling/backbone/vit.py
 
 import json
 
@@ -31,7 +32,7 @@ def get_vit_lr_decay_rate(name, lr_decay_rate=1.0, num_layers=12):
 @OPTIMIZER_BUILDERS.register_module()
 class LayerDecayOptimizerConstructor(DefaultOptimizerConstructor):
 
-    def add_params(self, params, module, prefix='', is_dcn_module=None):
+    def add_params(self, params, module):
         """Add all parameters of module to the params list.
         The parameters of the given module will be added to the list of param
         groups, with specific rules defined by paramwise_cfg.
@@ -39,10 +40,8 @@ class LayerDecayOptimizerConstructor(DefaultOptimizerConstructor):
             params (list[dict]): A list of param groups, it will be modified
                 in place.
             module (nn.Module): The module to be added.
-            prefix (str): The prefix of the module
-            is_dcn_module (int|float|None): If the current module is a
-                submodule of DCN, `is_dcn_module` will be passed to
-                control conv_offset layer's learning rate. Defaults to None.
+
+        Note: Currently, this optimizer constructor is built for ViTDet.
         """
 
         parameter_groups = {}
