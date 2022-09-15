@@ -22,8 +22,10 @@ from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
 from easycv.utils.logger import get_root_logger
-from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
+from easycv.utils.mmlab_utils import (dynamic_adapt_for_mmlab,
+                                      remove_adapt_for_mmlab)
 from easycv.utils.registry import build_from_cfg
+from .base import PredictorV2
 from .builder import PREDICTORS
 from .classifier import TorchClassifier
 
@@ -39,6 +41,44 @@ except Exception:
 
 
 @PREDICTORS.register_module()
+class DetectionPredictor(PredictorV2):
+    """Generic Detection Predictor, it will filter bbox results by ``score_threshold`` .
+    """
+
+    def __init__(self,
+                 model_path=None,
+                 config_file=None,
+                 batch_size=1,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 mode='rgb',
+                 score_threshold=0.5):
+        super(DetectionPredictor, self).__init__(
+            model_path,
+            config_file=config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            mode=mode,
+        )
+        self.score_thresh = score_threshold
+
+    def postprocess(self, inputs, *args, **kwargs):
+        for batch_index in range(self.batch_size):
+            this_detection_scores = inputs['detection_scores'][batch_index]
+            sel_ids = this_detection_scores > self.score_thresh
+            inputs['detection_scores'][batch_index] = inputs[
+                'detection_scores'][batch_index][sel_ids]
+            inputs['detection_boxes'][batch_index] = inputs['detection_boxes'][
+                batch_index][sel_ids]
+            inputs['detection_classes'][batch_index] = inputs[
+                'detection_classes'][batch_index][sel_ids]
+        # TODO class label remapping
+        return inputs
+
+
 class DetrPredictor(PredictorInterface):
     """Inference image(s) with the detector.
     Args:

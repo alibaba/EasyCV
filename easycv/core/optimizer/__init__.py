@@ -4,6 +4,7 @@ import torch
 from torch.optim import *
 
 from .builder import build_optimizer_constructor
+from .lamb import Lamb
 from .lars import LARS
 from .layer_decay_optimizer_constructor import LayerDecayOptimizerConstructor
 from .ranger import Ranger

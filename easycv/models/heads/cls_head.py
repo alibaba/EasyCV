@@ -28,7 +28,8 @@ class ClsHead(nn.Module):
                  },
                  input_feature_index=[0],
                  init_cfg=dict(
-                     type='Normal', layer='Linear', std=0.01, bias=0.)):
+                     type='Normal', layer='Linear', std=0.01, bias=0.),
+                 use_num_classes=True):
 
         super(ClsHead, self).__init__()
         self.with_avg_pool = with_avg_pool
@@ -46,7 +47,8 @@ class ClsHead(nn.Module):
                 'label_smooth must be given as a float number in [0,1]'
             logger.info(f'=> Augment: using label smooth={self.label_smooth}')
             loss_config['label_smooth'] = label_smooth
-        loss_config['num_classes'] = num_classes
+        if use_num_classes:
+            loss_config['num_classes'] = num_classes
 
         self.criterion = build_from_cfg(loss_config, LOSSES)
 

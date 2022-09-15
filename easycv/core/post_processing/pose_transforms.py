@@ -83,7 +83,7 @@ def fliplr_regression(regression,
 
     allowed_center_mode = {'static', 'root'}
     assert center_mode in allowed_center_mode, 'Get invalid center_mode ' \
-        f'{center_mode}, allowed choices are {allowed_center_mode}'
+                                               f'{center_mode}, allowed choices are {allowed_center_mode}'
 
     if center_mode == 'static':
         x_c = center_x

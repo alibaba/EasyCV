@@ -39,12 +39,55 @@ pre-commit run --all-files
 bash scripts/ci_test.sh
  ```
 
- ### 2.2 Test data
- if you add new data, please do the following to commit it to git-lfs before "git commit":
- ```bash
- python git-lfs/git_lfs.py add data/test/new_data
- python git-lfs/git_lfs.py push
- ```
+
+### 2.2 Test data storage
+
+As we need a lot of data for testing, including images, models. We use git lfs
+to store those large files.
+
+1. install git-lfs(version>=2.5.0)
+
+for mac
+
+```bash
+brew install git-lfs
+git lfs install
+```
+
+for centos, please download rpm from git-lfs github release [website](https://github.com/git-lfs/git-lfs/releases/tag/v3.2.0)
+```bash
+wget http://101374-public.oss-cn-hangzhou-zmf.aliyuncs.com/git-lfs-3.2.0-1.el7.x86_64.rpm
+sudo rpm -ivh git-lfs-3.2.0-1.el7.x86_64.rpm
+git lfs install
+```
+
+for ubuntu
+```bash
+curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+sudo apt-get install git-lfs
+git lfs install
+```
+
+2. track your data type using git lfs, for example, to track png files
+```bash
+git lfs track "*.png"
+```
+
+3. add your test files to `data/test/` folder, you can make directories if you need.
+```bash
+git add data/test/test.png
+```
+
+4. commit your test data to remote branch
+```bash
+git commit -m "xxx"
+```
+
+To pull data from remote repo, just as the same way you pull git files.
+```bash
+git pull origin branch_name
+```
+
 
  ## 3. Build pip package
  ```bash
