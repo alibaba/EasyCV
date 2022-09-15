@@ -17,7 +17,7 @@ class ErrorsTest(unittest.TestCase):
             raise errors.ValueError(
                 'value error', details='provide correct value', op=dummy_op)
         value_exception = cm.exception
-        self.assertEqual(value_exception.error_code, errors.INVALID_VALUE)
+        self.assertEqual(value_exception.error_code, hex(errors.INVALID_VALUE))
         self.assertEqual(value_exception.op, dummy_op)
         self.assertEqual(value_exception.details, 'provide correct value')
         self.assertEqual(value_exception.message, 'value error')
@@ -25,7 +25,7 @@ class ErrorsTest(unittest.TestCase):
         with self.assertRaises(errors.NotImplementedError) as cm:
             raise errors.NotImplementedError()
         value_exception = cm.exception
-        self.assertEqual(value_exception.error_code, errors.UNIMPLEMENTED)
+        self.assertEqual(value_exception.error_code, hex(errors.UNIMPLEMENTED))
         self.assertEqual(value_exception.op, None)
         self.assertEqual(value_exception.details, None)
         self.assertEqual(value_exception.message, '')
@@ -33,7 +33,8 @@ class ErrorsTest(unittest.TestCase):
         with self.assertRaises(errors.FileNotFoundError) as cm:
             raise errors.FileNotFoundError
         value_exception = cm.exception
-        self.assertEqual(value_exception.error_code, errors.FILE_NOT_FOUND)
+        self.assertEqual(value_exception.error_code,
+                         hex(errors.FILE_NOT_FOUND))
         self.assertEqual(value_exception.op, None)
         self.assertEqual(value_exception.details, None)
         self.assertEqual(value_exception.message, '')
@@ -41,7 +42,7 @@ class ErrorsTest(unittest.TestCase):
         with self.assertRaises(errors.TimeoutError) as cm:
             raise errors.TimeoutError('time out')
         value_exception = cm.exception
-        self.assertEqual(value_exception.error_code, errors.TIMEOUT)
+        self.assertEqual(value_exception.error_code, hex(errors.TIMEOUT))
         self.assertEqual(value_exception.op, None)
         self.assertEqual(value_exception.details, None)
         self.assertEqual(value_exception.message, 'time out')
