@@ -3,9 +3,119 @@ import math
 
 import numpy as np
 import torch
+from PIL import Image, ImageFile
 
-from .base import Predictor
+from easycv.file import io
+from easycv.utils.misc import deprecated
+from .base import Predictor, PredictorV2
 from .builder import PREDICTORS
+
+
+@PREDICTORS.register_module()
+class ClassificationPredictor(PredictorV2):
+    """Predictor for classification.
+    Args:
+        model_path (str): Path of model path.
+        config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
+        batch_size (int): batch size for forward.
+        device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
+        save_results (bool): Whether to save predict results.
+        save_path (str): File path for saving results, only valid when `save_results` is True.
+        mode (str): image mode.
+        pipelines (list[dict]): Data pipeline configs.
+        topk (int): Return top-k results. Default: 1.
+        pil_input (bool): Whether use PIL image. If processor need PIL input, set true, default false.
+        label_map_path (str): File path of saving labels list.
+    """
+
+    def __init__(self,
+                 model_path,
+                 config_file=None,
+                 batch_size=1,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 mode='rgb',
+                 pipelines=[],
+                 topk=1,
+                 pil_input=True,
+                 label_map_path=[],
+                 *args,
+                 **kwargs):
+        super(ClassificationPredictor, self).__init__(
+            model_path,
+            config_file=config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            mode=mode,
+            pipelines=pipelines,
+            *args,
+            **kwargs)
+        self.topk = topk
+        self.pil_input = pil_input
+        if label_map_path is None:
+            class_list = self.cfg.get('CLASSES', [])
+        else:
+            with io.open(label_map_path, 'r') as f:
+                class_list = f.readlines()
+        self.label_map = [i.strip() for i in class_list]
+
+    def _load_input(self, input):
+        """Load image from file or numpy or PIL object.
+        Args:
+            input: File path or numpy or PIL object.
+        Returns:
+           {
+                'filename': filename,
+                'img': img,
+                'img_shape': img_shape,
+                'img_fields': ['img']
+            }
+        """
+        if self.pil_input:
+            results = {}
+            if isinstance(input, str):
+                img = Image.open(input)
+                if img.mode.upper() != self.mode.upper():
+                    img = img.convert(self.mode.upper())
+                results['filename'] = input
+            else:
+                assert isinstance(input, ImageFile.ImageFile)
+                img = input
+                results['filename'] = None
+            results['img'] = img
+            results['img_shape'] = img.size
+            results['ori_shape'] = img.size
+            results['img_fields'] = ['img']
+            return results
+
+        return super()._load_input(input)
+
+    def postprocess(self, inputs, *args, **kwargs):
+        """Return top-k results."""
+        output_prob = inputs['prob'].data.cpu()
+        topk_class = torch.topk(output_prob, self.topk).indices.numpy()
+        output_prob = output_prob.numpy()
+        batch_results = []
+        batch_size = output_prob.shape[0]
+        for i in range(batch_size):
+            result = {'class': np.squeeze(topk_class[i]).tolist()}
+            if isinstance(result['class'], int):
+                result['class'] = [result['class']]
+
+            if len(self.label_map) > 0:
+                result['class_name'] = [
+                    self.label_map[i] for i in result['class']
+                ]
+                result['class_probs'] = {}
+                for l_idx, l_name in enumerate(self.label_map):
+                    result['class_probs'][l_name] = output_prob[i][l_idx]
+
+            batch_results.append(result)
+        return batch_results
+
 
 try:
     from easy_vision.python.inference.predictor import PredictorInterface
@@ -13,6 +123,7 @@ except:
     from .interface import PredictorInterface
 
 
+@deprecated(reason='Please use ClassificationPredictor.')
 @PREDICTORS.register_module()
 class TorchClassifier(PredictorInterface):
 

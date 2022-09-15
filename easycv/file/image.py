@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import io
 import logging
 import time
 
@@ -6,9 +7,9 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from easycv.file import io
+from easycv import file
 from easycv.utils.constant import MAX_READ_IMAGE_TRY_TIMES
-from .utils import is_oss_path
+from .utils import is_oss_path, is_url_path
 
 
 def load_image(img_path, mode='BGR', max_try_times=MAX_READ_IMAGE_TRY_TIMES):
@@ -19,16 +20,29 @@ def load_image(img_path, mode='BGR', max_try_times=MAX_READ_IMAGE_TRY_TIMES):
     img = None
     while try_cnt < max_try_times:
         try:
-            with io.open(img_path, 'rb') as infile:
-                # cv2.imdecode may corrupt when the img is broken
-                image = Image.open(infile)  # RGB
+            if is_url_path(img_path):
+                from mmcv.fileio.file_client import HTTPBackend
+                client = HTTPBackend()
+                img_bytes = client.get(img_path)
+                buff = io.BytesIO(img_bytes)
+                image = Image.open(buff)  # RGB
+                if image.mode.upper() != 'RGB':
+                    image = image.convert('RGB')
                 img = np.asarray(image, dtype=np.uint8)
-                if mode.upper() == 'BGR':
-                    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                assert mode.upper() in ['RGB', 'BGR'
-                                        ], 'Only support `RGB` and `BGR` mode!'
-                assert img is not None
-                break
+            else:
+                with file.io.open(img_path, 'rb') as infile:
+                    # cv2.imdecode may corrupt when the img is broken
+                    image = Image.open(infile)  # RGB
+                    if image.mode.upper() != 'RGB':
+                        image = image.convert('RGB')
+                    img = np.asarray(image, dtype=np.uint8)
+
+            if mode.upper() == 'BGR':
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            assert mode.upper() in ['RGB', 'BGR'
+                                    ], 'Only support `RGB` and `BGR` mode!'
+            assert img is not None
+            break
         except Exception as e:
             logging.error(e)
             logging.warning('Read file {} fault, try count : {}'.format(

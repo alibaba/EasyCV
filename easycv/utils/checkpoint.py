@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import logging
 import os
 
 import torch
@@ -8,6 +9,7 @@ from mmcv.runner.checkpoint import get_state_dict, weights_to_cpu
 from torch.optim import Optimizer
 
 from easycv.file import io
+from easycv.file.utils import is_url_path
 from easycv.utils.constant import CACHE_DIR
 
 
@@ -31,28 +33,40 @@ def load_checkpoint(model,
     Returns:
         dict or OrderedDict: The loaded checkpoint.
     """
-    if not filename.startswith('oss://'):
-        return mmcv_load_checkpoint(
-            model,
-            filename,
-            map_location=map_location,
-            strict=strict,
-            logger=logger)
-    else:
+    if filename.startswith('oss://'):
         _, fname = os.path.split(filename)
         cache_file = os.path.join(CACHE_DIR, fname)
+        if not os.path.exists(CACHE_DIR):
+            os.makedirs(CACHE_DIR)
         if not os.path.exists(cache_file):
-            print(f'download checkpoint from {filename} to {cache_file}')
+            logging.info(
+                f'download checkpoint from {filename} to {cache_file}')
             io.copy(filename, cache_file)
         if torch.distributed.is_available(
         ) and torch.distributed.is_initialized():
             torch.distributed.barrier()
-        return mmcv_load_checkpoint(
-            model,
-            cache_file,
-            map_location=map_location,
-            strict=strict,
-            logger=logger)
+        filename = cache_file
+    elif is_url_path(filename):
+        from torch.hub import urlparse, download_url_to_file
+        parts = urlparse(filename)
+        base_name = os.path.basename(parts.path)
+        cache_file = os.path.join(CACHE_DIR, base_name)
+        if not os.path.exists(CACHE_DIR):
+            os.makedirs(CACHE_DIR)
+        if not os.path.exists(cache_file):
+            logging.info(
+                f'download checkpoint from {filename} to {cache_file}')
+            download_url_to_file(filename, cache_file)
+        if torch.distributed.is_available(
+        ) and torch.distributed.is_initialized():
+            torch.distributed.barrier()
+        filename = cache_file
+    return mmcv_load_checkpoint(
+        model,
+        filename,
+        map_location=map_location,
+        strict=strict,
+        logger=logger)
 
 
 def save_checkpoint(model, filename, optimizer=None, meta=None):

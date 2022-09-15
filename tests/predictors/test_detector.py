@@ -4,7 +4,7 @@ isort:skip_file
 """
 import os
 import unittest
-
+import tempfile
 import numpy as np
 from PIL import Image
 
@@ -157,22 +157,24 @@ class DetectorTest(unittest.TestCase):
     def test_vitdet_detector(self):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/vitdet/vit_base/vitdet_maskrcnn_export.pth'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-        out_file = './result.jpg'
-        vitdet = DetrPredictor(model_path)
-        output = vitdet.predict(img)
-        vitdet.visualize(img, output, out_file=out_file)
+        vitdet = DetrPredictor(model_path, score_threshold=0.0)
+        output = vitdet(img)
+        output = output[0]
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as tmp_file:
+            tmp_save_path = tmp_file.name
+            vitdet.visualize(img, output, out_file=tmp_save_path)
 
         self.assertIn('detection_boxes', output)
         self.assertIn('detection_scores', output)
         self.assertIn('detection_classes', output)
         self.assertIn('detection_masks', output)
         self.assertIn('img_metas', output)
-        self.assertEqual(len(output['detection_boxes'][0]), 30)
-        self.assertEqual(len(output['detection_scores'][0]), 30)
-        self.assertEqual(len(output['detection_classes'][0]), 30)
+        self.assertEqual(len(output['detection_boxes']), 30)
+        self.assertEqual(len(output['detection_scores']), 30)
+        self.assertEqual(len(output['detection_classes']), 30)
 
         self.assertListEqual(
-            output['detection_classes'][0].tolist(),
+            output['detection_classes'].tolist(),
             np.array([
                 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                 2, 2, 2, 7, 7, 13, 13, 13, 56
@@ -180,7 +182,7 @@ class DetectorTest(unittest.TestCase):
                      dtype=np.int32).tolist())
 
         assert_array_almost_equal(
-            output['detection_scores'][0],
+            output['detection_scores'],
             np.array([
                 0.99791867, 0.99665856, 0.99480623, 0.99060905, 0.9882515,
                 0.98319584, 0.9738879, 0.97290784, 0.9514897, 0.95104814,
@@ -193,7 +195,7 @@ class DetectorTest(unittest.TestCase):
             decimal=2)
 
         assert_array_almost_equal(
-            output['detection_boxes'][0],
+            output['detection_boxes'],
             np.array([[294.7058, 117.29371, 378.83713, 149.99928],
                       [609.05444, 112.526474, 633.2971, 136.35175],
                       [481.4165, 110.987335, 522.5531, 130.01529],

@@ -5,22 +5,26 @@ import numpy as np
 import torch
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
-from torchvision.transforms import Compose
 
 from easycv.core.visualization.image import imshow_bboxes
-from easycv.datasets.registry import PIPELINES
-from easycv.file import io
-from easycv.models import build_model
 from easycv.predictors.builder import PREDICTORS
-from easycv.predictors.interface import PredictorInterface
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.config_tools import mmcv_config_fromfile
-from easycv.utils.registry import build_from_cfg
 from .base import PredictorV2
 
 
 @PREDICTORS.register_module()
 class SegmentationPredictor(PredictorV2):
+    """Predictor for Segmentation.
+
+    Args:
+        model_path (str): Path of model path.
+        config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
+        batch_size (int): batch size for forward.
+        device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
+        save_results (bool): Whether to save predict results.
+        save_path (str): File path for saving results, only valid when `save_results` is True.
+        mode (str): image mode.
+        pipelines (list[dict]): Data pipeline configs.
+    """
 
     def __init__(self,
                  model_path,
@@ -28,20 +32,23 @@ class SegmentationPredictor(PredictorV2):
                  batch_size=1,
                  device=None,
                  save_results=False,
-                 save_path=None):
-        """Predict pipeline for Segmentation
+                 save_path=None,
+                 mode='bgr',
+                 pipelines=None,
+                 *args,
+                 **kwargs):
 
-        Args:
-            model_path (str): Path of model path
-            config_file (str): config file path for model and processor to init. Defaults to None.
-        """
         super(SegmentationPredictor, self).__init__(
             model_path,
             config_file,
             batch_size=batch_size,
             device=device,
             save_results=save_results,
-            save_path=save_path)
+            save_path=save_path,
+            mode=mode,
+            pipelines=pipelines,
+            *args,
+            **kwargs)
 
         self.CLASSES = self.cfg.CLASSES
         self.PALETTE = self.cfg.PALETTE
@@ -123,71 +130,64 @@ class SegmentationPredictor(PredictorV2):
 
 
 @PREDICTORS.register_module()
-class Mask2formerPredictor(PredictorInterface):
+class Mask2formerPredictor(SegmentationPredictor):
+    """Predictor for Mask2former.
 
-    def __init__(self, model_path, model_config=None):
-        """init model
+    Args:
+        model_path (str): Path of model path.
+        config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
+        batch_size (int): batch size for forward.
+        device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
+        save_results (bool): Whether to save predict results.
+        save_path (str): File path for saving results, only valid when `save_results` is True.
+        mode (str): image mode.
+        pipelines (list[dict]): Data pipeline configs.
+    """
 
-        Args:
-            model_path (str): Path of model path
-            model_config (config, optional): config string for model to init. Defaults to None.
+    def __init__(self,
+                 model_path,
+                 config_file=None,
+                 batch_size=1,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 mode='bgr',
+                 pipelines=None,
+                 output_mode='panoptic',
+                 *args,
+                 **kwargs):
+        super(Mask2formerPredictor, self).__init__(
+            model_path,
+            config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            mode=mode,
+            pipelines=pipelines,
+            *args,
+            **kwargs)
+        self.output_mode = output_mode
+
+    def forward(self, inputs):
+        """Model forward.
         """
-        self.model_path = model_path
+        with torch.no_grad():
+            outputs = self.model(**inputs, mode='test', encode=False)
+        return outputs
 
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.model = None
-        with io.open(self.model_path, 'rb') as infile:
-            checkpoint = torch.load(infile, map_location='cpu')
-
-        assert 'meta' in checkpoint and 'config' in checkpoint[
-            'meta'], 'meta.config is missing from checkpoint'
-
-        self.cfg = checkpoint['meta']['config']
-        self.classes = len(self.cfg.PALETTE)
-        self.class_name = self.cfg.CLASSES
-        # build model
-        self.model = build_model(self.cfg.model)
-
-        self.ckpt = load_checkpoint(
-            self.model, self.model_path, map_location=self.device)
-        self.model.to(self.device)
-        self.model.eval()
-
-        # build pipeline
-        test_pipeline = self.cfg.test_pipeline
-        pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
-        self.pipeline = Compose(pipeline)
-
-    def predict(self, input_data_list, mode='panoptic'):
-        """
-        Args:
-            input_data_list: a list of numpy array(in rgb order), each array is a sample
-        to be predicted
-        """
-        output_list = []
-        for idx, img in enumerate(input_data_list):
-            output = {}
-            if not isinstance(img, np.ndarray):
-                img = np.asarray(img)
-            data_dict = {'img': img}
-            ori_shape = img.shape
-            data_dict = self.pipeline(data_dict)
-            img = data_dict['img']
-            img[0] = torch.unsqueeze(img[0], 0).to(self.device)
-            img_metas = [[
-                img_meta._data for img_meta in data_dict['img_metas']
-            ]]
-            img_metas[0][0]['ori_shape'] = ori_shape
-            res = self.model.forward_test(img, img_metas, encode=False)
-            if mode == 'panoptic':
-                output['pan'] = res['pan_results'][0]
-            elif mode == 'instance':
-                output['segms'] = res['detection_masks'][0]
-                output['bboxes'] = res['detection_boxes'][0]
-                output['scores'] = res['detection_scores'][0]
-                output['labels'] = res['detection_classes'][0]
-            output_list.append(output)
-        return output_list
+    def postprocess(self, inputs):
+        output = {}
+        if self.output_mode == 'panoptic':
+            output['pan'] = inputs['pan_results'][0]
+        elif self.output_mode == 'instance':
+            output['segms'] = inputs['detection_masks'][0]
+            output['bboxes'] = inputs['detection_boxes'][0]
+            output['scores'] = inputs['detection_scores'][0]
+            output['labels'] = inputs['detection_classes'][0]
+        else:
+            raise ValueError(f'Not support model {self.output_mode}')
+        return output
 
     def show_panoptic(self, img, pan_mask):
         pan_label = np.unique(pan_mask)
@@ -212,147 +212,6 @@ class Mask2formerPredictor(PredictorInterface):
         instance_result = imshow_bboxes(
             instance_result, bboxes, class_name[labels], show=False)
         return instance_result
-
-
-@PREDICTORS.register_module()
-class SegFormerPredictor(PredictorInterface):
-
-    def __init__(self, model_path, model_config):
-        """init model
-
-        Args:
-            model_path (str): Path of model path
-            model_config (config): config string for model to init. Defaults to None.
-        """
-        self.model_path = model_path
-
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.model = None
-        with io.open(self.model_path, 'rb') as infile:
-            checkpoint = torch.load(infile, map_location='cpu')
-
-        self.cfg = mmcv_config_fromfile(model_config)
-        self.CLASSES = self.cfg.CLASSES
-        self.PALETTE = self.cfg.PALETTE
-        # build model
-        self.model = build_model(self.cfg.model)
-
-        self.ckpt = load_checkpoint(
-            self.model, self.model_path, map_location=self.device)
-        self.model.to(self.device)
-        self.model.eval()
-
-        # build pipeline
-        test_pipeline = self.cfg.test_pipeline
-        pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
-        self.pipeline = Compose(pipeline)
-
-    def predict(self, input_data_list):
-        """
-    using session run predict a number of samples using batch_size
-
-    Args:
-      input_data_list:  a list of numpy array(in rgb order), each array is a sample
-        to be predicted
-        use a fixed number if you do not want to adjust batch_size in runtime
-    """
-        output_list = []
-        for idx, img in enumerate(input_data_list):
-            if type(img) is not np.ndarray:
-                img = np.asarray(img)
-
-            ori_img_shape = img.shape[:2]
-
-            data_dict = {'img': img}
-            data_dict['ori_shape'] = ori_img_shape
-            data_dict = self.pipeline(data_dict)
-            img = data_dict['img']
-            img = torch.unsqueeze(img[0], 0).to(self.device)
-            data_dict.pop('img')
-
-            with torch.no_grad():
-                out = self.model([img],
-                                 mode='test',
-                                 img_metas=[[data_dict['img_metas'][0]._data]])
-
-            output_list.append(out)
-
-        return output_list
-
-    def show_result(self,
-                    img,
-                    result,
-                    palette=None,
-                    win_name='',
-                    show=False,
-                    wait_time=0,
-                    out_file=None,
-                    opacity=0.5):
-        """Draw `result` over `img`.
-
-        Args:
-            img (str or Tensor): The image to be displayed.
-            result (Tensor): The semantic segmentation results to draw over
-                `img`.
-            palette (list[list[int]]] | np.ndarray | None): The palette of
-                segmentation map. If None is given, random palette will be
-                generated. Default: None
-            win_name (str): The window name.
-            wait_time (int): Value of waitKey param.
-                Default: 0.
-            show (bool): Whether to show the image.
-                Default: False.
-            out_file (str or None): The filename to write the image.
-                Default: None.
-            opacity(float): Opacity of painted segmentation map.
-                Default 0.5.
-                Must be in (0, 1] range.
-        Returns:
-            img (Tensor): Only if not `show` or `out_file`
-        """
-
-        img = mmcv.imread(img)
-        img = img.copy()
-        seg = result[0]
-        if palette is None:
-            if self.PALETTE is None:
-                # Get random state before set seed,
-                # and restore random state later.
-                # It will prevent loss of randomness, as the palette
-                # may be different in each iteration if not specified.
-                # See: https://github.com/open-mmlab/mmdetection/issues/5844
-                state = np.random.get_state()
-                np.random.seed(42)
-                # random palette
-                palette = np.random.randint(
-                    0, 255, size=(len(self.CLASSES), 3))
-                np.random.set_state(state)
-            else:
-                palette = self.PALETTE
-        palette = np.array(palette)
-        assert palette.shape[0] == len(self.CLASSES)
-        assert palette.shape[1] == 3
-        assert len(palette.shape) == 2
-        assert 0 < opacity <= 1.0
-        color_seg = np.zeros((seg.shape[0], seg.shape[1], 3), dtype=np.uint8)
-        for label, color in enumerate(palette):
-            color_seg[seg == label, :] = color
-        # convert to BGR
-        color_seg = color_seg[..., ::-1]
-
-        img = img * (1 - opacity) + color_seg * opacity
-        img = img.astype(np.uint8)
-        # if out_file specified, do not show image in window
-        if out_file is not None:
-            show = False
-
-        if show:
-            mmcv.imshow(img, win_name, wait_time)
-        if out_file is not None:
-            mmcv.imwrite(img, out_file)
-
-        if not (show or out_file):
-            return img
 
 
 def _get_bias_color(base, max_dist=30):

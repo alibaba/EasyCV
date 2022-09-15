@@ -11,7 +11,7 @@ from io import StringIO
 from tqdm import tqdm
 
 OSS_PREFIX = 'oss://'
-URL_PREFIX = 'https://'
+URL_PREFIX = ('https://', 'http://')
 
 
 def create_namedtuple(**kwargs):
@@ -31,6 +31,7 @@ def url_path_exists(url):
         urllib.request.urlopen(url).code
     except Exception as err:
         print(err)
+        return False
     return True
 
 
