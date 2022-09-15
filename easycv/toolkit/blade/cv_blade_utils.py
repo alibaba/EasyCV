@@ -68,7 +68,8 @@ def blade_env_assert():
 
 
 @contextmanager
-def opt_trt_config(input_config=dict(enable_fp16=True)):
+def opt_trt_config(
+        input_config=dict(enable_fp16=True, fp16_fallback_op_ratio=0.05)):
     from torch_blade import tensorrt
     torch_config = torch_blade.Config()
 
@@ -76,9 +77,9 @@ def opt_trt_config(input_config=dict(enable_fp16=True)):
         optimization_pipeline='TensorRT',
         enable_fp16=True,
         customize_op_black_list=[
-            'aten::select', 'aten::index', 'aten::slice', 'aten::view'
+            # 'aten::select', 'aten::index', 'aten::slice', 'aten::view', 'aten::upsample'
         ],
-        fp16_fallback_op_ratio=0.3,
+        fp16_fallback_op_ratio=0.05,
     )
     BLADE_CONFIG_KEYS = list(BLADE_CONFIG_DEFAULT.keys())
 
@@ -116,7 +117,7 @@ def cu_prof_stop():
 @contextmanager
 def opt_blade_mixprec():
     try:
-        dummy = torch.classes.torch_blade.MixPrecision(True)
+        dummy = torch.cuda.amp.autocast(True)
         yield
     finally:
         pass
@@ -238,31 +239,58 @@ def check_results(results0, results1):
         logging.error(err)
 
 
-def blade_optimize(script_model,
+def blade_optimize(speed_test_model,
                    model,
                    inputs,
-                   blade_config=dict(enable_fp16=True),
+                   blade_config=dict(
+                       enable_fp16=True, fp16_fallback_op_ratio=0.05),
                    backend='TensorRT',
                    batch=1,
-                   compute_cost=False):
+                   warm_up_time=10,
+                   compute_cost=True,
+                   use_profile=False,
+                   check_result=False,
+                   static_opt=True):
 
-    with opt_trt_config(blade_config):
-        opt_model = optimize(
-            model,
-            allow_tracing=True,
-            model_inputs=tuple(inputs),
+    if not static_opt:
+        logging.info(
+            'PAI-Blade use dynamic optimize for input model, export model is build for dynamic shape input'
         )
+        with opt_trt_config(blade_config):
+            opt_model = optimize(
+                model,
+                allow_tracing=True,
+                model_inputs=tuple(inputs),
+            )
+    else:
+        logging.info(
+            'PAI-Blade use static optimize for input model, export model must be used as static shape input'
+        )
+        from torch_blade.optimization import _static_optimize
+        with opt_trt_config(blade_config):
+            opt_model = _static_optimize(
+                model,
+                allow_tracing=True,
+                model_inputs=tuple(inputs),
+            )
 
     if compute_cost:
         results = []
-
         inputs_t = inputs
-        if (inputs_t[0].shape[2] == 3):
-            inputs_t = inputs_t[0].permute(2, 0, 1)
-            inputs_t = (torch.unsqueeze(inputs_t, 0), )
+
+        # end2end model and scripts needs different channel purmulate, encounter this problem only when we use end2end export
+        if (inputs_t[0].shape[-1] == 3):
+            shape_length = len(inputs_t[0].shape)
+            if shape_length == 4:
+                inputs_t = inputs_t[0].permute(0, 3, 1, 2)
+                inputs_t = [inputs_t]
+
+            if shape_length == 3:
+                inputs_t = inputs_t[0].permute(2, 0, 1)
+                inputs_t = (torch.unsqueeze(inputs_t, 0), )
 
         results.append(
-            benchmark(script_model, inputs_t, backend, batch, 'easycv'))
+            benchmark(speed_test_model, inputs_t, backend, batch, 'easycv'))
         results.append(
             benchmark(model, inputs, backend, batch, 'easycv script'))
         results.append(benchmark(opt_model, inputs, backend, batch, 'blade'))
@@ -271,14 +299,36 @@ def blade_optimize(script_model,
         summary = pd.DataFrame(results)
         logging.warning(summary.to_markdown())
 
-    output = model(*inputs)
-    cu_prof_start()
-    if blade_config.get('enable_fp16', True):
-        with opt_blade_mixprec():
-            test_result = model(*inputs)
-    else:
+    if use_profile:
+        torch.cuda.empty_cache()
+        # warm-up
+        for k in range(warm_up_time):
+            test_result = opt_model(*inputs)
+            torch.cuda.synchronize()
+
+        torch.cuda.synchronize()
+        cu_prof_start()
+        for k in range(warm_up_time):
+            test_result = opt_model(*inputs)
+            torch.cuda.synchronize()
+        cu_prof_stop()
+        import torch.autograd.profiler as profiler
+        with profiler.profile(use_cuda=True) as prof:
+            for k in range(warm_up_time):
+                test_result = opt_model(*inputs)
+                torch.cuda.synchronize()
+
+        with profiler.profile(use_cuda=True) as prof:
+            for k in range(warm_up_time):
+                test_result = opt_model(*inputs)
+                torch.cuda.synchronize()
+
+        prof_str = prof.key_averages().table(sort_by='cuda_time_total')
+        print(f'{prof_str}')
+
+    if check_result:
+        output = model(*inputs)
         test_result = opt_model(*inputs)
-    cu_prof_stop()
-    check_results(output, test_result)
+        check_results(output, test_result)
 
     return opt_model

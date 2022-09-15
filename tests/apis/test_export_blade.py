@@ -27,47 +27,39 @@ class ModelExportTest(unittest.TestCase):
     def tearDown(self):
         clean_up(self.tmp_dir)
 
-    def test_export_yolox_blade(self):
+    def test_export_yolox_blade_nopre_notrt(self):
         config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
         cfg = mmcv_config_fromfile(config_file)
-        cfg.export = dict(use_jit=True, export_blade=True, end2end=False)
+        cfg.export = dict(
+            export_type='blade',
+            preprocess_jit=False,
+            use_trt_efficientnms=False)
         ori_ckpt = PRETRAINED_MODEL_YOLOXS_EXPORT
 
         target_path = f'{self.tmp_dir}/export_yolox_s_epoch300_export'
 
         export(cfg, ori_ckpt, target_path)
-        self.assertTrue(os.path.exists(target_path + '.jit'))
-        self.assertTrue(os.path.exists(target_path + '.jit.config.json'))
+
         self.assertTrue(os.path.exists(target_path + '.blade'))
         self.assertTrue(os.path.exists(target_path + '.blade.config.json'))
 
-    def test_export_yolox_blade_nojit(self):
+    def test_export_yolox_blade_pre_notrt(self):
         config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
         cfg = mmcv_config_fromfile(config_file)
-        cfg.export = dict(use_jit=False, export_blade=True, end2end=False)
+        cfg.export = dict(
+            export_type='blade',
+            preprocess_jit=True,
+            use_trt_efficientnms=False)
+
         ori_ckpt = PRETRAINED_MODEL_YOLOXS_EXPORT
 
         target_path = f'{self.tmp_dir}/export_yolox_s_epoch300_export'
 
         export(cfg, ori_ckpt, target_path)
-        self.assertFalse(os.path.exists(target_path + '.jit'))
-        self.assertFalse(os.path.exists(target_path + '.jit.config.json'))
+
         self.assertTrue(os.path.exists(target_path + '.blade'))
         self.assertTrue(os.path.exists(target_path + '.blade.config.json'))
-
-    def test_export_yolox_blade_end2end(self):
-        config_file = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
-        cfg = mmcv_config_fromfile(config_file)
-        cfg.export = dict(use_jit=True, export_blade=True, end2end=True)
-        ori_ckpt = PRETRAINED_MODEL_YOLOXS_EXPORT
-
-        target_path = f'{self.tmp_dir}/export_yolox_s_epoch300_end2end'
-
-        export(cfg, ori_ckpt, target_path)
-        self.assertTrue(os.path.exists(target_path + '.jit'))
-        self.assertTrue(os.path.exists(target_path + '.jit.config.json'))
-        self.assertTrue(os.path.exists(target_path + '.blade'))
-        self.assertTrue(os.path.exists(target_path + '.blade.config.json'))
+        self.assertTrue(os.path.exists(target_path + '.preprocess'))
 
 
 if __name__ == '__main__':

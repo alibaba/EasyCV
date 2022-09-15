@@ -43,6 +43,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+            lfs: 'true'
+      - name: Checkout LFS objects
+        run: git lfs checkout
       - name: Run unittest
         shell: bash
         run: |
@@ -61,12 +65,13 @@ jobs:
           # do not uncomments, casue faild in Online UT, install requirements by yourself on UT machine
           # pip install -r requirements.txt
           #run test
-          export CUDA_VISIBLE_DEVICES=6
+          export CUDA_VISIBLE_DEVICES=7
           source ~/workspace/anaconda2/etc/profile.d/conda.sh
           conda activate evtorch_torch1.8.0
           PYTHONPATH=. python tests/run.py
 
 
+# blade test env will be updated! we do not support test with trt_efficient_nms
   ut-torch181-blade:
     # The type of runner that the job will run on
     runs-on: [unittest-t4]

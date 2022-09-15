@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import math
 from typing import List, Optional
 
 import numpy as np
@@ -6,6 +7,7 @@ import torch
 import torchvision
 from packaging import version
 from torch import Tensor
+from torch.autograd import Function
 
 from easycv.framework.errors import NotImplementedError
 
@@ -137,37 +139,148 @@ def filter_scores_and_topk(scores, score_thr, topk, results=None):
     return scores, labels, keep_idxs, filtered_results
 
 
-def output_postprocess(outputs, img_metas=None):
-    detection_boxes = []
-    detection_scores = []
-    detection_classes = []
-    img_metas_list = []
+def inverse_sigmoid(x, eps=1e-3):
+    x = x.clamp(min=0, max=1)
+    x1 = x.clamp(min=eps)
+    x2 = (1 - x).clamp(min=eps)
+    return torch.log(x1 / x2)
 
-    for i in range(len(outputs)):
-        if img_metas:
-            img_metas_list.append(img_metas[i])
-        if outputs[i] is not None:
-            bboxes = outputs[i][:, 0:4] if outputs[i] is not None else None
-            if img_metas:
-                bboxes /= img_metas[i]['scale_factor'][0]
-            detection_boxes.append(bboxes.cpu().numpy())
-            detection_scores.append(
-                (outputs[i][:, 4] * outputs[i][:, 5]).cpu().numpy())
-            detection_classes.append(outputs[i][:, 6].cpu().numpy().astype(
-                np.int32))
+
+def gen_encoder_output_proposals(memory: Tensor,
+                                 memory_padding_mask: Tensor,
+                                 spatial_shapes: Tensor,
+                                 learnedwh=None):
+    """
+    Input:
+        - memory: bs, \sum{hw}, d_model
+        - memory_padding_mask: bs, \sum{hw}
+        - spatial_shapes: nlevel, 2
+        - learnedwh: 2
+    Output:
+        - output_memory: bs, \sum{hw}, d_model
+        - output_proposals: bs, \sum{hw}, 4
+    """
+    N_, S_, C_ = memory.shape
+    base_scale = 4.0
+    proposals = []
+    _cur = 0
+    for lvl, (H_, W_) in enumerate(spatial_shapes):
+        mask_flatten_ = memory_padding_mask[:, _cur:(_cur + H_ * W_)].view(
+            N_, H_, W_, 1)
+        valid_H = torch.sum(~mask_flatten_[:, :, 0, 0], 1)
+        valid_W = torch.sum(~mask_flatten_[:, 0, :, 0], 1)
+
+        # import ipdb; ipdb.set_trace()
+
+        grid_y, grid_x = torch.meshgrid(
+            torch.linspace(
+                0, H_ - 1, H_, dtype=torch.float32, device=memory.device),
+            torch.linspace(
+                0, W_ - 1, W_, dtype=torch.float32, device=memory.device))
+        grid = torch.cat(
+            [grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)], -1)  # H_, W_, 2
+
+        scale = torch.cat([valid_W.unsqueeze(-1),
+                           valid_H.unsqueeze(-1)], 1).view(N_, 1, 1, 2)
+        grid = (grid.unsqueeze(0).expand(N_, -1, -1, -1) + 0.5) / scale
+
+        if learnedwh is not None:
+            # import ipdb; ipdb.set_trace()
+            wh = torch.ones_like(grid) * learnedwh.sigmoid() * (2.0**lvl)
         else:
-            detection_boxes.append(None)
-            detection_scores.append(None)
-            detection_classes.append(None)
+            wh = torch.ones_like(grid) * 0.05 * (2.0**lvl)
 
-    test_outputs = {
-        'detection_boxes': detection_boxes,
-        'detection_scores': detection_scores,
-        'detection_classes': detection_classes,
-        'img_metas': img_metas_list
-    }
+        # scale = torch.cat([W_[None].unsqueeze(-1), H_[None].unsqueeze(-1)], 1).view(1, 1, 1, 2).repeat(N_, 1, 1, 1)
+        # grid = (grid.unsqueeze(0).expand(N_, -1, -1, -1) + 0.5) / scale
+        # wh = torch.ones_like(grid) / scale
+        proposal = torch.cat((grid, wh), -1).view(N_, -1, 4)
+        proposals.append(proposal)
+        _cur += (H_ * W_)
+    # import ipdb; ipdb.set_trace()
+    output_proposals = torch.cat(proposals, 1)
+    output_proposals_valid = ((output_proposals > 0.01) &
+                              (output_proposals < 0.99)).all(
+                                  -1, keepdim=True)
+    output_proposals = torch.log(output_proposals /
+                                 (1 - output_proposals))  # unsigmoid
+    output_proposals = output_proposals.masked_fill(
+        memory_padding_mask.unsqueeze(-1), float('inf'))
+    output_proposals = output_proposals.masked_fill(~output_proposals_valid,
+                                                    float('inf'))
 
-    return test_outputs
+    output_memory = memory
+    output_memory = output_memory.masked_fill(
+        memory_padding_mask.unsqueeze(-1), float(0))
+    output_memory = output_memory.masked_fill(~output_proposals_valid,
+                                              float(0))
+
+    # output_memory = output_memory.masked_fill(memory_padding_mask.unsqueeze(-1), float('inf'))
+    # output_memory = output_memory.masked_fill(~output_proposals_valid, float('inf'))
+
+    return output_memory, output_proposals
+
+
+def gen_sineembed_for_position(pos_tensor):
+    # n_query, bs, _ = pos_tensor.size()
+    # sineembed_tensor = torch.zeros(n_query, bs, 256)
+    scale = 2 * math.pi
+    dim_t = torch.arange(128, dtype=torch.float32, device=pos_tensor.device)
+    dim_t = 10000**(2 * (dim_t // 2) / 128)
+    x_embed = pos_tensor[:, :, 0] * scale
+    y_embed = pos_tensor[:, :, 1] * scale
+    pos_x = x_embed[:, :, None] / dim_t
+    pos_y = y_embed[:, :, None] / dim_t
+    pos_x = torch.stack((pos_x[:, :, 0::2].sin(), pos_x[:, :, 1::2].cos()),
+                        dim=3).flatten(2)
+    pos_y = torch.stack((pos_y[:, :, 0::2].sin(), pos_y[:, :, 1::2].cos()),
+                        dim=3).flatten(2)
+    if pos_tensor.size(-1) == 2:
+        pos = torch.cat((pos_y, pos_x), dim=2)
+    elif pos_tensor.size(-1) == 4:
+        w_embed = pos_tensor[:, :, 2] * scale
+        pos_w = w_embed[:, :, None] / dim_t
+        pos_w = torch.stack((pos_w[:, :, 0::2].sin(), pos_w[:, :, 1::2].cos()),
+                            dim=3).flatten(2)
+
+        h_embed = pos_tensor[:, :, 3] * scale
+        pos_h = h_embed[:, :, None] / dim_t
+        pos_h = torch.stack((pos_h[:, :, 0::2].sin(), pos_h[:, :, 1::2].cos()),
+                            dim=3).flatten(2)
+
+        pos = torch.cat((pos_y, pos_x, pos_w, pos_h), dim=2)
+    else:
+        raise ValueError('Unknown pos_tensor shape(-1):{}'.format(
+            pos_tensor.size(-1)))
+    return pos
+
+
+class SigmoidGeometricMean(Function):
+    """Forward and backward function of geometric mean of two sigmoid
+    functions.
+
+    This implementation with analytical gradient function substitutes
+    the autograd function of (x.sigmoid() * y.sigmoid()).sqrt(). The
+    original implementation incurs none during gradient backprapagation
+    if both x and y are very small values.
+    """
+
+    @staticmethod
+    def forward(ctx, x, y):
+        x_sigmoid = x.sigmoid()
+        y_sigmoid = y.sigmoid()
+        z = (x_sigmoid * y_sigmoid).sqrt()
+        ctx.save_for_backward(x_sigmoid, y_sigmoid, z)
+        return z
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        x_sigmoid, y_sigmoid, z = ctx.saved_tensors
+        grad_x = grad_output * z * (1 - x_sigmoid) / 2
+        grad_y = grad_output * z * (1 - y_sigmoid) / 2
+        return grad_x, grad_y
+
+
+sigmoid_geometric_mean = SigmoidGeometricMean.apply
 
 
 def fp16_clamp(x, min=None, max=None):
@@ -176,10 +289,3 @@ def fp16_clamp(x, min=None, max=None):
         return x.float().clamp(min, max).half()
 
     return x.clamp(min, max)
-
-
-def inverse_sigmoid(x, eps=1e-3):
-    x = x.clamp(min=0, max=1)
-    x1 = x.clamp(min=eps)
-    x2 = (1 - x).clamp(min=eps)
-    return torch.log(x1 / x2)

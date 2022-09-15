@@ -438,8 +438,8 @@ class ResNet(nn.Module):
 
         self.feat_dim = self.block.expansion * self.original_inplanes * 2**(
             len(self.stage_blocks) - 1)
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         if num_classes > 0:
+            self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
             self.fc = nn.Linear(self.feat_dim, num_classes)
 
         self.default_pretrained_model_path = model_urls.get(

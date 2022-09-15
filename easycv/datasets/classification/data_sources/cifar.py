@@ -22,7 +22,7 @@ class ClsSourceCifar10(object):
     def __len__(self):
         return len(self.cifar)
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         img = Image.fromarray(self.cifar.data[idx])
         label = self.labels[idx]  # img: HWC, RGB
         result_dict = {'img': img, 'gt_labels': label}
@@ -45,7 +45,7 @@ class ClsSourceCifar100(object):
     def __len__(self):
         return len(self.cifar)
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         img = Image.fromarray(self.cifar.data[idx])
         label = self.labels[idx]  # img: HWC, RGB
         result_dict = {'img': img, 'gt_labels': label}

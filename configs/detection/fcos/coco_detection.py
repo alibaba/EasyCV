@@ -17,7 +17,7 @@ CLASSES = [
 # dataset settings
 data_root = 'data/coco/'
 img_norm_cfg = dict(
-    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 train_pipeline = [
     dict(type='MMResize', img_scale=(1333, 800), keep_ratio=True),
@@ -88,3 +88,14 @@ val_dataset = dict(
 
 data = dict(
     imgs_per_gpu=2, workers_per_gpu=2, train=train_dataset, val=val_dataset)
+
+# evaluation
+eval_config = dict(interval=1, gpu_collect=False)
+eval_pipelines = [
+    dict(
+        mode='test',
+        evaluators=[
+            dict(type='CocoDetectionEvaluator', classes=CLASSES),
+        ],
+    )
+]

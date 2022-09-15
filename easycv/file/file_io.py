@@ -521,6 +521,11 @@ class IO(IOLocal):
         ]
         if path in files:
             files.remove(path)
+        if recursive:
+            files = [
+                i for i in files
+                if not self.isdir(f'{OSS_PREFIX}{bucket.bucket_name}/{i}')
+            ]
 
         if not files and not self._obj_exists(bucket, path):
             raise FileNotFoundError(

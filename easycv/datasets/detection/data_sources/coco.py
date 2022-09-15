@@ -31,7 +31,7 @@ class DetSourceCoco(object):
                 boxes of the dataset's classes will be filtered out. This option
                 only works when `test_mode=False`, i.e., we never filter images
                 during tests.
-            iscrowd: when traing setted as False, when val setted as Tre
+            iscrowd: when traing setted as False, when val setted as True
         """
         self.ann_file = ann_file
         self.img_prefix = img_prefix
@@ -317,11 +317,3 @@ class DetSourceCoco(object):
         """Get another random index from the same group as the given index."""
         pool = np.where(self.flag == self.flag[idx])[0]
         return np.random.choice(pool)
-
-    def get_sample(self, idx):
-        while True:
-            data = self.prepare_train_img(idx)
-            if data is None:
-                idx = self._rand_another(idx)
-                continue
-            return data

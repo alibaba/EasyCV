@@ -16,7 +16,7 @@ from easycv.utils.misc import add_prefix
 # Modified from https://github.com/open-mmlab/mmsegmentation/blob/master/mmseg/models/segmentors/encoder_decoder.py
 @MODELS.register_module()
 class EncoderDecoder(BaseModel):
-    """Encoder Decoder segmentors.
+    """Encoder Decoder segmentation.
 
     EncoderDecoder typically consists of backbone, decode_head, auxiliary_head.
     Note that auxiliary_head is only used for deep supervision during training,

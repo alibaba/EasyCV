@@ -18,11 +18,19 @@ class YOLOXEDGETest(unittest.TestCase):
                 num_classes=2,
                 model_type=model_type,  # s m l x tiny nano
                 test_conf=0.01,
-                nms_thre=0.65)
+                nms_thre=0.65,
+                backbone='CSPDarknet',
+                head=dict(
+                    type='YOLOXHead',
+                    model_type=model_type,
+                    num_classes=2,
+                    stage='EDGE',
+                ),
+            )
             model = model.cuda()
             model.train()
 
-            batch_size = 2
+            batch_size = 1
             imgs = torch.randn(batch_size, 3, 640, 640).cuda()
             num_boxes = 5
             gt_bboxes = torch.randint(

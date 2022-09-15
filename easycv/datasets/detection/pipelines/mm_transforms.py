@@ -3,6 +3,7 @@ import copy
 import logging
 import math
 import os.path as osp
+import warnings
 
 import cv2
 import mmcv
@@ -13,6 +14,11 @@ from torchvision.transforms import functional as F
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.shared.pipelines.transforms import Compose
 from easycv.framework.errors import KeyError, NotImplementedError, TypeError
+
+try:
+    from panopticapi.utils import rgb2id
+except ImportError:
+    rgb2id = None
 
 
 @PIPELINES.register_module()
@@ -1421,22 +1427,27 @@ class MMPad:
         size (tuple, optional): Fixed padding size.
         size_divisor (int, optional): The divisor of padded size.
         pad_to_square (bool): Whether to pad the image into a square.
-           Currently only used for YOLOX. Default: False.
-        pad_val (float, optional): Padding value, 0 by default.
-        seg_pad_val (float, optional): Padding value of segmentation map.
-            Default: 255.
+            Currently only used for YOLOX. Default: False.
+        pad_val (dict, optional): A dict for padding value, the default
+            value is `dict(img=0, masks=0, seg=255)`.
     """
 
     def __init__(self,
                  size=None,
                  size_divisor=None,
                  pad_to_square=False,
-                 pad_val=0,
-                 seg_pad_val=255):
+                 pad_val=dict(img=0, masks=0, seg=255)):
         self.size = size
         self.size_divisor = size_divisor
-        self.pad_val = tuple(pad_val) if isinstance(pad_val, list) else pad_val
-        self.seg_pad_val = seg_pad_val
+        if not isinstance(pad_val, dict):
+            pad_val = tuple(pad_val) if isinstance(pad_val, list) else pad_val
+            warnings.warn(
+                'pad_val of float type is deprecated now, '
+                f'please use pad_val=dict(img={pad_val}, '
+                f'masks={pad_val}, seg=255) instead.', DeprecationWarning)
+            pad_val = dict(img=pad_val, masks=pad_val, seg=255)
+        assert isinstance(pad_val, dict)
+        self.pad_val = pad_val
         self.pad_to_square = pad_to_square
 
         if pad_to_square:
@@ -1450,16 +1461,17 @@ class MMPad:
 
     def _pad_img(self, results):
         """Pad images according to ``self.size``."""
+        pad_val = self.pad_val.get('img', 0)
         for key in results.get('img_fields', ['img']):
             if self.pad_to_square:
                 max_size = max(results[key].shape[:2])
                 self.size = (max_size, max_size)
             if self.size is not None:
                 padded_img = mmcv.impad(
-                    results[key], shape=self.size, pad_val=self.pad_val)
+                    results[key], shape=self.size, pad_val=pad_val)
             elif self.size_divisor is not None:
                 padded_img = mmcv.impad_to_multiple(
-                    results[key], self.size_divisor, pad_val=self.pad_val)
+                    results[key], self.size_divisor, pad_val=pad_val)
             results[key] = padded_img
         results['pad_shape'] = padded_img.shape
         results['pad_fixed_size'] = self.size
@@ -1468,17 +1480,17 @@ class MMPad:
     def _pad_masks(self, results):
         """Pad masks according to ``results['pad_shape']``."""
         pad_shape = results['pad_shape'][:2]
+        pad_val = self.pad_val.get('masks', 0)
         for key in results.get('mask_fields', []):
-            results[key] = results[key].pad(pad_shape, pad_val=self.pad_val)
+            results[key] = results[key].pad(pad_shape, pad_val=pad_val)
 
     def _pad_seg(self, results):
         """Pad semantic segmentation map according to
         ``results['pad_shape']``."""
+        pad_val = self.pad_val.get('seg', 255)
         for key in results.get('seg_fields', []):
             results[key] = mmcv.impad(
-                results[key],
-                shape=results['pad_shape'][:2],
-                pad_val=self.seg_pad_val)
+                results[key], shape=results['pad_shape'][:2], pad_val=pad_val)
 
     def __call__(self, results):
         """Call function to pad images, masks, semantic segmentation maps.
@@ -1828,7 +1840,7 @@ class LoadAnnotations:
                 If ``self.poly2mask`` is set ``True``, `gt_mask` will contain
                 :obj:`PolygonMasks`. Otherwise, :obj:`BitmapMasks` is used.
         """
-        from mmdet.core import BitmapMasks, PolygonMasks
+        from easycv.utils.mmlab_utils import BitmapMasks, PolygonMasks
 
         h, w = results['img_info']['height'], results['img_info']['width']
         gt_masks = results['ann_info']['masks']
@@ -1892,6 +1904,114 @@ class LoadAnnotations:
         repr_str += f'poly2mask={self.poly2mask}, '
         repr_str += f'poly2mask={self.file_client_args})'
         return
+
+
+@PIPELINES.register_module()
+class LoadPanopticAnnotations(LoadAnnotations):
+    """Load multiple types of panoptic annotations.
+
+    Args:
+        with_bbox (bool): Whether to parse and load the bbox annotation.
+             Default: True.
+        with_label (bool): Whether to parse and load the label annotation.
+            Default: True.
+        with_mask (bool): Whether to parse and load the mask annotation.
+             Default: True.
+        with_seg (bool): Whether to parse and load the semantic segmentation
+            annotation. Default: True.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmcv.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
+    """
+
+    def __init__(self,
+                 with_bbox=True,
+                 with_label=True,
+                 with_mask=True,
+                 with_seg=True,
+                 file_client_args=dict(backend='disk')):
+        if rgb2id is None:
+            raise RuntimeError(
+                'panopticapi is not installed, please install it by: '
+                'pip install git+https://github.com/cocodataset/'
+                'panopticapi.git.')
+
+        super(LoadPanopticAnnotations, self).__init__(
+            with_bbox=with_bbox,
+            with_label=with_label,
+            with_mask=with_mask,
+            with_seg=with_seg,
+            poly2mask=True,
+            # denorm_bbox=False,
+            file_client_args=file_client_args)
+
+    def _load_masks_and_semantic_segs(self, results):
+        """Private function to load mask and semantic segmentation annotations.
+
+        In gt_semantic_seg, the foreground label is from `0` to
+        `num_things - 1`, the background label is from `num_things` to
+        `num_things + num_stuff - 1`, 255 means the ignored label (`VOID`).
+
+        Args:
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
+
+        Returns:
+            dict: The dict contains loaded mask and semantic segmentation
+                annotations. `BitmapMasks` is used for mask annotations.
+        """
+        from easycv.utils.mmlab_utils import BitmapMasks
+        if self.file_client is None:
+            self.file_client = mmcv.FileClient(**self.file_client_args)
+
+        filename = osp.join(results['seg_prefix'],
+                            results['ann_info']['seg_map'])
+        img_bytes = self.file_client.get(filename)
+        pan_png = mmcv.imfrombytes(
+            img_bytes, flag='color', channel_order='rgb').squeeze()
+        pan_png = rgb2id(pan_png)
+        gt_masks = []
+        gt_seg = np.zeros_like(pan_png) + 255  # 255 as ignore
+        for mask_info in results['ann_info']['masks']:
+            mask = (pan_png == mask_info['id'])
+            gt_seg = np.where(mask, mask_info['category'], gt_seg)
+            # The legal thing masks
+            if mask_info.get('is_thing'):
+                gt_masks.append(mask.astype(np.uint8))
+
+        if self.with_mask:
+            h, w = results['img_info']['height'], results['img_info']['width']
+            gt_masks = BitmapMasks(gt_masks, h, w)
+            results['gt_masks'] = gt_masks
+            results['mask_fields'].append('gt_masks')
+
+        if self.with_seg:
+            results['gt_semantic_seg'] = gt_seg
+            results['seg_fields'].append('gt_semantic_seg')
+        return results
+
+    def __call__(self, results):
+        """Call function to load multiple types panoptic annotations.
+
+        Args:
+            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
+
+        Returns:
+            dict: The dict contains loaded bounding box, label, mask and
+                semantic segmentation annotations.
+        """
+
+        if self.with_bbox:
+            results = self._load_bboxes(results)
+            if results is None:
+                return None
+        if self.with_label:
+            results = self._load_labels(results)
+        if self.with_mask or self.with_seg:
+            # The tasks completed by '_load_masks' and '_load_semantic_segs'
+            # in LoadAnnotations are merged to one function.
+            results = self._load_masks_and_semantic_segs(results)
+
+        return results
 
 
 @PIPELINES.register_module()
@@ -2003,38 +2123,72 @@ class MMMultiScaleFlipAug:
 class MMFilterAnnotations:
     """Filter invalid annotations.
     Args:
-        min_gt_bbox_wh (tuple[int]): Minimum width and height of ground truth
-            boxes.
+        min_gt_bbox_wh (tuple[float]): Minimum width and height of ground truth
+            boxes. Default: (1., 1.)
+        min_gt_mask_area (int): Minimum foreground area of ground truth masks.
+            Default: 1
+        by_box (bool): Filter instances with bounding boxes not meeting the
+            min_gt_bbox_wh threshold. Default: True
+        by_mask (bool): Filter instances with masks not meeting
+            min_gt_mask_area threshold. Default: False
         keep_empty (bool): Whether to return None when it
             becomes an empty bbox after filtering. Default: True
     """
 
-    def __init__(self, min_gt_bbox_wh, keep_empty=True):
+    def __init__(self,
+                 min_gt_bbox_wh=(1., 1.),
+                 min_gt_mask_area=1,
+                 by_box=True,
+                 by_mask=False,
+                 keep_empty=True):
         # TODO: add more filter options
+        assert by_box or by_mask
         self.min_gt_bbox_wh = min_gt_bbox_wh
+        self.min_gt_mask_area = min_gt_mask_area
+        self.by_box = by_box
+        self.by_mask = by_mask
         self.keep_empty = keep_empty
 
     def __call__(self, results):
-        assert 'gt_bboxes' in results
-        gt_bboxes = results['gt_bboxes']
-        if gt_bboxes.shape[0] == 0:
+        if self.by_box:
+            assert 'gt_bboxes' in results
+            gt_bboxes = results['gt_bboxes']
+            instance_num = gt_bboxes.shape[0]
+        if self.by_mask:
+            assert 'gt_masks' in results
+            gt_masks = results['gt_masks']
+            instance_num = len(gt_masks)
+
+        if instance_num == 0:
             return results
-        w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
-        h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
-        keep = (w > self.min_gt_bbox_wh[0]) & (h > self.min_gt_bbox_wh[1])
+
+        tests = []
+        if self.by_box:
+            w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
+            h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
+            tests.append((w > self.min_gt_bbox_wh[0])
+                         & (h > self.min_gt_bbox_wh[1]))
+        if self.by_mask:
+            gt_masks = results['gt_masks']
+            tests.append(gt_masks.areas >= self.min_gt_mask_area)
+
+        keep = tests[0]
+        for t in tests[1:]:
+            keep = keep & t
+
+        keys = ('gt_bboxes', 'gt_labels', 'gt_masks')
+        for key in keys:
+            if key in results:
+                results[key] = results[key][keep]
         if not keep.any():
             if self.keep_empty:
                 return None
-            else:
-                return results
-        else:
-            keys = ('gt_bboxes', 'gt_labels', 'gt_masks', 'gt_semantic_seg')
-            for key in keys:
-                if key in results:
-                    results[key] = results[key][keep]
-            return results
+        return results
 
     def __repr__(self):
         return self.__class__.__name__ + \
                f'(min_gt_bbox_wh={self.min_gt_bbox_wh},' \
+               f'(min_gt_mask_area={self.min_gt_mask_area},' \
+               f'(by_box={self.by_box},' \
+               f'(by_mask={self.by_mask},' \
                f'always_keep={self.always_keep})'

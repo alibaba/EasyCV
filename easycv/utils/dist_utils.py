@@ -2,9 +2,11 @@
 import functools
 import os
 import pickle
+import random
 from collections import OrderedDict
 from contextlib import contextmanager
 
+import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.parallel import data_parallel as mm_data_parallel
@@ -134,3 +136,45 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
             torch.split(flatten_tensor, tensor_numels), tensor_shapes)
     ]
     return OrderedDict({k: v for k, v in zip(py_key, split_tensors)})
+
+
+def get_device():
+    """Returns an available device, cpu, cuda."""
+    is_device_available = {'cuda': torch.cuda.is_available()}
+    device_list = [k for k, v in is_device_available.items() if v]
+    return device_list[0] if len(device_list) == 1 else 'cpu'
+
+
+def sync_random_seed(seed=None, device='cuda'):
+    """Make sure different ranks share the same seed.
+    All workers must call this function, otherwise it will deadlock.
+    This method is generally used in `DistributedSampler`,
+    because the seed should be identical across all processes
+    in the distributed group.
+    In distributed sampling, different ranks should sample non-overlapped
+    data in the dataset. Therefore, this function is used to make sure that
+    each rank shuffles the data indices in the same order based
+    on the same seed. Then different ranks could use different indices
+    to select non-overlapped data from the same data list.
+    Args:
+        seed (int, Optional): The seed. Default to None.
+        device (str): The device where the seed will be put on.
+            Default to 'cuda'.
+    Returns:
+        int: Seed to be used.
+    """
+    if seed is None:
+        seed = np.random.randint(2**31)
+    assert isinstance(seed, int)
+
+    rank, world_size = get_dist_info()
+
+    if world_size == 1:
+        return seed
+
+    if rank == 0:
+        random_num = torch.tensor(seed, dtype=torch.int32, device=device)
+    else:
+        random_num = torch.tensor(0, dtype=torch.int32, device=device)
+    dist.broadcast(random_num, src=0)
+    return random_num.item()

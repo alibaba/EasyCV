@@ -35,10 +35,8 @@ class OptimizerHook(_OptimizerHook):
         '''
             ignore_key: [str,...], ignore_key[i], name of parameters, which's gradient will be set to zero before every optimizer step when epoch < ignore_key_epoch[i]
             ignore_key_epoch: [int,...], epoch < ignore_key_epoch[i], ignore_key[i]'s gradient will be set to zero.
-
             multiply_key:[str,...] multiply_key[i], name of parameters, which will set different learning rate ratio by multipy_rate
             multiply_rate:[float,...] multiply_rate[i], different ratio
-
         '''
         self.grad_clip = grad_clip
         self.coalesce = coalesce
@@ -48,9 +46,6 @@ class OptimizerHook(_OptimizerHook):
         self.ignore_key_epoch = ignore_key_epoch
         self.multiply_key = multiply_key
         self.multiply_rate = multiply_rate
-
-    def before_run(self, runner):
-        runner.optimizer.zero_grad()
 
     def _get_module(self, runner):
         module = runner.model
@@ -152,8 +147,6 @@ class AMPFP16OptimizerHook(OptimizerHook):
         for m in runner.model.modules():
             if hasattr(m, 'fp16_enabled'):
                 m.fp16_enabled = True
-
-        runner.optimizer.zero_grad()
 
     def after_train_iter(self, runner):
         loss = runner.outputs['loss'] / self.update_interval

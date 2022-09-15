@@ -12,9 +12,10 @@ from torch.utils.data import DataLoader, RandomSampler
 
 from easycv.datasets.shared.odps_reader import set_dataloader_workid
 from easycv.framework.errors import NotImplementedError
+from easycv.utils.dist_utils import sync_random_seed
 from easycv.utils.torchacc_util import is_torchacc_enabled
 from .collate import CollateWrapper
-from .sampler import DistributedMPSampler, DistributedSampler
+from .sampler import DistributedMPSampler, DistributedSampler, RASampler
 
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
@@ -35,6 +36,7 @@ def build_dataloader(dataset,
                      odps_config=None,
                      persistent_workers=False,
                      collate_hooks=None,
+                     use_repeated_augment_sampler=False,
                      **kwargs):
     """Build PyTorch DataLoader.
     In distributed training, each GPU/process has a dataloader.
@@ -51,22 +53,28 @@ def build_dataloader(dataset,
             Default: True.
         replace (bool): Replace or not in random shuffle.
             It works on when shuffle is True.
+        seed (int, Optional): The seed. Default to None.
         reuse_worker_cache (bool): If set true, will reuse worker process so that cached
             data in worker process can be reused.
         persistent_workers (bool) : After pytorch1.7, could use persistent_workers=True to
             avoid reconstruct dataworker before each epoch, speed up before epoch
+        use_repeated_augment_sampler (bool) : If set true, it will use RASampler.
+            Default: False.
         kwargs: any keyword argument to be used to initialize DataLoader
     Returns:
         DataLoader: A PyTorch dataloader.
     """
+    rank, world_size = get_dist_info()
 
     if dist:
-        rank, world_size = get_dist_info()
+        seed = sync_random_seed(seed)
         split_huge_listfile_byrank = getattr(dataset,
                                              'split_huge_listfile_byrank',
                                              False)
 
-        if hasattr(dataset, 'm_per_class') and dataset.m_per_class > 1:
+        if use_repeated_augment_sampler:
+            sampler = RASampler(dataset, world_size, rank, shuffle=shuffle)
+        elif hasattr(dataset, 'm_per_class') and dataset.m_per_class > 1:
             sampler = DistributedMPSampler(
                 dataset,
                 world_size,
@@ -79,13 +87,17 @@ def build_dataloader(dataset,
                 world_size,
                 rank,
                 shuffle=shuffle,
+                seed=seed,
                 split_huge_listfile_byrank=split_huge_listfile_byrank)
         batch_size = imgs_per_gpu
         num_workers = workers_per_gpu
     else:
         if replace:
             raise NotImplementedError
-        if hasattr(dataset, 'm_per_class') and dataset.m_per_class > 1:
+
+        if use_repeated_augment_sampler:
+            sampler = RASampler(dataset, 1, 0, shuffle=shuffle)
+        elif hasattr(dataset, 'm_per_class') and dataset.m_per_class > 1:
             sampler = DistributedMPSampler(
                 dataset, 1, 0, shuffle=shuffle, replace=replace)
         else:
@@ -94,7 +106,12 @@ def build_dataloader(dataset,
         batch_size = num_gpus * imgs_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
-    init_fn = partial(worker_init_fn, seed=seed, odps_config=odps_config)
+    init_fn = partial(
+        worker_init_fn,
+        num_workers=num_workers,
+        rank=rank,
+        seed=seed,
+        odps_config=odps_config) if seed is not None else None
     collate_fn = dataset.collate_fn if hasattr(
         dataset, 'collate_fn') else partial(
             collate, samples_per_gpu=imgs_per_gpu)
@@ -146,12 +163,13 @@ def build_dataloader(dataset,
     return data_loader
 
 
-def worker_init_fn(worker_id, seed=None, odps_config=None):
-    if seed is not None:
-        worker_seed = worker_id + seed
-        np.random.seed(worker_seed)
-        random.seed(worker_seed)
-        torch.manual_seed(worker_seed)
+def worker_init_fn(worker_id, num_workers, rank, seed, odps_config=None):
+    # The seed of each worker equals to
+    # num_worker * rank + worker_id + user_seed
+    worker_seed = num_workers * rank + worker_id + seed
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+    torch.manual_seed(worker_seed)
 
     if odps_config is not None:
         # for odps to set correct offset in multi-process pytorch dataloader

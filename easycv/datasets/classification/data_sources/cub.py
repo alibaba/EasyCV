@@ -135,7 +135,7 @@ class ClsSourceCUB(object):
     def __len__(self):
         return len(self.data_infos)
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         data_info = self.data_infos[idx]
 
         img = Image.open(io.open(data_info['img_info'], 'rb'))

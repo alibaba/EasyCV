@@ -30,8 +30,10 @@ from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
                                        mmcv_config_fromfile, rebuild_config)
 from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
+
 from easycv.utils.setup_env import setup_multi_processes
 from easycv.framework.errors import ValueError, NotImplementedError
+from easycv.utils.misc import reparameterize_models
 
 
 def parse_args():
@@ -184,6 +186,10 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f'use device {device}')
     checkpoint = load_checkpoint(model, args.checkpoint, map_location=device)
+
+    # reparameter to deploy for RepVGG block
+    model = reparameterize_models(model)
+
     model.to(device)
     # if args.fuse_conv_bn:
     #     model = fuse_module(model)
@@ -223,6 +229,7 @@ def main():
                 workers_per_gpu=cfg.data.workers_per_gpu,
                 dist=distributed,
                 shuffle=False)
+            # oss_config=cfg.get('oss_io_config', None))
 
         if not distributed:
             outputs = single_gpu_test(

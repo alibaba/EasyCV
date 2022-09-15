@@ -98,6 +98,7 @@ class EVRunner(EpochBasedRunner):
 
         for i, data_batch in enumerate(self.data_loader):
             self._inner_iter = i
+
             self.call_hook('before_train_iter')
             # use amp from pytorch 1.6 or later, we should use amp.autocast
             if self.fp16_enable and LooseVersion(
@@ -169,12 +170,9 @@ class EVRunner(EpochBasedRunner):
                 param groups. If the runner has a dict of optimizers, this
                 method will return a dict.
         """
-        # add interface to selfdefine current_lr_fn for lr_hook
-        # so that runner can logging correct lrs
-        if hasattr(self, 'current_lr_fn'):
-            lr = self.current_lr_fn(self.optimizer)
-        elif isinstance(self.optimizer, torch.optim.Optimizer):
-            lr = [group['lr'] for group in self.optimizer.param_groups]
+        if isinstance(self.optimizer, torch.optim.Optimizer):
+            lr = sorted([group['lr'] for group in self.optimizer.param_groups],
+                        reverse=True)  # avoid lr display error
         elif isinstance(self.optimizer, dict):
             lr = dict()
             for name, optim in self.optimizer.items():

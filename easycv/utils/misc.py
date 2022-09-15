@@ -1,9 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import logging
 from functools import partial
 
 import mmcv
 import numpy as np
 from six.moves import map, zip
+
+from easycv.models.backbones.repvgg_yolox_backbone import RepVGGBlock
 
 
 def tensor2imgs(tensor, mean=(0, 0, 0), std=(1, 1, 1), to_rgb=True):
@@ -67,3 +70,22 @@ def add_prefix(inputs, prefix):
         outputs[f'{prefix}.{name}'] = value
 
     return outputs
+
+
+def reparameterize_models(model):
+    """ reparameterize model for inference, especially forf
+            1. rep conv block : merge 3x3 weight 1x1 weights
+        call module switch_to_deploy recursively
+    Args:
+        model: nn.Module
+    """
+    reparameterize_count = 0
+    for layer in model.modules():
+        if isinstance(layer, RepVGGBlock):
+            reparameterize_count += 1
+            layer.switch_to_deploy()
+    logging.info(
+        'export : PAI-export reparameterize_count(RepVGGBlock, ) switch to deploy with {} blocks'
+        .format(reparameterize_count))
+    print('reparam:', reparameterize_count)
+    return model

@@ -50,6 +50,6 @@ class PoseTopDownDataset(BaseDataset):
 
     def __getitem__(self, idx):
         """Get the sample given index."""
-        results = self.data_source.get_sample(idx)
+        results = self.data_source[idx]
 
         return self.pipeline(results)
