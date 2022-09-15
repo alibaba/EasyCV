@@ -5,6 +5,8 @@ import torch
 from mmcv.runner import OPTIMIZERS
 from torch.optim import Optimizer
 
+from easycv.framework.errors import RuntimeError
+
 
 @OPTIMIZERS.register_module()
 class Lamb(Optimizer):

@@ -15,6 +15,7 @@ from typing import Optional
 import torch
 from torch import Tensor, nn
 
+from easycv.framework.errors import NotImplementedError
 from easycv.models.builder import NECKS
 from easycv.models.detection.utils import (gen_encoder_output_proposals,
                                            gen_sineembed_for_position,
