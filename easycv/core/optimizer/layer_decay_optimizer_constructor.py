@@ -1,5 +1,4 @@
 # Reference from https://github.com/ViTAE-Transformer/ViTDet/blob/main/mmcv_custom/layer_decay_optimizer_constructor.py
-# Reference from https://github.com/facebookresearch/detectron2/blob/main/detectron2/modeling/backbone/vit.py
 
 import json
 
@@ -11,6 +10,7 @@ from .builder import OPTIMIZER_BUILDERS
 def get_vit_lr_decay_rate(name, lr_decay_rate=1.0, num_layers=12):
     """
     Calculate lr decay rate for different ViT blocks.
+    Reference from https://github.com/facebookresearch/detectron2/blob/main/detectron2/modeling/backbone/vit.py
     Args:
         name (string): parameter name.
         lr_decay_rate (float): base lr decay rate.
