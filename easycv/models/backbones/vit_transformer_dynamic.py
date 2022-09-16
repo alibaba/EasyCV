@@ -13,13 +13,19 @@ from functools import partial
 import torch
 import torch.nn as nn
 
-from easycv.models.backbones.vision_transformer import VisionTransformer
+from easycv.models.backbones.vision_transformer import Block, VisionTransformer
 
 
 class DynamicVisionTransformer(VisionTransformer):
-    """Dynamic Vision Transformer """
+    """Dynamic Vision Transformer
 
-    def __init__(self, **kwargs):
+    Args:
+        use_dense_prediction (bool): If use_dense_prediction is True, the global
+            pool and norm will before head will be removed.(if any) Default: False
+
+    """
+
+    def __init__(self, use_dense_prediction=False, **kwargs):
         super(DynamicVisionTransformer, self).__init__(**kwargs)
 
         num_patches = self.patch_embed.num_patches
@@ -31,6 +37,25 @@ class DynamicVisionTransformer(VisionTransformer):
             x.item()
             for x in torch.linspace(0, self.drop_path_rate, self.depth)
         ]
+        self.blocks = nn.ModuleList([
+            Block(
+                dim=self.embed_dim,
+                num_heads=self.num_heads,
+                mlp_ratio=self.mlp_ratio,
+                qkv_bias=self.qkv_bias,
+                qk_scale=self.qk_scale,
+                drop=self.drop_rate,
+                attn_drop=self.attn_drop_rate,
+                drop_path=dpr[i],
+                norm_layer=self.norm_layer,
+                use_layer_scale=self.use_layer_scale,
+                init_values=self.init_scale) for i in range(self.depth)
+        ])
+
+        # Dense prediction head
+        self.use_dense_prediction = use_dense_prediction
+        if self.use_dense_prediction:
+            self.head_dense = None
 
     def forward(self, x):
         # convert to list

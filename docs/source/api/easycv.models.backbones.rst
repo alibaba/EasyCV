@@ -156,7 +156,7 @@ easycv.models.backbones.swin\_transformer\_dynamic module
 easycv.models.backbones.vit\_transfomer\_dynamic module
 -------------------------------------------------------
 
-.. automodule:: easycv.models.backbones.vit_transfomer_dynamic
+.. automodule:: easycv.models.backbones.vit_transformer_dynamic
    :members:
    :undoc-members:
    :show-inheritance:
