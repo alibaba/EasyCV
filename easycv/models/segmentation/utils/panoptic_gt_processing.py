@@ -89,3 +89,27 @@ def preprocess_panoptic_gt(gt_labels, gt_masks, gt_semantic_seg, num_things,
 
     masks = masks.long()
     return labels, masks
+
+
+def preprocess_semantic_gt(gt_semantic_seg):
+
+    gt_semantic_seg = gt_semantic_seg.squeeze(0)
+
+    semantic_labels = torch.unique(
+        gt_semantic_seg,
+        sorted=False,
+        return_inverse=False,
+        return_counts=False)
+
+    masks_list = []
+    labels_list = []
+    for label in semantic_labels:
+        if label == 255:
+            continue
+        mask = gt_semantic_seg == label
+        masks_list.append(mask)
+        labels_list.append(label)
+
+    masks = torch.stack(masks_list, dim=0)
+    labels = torch.stack(labels_list, dim=0)
+    return labels, masks

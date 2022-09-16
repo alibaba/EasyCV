@@ -318,7 +318,7 @@ class EncoderDecoder(BaseModel):
     def aug_test(self, imgs, img_metas, rescale=True):
         """Test with augmentations.
 
-        Only rescale=True is supported.
+        Only  =True is supported.
         """
         # aug_test rescale all imgs back to ori_shape for now
         assert rescale

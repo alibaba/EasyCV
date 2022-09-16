@@ -10,7 +10,7 @@ from easycv.models.builder import MODELS
 from easycv.models.segmentation.utils.criterion import SetCriterion
 from easycv.models.segmentation.utils.matcher import MaskHungarianMatcher
 from easycv.models.segmentation.utils.panoptic_gt_processing import (
-    multi_apply, preprocess_panoptic_gt)
+    multi_apply, preprocess_panoptic_gt, preprocess_semantic_gt)
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger, print_log
 
@@ -42,6 +42,7 @@ class Mask2Former(BaseModel):
         self.test_cfg = test_cfg
         self.instance_on = test_cfg.get('instance_on', False)
         self.panoptic_on = test_cfg.get('panoptic_on', False)
+        self.semantic_on = test_cfg.get('semantic_on', False)
         self.pretrained = pretrained
         self.backbone = builder.build_backbone(backbone)
         self.head = builder.build_head(head)
@@ -114,8 +115,11 @@ class Mask2Former(BaseModel):
                       img_metas):
         features = self.backbone(img)
         outputs = self.head(features)
-        targets = self.preprocess_gt(gt_labels, gt_masks, gt_semantic_seg,
-                                     img_metas)
+        if gt_labels != None:
+            targets = self.preprocess_gt(gt_labels, gt_masks, gt_semantic_seg,
+                                         img_metas)
+        else:
+            targets = self.preprocess_gt_semantic(gt_semantic_seg)
         losses = self.criterion(outputs, targets)
         for k in list(losses.keys()):
             if k in self.criterion.weight_dict:
@@ -135,6 +139,7 @@ class Mask2Former(BaseModel):
         detection_classes = []
         detection_masks = []
         pan_masks = []
+        seg_pred = []
         for mask_cls_result, mask_pred_result, meta in zip(
                 mask_cls_results, mask_pred_results, img_metas[0]):
             pad_height, pad_width = meta['pad_shape'][:2]
@@ -178,6 +183,14 @@ class Mask2Former(BaseModel):
                 pan_results = self.panoptic_postprocess(
                     mask_cls_result, mask_pred_result)
                 pan_masks.append(pan_results.cpu().numpy())
+
+            if self.semantic_on:
+                mask_cls = F.softmax(mask_cls_result, dim=-1)[..., :-1]
+                mask_pred = mask_pred_result.sigmoid()
+                semseg = torch.einsum('qc,qhw->chw', mask_cls, mask_pred)
+                semseg = semseg.argmax(dim=0).cpu().numpy()
+                seg_pred.append(semseg)
+
         assert len(img_metas) == 1
         outputs = {
             'detection_boxes': detection_boxes,
@@ -187,6 +200,7 @@ class Mask2Former(BaseModel):
             'img_metas': img_metas[0]
         }
         outputs['pan_results'] = pan_masks
+        outputs['seg_pred'] = seg_pred
         return outputs
 
     def forward(self,
@@ -360,6 +374,17 @@ class Mask2Former(BaseModel):
         targets = multi_apply(preprocess_panoptic_gt, gt_labels_list,
                               gt_masks_list, gt_semantic_segs, num_things_list,
                               num_stuff_list, img_metas)
+        labels, masks = targets
+        new_targets = []
+        for label, mask in zip(labels, masks):
+            new_targets.append({
+                'labels': label,
+                'masks': mask,
+            })
+        return new_targets
+
+    def preprocess_gt_semantic(self, gt_semantic_segs):
+        targets = multi_apply(preprocess_semantic_gt, gt_semantic_segs)
         labels, masks = targets
         new_targets = []
         for label, mask in zip(labels, masks):
