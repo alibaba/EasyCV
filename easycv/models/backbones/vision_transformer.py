@@ -69,7 +69,6 @@ class Block(nn.Module):
                  use_layer_scale=False,
                  init_values=1e-4):
         super().__init__()
-        print('**************drop_path*****************:', drop_path)
         self.norm1 = norm_layer(dim)
         self.attn = Attention(
             dim,
@@ -215,7 +214,6 @@ class VisionTransformer(nn.Module):
 
         self.drop_path_rate = drop_path_rate
         self.depth = depth
-        print('*******************UUU***************')
         dpr = [drop_path_rate for i in range(depth)]
         self.blocks = nn.ModuleList([
             Block(
@@ -257,9 +255,7 @@ class VisionTransformer(nn.Module):
                 nn.init.constant_(m.weight, 1.0)
 
     def forward(self, x):
-        print(
-            '*************************************************************IIIIIII****************'
-        )
+
         x = self.forward_features(x)
         x = self.pos_drop(x)
         x = self.head(x)
