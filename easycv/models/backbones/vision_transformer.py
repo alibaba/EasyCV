@@ -4,12 +4,10 @@ Mostly copy-paste from timm library.
 https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/vision_transformer.py
 
 """
-import math
 from functools import partial
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from timm.models.layers import trunc_normal_
 
 from easycv.models.utils import DropPath, Mlp
@@ -163,8 +161,6 @@ class VisionTransformer(nn.Module):
             forward layer. Default: 0.0
         drop_path_rate (float): Stochastic depth rate. Default: 0
         norm_layer (nn.Module): normalization layer
-        use_dense_prediction (bool): If use_dense_prediction is True, the global
-            pool and norm will before head will be removed.(if any) Default: False
         global_pool (bool): Global pool before head. Default: False
         use_layer_scale (bool): If use_layer_scale is True, it will use layer
             scale. Default: False
@@ -188,7 +184,6 @@ class VisionTransformer(nn.Module):
                  attn_drop_rate=0.,
                  drop_path_rate=0.,
                  norm_layer=partial(nn.LayerNorm, eps=1e-6),
-                 use_dense_prediction=False,
                  global_pool=False,
                  use_layer_scale=False,
                  init_scale=1e-4,
@@ -196,6 +191,15 @@ class VisionTransformer(nn.Module):
         super().__init__()
 
         self.num_features = self.embed_dim = embed_dim
+        self.num_heads = num_heads
+        self.mlp_ratio = mlp_ratio
+        self.qkv_bias = qkv_bias
+        self.qk_scale = qk_scale
+        self.drop_rate = drop_rate
+        self.attn_drop_rate = attn_drop_rate
+        self.norm_layer = norm_layer
+        self.use_layer_scale = use_layer_scale
+        self.init_scale = init_scale
 
         self.patch_embed = PatchEmbed(
             img_size=img_size[0],
@@ -230,11 +234,6 @@ class VisionTransformer(nn.Module):
         # Classifier head
         self.head = nn.Linear(
             embed_dim, num_classes) if num_classes > 0 else nn.Identity()
-
-        # Dense prediction head
-        self.use_dense_prediction = use_dense_prediction
-        if self.use_dense_prediction:
-            self.head_dense = None
 
         # Use global average pooling
         self.global_pool = global_pool
@@ -277,11 +276,8 @@ class VisionTransformer(nn.Module):
         if self.norm is not None:
             x = self.norm(x)
 
-        if self.use_dense_prediction:
-            return x[:, 0], x[:, 1:]
+        if self.global_pool:
+            x = x[:, 1:, :].mean(dim=1)
+            return self.fc_norm(x)
         else:
-            if self.global_pool:
-                x = x[:, 1:, :].mean(dim=1)
-                return self.fc_norm(x)
-            else:
-                return x[:, 0]
+            return x[:, 0]
