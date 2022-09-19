@@ -40,7 +40,7 @@ class DetDataset(BaseDataset):
         while True:
             if count > 10:
                 raise TimeoutError('Loops timeout')
-            data_dict = self.data_source.get_sample(idx)
+            data_dict = self.data_source[idx]
             data_dict = self.pipeline(data_dict)
             if data_dict is None:
                 count += 1
