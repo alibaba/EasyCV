@@ -157,3 +157,6 @@ checkpoint_config = dict(interval=10)
 
 # runtime settings
 total_epochs = 50
+
+# export config
+export = dict(export_neck=True)
