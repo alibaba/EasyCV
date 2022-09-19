@@ -106,6 +106,9 @@ def _export_cls(model, cfg, filename):
         backbone=replace_syncbn(cfg.model.backbone),
     )
 
+    # avoid load pretrained model
+    model_config['pretrained'] = False
+
     if export_neck:
         if hasattr(cfg.model, 'neck'):
             model_config['neck'] = cfg.model.neck
