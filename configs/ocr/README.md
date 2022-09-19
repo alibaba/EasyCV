@@ -1,6 +1,6 @@
 # OCR algorithm
 ## PP-OCRv3
-&ensp;&ensp;We convert [PaddleOCRv3](https://github.com/PaddlePaddle/PaddleOCR) models to pytorch style. Futhermore, we provide end2end interface to recognize text in images, by simplely load exported models.
+&ensp;&ensp;We convert [PaddleOCRv3](https://github.com/PaddlePaddle/PaddleOCR) models to pytorch style, and provide end2end interface to recognize text in images, by simplely load exported models.
 ### detection
 &ensp;&ensp;We test on on icdar2015 dataset.
 |Algorithm|backbone|configs|precison|recall|Hmean|Download|

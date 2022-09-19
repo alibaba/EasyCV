@@ -21,6 +21,15 @@ class OCRClsSource(OCRDetSource):
                  test_mode=False,
                  delimiter='\t',
                  label_list=['0', '180']):
+        """
+
+        Args:
+            label_file (str): path of label file
+            data_dir (str, optional): folder of imgge data. Defaults to ''.
+            test_mode (bool, optional): whether train or test. Defaults to False.
+            delimiter (str, optional): delimiter used to separate elements in each row. Defaults to '\t'.
+            label_list (list, optional): Identifiable directional Angle. Defaults to ['0', '180'].
+        """
         super(OCRClsSource, self).__init__(
             label_file,
             data_dir=data_dir,

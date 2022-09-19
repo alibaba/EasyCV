@@ -21,6 +21,14 @@ class OCRDetSource(object):
                  data_dir='',
                  test_mode=False,
                  delimiter='\t'):
+        """
+
+        Args:
+            label_file (str): path of label file
+            data_dir (str, optional): folder of imgge data. Defaults to ''.
+            test_mode (bool, optional): whether train or test. Defaults to False.
+            delimiter (str, optional): delimiter used to separate elements in each row. Defaults to '\t'.
+        """
         self.data_dir = data_dir
         self.delimiter = delimiter
         self.test_mode = test_mode
@@ -103,10 +111,17 @@ class OCRDetSource(object):
 
 @DATASOURCES.register_module(force=True)
 class OCRPaiDetSource(object):
-    """ocr det data source
+    """ocr det data source for pai format
     """
 
     def __init__(self, label_file, data_dir='', test_mode=False):
+        """
+
+        Args:
+            label_file (str or list[str]): path of label file
+            data_dir (str, optional): folder of imgge data. Defaults to ''.
+            test_mode (bool, optional): whether train or test. Defaults to False.
+        """
         self.data_dir = data_dir
         self.test_mode = test_mode
         self.data_lines = self.get_image_info_list(label_file)

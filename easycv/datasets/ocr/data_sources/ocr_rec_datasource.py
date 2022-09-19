@@ -22,6 +22,15 @@ class OCRRecSource(object):
                  ext_data_num=0,
                  test_mode=False,
                  delimiter='\t'):
+        """
+
+        Args:
+            label_file (str): path of label file
+            data_dir (str, optional): folder of imgge data. Defaults to ''.
+            ext_data_num (int): number of additional data used for augmentation. Defaults to 0.
+            test_mode (bool, optional): whether train or test. Defaults to False.
+            delimiter (str, optional): delimiter used to separate elements in each row. Defaults to '\t'.
+        """
         self.data_dir = data_dir
         self.delimiter = delimiter
         self.test_mode = test_mode
@@ -77,7 +86,7 @@ class OCRRecSource(object):
 
 @DATASOURCES.register_module(force=True)
 class OCRReclmdbSource(object):
-    """ocr rec lmdb data source
+    """ocr rec lmdb data source specific for DTRB dataset
     """
 
     def __init__(self, data_dir='', ext_data_num=0, test_mode=False):
@@ -86,7 +95,6 @@ class OCRReclmdbSource(object):
         self.lmdb_sets = self.load_hierarchical_lmdb_dataset(data_dir)
         logging.info('Initialize indexs of datasets:%s' % data_dir)
         self.data_idx_order_list = self.dataset_traversal()
-        # self.data_idx_order_list = self.data_idx_order_list[:1000000]
 
     def load_hierarchical_lmdb_dataset(self, data_dir):
         lmdb_sets = {}
