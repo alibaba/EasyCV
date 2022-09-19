@@ -40,5 +40,5 @@ out_img = predictor.show(
     font_path='simfang.ttf')
 cv2.imwrite('out_img.jpg', out_img)
 ```
-There are some result of chinese rec model.
+There are some result of chinese rec model.</div>
 ![ocr_result1](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/result/test_ocr_1_out.jpg)
