@@ -25,9 +25,11 @@ class HandKeypointsPredictor(PredictorV2):
         config_file: path or ``Config`` of config file
         detection_model_config: dict of hand detection model predictor config,
                                 example like ``dict(type="", model_path="", config_file="", ......)``
-        batch_size: batch_size to infer
-        save_results: bool
-        save_path: path of result image
+        batch_size (int): batch size for forward.
+        device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
+        save_results (bool): Whether to save predict results.
+        save_path (str): File path for saving results, only valid when `save_results` is True.
+        pipelines (list[dict]): Data pipeline configs.
     """
 
     def __init__(self,
@@ -38,7 +40,7 @@ class HandKeypointsPredictor(PredictorV2):
                  device=None,
                  save_results=False,
                  save_path=None,
-                 mode='rgb',
+                 pipelines=None,
                  *args,
                  **kwargs):
         super(HandKeypointsPredictor, self).__init__(
@@ -48,7 +50,7 @@ class HandKeypointsPredictor(PredictorV2):
             device=device,
             save_results=save_results,
             save_path=save_path,
-            mode=mode,
+            pipelines=pipelines,
             *args,
             **kwargs)
         self.dataset_info = DatasetInfo(COCO_WHOLEBODY_HAND_DATASET_INFO)
@@ -75,7 +77,7 @@ class HandKeypointsPredictor(PredictorV2):
         box_id = 0
         det_bbox_result = input['detection_boxes']
         det_bbox_scores = input['detection_scores']
-        img = mmcv.imread(image_path, 'color', self.mode)
+        img = mmcv.imread(image_path, 'color', self.INPUT_IMAGE_MODE)
         for bbox, score in zip(det_bbox_result, det_bbox_scores):
             center, scale = _box2cs(self.cfg.data_cfg['image_size'], bbox)
             # prepare data

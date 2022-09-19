@@ -46,7 +46,6 @@ class DetectionPredictor(PredictorV2):
                  device=None,
                  save_results=False,
                  save_path=None,
-                 mode='bgr',
                  pipelines=None,
                  score_threshold=0.5,
                  *arg,
@@ -58,7 +57,6 @@ class DetectionPredictor(PredictorV2):
             device=device,
             save_results=save_results,
             save_path=save_path,
-            mode=mode,
             pipelines=pipelines,
         )
         self.score_thresh = score_threshold

@@ -104,13 +104,13 @@ class SegmentationPredictorTest(unittest.TestCase):
 @unittest.skipIf(True, 'WIP')
 class Mask2formerPredictorTest(unittest.TestCase):
 
-    def test_default(self):
+    def test_single(self):
         import cv2
         from easycv.predictors.segmentation import Mask2formerPredictor
         pan_ckpt = os.path.join(PRETRAINED_MODEL_MASK2FORMER_DIR,
                                 'mask2former_pan_export.pth')
         instance_ckpt = os.path.join(PRETRAINED_MODEL_MASK2FORMER_DIR,
-                                     'mask2former_r50_instance.pth.pth')
+                                     'mask2former_r50_instance.pth')
         img_path = os.path.join(TEST_IMAGES_DIR, 'mask2former.jpg')
 
         # panop

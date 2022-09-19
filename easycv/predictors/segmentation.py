@@ -22,7 +22,6 @@ class SegmentationPredictor(PredictorV2):
         device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
         save_results (bool): Whether to save predict results.
         save_path (str): File path for saving results, only valid when `save_results` is True.
-        mode (str): image mode.
         pipelines (list[dict]): Data pipeline configs.
     """
 
@@ -33,7 +32,6 @@ class SegmentationPredictor(PredictorV2):
                  device=None,
                  save_results=False,
                  save_path=None,
-                 mode='bgr',
                  pipelines=None,
                  *args,
                  **kwargs):
@@ -45,7 +43,6 @@ class SegmentationPredictor(PredictorV2):
             device=device,
             save_results=save_results,
             save_path=save_path,
-            mode=mode,
             pipelines=pipelines,
             *args,
             **kwargs)
@@ -140,7 +137,6 @@ class Mask2formerPredictor(SegmentationPredictor):
         device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
         save_results (bool): Whether to save predict results.
         save_path (str): File path for saving results, only valid when `save_results` is True.
-        mode (str): image mode.
         pipelines (list[dict]): Data pipeline configs.
     """
 
@@ -151,7 +147,6 @@ class Mask2formerPredictor(SegmentationPredictor):
                  device=None,
                  save_results=False,
                  save_path=None,
-                 mode='bgr',
                  pipelines=None,
                  task_mode='panoptic',
                  *args,
@@ -163,7 +158,6 @@ class Mask2formerPredictor(SegmentationPredictor):
             device=device,
             save_results=save_results,
             save_path=save_path,
-            mode=mode,
             pipelines=pipelines,
             *args,
             **kwargs)

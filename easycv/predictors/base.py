@@ -3,6 +3,7 @@ import json
 import os
 import pickle
 
+import cv2
 import numpy as np
 import torch
 from mmcv.parallel import collate, scatter_kwargs
@@ -109,9 +110,9 @@ class PredictorV2(object):
             device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
             save_results (bool): Whether to save predict results.
             save_path (str): File path for saving results, only valid when `save_results` is True.
-            mode (str): image mode.
             pipelines (list[dict]): Data pipeline configs.
         """
+    INPUT_IMAGE_MODE = 'BGR'  # the image mode into the model
 
     def __init__(self,
                  model_path,
@@ -120,7 +121,6 @@ class PredictorV2(object):
                  device=None,
                  save_results=False,
                  save_path=None,
-                 mode='rgb',
                  pipelines=None,
                  *args,
                  **kwargs):
@@ -150,7 +150,6 @@ class PredictorV2(object):
         self.pipelines = pipelines
         self.processor = self.build_processor()
         self._load_op = None
-        self.mode = mode
 
     def _load_cfg_from_ckpt(self, model_path):
         if is_url_path(model_path):
@@ -214,10 +213,13 @@ class PredictorV2(object):
             }
         """
         if self._load_op is None:
-            load_cfg = dict(type='LoadImage', mode=self.mode)
+            load_cfg = dict(type='LoadImage', mode=self.INPUT_IMAGE_MODE)
             self._load_op = build_from_cfg(load_cfg, PIPELINES)
 
         if not isinstance(input, str):
+            if isinstance(input, np.ndarray):
+                # Only support RGB mode if input is np.ndarray.
+                input = cv2.cvtColor(input, cv2.COLOR_RGB2BGR)
             sample = self._load_op({'img': input})
         else:
             sample = self._load_op({'filename': input})

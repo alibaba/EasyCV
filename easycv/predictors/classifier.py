@@ -21,7 +21,6 @@ class ClassificationPredictor(PredictorV2):
         device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
         save_results (bool): Whether to save predict results.
         save_path (str): File path for saving results, only valid when `save_results` is True.
-        mode (str): image mode.
         pipelines (list[dict]): Data pipeline configs.
         topk (int): Return top-k results. Default: 1.
         pil_input (bool): Whether use PIL image. If processor need PIL input, set true, default false.
@@ -35,7 +34,6 @@ class ClassificationPredictor(PredictorV2):
                  device=None,
                  save_results=False,
                  save_path=None,
-                 mode='rgb',
                  pipelines=[],
                  topk=1,
                  pil_input=True,
@@ -49,12 +47,16 @@ class ClassificationPredictor(PredictorV2):
             device=device,
             save_results=save_results,
             save_path=save_path,
-            mode=mode,
             pipelines=pipelines,
             *args,
             **kwargs)
         self.topk = topk
         self.pil_input = pil_input
+
+        # Adapt to torchvision transforms which process PIL inputs.
+        if self.pil_input:
+            self.INPUT_IMAGE_MODE = 'RGB'
+
         if label_map_path is None:
             class_list = self.cfg.get('CLASSES', [])
         else:
@@ -78,8 +80,8 @@ class ClassificationPredictor(PredictorV2):
             results = {}
             if isinstance(input, str):
                 img = Image.open(input)
-                if img.mode.upper() != self.mode.upper():
-                    img = img.convert(self.mode.upper())
+                if img.mode.upper() != self.INPUT_IMAGE_MODE.upper():
+                    img = img.convert(self.INPUT_IMAGE_MODE.upper())
                 results['filename'] = input
             else:
                 assert isinstance(input, ImageFile.ImageFile)

@@ -25,6 +25,11 @@ class FaceKeypointsPredictor(PredictorV2):
     Args:
         model_path (str): Path of model path
         config_file (str): config file path for model and processor to init. Defaults to None.
+        batch_size (int): batch size for forward.
+        device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
+        save_results (bool): Whether to save predict results.
+        save_path (str): File path for saving results, only valid when `save_results` is True.
+        pipelines (list[dict]): Data pipeline configs.
     """
 
     def __init__(self,
@@ -34,7 +39,7 @@ class FaceKeypointsPredictor(PredictorV2):
                  device=None,
                  save_results=False,
                  save_path=None,
-                 mode='bgr'):
+                 pipelines=None):
         super(FaceKeypointsPredictor, self).__init__(
             model_path,
             config_file,
@@ -42,7 +47,7 @@ class FaceKeypointsPredictor(PredictorV2):
             device=device,
             save_results=save_results,
             save_path=save_path,
-            mode=mode)
+            pipelines=pipelines)
 
         self.input_size = self.cfg.IMAGE_SIZE
         self.point_number = self.cfg.POINT_NUMBER
