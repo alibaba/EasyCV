@@ -5,6 +5,7 @@ future
 h5py
 imgaug
 json_tricks
+lmdb
 numpy
 opencv-python
 oss2

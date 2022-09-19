@@ -2,13 +2,14 @@ _base_ = ['configs/base.py']
 
 model = dict(
     type='DBNet',
-    backbone=dict(type='ResNet', in_channels=3, layers=50),
+    backbone=dict(
+        type='MobileNetV3', scale=0.5, model_name='large', disable_se=True),
     neck=dict(
-        type='LKPAN',
-        in_channels=[256, 512, 1024, 2048],
-        out_channels=256,
+        type='RSEFPN',
+        in_channels=[16, 24, 56, 480],
+        out_channels=96,
         shortcut=True),
-    head=dict(type='DBHead', in_channels=256, kernel_list=[7, 2, 2], k=50),
+    head=dict(type='DBHead', in_channels=96, k=50),
     postprocess=dict(
         type='DBPostProcess',
         thresh=0.3,
@@ -25,9 +26,7 @@ model = dict(
         beta=10,
         ohem_ratio=3),
     pretrained=
-    '/root/code/ocr/PaddleOCR/pretrain_models/en_PP-OCRv3_det_distill_train/teacher.pth'
-    # pretrained='/root/code/ocr/PaddleOCR/pretrain_models/ResNet50_vd_ssld_pretrained.pth'
-    # pretrained='out/r50_pretrain/epoch_6.pth'
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/ch_PP-OCRv3_det/student.pth'
 )
 
 img_norm_cfg = dict(
@@ -77,8 +76,7 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(type='MMResize', img_scale=(960, 960)),
-    dict(type='ResizeDivisor', size_divisor=32),
+    dict(type='DetResizeForTest', limit_side_len=640, limit_type='min'),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
     dict(
@@ -88,7 +86,7 @@ test_pipeline = [
 ]
 
 val_pipeline = [
-    dict(type='DetResizeForTest', image_shape=(736, 1280)),
+    dict(type='DetResizeForTest', limit_side_len=640, limit_type='min'),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
     dict(
@@ -100,48 +98,44 @@ val_pipeline = [
 train_dataset = dict(
     type='OCRDetDataset',
     data_source=dict(
-        type='OCRDetSource',
-        label_file=
-        '/mnt/data/database/ocr/det/icdar2015/text_localization/train_icdar2015_label.txt',
-        data_dir='/mnt/data/database/ocr/det/icdar2015/text_localization'),
+        type='OCRPaiDetSource',
+        label_file=[
+            'ocr/det/pai/label_file/train/20191218131226_npx_e2e_train.csv',
+            'ocr/det/pai/label_file/train/20191218131302_social_e2e_train.csv',
+            'ocr/det/pai/label_file/train/20191218122330_book_e2e_train.csv',
+        ],
+        data_dir='ocr/det/pai/img/train'),
     pipeline=train_pipeline)
 
 val_dataset = dict(
     type='OCRDetDataset',
-    imgs_per_gpu=2,
+    imgs_per_gpu=1,
     data_source=dict(
-        type='OCRDetSource',
-        label_file=
-        '/mnt/data/database/ocr/det/icdar2015/text_localization/test_icdar2015_label.txt',
-        data_dir='/mnt/data/database/ocr/det/icdar2015/text_localization',
-        test_mode=True),
+        type='OCRPaiDetSource',
+        label_file=[
+            'ocr/det/pai/label_file/test/20191218131744_npx_e2e_test.csv',
+            'ocr/det/pai/label_file/test/20191218131817_social_e2e_test.csv'
+        ],
+        data_dir='ocr/det/pai/img/test'),
     pipeline=val_pipeline)
 
 data = dict(
     imgs_per_gpu=16, workers_per_gpu=2, train=train_dataset, val=val_dataset)
 
-total_epochs = 1200
-optimizer = dict(type='Adam', lr=0.001, weight_decay=1e-4, betas=(0.9, 0.999))
+total_epochs = 100
+optimizer = dict(type='Adam', lr=0.001, betas=(0.9, 0.999))
 
 # learning policy
-# lr_config = dict(policy='fixed')
-lr_config = dict(
-    policy='CosineAnnealing',
-    min_lr=1e-5,
-    warmup='linear',
-    warmup_iters=5,
-    warmup_ratio=1e-4,
-    warmup_by_epoch=True,
-    by_epoch=False)
+lr_config = dict(policy='fixed')
 
-checkpoint_config = dict(interval=10)
+checkpoint_config = dict(interval=1)
 
 log_config = dict(
     interval=10, hooks=[
         dict(type='TextLoggerHook'),
     ])
 
-eval_config = dict(initial=False, interval=10, gpu_collect=False)
+eval_config = dict(initial=True, interval=1, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',

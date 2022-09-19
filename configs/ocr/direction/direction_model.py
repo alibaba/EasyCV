@@ -35,9 +35,8 @@ train_dataset = dict(
     type='OCRClsDataset',
     data_source=dict(
         type='OCRClsSource',
-        label_file=
-        '/nas/database/ocr/direction/pai/label_file/test_direction.txt',
-        data_dir='/nas/database/ocr/direction/pai/img/test',
+        label_file='ocr/direction/pai/label_file/test_direction.txt',
+        data_dir='ocr/direction/pai/img/test',
         label_list=['0', '180'],
     ),
     pipeline=train_pipeline)
@@ -46,9 +45,8 @@ val_dataset = dict(
     type='OCRClsDataset',
     data_source=dict(
         type='OCRClsSource',
-        label_file=
-        '/nas/database/ocr/direction/pai/label_file/test_direction.txt',
-        data_dir='/nas/database/ocr/direction/pai/img/test',
+        label_file='ocr/direction/pai/label_file/test_direction.txt',
+        data_dir='ocr/direction/pai/img/test',
         label_list=['0', '180'],
         test_mode=True),
     pipeline=val_pipeline)

@@ -99,12 +99,11 @@ train_dataset = dict(
     data_source=dict(
         type='OCRPaiDetSource',
         label_file=[
-            '/nas/database/ocr/det/pai/label_file/train/20191218131226_npx_e2e_train.csv',
-            '/nas/database/ocr/det/pai/label_file/train/20191218131302_social_e2e_train.csv',
-            '/nas/database/ocr/det/pai/label_file/train/20191218233728_synth_e2e_english_train_2000.csv',
-            '/nas/database/ocr/det/pai/label_file/train/20191218122330_book_e2e_train.csv',
+            'ocr/det/pai/label_file/train/20191218131226_npx_e2e_train.csv',
+            'ocr/det/pai/label_file/train/20191218131302_social_e2e_train.csv',
+            'ocr/det/pai/label_file/train/20191218122330_book_e2e_train.csv',
         ],
-        data_dir='/nas/database/ocr/det/pai/img/train'),
+        data_dir='ocr/det/pai/img/train'),
     pipeline=train_pipeline)
 
 val_dataset = dict(
@@ -113,10 +112,10 @@ val_dataset = dict(
     data_source=dict(
         type='OCRPaiDetSource',
         label_file=[
-            '/nas/database/ocr/det/pai/label_file/test/20191218131744_npx_e2e_test.csv',
-            '/nas/database/ocr/det/pai/label_file/test/20191218131817_social_e2e_test.csv'
+            'ocr/det/pai/label_file/test/20191218131744_npx_e2e_test.csv',
+            'ocr/det/pai/label_file/test/20191218131817_social_e2e_test.csv'
         ],
-        data_dir='/nas/database/ocr/det/pai/img/test'),
+        data_dir='ocr/det/pai/img/test'),
     pipeline=val_pipeline)
 
 data = dict(
@@ -128,14 +127,6 @@ optimizer = dict(type='Adam', lr=0.001, betas=(0.9, 0.999))
 
 # learning policy
 lr_config = dict(policy='fixed')
-# lr_config = dict(
-#     policy='CosineAnnealing',
-#     min_lr=1e-5,
-#     warmup='linear',
-#     warmup_iters=5,
-#     warmup_ratio=1e-4,
-#     warmup_by_epoch=True,
-#     by_epoch=False)
 
 checkpoint_config = dict(interval=1)
 

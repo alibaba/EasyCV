@@ -97,8 +97,8 @@ train_dataset = dict(
     type='OCRRecDataset',
     data_source=dict(
         type='OCRRecSource',
-        label_file='/nas/database/ocr/rec/pai/label_file/train.txt',
-        data_dir='/nas/database/ocr/rec/pai/img/train',
+        label_file='ocr/rec/pai/label_file/train.txt',
+        data_dir='ocr/rec/pai/img/train',
         ext_data_num=2,
     ),
     pipeline=train_pipeline)
@@ -107,8 +107,8 @@ val_dataset = dict(
     type='OCRRecDataset',
     data_source=dict(
         type='OCRRecSource',
-        label_file='/nas/database/ocr/rec/pai/label_file/test.txt',
-        data_dir='/nas/database/ocr/rec/pai/img/test',
+        label_file='ocr/rec/pai/label_file/test.txt',
+        data_dir='ocr/rec/pai/img/test',
         ext_data_num=0,
     ),
     pipeline=val_pipeline)

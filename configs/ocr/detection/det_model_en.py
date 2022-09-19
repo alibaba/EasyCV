@@ -26,7 +26,7 @@ model = dict(
         beta=10,
         ohem_ratio=3),
     pretrained=
-    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/ch_PP-OCRv3_det/student.pth'
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/en_PP-OCRv3_det/student.pth'
 )
 
 img_norm_cfg = dict(
@@ -76,7 +76,8 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(type='DetResizeForTest', limit_side_len=640, limit_type='min'),
+    dict(type='MMResize', img_scale=(960, 960)),
+    dict(type='ResizeDivisor', size_divisor=32),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
     dict(
@@ -86,7 +87,7 @@ test_pipeline = [
 ]
 
 val_pipeline = [
-    dict(type='DetResizeForTest', limit_side_len=640, limit_type='min'),
+    dict(type='DetResizeForTest', image_shape=(736, 1280)),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
     dict(
@@ -98,26 +99,21 @@ val_pipeline = [
 train_dataset = dict(
     type='OCRDetDataset',
     data_source=dict(
-        type='OCRPaiDetSource',
-        label_file=[
-            '/nas/database/ocr/det/pai/label_file/train/20191218131226_npx_e2e_train.csv',
-            '/nas/database/ocr/det/pai/label_file/train/20191218131302_social_e2e_train.csv',
-            '/nas/database/ocr/det/pai/label_file/train/20191218233728_synth_e2e_english_train_2000.csv',
-            '/nas/database/ocr/det/pai/label_file/train/20191218122330_book_e2e_train.csv',
-        ],
-        data_dir='/nas/database/ocr/det/pai/img/train'),
+        type='OCRDetSource',
+        label_file=
+        'ocr/det/icdar2015/text_localization/train_icdar2015_label.txt',
+        data_dir='ocr/det/icdar2015/text_localization'),
     pipeline=train_pipeline)
 
 val_dataset = dict(
     type='OCRDetDataset',
-    imgs_per_gpu=1,
+    imgs_per_gpu=2,
     data_source=dict(
-        type='OCRPaiDetSource',
-        label_file=[
-            '/nas/database/ocr/det/pai/label_file/test/20191218131744_npx_e2e_test.csv',
-            '/nas/database/ocr/det/pai/label_file/test/20191218131817_social_e2e_test.csv'
-        ],
-        data_dir='/nas/database/ocr/det/pai/img/test'),
+        type='OCRDetSource',
+        label_file=
+        'ocr/det/icdar2015/text_localization/test_icdar2015_label.txt',
+        data_dir='ocr/det/icdar2015/text_localization',
+        test_mode=True),
     pipeline=val_pipeline)
 
 data = dict(
@@ -128,14 +124,6 @@ optimizer = dict(type='Adam', lr=0.001, betas=(0.9, 0.999))
 
 # learning policy
 lr_config = dict(policy='fixed')
-# lr_config = dict(
-#     policy='CosineAnnealing',
-#     min_lr=1e-5,
-#     warmup='linear',
-#     warmup_iters=5,
-#     warmup_ratio=1e-4,
-#     warmup_by_epoch=True,
-#     by_epoch=False)
 
 checkpoint_config = dict(interval=1)
 
@@ -144,7 +132,7 @@ log_config = dict(
         dict(type='TextLoggerHook'),
     ])
 
-eval_config = dict(initial=True, interval=1, gpu_collect=False)
+eval_config = dict(initial=False, interval=1, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',

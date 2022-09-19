@@ -2,14 +2,13 @@ _base_ = ['configs/base.py']
 
 model = dict(
     type='DBNet',
-    backbone=dict(
-        type='MobileNetV3', scale=0.5, model_name='large', disable_se=True),
+    backbone=dict(type='ResNet', in_channels=3, layers=50),
     neck=dict(
-        type='RSEFPN',
-        in_channels=[16, 24, 56, 480],
-        out_channels=96,
+        type='LKPAN',
+        in_channels=[256, 512, 1024, 2048],
+        out_channels=256,
         shortcut=True),
-    head=dict(type='DBHead', in_channels=96, k=50),
+    head=dict(type='DBHead', in_channels=256, kernel_list=[7, 2, 2], k=50),
     postprocess=dict(
         type='DBPostProcess',
         thresh=0.3,
@@ -26,8 +25,7 @@ model = dict(
         beta=10,
         ohem_ratio=3),
     pretrained=
-    '/root/code/ocr/PaddleOCR/pretrain_models/en_PP-OCRv3_det_distill_train/student.pth'
-    # 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/Multilingual_PP-OCRv3_det/student.pth'
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/en_PP-OCRv3_det/teacher.pth'
 )
 
 img_norm_cfg = dict(
@@ -102,8 +100,8 @@ train_dataset = dict(
     data_source=dict(
         type='OCRDetSource',
         label_file=
-        '/mnt/data/database/ocr/det/icdar2015/text_localization/train_icdar2015_label.txt',
-        data_dir='/mnt/data/database/ocr/det/icdar2015/text_localization'),
+        'ocr/det/icdar2015/text_localization/train_icdar2015_label.txt',
+        data_dir='ocr/det/icdar2015/text_localization'),
     pipeline=train_pipeline)
 
 val_dataset = dict(
@@ -112,36 +110,35 @@ val_dataset = dict(
     data_source=dict(
         type='OCRDetSource',
         label_file=
-        '/mnt/data/database/ocr/det/icdar2015/text_localization/test_icdar2015_label.txt',
-        data_dir='/mnt/data/database/ocr/det/icdar2015/text_localization',
+        'ocr/det/icdar2015/text_localization/test_icdar2015_label.txt',
+        data_dir='ocr/det/icdar2015/text_localization',
         test_mode=True),
     pipeline=val_pipeline)
 
 data = dict(
     imgs_per_gpu=16, workers_per_gpu=2, train=train_dataset, val=val_dataset)
 
-total_epochs = 100
-optimizer = dict(type='Adam', lr=0.001, betas=(0.9, 0.999))
+total_epochs = 1200
+optimizer = dict(type='Adam', lr=0.001, weight_decay=1e-4, betas=(0.9, 0.999))
 
 # learning policy
-lr_config = dict(policy='fixed')
-# lr_config = dict(
-#     policy='CosineAnnealing',
-#     min_lr=1e-5,
-#     warmup='linear',
-#     warmup_iters=40,
-#     warmup_ratio=1e-4,
-#     warmup_by_epoch=True,
-#     by_epoch=False)
+lr_config = dict(
+    policy='CosineAnnealing',
+    min_lr=1e-5,
+    warmup='linear',
+    warmup_iters=5,
+    warmup_ratio=1e-4,
+    warmup_by_epoch=True,
+    by_epoch=False)
 
-checkpoint_config = dict(interval=1)
+checkpoint_config = dict(interval=10)
 
 log_config = dict(
     interval=10, hooks=[
         dict(type='TextLoggerHook'),
     ])
 
-eval_config = dict(initial=False, interval=1, gpu_collect=False)
+eval_config = dict(initial=False, interval=10, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',
