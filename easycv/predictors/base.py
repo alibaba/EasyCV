@@ -143,6 +143,9 @@ class PredictorV2(object):
         else:
             self.cfg = self._load_cfg_from_ckpt(self.model_path)
 
+        if self.cfg is None:
+            raise ValueError('Please provide "config_file"!')
+
         self.model = self.prepare_model()
         self.pipelines = pipelines
         self.processor = self.build_processor()
@@ -176,8 +179,6 @@ class PredictorV2(object):
         return model
 
     def _build_model(self):
-        if self.cfg is None:
-            raise ValueError('Please provide "config_file"!')
         # Use mmdet model
         dynamic_adapt_for_mmlab(self.cfg)
         model = build_model(self.cfg.model)
@@ -191,8 +192,6 @@ class PredictorV2(object):
         """
         if self.pipelines is not None:
             pipelines = self.pipelines
-        elif self.cfg is None:
-            pipelines = []
         else:
             pipelines = self.cfg.get('test_pipeline', [])
 
