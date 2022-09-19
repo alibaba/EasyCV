@@ -5,7 +5,6 @@ import pickle
 
 import numpy as np
 import torch
-from datasets import Sequence
 from mmcv.parallel import collate, scatter_kwargs
 from PIL import Image
 from torch.hub import load_state_dict_from_url
@@ -129,6 +128,7 @@ class PredictorV2(object):
         self.batch_size = batch_size
         self.save_results = save_results
         self.save_path = save_path
+        self.config_file = config_file
         if self.save_results:
             assert self.save_path is not None
         self.device = device

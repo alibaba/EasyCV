@@ -25,22 +25,24 @@ def load_image(img_path, mode='BGR', max_try_times=MAX_READ_IMAGE_TRY_TIMES):
                 client = HTTPBackend()
                 img_bytes = client.get(img_path)
                 buff = io.BytesIO(img_bytes)
-                image = Image.open(buff)  # RGB
-                if image.mode.upper() != 'RGB':
-                    image = image.convert('RGB')
+                image = Image.open(buff)
+                if mode.upper() != 'BGR' and image.mode.upper() != mode.upper(
+                ):
+                    image = image.convert(mode.upper())
                 img = np.asarray(image, dtype=np.uint8)
             else:
                 with file.io.open(img_path, 'rb') as infile:
                     # cv2.imdecode may corrupt when the img is broken
-                    image = Image.open(infile)  # RGB
-                    if image.mode.upper() != 'RGB':
-                        image = image.convert('RGB')
+                    image = Image.open(infile)
+                    if mode.upper() != 'BGR' and image.mode.upper(
+                    ) != mode.upper():
+                        image = image.convert(mode.upper())
                     img = np.asarray(image, dtype=np.uint8)
 
             if mode.upper() == 'BGR':
+                if image.mode.upper() != 'RGB':
+                    image = image.convert('RGB')
                 img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-            assert mode.upper() in ['RGB', 'BGR'
-                                    ], 'Only support `RGB` and `BGR` mode!'
             assert img is not None
             break
         except Exception as e:

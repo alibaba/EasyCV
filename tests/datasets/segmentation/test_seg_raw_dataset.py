@@ -7,9 +7,7 @@ from tests.ut_config import (IMG_NORM_CFG_255, SEG_DATA_SMALL_RAW_LOCAL,
 
 from easycv.core.evaluation.builder import build_evaluator
 from easycv.datasets.builder import build_datasource
-from easycv.datasets.segmentation.data_sources.raw import SegSourceRaw
 from easycv.datasets.segmentation.raw import SegDataset
-from easycv.file import io
 
 
 class SegDatasetTest(unittest.TestCase):
