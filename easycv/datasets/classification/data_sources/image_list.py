@@ -7,6 +7,7 @@ from PIL import Image, ImageFile
 
 from easycv.datasets.registry import DATASOURCES
 from easycv.file import io
+from easycv.framework.errors import TypeError
 from easycv.utils.dist_utils import dist_zero_exec
 from .utils import split_listfile_byrank
 
@@ -54,8 +55,8 @@ class ClsSourceImageList(object):
                 'list_file should be str or list(str)'
             root = [root] if isinstance(root, str) else root
             if not isinstance(root, list):
-                raise ValueError('root must be str or list(str), but get %s' %
-                                 type(root))
+                raise TypeError('root must be str or list(str), but get %s' %
+                                type(root))
 
             if len(root) < len(list_file):
                 logging.warning(

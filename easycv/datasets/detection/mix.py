@@ -9,6 +9,7 @@ import numpy as np
 import torch
 
 from easycv.datasets.registry import DATASETS, PIPELINES
+from easycv.framework.errors import TypeError
 from easycv.utils.bbox_util import xyxy2xywh as xyxy2cxcywh
 from easycv.utils.registry import build_from_cfg
 from .raw import DetDataset

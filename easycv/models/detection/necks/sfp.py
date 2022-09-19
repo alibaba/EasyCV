@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
+from easycv.framework.errors import NotImplementedError
 from easycv.models.builder import NECKS
 
 

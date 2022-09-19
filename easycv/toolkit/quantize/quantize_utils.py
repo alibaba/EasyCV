@@ -7,6 +7,7 @@ import numpy as np
 import torch
 from mmcv.parallel import scatter_kwargs
 
+from easycv.framework.errors import ValueError
 from easycv.models.detection.detectors.yolox.yolo_head import YOLOXHead
 from easycv.models.detection.utils import output_postprocess, postprocess
 

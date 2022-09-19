@@ -7,6 +7,7 @@ from PIL import Image, ImageFile
 
 from easycv.datasets.registry import DATASOURCES
 from easycv.file import io
+from easycv.framework.errors import ValueError
 
 
 @DATASOURCES.register_module

@@ -19,6 +19,7 @@ import torch.nn as nn
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 from timm.models.vision_transformer import Mlp, _cfg
 
+from easycv.framework.errors import ValueError
 from ..registry import BACKBONES
 
 
@@ -109,7 +110,7 @@ class ConvPatchEmbed(nn.Module):
                 conv3x3(embed_dim // 2, embed_dim, 2),
             )
         else:
-            raise (
+            raise ValueError(
                 'For convolutional projection, patch size has to be in [8, 16]'
             )
 

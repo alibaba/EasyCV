@@ -22,6 +22,7 @@ import torch
 from easycv.core.sailfish.util import (BiasUniformInitializer,
                                        KaimingUniformInitializer,
                                        ModelParallel, RenormUniformInitializer)
+from easycv.framework.errors import ValueError
 
 
 class Linear(torch.nn.Module):

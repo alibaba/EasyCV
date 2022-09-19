@@ -11,6 +11,7 @@ from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader, RandomSampler
 
 from easycv.datasets.shared.odps_reader import set_dataloader_workid
+from easycv.framework.errors import NotImplementedError
 from easycv.utils.dist_utils import sync_random_seed
 from easycv.utils.torchacc_util import is_torchacc_enabled
 from .collate import CollateWrapper

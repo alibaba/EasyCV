@@ -14,6 +14,7 @@ from torchvision.transforms import Compose
 from easycv.datasets.registry import PIPELINES
 from easycv.file import io
 from easycv.file.utils import is_url_path
+from easycv.framework.errors import ValueError
 from easycv.models.builder import build_model
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import Config, mmcv_config_fromfile

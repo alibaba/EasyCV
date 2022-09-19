@@ -8,6 +8,7 @@ import numpy as np
 from easycv.datasets.detection.data_sources.base import DetSourceBase
 from easycv.datasets.registry import DATASOURCES
 from easycv.file import io
+from easycv.framework.errors import NotImplementedError, ValueError
 
 
 def get_prior_task_id(keys):

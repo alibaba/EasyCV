@@ -7,6 +7,7 @@ from mmcv.cnn import (build_conv_layer, build_norm_layer, build_upsample_layer,
 
 from easycv.core.evaluation import pose_pck_accuracy
 from easycv.core.post_processing import flip_back
+from easycv.framework.errors import TypeError, ValueError
 from easycv.models.builder import HEADS, build_loss
 from easycv.models.utils.ops import resize_tensor as resize
 from .topdown_heatmap_base_head import TopdownHeatmapBaseHead

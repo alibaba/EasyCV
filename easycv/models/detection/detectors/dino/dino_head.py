@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from easycv.framework.errors import NotImplementedError
 from easycv.models.builder import HEADS, build_neck
 from easycv.models.detection.utils import (DetrPostProcess, box_xyxy_to_cxcywh,
                                            inverse_sigmoid)

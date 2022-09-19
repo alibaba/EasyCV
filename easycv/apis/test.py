@@ -15,6 +15,7 @@ from mmcv.parallel import (MMDataParallel, MMDistributedDataParallel,
 from mmcv.runner import get_dist_info
 
 from easycv.file import io
+from easycv.framework.errors import ValueError
 from easycv.utils.torchacc_util import is_torchacc_enabled
 
 

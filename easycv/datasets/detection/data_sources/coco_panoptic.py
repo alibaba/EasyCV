@@ -8,6 +8,7 @@ from xtcocotools.coco import COCO
 from easycv.datasets.detection.data_sources import DetSourceCoco
 from easycv.datasets.registry import DATASOURCES, PIPELINES
 from easycv.datasets.shared.pipelines import Compose
+from easycv.framework.errors import RuntimeError, TypeError
 from easycv.utils.registry import build_from_cfg
 
 try:

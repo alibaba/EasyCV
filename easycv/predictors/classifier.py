@@ -6,6 +6,7 @@ import torch
 from PIL import Image, ImageFile
 
 from easycv.file import io
+from easycv.framework.errors import ValueError
 from easycv.utils.misc import deprecated
 from .base import Predictor, PredictorV2
 from .builder import PREDICTORS
@@ -143,7 +144,7 @@ class TorchClassifier(PredictorInterface):
     """
         self.predictor = Predictor(model_path)
         if 'class_list' not in self.predictor.cfg and label_map_path is None:
-            raise Exception(
+            raise ValueError(
                 "label_map_path need to be set, when ckpt doesn't contain class_list"
             )
 

@@ -6,6 +6,7 @@ import torch
 from mmcv.parallel import is_module_wrapper
 from mmcv.runner import OptimizerHook as _OptimizerHook
 
+from easycv.framework.errors import TypeError
 from easycv.utils.dist_utils import get_dist_info
 from easycv.utils.torchacc_util import is_torchacc_enabled
 
@@ -134,7 +135,7 @@ class AMPFP16OptimizerHook(OptimizerHook):
             elif isinstance(loss_scale, dict):
                 self.scaler = amp.GradScaler(**loss_scale)
             else:
-                raise ValueError(
+                raise TypeError(
                     '`loss_scale` type must be in [float, dict], but got {loss_scale}'
                 )
 

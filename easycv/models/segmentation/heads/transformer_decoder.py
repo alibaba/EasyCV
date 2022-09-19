@@ -5,6 +5,8 @@ import torch
 from torch import Tensor, nn
 from torch.nn import functional as F
 
+from easycv.framework.errors import RuntimeError, ValueError
+
 
 class PositionEmbeddingSine(nn.Module):
     """

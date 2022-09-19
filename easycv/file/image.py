@@ -8,6 +8,7 @@ import numpy as np
 from PIL import Image
 
 from easycv import file
+from easycv.framework.errors import IOError
 from easycv.utils.constant import MAX_READ_IMAGE_TRY_TIMES
 from .utils import is_oss_path, is_url_path
 
@@ -59,6 +60,6 @@ def load_image(img_path, mode='BGR', max_try_times=MAX_READ_IMAGE_TRY_TIMES):
         try_cnt += 1
 
     if img is None:
-        raise ValueError('Read Image Error: ' + img_path)
+        raise IOError('Read Image Error: ' + img_path)
 
     return img

@@ -3,6 +3,7 @@
 # https://github.com/open-mmlab/mmpose/blob/master/mmpose/datasets/datasets/base/kpt_2d_sview_rgb_img_top_down_dataset.py
 import numpy as np
 
+from easycv.framework.errors import KeyError
 from .base_evaluator import Evaluator
 from .builder import EVALUATORS
 from .metric_registry import METRICS

@@ -10,6 +10,7 @@ from torch.optim import Optimizer
 
 from easycv.file import io
 from easycv.file.utils import is_url_path
+from easycv.framework.errors import TypeError
 from easycv.utils.constant import CACHE_DIR
 
 

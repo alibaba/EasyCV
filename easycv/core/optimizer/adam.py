@@ -8,6 +8,8 @@ from mmcv.runner.optimizer.builder import OPTIMIZERS
 from torch import Tensor
 from torch.optim import AdamW as _AdamW
 
+from easycv.framework.errors import RuntimeError
+
 
 def adamw(params: List[Tensor], grads: List[Tensor], exp_avgs: List[Tensor],
           exp_avg_sqs: List[Tensor], max_exp_avg_sqs: List[Tensor],

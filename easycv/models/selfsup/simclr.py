@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import torch
 
+from easycv.framework.errors import KeyError
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 from easycv.utils.preprocess_function import gaussianBlur, randomGrayScale
@@ -97,4 +98,4 @@ class SimCLR(BaseModel):
         elif mode == 'extract':
             return self.forward_backbone(img)
         else:
-            raise Exception('No such mode: {}'.format(mode))
+            raise KeyError('No such mode: {}'.format(mode))

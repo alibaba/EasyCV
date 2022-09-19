@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
+from easycv.framework.errors import TypeError, ValueError
 from easycv.models.registry import BACKBONES, HEADS, MODELS, NECKS
 from .test_util import run_in_subprocess
 
@@ -159,7 +160,7 @@ class MMAdapter:
         elif inspect.isclass(module_name):
             module_obj = module_name
         else:
-            raise ValueError(
+            raise TypeError(
                 'Only support type `str` and `class` object, but get type {}'.
                 format(type(module_name)))
         return module_obj

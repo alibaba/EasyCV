@@ -10,6 +10,8 @@ from io import StringIO
 
 from tqdm import tqdm
 
+from easycv.framework.errors import ValueError
+
 OSS_PREFIX = 'oss://'
 URL_PREFIX = ('https://', 'http://')
 

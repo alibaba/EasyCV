@@ -9,6 +9,8 @@ from packaging import version
 from torch import Tensor
 from torch.autograd import Function
 
+from easycv.framework.errors import NotImplementedError
+
 if version.parse(torchvision.__version__) < version.parse('0.7'):
     from torchvision.ops import _new_empty_tensor
     from torchvision.ops.misc import _output_size

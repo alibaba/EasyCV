@@ -2,6 +2,7 @@
 import torch
 import torch.nn as nn
 
+from easycv.framework.errors import KeyError, ValueError
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 from easycv.utils.preprocess_function import gaussianBlur, randomGrayScale
@@ -232,12 +233,14 @@ class MOCO(BaseModel):
                 if name in rd.keys():
                     rv[name] = rd[name]
                 else:
-                    raise 'Extract %s is not support in classification models' % name
+                    raise ValueError(
+                        'Extract %s is not support in classification models' %
+                        name)
             if gt_label is not None:
                 rv['gt_labels'] = gt_label.cpu()
             return rv
         else:
-            raise Exception('No such mode: {}'.format(mode))
+            raise KeyError('No such mode: {}'.format(mode))
 
 
 # utils
