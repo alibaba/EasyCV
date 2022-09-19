@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from easycv.framework.errors import ValueError
 from easycv.models.backbones.network_blocks import BaseConv
 
 

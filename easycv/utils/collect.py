@@ -5,6 +5,7 @@ import mmcv
 import numpy as np
 import torch
 
+from easycv.framework.errors import ValueError
 from .gather import gather_tensors_batch
 
 

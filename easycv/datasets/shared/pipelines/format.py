@@ -7,6 +7,7 @@ import torch
 from mmcv.parallel import DataContainer as DC
 
 from easycv.datasets.registry import PIPELINES
+from easycv.framework.errors import TypeError
 
 
 def to_tensor(data):

@@ -16,6 +16,7 @@ from easycv.datasets.registry import PIPELINES
 from easycv.datasets.utils import replace_ImageToTensor
 from easycv.file import io
 from easycv.file.utils import is_url_path, url_path_exists
+from easycv.framework.errors import TypeError
 from easycv.models import build_model
 from easycv.models.detection.utils import postprocess
 from easycv.utils.checkpoint import load_checkpoint

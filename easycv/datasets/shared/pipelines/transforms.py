@@ -6,6 +6,7 @@ import numpy as np
 
 from easycv.datasets.registry import PIPELINES
 from easycv.file.image import load_image
+from easycv.framework.errors import TypeError
 from easycv.utils.registry import build_from_cfg
 
 

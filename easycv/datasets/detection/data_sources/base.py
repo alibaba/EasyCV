@@ -10,6 +10,7 @@ from mmcv.runner.dist_utils import get_dist_info
 from tqdm import tqdm
 
 from easycv.file.image import load_image
+from easycv.framework.errors import NotImplementedError, ValueError
 
 
 def _load_image(img_path):

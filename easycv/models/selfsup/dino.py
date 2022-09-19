@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.runner import get_dist_info
 
+from easycv.framework.errors import KeyError, NotImplementedError, ValueError
 from easycv.utils.preprocess_function import (gaussianBlurDynamic,
                                               randomGrayScale, solarize)
 from .. import builder
@@ -416,4 +417,4 @@ class DINO(BaseModel):
             #     rv['gt_labels'] = gt_label.cpu()
             # return rv
         else:
-            raise Exception('No such mode: {}'.format(mode))
+            raise KeyError('No such mode: {}'.format(mode))

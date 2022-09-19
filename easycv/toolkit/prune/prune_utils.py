@@ -1,4 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+from easycv.framework.errors import ValueError
+
 try:
     from nni.algorithms.compression.pytorch.pruning import AGPPrunerV2
 except ImportError:
@@ -83,7 +85,7 @@ def load_pruner(model,
             optimizer=optimizer,
             pruning_algorithm=pruning_algorithm)
     else:
-        raise Exception(
+        raise ValueError(
             'pruning class {} is not supported'.format(pruning_class))
 
     return pruner

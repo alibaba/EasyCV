@@ -8,6 +8,7 @@ from mmcv.runner.checkpoint import get_state_dict, weights_to_cpu
 from torch.optim import Optimizer
 
 from easycv.file import io
+from easycv.framework.errors import TypeError
 from easycv.utils.constant import CACHE_DIR
 
 

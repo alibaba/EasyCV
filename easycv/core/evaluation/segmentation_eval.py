@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from prettytable import PrettyTable
 
+from easycv.framework.errors import KeyError
 from easycv.utils.logger import print_log
 from .base_evaluator import Evaluator
 from .builder import EVALUATORS
