@@ -116,8 +116,6 @@ class OCRRecPredictor(PredictorInterface):
             input_data_list: a list of numpy array(in rgb order), each array is a sample
         to be predicted
         """
-        # if not input_data_list:
-        #     return {'preds_text': []}
         if isinstance(input_data_list, list):
             img_list = []
             output_list = []

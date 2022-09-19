@@ -114,11 +114,3 @@ class OCRRecNet(BaseModel):
         text_out = self.postprocess_op(preds, label)
 
         return text_out
-
-
-if __name__ == '__main__':
-    from easycv.utils.config_tools import mmcv_config_fromfile
-    from easycv.models import build_model
-    cfg = mmcv_config_fromfile('configs/ocr/rec_model.py')
-    model = build_model(cfg.model)
-    print(model)

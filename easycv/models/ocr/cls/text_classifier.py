@@ -69,14 +69,7 @@ class TextClassifier(BaseModel):
             x = self.neck(x)
             y['neck_out'] = x
         x = self.head(x)
-        # for multi head, save ctc neck out for udml
-        if isinstance(x, dict) and 'ctc_nect' in x.keys():
-            y['neck_out'] = x['ctc_neck']
-            y['head_out'] = x
-        elif isinstance(x, dict):
-            y.update(x)
-        else:
-            y['head_out'] = x
+        y['head_out'] = x
         return y
 
     def forward_train(self, img, **kwargs):
