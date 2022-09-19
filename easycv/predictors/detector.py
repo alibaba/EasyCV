@@ -254,11 +254,11 @@ class DetrPredictor(PredictorInterface):
             img,
             bboxes,
             labels=labels,
-            colors='green',
-            text_color='white',
-            font_size=20,
-            thickness=1,
-            font_scale=0.5,
+            colors='cyan',
+            text_color='cyan',
+            font_size=18,
+            thickness=2,
+            font_scale=0.0,
             show=show,
             out_file=out_file)
 
