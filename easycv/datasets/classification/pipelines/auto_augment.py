@@ -8,7 +8,7 @@ from typing import Sequence
 
 import mmcv
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.shared.pipelines import Compose
@@ -1042,4 +1042,38 @@ class Cutout(object):
         repr_str += f'(shape={self.shape}, '
         repr_str += f'pad_val={self.pad_val}, '
         repr_str += f'prob={self.prob})'
+        return repr_str
+
+
+@PIPELINES.register_module()
+class PILGaussianBlur(object):
+
+    def __init__(self, prob=0.1, radius_min=0.1, radius_max=2.):
+        assert 0 <= prob <= 1.0, 'The prob should be in range [0,1], ' \
+            f'got {prob} instead.'
+        assert isinstance(radius_min, (int, float)), 'The radius_min type must '\
+            f'be int or float, but got {type(radius_min)} instead.'
+        assert isinstance(radius_max, (int, float)), 'The radius_max type must '\
+            f'be int or float, but got {type(radius_max)} instead.'
+
+        self.prob = prob
+        self.radius_min = radius_min
+        self.radius_max = radius_max
+
+    def __call__(self, results):
+        if np.random.rand() > self.prob:
+            return results
+
+        for key in results.get('img_fields', ['img']):
+            img = results[key].filter(
+                ImageFilter.GaussianBlur(
+                    radius=random.uniform(self.radius_min, self.radius_max)))
+            results[key] = img
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(prob={self.prob}, '
+        repr_str += f'radius_min={self.radius_min}, '
+        repr_str += f'radius_max={self.radius_max})'
         return repr_str

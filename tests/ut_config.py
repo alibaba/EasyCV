@@ -45,7 +45,8 @@ SMALL_IMAGENET_TFRECORD_OSS = os.path.join(
     BASE_OSS_PATH, 'data/classification/small_imagenet_tfrecord/')
 
 IO_DATA_TXTX_OSS = os.path.join(BASE_OSS_PATH, 'data/io_test_dir/txts/')
-
+IO_DATA_MULTI_DIRS_OSS = os.path.join(BASE_OSS_PATH,
+                                      'data/io_test_dir/multi_dirs/')
 DET_DATA_SMALL_COCO_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                          'data/detection/small_coco')
 
@@ -83,6 +84,8 @@ PRETRAINED_MODEL_FACEID = os.path.join(BASE_LOCAL_PATH,
                                        'pretrained_models/faceid')
 PRETRAINED_MODEL_YOLOXS_EXPORT = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/detection/infer_yolox/epoch_300.pt')
+PRETRAINED_MODEL_YOLOXS_EXPORT_OLD = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/detection/infer_yolox/old.pt')
 PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_JIT = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/detection/infer_yolox/epoch_300_nopre_notrt.pt.jit')
@@ -127,3 +130,11 @@ PRETRAINED_MODEL_OCRREC = os.path.join(
     'pretrained_models/ocr/rec/best_accuracy_student_export.pth')
 PRETRAINED_MODEL_OCRCLS = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/ocr/cls/best_accuracy_export.pth')
+
+PRETRAINED_MODEL_SEGFORMER = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/segmentation/segformer/segformer_b0/SegmentationEvaluator_mIoU_best.pth'
+)
+MODEL_CONFIG_SEGFORMER = (
+    './configs/segmentation/segformer/segformer_b0_coco.py')
+SMALL_COCO_WHOLE_BODY_HAND_ROOT = 'data/test/pose/hand/small_whole_body_hand_coco'

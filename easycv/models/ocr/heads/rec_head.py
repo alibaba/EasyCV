@@ -431,7 +431,8 @@ class MultiHead(nn.Module):
     def __init__(self, in_channels, out_channels_list, **kwargs):
         super().__init__()
         self.head_list = kwargs.pop('head_list')
-        self.gtc_head = 'sar'
+        head_name = [head.type for head in self.head_list]
+        self.gtc_head = 'sar' if 'SARHead' in head_name else 'ctc'
         # assert len(self.head_list) >= 2
         for idx, head_name in enumerate(self.head_list):
             name = head_name.type

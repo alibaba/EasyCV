@@ -1,7 +1,7 @@
 _base_ = ['configs/base.py']
 
-character_dict_path = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/dict/en_dict.txt'
-
+# character_dict_path = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/dict/en_dict.txt'
+character_dict_path = '/root/code/ocr/PaddleOCR/ppocr/utils/ic15_dict.txt'
 model = dict(
     type='OCRRecNet',
     backbone=dict(
@@ -25,8 +25,10 @@ model = dict(
         type='MultiHead',
         in_channels=512,
         out_channels_list=dict(
-            CTCLabelDecode=97,
-            SARLabelDecode=99,
+            # CTCLabelDecode=97,
+            # SARLabelDecode=99,
+            CTCLabelDecode=37,
+            SARLabelDecode=39,
         ),
         head_list=[
             dict(
@@ -43,10 +45,11 @@ model = dict(
     postprocess=dict(
         type='CTCLabelDecode',
         character_dict_path=character_dict_path,
-        use_space_char=True),
+        use_space_char=False),
     loss=dict(
         type='MultiLoss',
-        ignore_index=98,
+        # ignore_index=98,
+        ignore_index=38,
         loss_config_list=[
             dict(CTCLoss=None),
             dict(SARLoss=None),
@@ -62,7 +65,7 @@ train_pipeline = [
     dict(
         type='MultiLabelEncode',
         max_text_length=25,
-        use_space_char=True,
+        use_space_char=False,
         character_dict_path=character_dict_path),
     dict(type='RecResizeImg', image_shape=(3, 48, 320)),
     dict(type='MMToTensor'),
@@ -76,7 +79,7 @@ val_pipeline = [
     dict(
         type='MultiLabelEncode',
         max_text_length=25,
-        use_space_char=True,
+        use_space_char=False,
         character_dict_path=character_dict_path),
     dict(type='RecResizeImg', image_shape=(3, 48, 320)),
     dict(type='MMToTensor'),
@@ -93,32 +96,44 @@ test_pipeline = [
 
 train_dataset = dict(
     type='OCRRecDataset',
+    # data_source=dict(
+    #     type='OCRRecSource',
+    #     label_file='/mnt/data/database/ocr/rec/ic15_data/rec_gt_train.txt',
+    #     data_dir='/mnt/data/database/ocr/rec/ic15_data',
+    #     ext_data_num=2,
+    # ),
     data_source=dict(
-        type='OCRRecSource',
-        label_file='/mnt/data/database/ocr/rec/ic15_data/rec_gt_train.txt',
-        data_dir='/mnt/data/database/ocr/rec/ic15_data',
+        type='OCRReclmdbSource',
+        data_dir='/nas/database/ocr/rec/DTRB/debug/data_lmdb_release/training',
         ext_data_num=2,
     ),
     pipeline=train_pipeline)
 
 val_dataset = dict(
     type='OCRRecDataset',
+    # data_source=dict(
+    #     type='OCRRecSource',
+    #     label_file='/mnt/data/database/ocr/rec/ic15_data/rec_gt_test.txt',
+    #     data_dir='/mnt/data/database/ocr/rec/ic15_data',
+    #     ext_data_num=0,
+    #     test_mode=True,
+    # ),
     data_source=dict(
-        type='OCRRecSource',
-        label_file='/mnt/data/database/ocr/rec/ic15_data/rec_gt_test.txt',
-        data_dir='/mnt/data/database/ocr/rec/ic15_data',
+        type='OCRReclmdbSource',
+        data_dir=
+        '/nas/database/ocr/rec/DTRB/debug/data_lmdb_release/validation',
         ext_data_num=0,
         test_mode=True,
     ),
     pipeline=val_pipeline)
 
 data = dict(
-    imgs_per_gpu=128, workers_per_gpu=4, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=256, workers_per_gpu=4, train=train_dataset, val=val_dataset)
 
-total_epochs = 500
-optimizer = dict(
-    type='Adam', lr=0.001, betas=(0.9, 0.999), weight_decay=0.0001)
+total_epochs = 72
+optimizer = dict(type='Adam', lr=0.0005, betas=(0.9, 0.999), weight_decay=0.0)
 
+# lr_config = dict(policy='fixed')
 lr_config = dict(
     policy='CosineAnnealing',
     min_lr=1e-5,
@@ -128,10 +143,10 @@ lr_config = dict(
     warmup_by_epoch=True,
     by_epoch=False)
 
-checkpoint_config = dict(interval=100)
+checkpoint_config = dict(interval=5)
 
 log_config = dict(
-    interval=1, hooks=[
+    interval=100, hooks=[
         dict(type='TextLoggerHook'),
     ])
 

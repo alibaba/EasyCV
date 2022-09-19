@@ -1,11 +1,17 @@
 # OCR algorithm
 ## PP-OCRv3
-&ensp;&ensp;We convert [PaddleOCRv3](https://github.com/PaddlePaddle/PaddleOCR) models to pytorch style, and fintuned on icdar2015 dataset. Futhermore, we provide end2end interface to recognize text in images, by simplely load exported models.
+&ensp;&ensp;We convert [PaddleOCRv3](https://github.com/PaddlePaddle/PaddleOCR) models to pytorch style. Futhermore, we provide end2end interface to recognize text in images, by simplely load exported models.
 ### detection
+&ensp;&ensp;We test on on icdar2015 dataset.
 |Algorithm|backbone|configs|precison|recall|Hmean|Download|
-|---|---|---|---|---|---|---|
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 |DB|MobileNetv3|[det_model_en.py](configs/ocr/det_model_en.py)|0.7803|0.7250|0.7516|[log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/fintune_icdar2015_mobilev3/20220902_140307.log.json)-[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/fintune_icdar2015_mobilev3/epoch_70.pth)|
 |DB|R50|[det_model_en_r50.py](configs/ocr/det_model_en_r50.py)|0.8622|0.8218|0.8415|[log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/fintune_icdar2015_r50/20220906_110252.log.json)-[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/fintune_icdar2015_r50/epoch_1150.pth)|
+### recognition
+&ensp;&ensp;We test on on [DTRB](https://arxiv.org/abs/1904.01906) dataset.
+|Algorithm|backbone|configs|acc|Download|
+|:---:|:---:|:---:|:---:|:---:|
+|SVTR|MobileNetv1|[rec_model_en.py](configs/ocr/rec_model_en.py)|0.7536|[log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/rec/fintune_dtrb/20220914_125616.log.json)-[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/rec/fintune_dtrb/epoch_60.pth)|
 ### predict
 &ensp;&ensp;We provide exported models contains weight and process config for easyly predict, which convert from PaddleOCRv3.
 |Algorithm|Download|
