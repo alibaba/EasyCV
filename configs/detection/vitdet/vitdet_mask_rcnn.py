@@ -1,6 +1,6 @@
 # model settings
 
-norm_cfg = dict(type='GN', num_groups=1, requires_grad=True)
+norm_cfg = dict(type='GN', num_groups=1, eps=1e-6, requires_grad=True)
 
 pretrained = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/selfsup/mae/vit-b-1600/warpper_mae_vit-base-p16-1600e.pth'
 model = dict(
@@ -9,22 +9,32 @@ model = dict(
     backbone=dict(
         type='ViTDet',
         img_size=1024,
+        patch_size=16,
         embed_dim=768,
         depth=12,
         num_heads=12,
+        drop_path_rate=0.1,
+        window_size=14,
         mlp_ratio=4,
         qkv_bias=True,
-        qk_scale=None,
-        drop_rate=0.,
-        attn_drop_rate=0.,
-        drop_path_rate=0.1,
-        use_abs_pos_emb=True,
-        aggregation='attn',
-    ),
+        window_block_indexes=[
+            # 2, 5, 8 11 for global attention
+            0,
+            1,
+            3,
+            4,
+            6,
+            7,
+            9,
+            10,
+        ],
+        residual_block_indexes=[],
+        use_rel_pos=True),
     neck=dict(
         type='SFP',
-        in_channels=[768, 768, 768, 768],
+        in_channels=768,
         out_channels=256,
+        scale_factors=(4.0, 2.0, 1.0, 0.5),
         norm_cfg=norm_cfg,
         num_outs=5),
     rpn_head=dict(
@@ -32,7 +42,6 @@ model = dict(
         in_channels=256,
         feat_channels=256,
         num_convs=2,
-        norm_cfg=norm_cfg,
         anchor_generator=dict(
             type='AnchorGenerator',
             scales=[8],
@@ -112,7 +121,7 @@ model = dict(
                 pos_iou_thr=0.5,
                 neg_iou_thr=0.5,
                 min_pos_iou=0.5,
-                match_low_quality=True,
+                match_low_quality=False,
                 ignore_iof_thr=-1),
             sampler=dict(
                 type='RandomSampler',
