@@ -255,7 +255,6 @@ class PredictorV2(object):
 
     def postprocess(self, inputs, *args, **kwargs):
         """Process model batch outputs.
-        If you need add some processing ops to process model outputs, you need to reimplement it.
         """
         outputs = []
         out_i = {}
