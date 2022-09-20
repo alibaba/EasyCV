@@ -39,7 +39,7 @@ class TorchOCRTest(unittest.TestCase):
         self.assertEqual(int(cls_out['labels'][0]), 0)
         self.assertGreater(float(cls_out['logits'][0]), 0.9998)  # 0.99987
 
-    def test_ocr_system(self):
+    def test_ocr_end2end(self):
         predictor = OCRPredictor(
             det_model_path=PRETRAINED_MODEL_OCRDET,
             rec_model_path=PRETRAINED_MODEL_OCRREC,
