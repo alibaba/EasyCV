@@ -622,7 +622,7 @@ class RecConAug(object):
         """
 
         Args:
-            prob (float, optional): the probability whhere do data augmentation. Defaults to 0.5.
+            prob (float, optional): the probability whether do data augmentation. Defaults to 0.5.
             image_shape (tuple, optional): the output image shape. Defaults to (32, 320, 3).
             max_text_length (int, optional): the max length of text label. Defaults to 25.
         """
@@ -662,8 +662,16 @@ class RecConAug(object):
 
 @PIPELINES.register_module()
 class RecAug(object):
+    """data augmentation function for ocr recognition
+    """
 
     def __init__(self, use_tia=True, aug_prob=0.4, **kwargs):
+        """
+
+        Args:
+            use_tia (bool, optional): whether make tia augmentation. Defaults to True.
+            aug_prob (float, optional): the probability were do data augmentation. Defaults to 0.4.
+        """
         self.use_tia = use_tia
         self.aug_prob = aug_prob
 
