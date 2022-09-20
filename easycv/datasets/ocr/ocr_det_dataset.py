@@ -22,7 +22,7 @@ class OCRDetDataset(BaseDataset):
 
     def __getitem__(self, idx):
         try:
-            data_dict = self.data_source.get_sample(idx)
+            data_dict = self.data_source[idx]
             data_dict = self.pipeline(data_dict)
         except:
             logging.error(

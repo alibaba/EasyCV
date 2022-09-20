@@ -44,7 +44,7 @@ class OCRRecSource(object):
             data_lines.extend(lines)
         return data_lines
 
-    def get_sample(self, idx, get_ext=True):
+    def __getitem__(self, idx, get_ext=True):
         data_line = self.data_lines[idx]
         try:
             data_line = data_line.decode('utf-8')
@@ -146,7 +146,7 @@ class OCRReclmdbSource(object):
         imgbuf = txn.get(img_key)
         return imgbuf, label
 
-    def get_sample(self, idx, get_ext=True):
+    def __getitem__(self, idx, get_ext=True):
         lmdb_idx, file_idx = self.data_idx_order_list[idx]
         lmdb_idx = int(lmdb_idx)
         file_idx = int(file_idx)
@@ -155,7 +155,7 @@ class OCRReclmdbSource(object):
         if sample_info is None:
             rnd_idx = np.random.randint(self.__len__(
             )) if not self.test_mode else (idx + 1) % self.__len__()
-            return self.get_sample(rnd_idx)
+            return self.__getitem__(rnd_idx)
         img, label = sample_info
         img = cv2.imdecode(np.frombuffer(img, dtype='uint8'), 1)
         outs = {'img_path': '', 'label': label}

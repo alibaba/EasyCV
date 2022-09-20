@@ -77,7 +77,7 @@ class OCRDetSource(object):
             ex_boxes.append(ex_box)
         return ex_boxes
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         data_line = self.data_lines[idx]
         try:
             data_line = data_line.decode('utf-8')
@@ -171,7 +171,7 @@ class OCRPaiDetSource(object):
             ex_boxes.append(ex_box)
         return ex_boxes
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         data_line = self.data_lines[idx]
         try:
             file_name = json.loads(data_line[1])['tfspath'].split('/')[-1]
@@ -194,7 +194,7 @@ class OCRPaiDetSource(object):
         if outs is None:
             rnd_idx = np.random.randint(self.__len__(
             )) if not self.test_mode else (idx + 1) % self.__len__()
-            return self.get_sample(rnd_idx)
+            return self.__getitem__(rnd_idx)
         return outs
 
     def __len__(self):
