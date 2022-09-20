@@ -16,8 +16,6 @@
 This code is refered from:
 https://github.com/WenmuZhou/DBNet.pytorch/blob/master/post_processing/seg_detector_representer.py
 """
-from __future__ import absolute_import, division, print_function
-
 import cv2
 import numpy as np
 import pyclipper
