@@ -611,12 +611,21 @@ class OCRDetResize(object):
 
 @PIPELINES.register_module()
 class RecConAug(object):
+    """concat multiple texts together for text recognition training
+    """
 
     def __init__(self,
                  prob=0.5,
                  image_shape=(32, 320, 3),
                  max_text_length=25,
                  **kwargs):
+        """
+
+        Args:
+            prob (float, optional): the probability whhere do data augmentation. Defaults to 0.5.
+            image_shape (tuple, optional): the output image shape. Defaults to (32, 320, 3).
+            max_text_length (int, optional): the max length of text label. Defaults to 25.
+        """
         self.prob = prob
         self.max_text_length = max_text_length
         self.image_shape = image_shape
