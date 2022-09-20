@@ -22,7 +22,7 @@ class TorchOCRTest(unittest.TestCase):
         predictor = OCRDetPredictor(det_model_path=PRETRAINED_MODEL_OCRDET)
         img = cv2.imread(os.path.join(TEST_IMAGES_DIR, 'ocr_det.jpg'))
         dt_boxes = predictor.predict(img)
-        self.assertEqual(len(dt_boxes), 34)  # 34 boxes
+        self.assertEqual(len(dt_boxes), 16)  # 16 boxes
 
     def test_ocr_rec(self):
         predictor = OCRRecPredictor(rec_model_path=PRETRAINED_MODEL_OCRREC)
@@ -47,8 +47,8 @@ class TorchOCRTest(unittest.TestCase):
             use_angle_cls=True)
         img = cv2.imread(os.path.join(TEST_IMAGES_DIR, 'ocr_det.jpg'))
         filter_boxes, filter_rec_res = predictor.predict_single(img)
-        self.assertEqual(len(filter_boxes), 30)
-        self.assertEqual(len(filter_rec_res), 30)
+        self.assertEqual(filter_rec_res[0][0], '纯臻营养护发素')
+        self.assertGreater(filter_rec_res[0][1], 0.979)
 
 
 if __name__ == '__main__':
