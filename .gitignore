@@ -137,6 +137,3 @@ pai_jobs/easycv/resources/
 *.tar.gz
 thirdparty/test
 scripts/test
-
-# easycv default cache dir
-.easycv_cache

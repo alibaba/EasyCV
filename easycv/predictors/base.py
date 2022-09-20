@@ -1,19 +1,23 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import json
 import os
 import pickle
 
+import cv2
 import numpy as np
 import torch
 from mmcv.parallel import collate, scatter_kwargs
 from PIL import Image
+from torch.hub import load_state_dict_from_url
 from torchvision.transforms import Compose
 
 from easycv.datasets.registry import PIPELINES
 from easycv.file import io
+from easycv.file.utils import is_url_path
 from easycv.framework.errors import ValueError
 from easycv.models.builder import build_model
 from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.config_tools import mmcv_config_fromfile
+from easycv.utils.config_tools import Config, mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
 from easycv.utils.mmlab_utils import (dynamic_adapt_for_mmlab,
                                       remove_adapt_for_mmlab)
@@ -107,7 +111,9 @@ class PredictorV2(object):
             device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
             save_results (bool): Whether to save predict results.
             save_path (str): File path for saving results, only valid when `save_results` is True.
+            pipelines (list[dict]): Data pipeline configs.
         """
+    INPUT_IMAGE_MODE = 'BGR'  # the image mode into the model
 
     def __init__(self,
                  model_path,
@@ -116,30 +122,51 @@ class PredictorV2(object):
                  device=None,
                  save_results=False,
                  save_path=None,
-                 mode='rgb',
+                 pipelines=None,
                  *args,
                  **kwargs):
         self.model_path = model_path
         self.batch_size = batch_size
         self.save_results = save_results
         self.save_path = save_path
+        self.config_file = config_file
         if self.save_results:
             assert self.save_path is not None
         self.device = device
         if self.device is None:
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-        self.cfg = None
         if config_file is not None:
             if isinstance(config_file, str):
                 self.cfg = mmcv_config_fromfile(config_file)
             else:
                 self.cfg = config_file
+        else:
+            self.cfg = self._load_cfg_from_ckpt(self.model_path)
+
+        if self.cfg is None:
+            raise ValueError('Please provide "config_file"!')
 
         self.model = self.prepare_model()
+        self.pipelines = pipelines
         self.processor = self.build_processor()
         self._load_op = None
-        self.mode = mode
+
+    def _load_cfg_from_ckpt(self, model_path):
+        if is_url_path(model_path):
+            ckpt = load_state_dict_from_url(model_path)
+        else:
+            with io.open(model_path, 'rb') as infile:
+                ckpt = torch.load(infile, map_location='cpu')
+
+        cfg = None
+        if 'meta' in ckpt and 'config' in ckpt['meta']:
+            cfg = ckpt['meta']['config']
+            if isinstance(cfg, dict):
+                cfg = Config(cfg)
+            elif isinstance(cfg, str):
+                cfg = Config(json.loads(cfg))
+        return cfg
 
     def prepare_model(self):
         """Build model from config file by default.
@@ -152,8 +179,6 @@ class PredictorV2(object):
         return model
 
     def _build_model(self):
-        if self.cfg is None:
-            raise ValueError('Please provide "config_file"!')
         # Use mmdet model
         dynamic_adapt_for_mmlab(self.cfg)
         model = build_model(self.cfg.model)
@@ -165,16 +190,15 @@ class PredictorV2(object):
         """Build processor to process loaded input.
         If you need custom preprocessing ops, you need to reimplement it.
         """
-        if self.cfg is None:
-            pipeline = []
+        if self.pipelines is not None:
+            pipelines = self.pipelines
         else:
-            pipeline = [
-                build_from_cfg(p, PIPELINES)
-                for p in self.cfg.get('test_pipeline', [])
-            ]
+            pipelines = self.cfg.get('test_pipeline', [])
+
+        pipelines = [build_from_cfg(p, PIPELINES) for p in pipelines]
 
         from easycv.datasets.shared.pipelines.transforms import Compose
-        processor = Compose(pipeline)
+        processor = Compose(pipelines)
         return processor
 
     def _load_input(self, input):
@@ -190,10 +214,13 @@ class PredictorV2(object):
             }
         """
         if self._load_op is None:
-            load_cfg = dict(type='LoadImage', mode=self.mode)
+            load_cfg = dict(type='LoadImage', mode=self.INPUT_IMAGE_MODE)
             self._load_op = build_from_cfg(load_cfg, PIPELINES)
 
         if not isinstance(input, str):
+            if isinstance(input, np.ndarray):
+                # Only support RGB mode if input is np.ndarray.
+                input = cv2.cvtColor(input, cv2.COLOR_RGB2BGR)
             sample = self._load_op({'img': input})
         else:
             sample = self._load_op({'filename': input})
@@ -229,8 +256,32 @@ class PredictorV2(object):
         return outputs
 
     def postprocess(self, inputs, *args, **kwargs):
-        """Process model outputs.
-        If you need add some processing ops to process model outputs, you need to reimplement it.
+        """Process model batch outputs.
+        """
+        outputs = []
+        out_i = {}
+        batch_size = 1
+        # get current batch size
+        for k, batch_v in inputs.items():
+            if batch_v is not None:
+                batch_size = len(batch_v)
+                break
+
+        for i in range(batch_size):
+            for k, batch_v in inputs.items():
+                if batch_v is not None:
+                    out_i[k] = batch_v[i]
+                else:
+                    out_i[k] = None
+
+            out_i = self.postprocess_single(out_i)
+            outputs.append(out_i)
+
+        return outputs
+
+    def postprocess_single(self, inputs):
+        """Process outputs of single sample.
+        If you need add some processing ops, you need to reimplement it.
         """
         return inputs
 
@@ -260,16 +311,22 @@ class PredictorV2(object):
 
         results_list = []
         for i in range(0, len(inputs), self.batch_size):
-            batch = inputs[i:max(len(inputs) - 1, i + self.batch_size)]
+            batch = inputs[i:min(len(inputs), i + self.batch_size)]
             batch_outputs = self.preprocess(batch)
             batch_outputs = self.forward(batch_outputs)
             results = self.postprocess(batch_outputs)
+            assert len(results) == len(
+                batch), f'Mismatch size {len(results)} != {len(batch)}'
             if keep_inputs:
-                results = {'inputs': batch, 'results': results}
+                for i in range(len(batch)):
+                    results[i].update({'inputs': batch[i]})
             # if dump, the outputs will not added to the return value to prevent taking up too much memory
             if self.save_results:
-                self.dump([results], self.save_path, mode='ab+')
+                self.dump(results, self.save_path, mode='ab+')
             else:
-                results_list.append(results)
+                if isinstance(results, list):
+                    results_list.extend(results)
+                else:
+                    results_list.append(results)
 
         return results_list

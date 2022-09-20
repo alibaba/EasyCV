@@ -4,11 +4,11 @@ isort:skip_file
 """
 import os
 import unittest
-
+import tempfile
 import numpy as np
 from PIL import Image
 
-from easycv.predictors.detector import TorchYoloXPredictor, DetrPredictor
+from easycv.predictors.detector import TorchYoloXPredictor, DetectionPredictor
 from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_EXPORT,
                              PRETRAINED_MODEL_YOLOXS_EXPORT_OLD,
                              PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_JIT,
@@ -154,25 +154,18 @@ class DetectorTest(unittest.TestCase):
                       [510.37033, 268.4982, 527.67017, 273.04935]]),
             decimal=1)
 
-    def test_vitdet_detector(self):
-        model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/vitdet/vit_base/epoch_100_export.pth'
-        img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-        out_file = './result.jpg'
-        vitdet = DetrPredictor(model_path)
-        output = vitdet.predict(img)
-        vitdet.visualize(img, output, out_file=out_file)
-
+    def _detection_detector_assert(self, output):
         self.assertIn('detection_boxes', output)
         self.assertIn('detection_scores', output)
         self.assertIn('detection_classes', output)
         self.assertIn('detection_masks', output)
         self.assertIn('img_metas', output)
-        self.assertEqual(len(output['detection_boxes'][0]), 33)
-        self.assertEqual(len(output['detection_scores'][0]), 33)
-        self.assertEqual(len(output['detection_classes'][0]), 33)
+        self.assertEqual(len(output['detection_boxes']), 33)
+        self.assertEqual(len(output['detection_scores']), 33)
+        self.assertEqual(len(output['detection_classes']), 33)
 
         self.assertListEqual(
-            output['detection_classes'][0].tolist(),
+            output['detection_classes'].tolist(),
             np.array([
                 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                 2, 2, 2, 2, 2, 2, 7, 7, 13, 13, 13, 56
@@ -180,7 +173,7 @@ class DetectorTest(unittest.TestCase):
                      dtype=np.int32).tolist())
 
         assert_array_almost_equal(
-            output['detection_scores'][0],
+            output['detection_scores'],
             np.array([
                 0.9975854158401489, 0.9965696334838867, 0.9922919869422913,
                 0.9833580851554871, 0.983080267906189, 0.970454752445221,
@@ -198,7 +191,7 @@ class DetectorTest(unittest.TestCase):
             decimal=2)
 
         assert_array_almost_equal(
-            output['detection_boxes'][0],
+            output['detection_boxes'],
             np.array([[
                 294.22674560546875, 116.6078109741211, 379.4328918457031,
                 150.14097595214844
@@ -332,6 +325,32 @@ class DetectorTest(unittest.TestCase):
                           432.2721862792969, 187.99481201171875
                       ]]),
             decimal=1)
+
+    def test_detection_detector_single(self):
+        model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/vitdet/vit_base/epoch_100_export.pth'
+        img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
+        vitdet = DetectionPredictor(model_path, score_threshold=0.0)
+        output = vitdet(img)
+        output = output[0]
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as tmp_file:
+            tmp_save_path = tmp_file.name
+            vitdet.visualize(img, output, out_file=tmp_save_path)
+        self._detection_detector_assert(output)
+
+    def test_detection_detector_batch(self):
+        model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/vitdet/vit_base/epoch_100_export.pth'
+        img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
+        vitdet = DetectionPredictor(
+            model_path, score_threshold=0.0, batch_size=2)
+        num_samples = 3
+        images = [img] * num_samples
+        outputs = vitdet(images)
+        self.assertEqual(len(outputs), num_samples)
+        for output in outputs:
+            with tempfile.NamedTemporaryFile(suffix='.jpg') as tmp_file:
+                tmp_save_path = tmp_file.name
+                vitdet.visualize(img, output, out_file=tmp_save_path)
+            self._detection_detector_assert(output)
 
 
 if __name__ == '__main__':

@@ -120,10 +120,10 @@ PRETRAINED_MODEL_YOLOX_COMPRESSION = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/compression/yolox_compression.pth')
 PRETRAINED_MODEL_MAE = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/classification/vit/mae_vit_b_1600.pth')
-PRETRAINED_MODEL_MASK2FORMER = os.path.join(
-    BASE_LOCAL_PATH,
-    'pretrained_models/segmentation/mask2former/mask2former_r50_instance.pth')
-
+PRETRAINED_MODEL_MASK2FORMER_DIR = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/segmentation/mask2former/')
+PRETRAINED_MODEL_MASK2FORMER = os.path.join(PRETRAINED_MODEL_MASK2FORMER_DIR,
+                                            'mask2former_r50_instance.pth')
 PRETRAINED_MODEL_SEGFORMER = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/segmentation/segformer/segformer_b0/SegmentationEvaluator_mIoU_best.pth'
