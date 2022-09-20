@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+from easycv.framework.errors import ValueError
 from easycv.models.base import BaseModel
 from easycv.models.builder import (MODELS, build_backbone, build_head,
                                    build_neck)

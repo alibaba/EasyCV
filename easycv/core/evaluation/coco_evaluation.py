@@ -31,6 +31,7 @@ from easycv.core import standard_fields
 from easycv.core.evaluation import coco_tools
 from easycv.core.post_processing.nms import oks_nms, soft_oks_nms
 from easycv.core.standard_fields import DetectionResultFields, InputDataFields
+from easycv.framework.errors import KeyError, TypeError, ValueError
 from easycv.utils.json_utils import MyEncoder
 from .base_evaluator import Evaluator
 from .builder import EVALUATORS
@@ -365,7 +366,7 @@ class CocoDetectionEvaluator(Evaluator):
 def _check_mask_type_and_value(array_name, masks):
     """Checks whether mask dtype is uint8 and the values are either 0 or 1."""
     if masks.dtype != np.uint8:
-        raise ValueError('{} must be of type np.uint8. Found {}.'.format(
+        raise TypeError('{} must be of type np.uint8. Found {}.'.format(
             array_name, masks.dtype))
     if np.any(np.logical_and(masks != 0, masks != 1)):
         raise ValueError(

@@ -2,6 +2,7 @@
 import torch.nn as nn
 from torch.utils.data import Dataset
 
+from easycv.framework.errors import TypeError
 from easycv.utils.collect import dist_forward_collect, nondist_forward_collect
 
 

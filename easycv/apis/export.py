@@ -13,6 +13,7 @@ import torchvision.transforms.functional as t_f
 from mmcv.utils import Config
 
 from easycv.file import io
+from easycv.framework.errors import ValueError
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
                            build_model)
 from easycv.utils.checkpoint import load_checkpoint
@@ -105,6 +106,9 @@ def _export_cls(model, cfg, filename):
         type='Classification',
         backbone=replace_syncbn(cfg.model.backbone),
     )
+
+    # avoid load pretrained model
+    model_config['pretrained'] = False
 
     if export_neck:
         if hasattr(cfg.model, 'neck'):

@@ -3,22 +3,14 @@
 isort:skip_file
 """
 import os
-import tempfile
 import unittest
-import cv2
 import numpy as np
 from PIL import Image
 from easycv.predictors.detector import TorchYoloXPredictor
-from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_EXPORT,
-                             PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_JIT,
-                             PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT,
-                             PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_BLADE,
+from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_BLADE,
                              PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_BLADE,
                              DET_DATA_SMALL_COCO_LOCAL)
 
-from easycv.utils.test_util import benchmark
-import logging
-import pandas as pd
 import torch
 from numpy.testing import assert_array_almost_equal
 
@@ -37,7 +29,6 @@ class DetectorTest(unittest.TestCase):
         input_data_list = [np.asarray(Image.open(img))]
 
         blade_path = PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_BLADE
-        # blade_path = '/home/zouxinyi.zxy/easycv_nfs/pretrained_models/detection/infer_yolox/debug_blade.pt.blade'
         predictor_blade = TorchYoloXPredictor(
             model_path=blade_path, score_thresh=0.5)
 

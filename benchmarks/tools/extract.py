@@ -15,6 +15,7 @@ from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 from easycv.apis import set_random_seed
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.file import io
+from easycv.framework.errors import ValueError
 from easycv.models import build_model
 from easycv.utils.collect import dist_forward_collect, nondist_forward_collect
 from easycv.utils.config_tools import mmcv_config_fromfile

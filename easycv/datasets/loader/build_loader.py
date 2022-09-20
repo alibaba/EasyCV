@@ -11,10 +11,11 @@ from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader, RandomSampler
 
 from easycv.datasets.shared.odps_reader import set_dataloader_workid
+from easycv.framework.errors import NotImplementedError
 from easycv.utils.dist_utils import sync_random_seed
 from easycv.utils.torchacc_util import is_torchacc_enabled
 from .collate import CollateWrapper
-from .sampler import DistributedMPSampler, DistributedSampler
+from .sampler import DistributedMPSampler, DistributedSampler, RASampler
 
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
@@ -35,6 +36,7 @@ def build_dataloader(dataset,
                      odps_config=None,
                      persistent_workers=False,
                      collate_hooks=None,
+                     use_repeated_augment_sampler=False,
                      **kwargs):
     """Build PyTorch DataLoader.
     In distributed training, each GPU/process has a dataloader.
@@ -56,6 +58,8 @@ def build_dataloader(dataset,
             data in worker process can be reused.
         persistent_workers (bool) : After pytorch1.7, could use persistent_workers=True to
             avoid reconstruct dataworker before each epoch, speed up before epoch
+        use_repeated_augment_sampler (bool) : If set true, it will use RASampler.
+            Default: False.
         kwargs: any keyword argument to be used to initialize DataLoader
     Returns:
         DataLoader: A PyTorch dataloader.
@@ -68,7 +72,9 @@ def build_dataloader(dataset,
                                              'split_huge_listfile_byrank',
                                              False)
 
-        if hasattr(dataset, 'm_per_class') and dataset.m_per_class > 1:
+        if use_repeated_augment_sampler:
+            sampler = RASampler(dataset, world_size, rank, shuffle=shuffle)
+        elif hasattr(dataset, 'm_per_class') and dataset.m_per_class > 1:
             sampler = DistributedMPSampler(
                 dataset,
                 world_size,
@@ -88,7 +94,10 @@ def build_dataloader(dataset,
     else:
         if replace:
             raise NotImplementedError
-        if hasattr(dataset, 'm_per_class') and dataset.m_per_class > 1:
+
+        if use_repeated_augment_sampler:
+            sampler = RASampler(dataset, 1, 0, shuffle=shuffle)
+        elif hasattr(dataset, 'm_per_class') and dataset.m_per_class > 1:
             sampler = DistributedMPSampler(
                 dataset, 1, 0, shuffle=shuffle, replace=replace)
         else:

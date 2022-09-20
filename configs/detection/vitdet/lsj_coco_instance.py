@@ -101,13 +101,15 @@ val_dataset = dict(
     pipeline=test_pipeline)
 
 data = dict(
-    imgs_per_gpu=1, workers_per_gpu=2, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=4, workers_per_gpu=2, train=train_dataset, val=val_dataset
+)  # 64(total batch size) = 4 (batch size/per gpu) x 8 (gpu num) x 2(node)
 
 # evaluation
-eval_config = dict(interval=1, gpu_collect=False)
+eval_config = dict(initial=False, interval=1, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',
+        # dist_eval=True,
         evaluators=[
             dict(type='CocoDetectionEvaluator', classes=CLASSES),
             dict(type='CocoMaskEvaluator', classes=CLASSES)

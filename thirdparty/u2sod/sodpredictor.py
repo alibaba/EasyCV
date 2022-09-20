@@ -21,6 +21,7 @@ except:
 
 
 from easycv.predictors.builder import build_predictor, PREDICTORS
+from easycv.utils.constant import CACHE_DIR
 
 
 def normPRED(d):
@@ -47,8 +48,8 @@ class SODPredictor(object):
         """ 
 
         def load_url_weights(name, url_index="http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/release/evtorch_thirdparty/u2net_sod/", map_location=None):
-            os.makedirs('.easycv_cache', exist_ok=True)
-            local_model = os.path.join('.easycv_cache', name+'.pth')
+            os.makedirs(CACHE_DIR, exist_ok=True)
+            local_model = os.path.join(CACHE_DIR, name+'.pth')
             if os.path.exists(local_model):
                 weights = torch.load(local_model)
                 if weights is not None:

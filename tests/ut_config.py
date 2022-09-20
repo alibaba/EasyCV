@@ -45,7 +45,8 @@ SMALL_IMAGENET_TFRECORD_OSS = os.path.join(
     BASE_OSS_PATH, 'data/classification/small_imagenet_tfrecord/')
 
 IO_DATA_TXTX_OSS = os.path.join(BASE_OSS_PATH, 'data/io_test_dir/txts/')
-
+IO_DATA_MULTI_DIRS_OSS = os.path.join(BASE_OSS_PATH,
+                                      'data/io_test_dir/multi_dirs/')
 DET_DATA_SMALL_COCO_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                          'data/detection/small_coco')
 
@@ -119,10 +120,10 @@ PRETRAINED_MODEL_YOLOX_COMPRESSION = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/compression/yolox_compression.pth')
 PRETRAINED_MODEL_MAE = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/classification/vit/mae_vit_b_1600.pth')
-PRETRAINED_MODEL_MASK2FORMER = os.path.join(
-    BASE_LOCAL_PATH,
-    'pretrained_models/segmentation/mask2former/mask2former_r50_instance.pth')
-
+PRETRAINED_MODEL_MASK2FORMER_DIR = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/segmentation/mask2former/')
+PRETRAINED_MODEL_MASK2FORMER = os.path.join(PRETRAINED_MODEL_MASK2FORMER_DIR,
+                                            'mask2former_r50_instance.pth')
 PRETRAINED_MODEL_SEGFORMER = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/segmentation/segformer/segformer_b0/SegmentationEvaluator_mIoU_best.pth'

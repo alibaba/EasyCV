@@ -11,6 +11,8 @@ from typing import List, Union
 from tqdm import tqdm
 from tqdm.utils import CallbackIOWrapper
 
+from easycv.framework.errors import (FileNotFoundError, IOError, RuntimeError,
+                                     ValueError)
 from .base import IOLocal
 from .utils import (OSS_PREFIX, create_namedtuple, get_oss_config, is_oss_path,
                     mute_stderr, oss_progress)
@@ -198,7 +200,7 @@ class IO(IOLocal):
                 time.sleep(3)
 
         if data is None:
-            raise ValueError('Read file error: %s!' % full_path)
+            raise IOError('Read file error: %s!' % full_path)
 
         if mode == 'rb':
             return NullContextWrapper(BytesIO(data))
@@ -519,6 +521,11 @@ class IO(IOLocal):
         ]
         if path in files:
             files.remove(path)
+        if recursive:
+            files = [
+                i for i in files
+                if not self.isdir(f'{OSS_PREFIX}{bucket.bucket_name}/{i}')
+            ]
 
         if not files and not self._obj_exists(bucket, path):
             raise FileNotFoundError(

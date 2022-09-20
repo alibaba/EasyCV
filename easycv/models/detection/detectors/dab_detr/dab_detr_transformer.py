@@ -14,6 +14,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
+from easycv.framework.errors import NotImplementedError, ValueError
 from easycv.models.builder import NECKS
 from easycv.models.detection.utils import inverse_sigmoid
 from easycv.models.utils import (MLP, TransformerEncoder,

@@ -4,6 +4,8 @@ import functools
 import torch
 import torch.nn.functional as F
 
+from easycv.framework.errors import ValueError
+
 
 def reduce_loss(loss, reduction):
     """Reduce loss as specified.

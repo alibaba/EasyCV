@@ -9,6 +9,8 @@ from torch.autograd import Variable
 from torch.optim.lr_scheduler import ExponentialLR, ReduceLROnPlateau, StepLR
 from torch.testing._internal.common_utils import TestCase
 
+from easycv.framework.errors import ValueError
+
 
 @unittest.skipIf(
     LooseVersion(torch.__version__) < LooseVersion('1.6.0'),

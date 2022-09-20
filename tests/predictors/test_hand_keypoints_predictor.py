@@ -39,6 +39,37 @@ class HandKeypointsPredictorTest(unittest.TestCase):
         self.assertEqual(keypoints.shape[1], 21)
         self.assertEqual(keypoints.shape[2], 3)
 
+    def test_batch(self):
+        config = mmcv_config_fromfile(self.model_config_path)
+        predict_pipeline = HandKeypointsPredictor(
+            model_path=self.model_path,
+            config_file=config,
+            batch_size=2,
+            detection_predictor_config=dict(
+                type='DetectionPredictor',
+                model_path=MM_DEFAULT_HAND_DETECTION_SSDLITE_MODEL_PATH,
+                config_file=MM_DEFAULT_HAND_DETECTION_SSDLITE_CONFIG_FILE,
+                score_threshold=0.5))
+
+        num_samples = 4
+        outputs = predict_pipeline(
+            [self.image_path] * num_samples, keep_inputs=True)
+        base_keypoints = outputs[0]['keypoints']
+        base_boxes = outputs[0]['boxes']
+        for output in outputs:
+            keypoints = output['keypoints']
+            boxes = output['boxes']
+            image_show = predict_pipeline.show_result(
+                self.image_path,
+                keypoints,
+                boxes,
+                save_path=self.save_image_path)
+            self.assertEqual(keypoints.shape, (1, 21, 3))
+            self.assertEqual(boxes.shape, (1, 4))
+            self.assertListEqual(keypoints.tolist(), base_keypoints.tolist())
+            self.assertListEqual(boxes.tolist(), base_boxes.tolist())
+            self.assertEqual(output['inputs'], self.image_path)
+
 
 if __name__ == '__main__':
     unittest.main()

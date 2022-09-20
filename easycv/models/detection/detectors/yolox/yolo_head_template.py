@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from easycv.framework.errors import KeyError, RuntimeError
 from easycv.models.backbones.network_blocks import BaseConv, DWConv
 from easycv.models.backbones.repvgg_yolox_backbone import RepVGGBlock
 from easycv.models.detection.utils import bboxes_iou

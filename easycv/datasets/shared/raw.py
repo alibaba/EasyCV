@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from easycv.datasets.registry import DATASETS
+from easycv.framework.errors import NotImplementedError
 from .base import BaseDataset
 
 
