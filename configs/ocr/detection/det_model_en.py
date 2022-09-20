@@ -87,7 +87,7 @@ test_pipeline = [
 ]
 
 val_pipeline = [
-    dict(type='DetResizeForTest', image_shape=(736, 1280)),
+    dict(type='OCRDetResize', image_shape=(736, 1280)),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
     dict(

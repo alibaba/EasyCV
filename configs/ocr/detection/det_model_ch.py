@@ -76,7 +76,7 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(type='DetResizeForTest', limit_side_len=640, limit_type='min'),
+    dict(type='OCRDetResize', limit_side_len=640, limit_type='min'),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
     dict(
@@ -86,7 +86,7 @@ test_pipeline = [
 ]
 
 val_pipeline = [
-    dict(type='DetResizeForTest', limit_side_len=640, limit_type='min'),
+    dict(type='OCRDetResize', limit_side_len=640, limit_type='min'),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
     dict(

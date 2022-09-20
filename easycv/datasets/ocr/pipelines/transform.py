@@ -491,10 +491,12 @@ class MakeShrinkMap(object):
 
 
 @PIPELINES.register_module()
-class DetResizeForTest(object):
+class OCRDetResize(object):
+    """resize function for ocr det test
+    """
 
     def __init__(self, **kwargs):
-        super(DetResizeForTest, self).__init__()
+        super(OCRDetResize, self).__init__()
         self.resize_type = 0
         if 'image_shape' in kwargs:
             self.image_shape = kwargs['image_shape']
