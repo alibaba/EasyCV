@@ -312,6 +312,7 @@ class ParallelSARDecoder(BaseDecoder):
         return outputs
 
 
+@HEADS.register_module()
 class SARHead(nn.Module):
 
     def __init__(self,
