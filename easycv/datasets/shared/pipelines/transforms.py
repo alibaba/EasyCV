@@ -89,6 +89,7 @@ class LoadImage:
         results['img'] = img
         results['img_shape'] = img.shape
         results['ori_shape'] = img.shape
+        results['ori_img_shape'] = img.shape
         results['img_fields'] = ['img']
         return results
 

@@ -22,6 +22,25 @@ class DetectorTest(unittest.TestCase):
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
+    def _assert_results(self, results):
+        self.assertEqual(results['ori_img_shape'], [480, 640])
+        self.assertListEqual(results['detection_classes'].tolist(),
+                             np.array([13, 8, 8, 8], dtype=np.int32).tolist())
+        self.assertListEqual(results['detection_class_names'],
+                             ['bench', 'boat', 'boat', 'boat'])
+        assert_array_almost_equal(
+            results['detection_scores'],
+            np.array([0.92335737, 0.59416807, 0.5567955, 0.55368793],
+                     dtype=np.float32),
+            decimal=2)
+        assert_array_almost_equal(
+            results['detection_boxes'],
+            np.array([[408.1708, 285.11456, 561.84924, 356.42285],
+                      [438.88098, 264.46606, 467.07275, 271.76355],
+                      [510.19467, 268.46664, 528.26935, 273.37192],
+                      [480.9472, 269.74115, 502.00842, 274.85553]]),
+            decimal=1)
+
     def test_yolox_detector_blade_nopre_notrt(self):
         img = os.path.join(DET_DATA_SMALL_COCO_LOCAL,
                            'val2017/000000522713.jpg')
@@ -33,34 +52,7 @@ class DetectorTest(unittest.TestCase):
             model_path=blade_path, score_thresh=0.5)
 
         output = predictor_blade.predict(input_data_list)[0]
-        self.assertIn('detection_boxes', output)
-        self.assertIn('detection_scores', output)
-        self.assertIn('detection_classes', output)
-        self.assertIn('detection_class_names', output)
-        self.assertIn('ori_img_shape', output)
-
-        self.assertEqual(len(output['detection_boxes']), 4)
-        self.assertEqual(output['ori_img_shape'], [480, 640])
-
-        self.assertListEqual(output['detection_classes'].tolist(),
-                             np.array([13, 8, 8, 8], dtype=np.int32).tolist())
-
-        self.assertListEqual(output['detection_class_names'],
-                             ['bench', 'boat', 'boat', 'boat'])
-
-        assert_array_almost_equal(
-            output['detection_scores'],
-            np.array([0.92593855, 0.60268813, 0.57775956, 0.5750004],
-                     dtype=np.float32),
-            decimal=2)
-
-        assert_array_almost_equal(
-            output['detection_boxes'],
-            np.array([[407.89523, 284.62598, 561.4984, 356.7296],
-                      [439.37653, 263.42395, 467.01526, 271.79144],
-                      [480.8597, 269.64435, 502.18765, 274.80127],
-                      [510.37033, 268.4982, 527.67017, 273.04935]]),
-            decimal=1)
+        self._assert_results(output)
 
     def test_yolox_detector_blade_pre_notrt(self):
         img = os.path.join(DET_DATA_SMALL_COCO_LOCAL,
@@ -73,34 +65,7 @@ class DetectorTest(unittest.TestCase):
             model_path=blade_path, score_thresh=0.5)
 
         output = predictor_blade.predict(input_data_list)[0]
-        self.assertIn('detection_boxes', output)
-        self.assertIn('detection_scores', output)
-        self.assertIn('detection_classes', output)
-        self.assertIn('detection_class_names', output)
-        self.assertIn('ori_img_shape', output)
-
-        self.assertEqual(len(output['detection_boxes']), 4)
-        self.assertEqual(output['ori_img_shape'], [480, 640])
-
-        self.assertListEqual(output['detection_classes'].tolist(),
-                             np.array([13, 8, 8, 8], dtype=np.int32).tolist())
-
-        self.assertListEqual(output['detection_class_names'],
-                             ['bench', 'boat', 'boat', 'boat'])
-
-        assert_array_almost_equal(
-            output['detection_scores'],
-            np.array([0.92593855, 0.60268813, 0.57775956, 0.5750004],
-                     dtype=np.float32),
-            decimal=2)
-
-        assert_array_almost_equal(
-            output['detection_boxes'],
-            np.array([[407.89523, 284.62598, 561.4984, 356.7296],
-                      [439.37653, 263.42395, 467.01526, 271.79144],
-                      [480.8597, 269.64435, 502.18765, 274.80127],
-                      [510.37033, 268.4982, 527.67017, 273.04935]]),
-            decimal=1)
+        self._assert_results(output)
 
 
 if __name__ == '__main__':
