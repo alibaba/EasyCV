@@ -9,6 +9,7 @@ import numpy as np
 import torch
 
 from easycv.datasets.registry import DATASETS, PIPELINES
+from easycv.framework.errors import TypeError
 from easycv.utils.bbox_util import xyxy2xywh as xyxy2cxcywh
 from easycv.utils.registry import build_from_cfg
 from .raw import DetDataset
@@ -82,7 +83,7 @@ class DetImagesMixDataset(DetDataset):
         self.max_labels_num = 120
 
     def __getitem__(self, idx):
-        results = copy.deepcopy(self.data_source.get_sample(idx))
+        results = copy.deepcopy(self.data_source[idx])
         for (transform, transform_type) in zip(self.pipeline_yolox,
                                                self.pipeline_types):
             if self._skip_type_keys is not None and \
@@ -94,8 +95,7 @@ class DetImagesMixDataset(DetDataset):
                 if not isinstance(indexes, collections.abc.Sequence):
                     indexes = [indexes]
                 mix_results = [
-                    copy.deepcopy(self.data_source.get_sample(index))
-                    for index in indexes
+                    copy.deepcopy(self.data_source[index]) for index in indexes
                 ]
                 results['mix_results'] = mix_results
 

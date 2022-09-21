@@ -10,6 +10,7 @@ from mmcv.runner.dist_utils import get_dist_info
 from tqdm import tqdm
 
 from easycv.file.image import load_image
+from easycv.framework.errors import NotImplementedError, ValueError
 
 
 def _load_image(img_path):
@@ -139,10 +140,14 @@ class DetSourceBase(object):
     def _rand_another(self, idx):
         return (idx + 1) % self.num_samples
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         result_dict = self.samples_list[idx]
         load_success = True
         try:
+            # avoid data cache from taking up too much memory
+            if not self.cache_at_init and not self.cache_on_the_fly:
+                result_dict = copy.deepcopy(result_dict)
+
             if not self.cache_at_init and result_dict.get('img', None) is None:
                 result_dict.update(_load_image(result_dict['filename']))
                 if self.cache_on_the_fly:
@@ -165,6 +170,6 @@ class DetSourceBase(object):
             if self._retry_count >= self._max_retry_num:
                 raise ValueError('All samples failed to load!')
 
-            result_dict = self.get_sample(self._rand_another(idx))
+            result_dict = self[self._rand_another(idx)]
 
         return result_dict

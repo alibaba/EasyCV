@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from easycv.framework.errors import TypeError, ValueError
 from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS

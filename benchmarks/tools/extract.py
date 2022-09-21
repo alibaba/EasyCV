@@ -12,31 +12,14 @@ import torch
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 
+from easycv.apis import set_random_seed
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.file import io
+from easycv.framework.errors import ValueError
 from easycv.models import build_model
 from easycv.utils.collect import dist_forward_collect, nondist_forward_collect
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.logger import get_root_logger
-
-
-def set_random_seed(seed, deterministic=True):
-    """Set random seed.
-
-    Args:
-        seed (int): Seed to be used.
-        deterministic (bool): Whether to set the deterministic option for
-            CUDNN backend, i.e., set `torch.backends.cudnn.deterministic`
-            to True and `torch.backends.cudnn.benchmark` to False.
-            Default: False.
-    """
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    if deterministic:
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
 
 
 class ExtractProcess(object):

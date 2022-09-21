@@ -7,6 +7,7 @@ import torch.nn as nn
 from mmcv.runner import get_dist_info
 from timm.data.mixup import Mixup
 
+from easycv.framework.errors import KeyError, NotImplementedError, ValueError
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger, print_log
 from easycv.utils.preprocess_function import (bninceptionPre, gaussianBlur,
@@ -53,22 +54,15 @@ class Classification(BaseModel):
         if 'mixUp' in train_preprocess:
             rank, _ = get_dist_info()
             np.random.seed(rank + 12)
-            if not mixup_cfg:
-                num_classes = head.get(
-                    'num_classes',
-                    1000) if 'num_classes' in head else backbone.get(
-                        'num_classes', 1000)
-                mixup_cfg = dict(
-                    mixup_alpha=0.8,
-                    cutmix_alpha=1.0,
-                    cutmix_minmax=None,
-                    prob=1.0,
-                    switch_prob=0.5,
-                    mode='batch',
-                    label_smoothing=0.1,
-                    num_classes=num_classes)
-            self.mixup = Mixup(**mixup_cfg)
-            head.loss_config = {'type': 'SoftTargetCrossEntropy'}
+            if mixup_cfg is not None:
+                if 'num_classes' in mixup_cfg:
+                    self.mixup = Mixup(**mixup_cfg)
+                elif 'num_classes' in head or 'num_classes' in backbone:
+                    num_classes = head.get(
+                        'num_classes'
+                    ) if 'num_classes' in head else backbone.get('num_classes')
+                    mixup_cfg['num_classes'] = num_classes
+                    self.mixup = Mixup(**mixup_cfg)
             train_preprocess.remove('mixUp')
         self.train_preprocess = [
             self.preprocess_key_map[i] for i in train_preprocess
@@ -173,7 +167,10 @@ class Classification(BaseModel):
         for preprocess in self.train_preprocess:
             img = preprocess(img)
 
-        if hasattr(self, 'mixup'):
+        # When the number of samples in the dataset is odd, the last batch size of each epoch will be odd,
+        #  which will cause mixup to report an error. To avoid this situation, mixup is applied only when
+        #  the batch size is even.
+        if hasattr(self, 'mixup') and len(img) % 2 == 0:
             img, gt_labels = self.mixup(img, gt_labels)
 
         x = self.forward_backbone(img)
@@ -304,4 +301,4 @@ class Classification(BaseModel):
                 rv['gt_labels'] = gt_labels.cpu()
             return rv
         else:
-            raise Exception('No such mode: {}'.format(mode))
+            raise KeyError('No such mode: {}'.format(mode))

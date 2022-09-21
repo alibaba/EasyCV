@@ -4,6 +4,7 @@ from xtcocotools.coco import COCO
 
 from easycv.datasets.registry import DATASOURCES, PIPELINES
 from easycv.datasets.shared.pipelines import Compose
+from easycv.framework.errors import TypeError
 from easycv.utils.registry import build_from_cfg
 
 
@@ -316,11 +317,3 @@ class DetSourceCoco(object):
         """Get another random index from the same group as the given index."""
         pool = np.where(self.flag == self.flag[idx])[0]
         return np.random.choice(pool)
-
-    def get_sample(self, idx):
-        while True:
-            data = self.prepare_train_img(idx)
-            if data is None:
-                idx = self._rand_another(idx)
-                continue
-            return data

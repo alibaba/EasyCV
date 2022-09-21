@@ -1,6 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import inspect
 
+from easycv.framework.errors import KeyError, TypeError
+
 
 class MetricRegistry(object):
 

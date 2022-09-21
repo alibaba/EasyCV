@@ -7,6 +7,7 @@ from importlib import import_module
 
 from mmcv import Config, import_modules_from_strings
 
+from easycv.framework.errors import IOError, KeyError, ValueError
 from .user_config_params_utils import check_value_type
 
 if platform.system() == 'Windows':
@@ -58,7 +59,7 @@ def check_base_cfg_path(base_cfg_name='configs/base.py', ori_filename=None):
     if osp.exists(base_cfg_path_3):
         return base_cfg_path_3
 
-    raise '%s not Found' % base_cfg_name
+    raise ValueError('%s not Found' % base_cfg_name)
 
 
 # Read config without __base__
@@ -69,7 +70,7 @@ def mmcv_file2dict_raw(ori_filename):
             # read configs/config_templates/detection_oss.py
             filename = check_base_cfg_path(ori_filename)
         else:
-            raise '%s and %s not Found' % (ori_filename, filename)
+            raise ValueError('%s and %s not Found' % (ori_filename, filename))
 
     fileExtname = osp.splitext(filename)[1]
     if fileExtname not in ['.py', '.json', '.yaml', '.yml']:

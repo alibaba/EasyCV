@@ -4,6 +4,8 @@ from functools import partial
 
 import mmcv
 
+from easycv.framework.errors import KeyError, TypeError
+
 
 class Registry(object):
 

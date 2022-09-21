@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 
 from easycv.core.post_processing import transform_preds
+from easycv.framework.errors import ValueError
 
 
 def _calc_distances(preds, targets, mask, normalize):
@@ -176,6 +177,86 @@ def keypoint_pck_accuracy(pred, gt, mask, thr, normalize):
     cnt = len(valid_acc)
     avg_acc = valid_acc.mean() if cnt > 0 else 0
     return acc, avg_acc, cnt
+
+
+def keypoint_auc(pred, gt, mask, normalize, num_step=20):
+    """Calculate the pose accuracy of PCK for each individual keypoint and the
+    averaged accuracy across all keypoints for coordinates.
+
+    Note:
+        - batch_size: N
+        - num_keypoints: K
+
+    Args:
+        pred (np.ndarray[N, K, 2]): Predicted keypoint location.
+        gt (np.ndarray[N, K, 2]): Groundtruth keypoint location.
+        mask (np.ndarray[N, K]): Visibility of the target. False for invisible
+            joints, and True for visible. Invisible joints will be ignored for
+            accuracy calculation.
+        normalize (float): Normalization factor.
+
+    Returns:
+        float: Area under curve.
+    """
+    nor = np.tile(np.array([[normalize, normalize]]), (pred.shape[0], 1))
+    x = [1.0 * i / num_step for i in range(num_step)]
+    y = []
+    for thr in x:
+        _, avg_acc, _ = keypoint_pck_accuracy(pred, gt, mask, thr, nor)
+        y.append(avg_acc)
+
+    auc = 0
+    for i in range(num_step):
+        auc += 1.0 / num_step * y[i]
+    return auc
+
+
+def keypoint_nme(pred, gt, mask, normalize_factor):
+    """Calculate the normalized mean error (NME).
+
+    Note:
+        - batch_size: N
+        - num_keypoints: K
+
+    Args:
+        pred (np.ndarray[N, K, 2]): Predicted keypoint location.
+        gt (np.ndarray[N, K, 2]): Groundtruth keypoint location.
+        mask (np.ndarray[N, K]): Visibility of the target. False for invisible
+            joints, and True for visible. Invisible joints will be ignored for
+            accuracy calculation.
+        normalize_factor (np.ndarray[N, 2]): Normalization factor.
+
+    Returns:
+        float: normalized mean error
+    """
+    distances = _calc_distances(pred, gt, mask, normalize_factor)
+    distance_valid = distances[distances != -1]
+    return distance_valid.sum() / max(1, len(distance_valid))
+
+
+def keypoint_epe(pred, gt, mask):
+    """Calculate the end-point error.
+
+    Note:
+        - batch_size: N
+        - num_keypoints: K
+
+    Args:
+        pred (np.ndarray[N, K, 2]): Predicted keypoint location.
+        gt (np.ndarray[N, K, 2]): Groundtruth keypoint location.
+        mask (np.ndarray[N, K]): Visibility of the target. False for invisible
+            joints, and True for visible. Invisible joints will be ignored for
+            accuracy calculation.
+
+    Returns:
+        float: Average end-point error.
+    """
+
+    distances = _calc_distances(
+        pred, gt, mask,
+        np.ones((pred.shape[0], pred.shape[2]), dtype=np.float32))
+    distance_valid = distances[distances != -1]
+    return distance_valid.sum() / max(1, len(distance_valid))
 
 
 def _taylor(heatmap, coord):

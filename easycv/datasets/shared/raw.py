@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from easycv.datasets.registry import DATASETS
+from easycv.framework.errors import NotImplementedError
 from .base import BaseDataset
 
 
@@ -10,7 +11,7 @@ class RawDataset(BaseDataset):
         super(RawDataset, self).__init__(data_source, pipeline)
 
     def __getitem__(self, idx):
-        results = self.data_source.get_sample(idx)
+        results = self.data_source[idx]
         return self.pipeline(results)
 
     def evaluate(self, scores, keyword, logger=None):

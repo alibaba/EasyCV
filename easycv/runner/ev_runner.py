@@ -8,6 +8,7 @@ from mmcv.runner import EpochBasedRunner
 from mmcv.runner.log_buffer import LogBuffer
 
 from easycv.file import io
+from easycv.framework.errors import RuntimeError, TypeError
 from easycv.utils.checkpoint import load_checkpoint, save_checkpoint
 
 if LooseVersion(torch.__version__) >= LooseVersion('1.6.0'):
@@ -97,6 +98,7 @@ class EVRunner(EpochBasedRunner):
 
         for i, data_batch in enumerate(self.data_loader):
             self._inner_iter = i
+
             self.call_hook('before_train_iter')
             # use amp from pytorch 1.6 or later, we should use amp.autocast
             if self.fp16_enable and LooseVersion(
@@ -168,12 +170,9 @@ class EVRunner(EpochBasedRunner):
                 param groups. If the runner has a dict of optimizers, this
                 method will return a dict.
         """
-        # add interface to selfdefine current_lr_fn for lr_hook
-        # so that runner can logging correct lrs
-        if hasattr(self, 'current_lr_fn'):
-            lr = self.current_lr_fn(self.optimizer)
-        elif isinstance(self.optimizer, torch.optim.Optimizer):
-            lr = [group['lr'] for group in self.optimizer.param_groups]
+        if isinstance(self.optimizer, torch.optim.Optimizer):
+            lr = sorted([group['lr'] for group in self.optimizer.param_groups],
+                        reverse=True)  # avoid lr display error
         elif isinstance(self.optimizer, dict):
             lr = dict()
             for name, optim in self.optimizer.items():

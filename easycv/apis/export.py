@@ -6,18 +6,24 @@ from collections import OrderedDict
 from distutils.version import LooseVersion
 from typing import Callable, Dict, List, Optional, Tuple
 
+import cv2
 import torch
+import torchvision
 import torchvision.transforms.functional as t_f
 from mmcv.utils import Config
 
 from easycv.file import io
+from easycv.framework.errors import ValueError
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
                            build_model)
-from easycv.utils.bbox_util import scale_coords
 from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.misc import reparameterize_models
 
 __all__ = [
-    'export', 'PreProcess', 'DetPostProcess', 'End2endModelExportWrapper'
+    'export',
+    'PreProcess',
+    'ModelExportWrapper',
+    'ProcessExportWrapper',
 ]
 
 
@@ -101,6 +107,9 @@ def _export_cls(model, cfg, filename):
         backbone=replace_syncbn(cfg.model.backbone),
     )
 
+    # avoid load pretrained model
+    model_config['pretrained'] = False
+
     if export_neck:
         if hasattr(cfg.model, 'neck'):
             model_config['neck'] = cfg.model.neck
@@ -158,105 +167,160 @@ def _export_yolox(model, cfg, filename):
         filename (str): filename to save exported models
     """
 
-    if hasattr(cfg, 'export') and (getattr(cfg.export, 'use_jit', False) or
-                                   getattr(cfg.export, 'export_blade', False)):
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    if hasattr(cfg, 'export'):
+        export_type = getattr(cfg.export, 'export_type', 'raw')
+        default_export_type_list = ['raw', 'jit', 'blade']
+        if export_type not in default_export_type_list:
+            logging.warning(
+                'YOLOX-PAI only supports the export type as  [raw,jit,blade], otherwise we use ori as default'
+            )
+            export_type = 'raw'
 
-        model = copy.deepcopy(model)
-        model.eval()
-        model.to(device)
+        if export_type != 'raw':
+            # only when we use jit or blade, we need to reparameterize_models before export
+            model = reparameterize_models(model)
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            model = copy.deepcopy(model)
 
-        end2end = cfg.export.get('end2end', False)
-        if LooseVersion(torch.__version__) < LooseVersion('1.7.0') and end2end:
-            raise ValueError('`end2end` only support torch1.7.0 and later!')
+            preprocess_jit = cfg.export.get('preprocess_jit', False)
 
-        batch_size = cfg.export.get('batch_size', 1)
-        img_scale = cfg.get('img_scale', (640, 640))
-        assert (
-            len(img_scale) == 2
-        ), 'Export YoloX predictor config contains img_scale must be (int, int) tuple!'
+            batch_size = cfg.export.get('batch_size', 1)
+            static_opt = cfg.export.get('static_opt', True)
+            use_trt_efficientnms = cfg.export.get('use_trt_efficientnms',
+                                                  False)
+            # assert image scale and assgin input
+            img_scale = cfg.get('img_scale', (640, 640))
 
-        input = 255 * torch.rand((batch_size, 3) + img_scale)
+            assert (
+                len(img_scale) == 2
+            ), 'Export YoloX predictor config contains img_scale must be (int, int) tuple!'
 
-        model_export = End2endModelExportWrapper(
-            model,
-            input.to(device),
-            preprocess_fn=PreProcess(target_size=img_scale, keep_ratio=True)
-            if end2end else None,
-            postprocess_fn=DetPostProcess(max_det=100, score_thresh=0.5)
-            if end2end else None,
-            trace_model=True,
-        )
+            input = 255 * torch.rand((batch_size, 3) + img_scale)
 
-        model_export.eval().to(device)
+            # assert use_trt_efficientnms only happens when static_opt=True
+            if static_opt is not True:
+                assert (
+                    use_trt_efficientnms == False
+                ), 'Export YoloX predictor use_trt_efficientnms=True only when use static_opt=True!'
 
-        # well trained model will generate reasonable result, otherwise, we should change model.test_conf=0.0 to avoid tensor in inference to be empty
-        # use trace is a litter bit faster than script. But it is not supported in an end2end model.
-        if end2end:
-            yolox_trace = torch.jit.script(model_export)
+            # preprocess can not be optimized blade, to accelerate the inference, a preprocess jit model should be saved!
+            save_preprocess_jit = False
 
-        else:
+            if preprocess_jit:
+                save_preprocess_jit = True
+
+            # set model use_trt_efficientnms
+            if use_trt_efficientnms:
+                from easycv.toolkit.blade import create_tensorrt_efficientnms
+                if hasattr(model, 'get_nmsboxes_num'):
+                    nmsbox_num = int(model.get_nmsboxes_num(img_scale))
+                else:
+                    logging.warning(
+                        'PAI-YOLOX: use_trt_efficientnms encounter model has no attr named get_nmsboxes_num, use 8400 (80*80+40*40+20*20)cas default!'
+                    )
+                    nmsbox_num = 8400
+
+                tmp_example_scores = torch.randn(
+                    [batch_size, nmsbox_num, 4 + 1 + len(cfg.CLASSES)],
+                    dtype=torch.float32)
+                logging.warning(
+                    'PAI-YOLOX: use_trt_efficientnms with staic shape [{}, {}, {}]'
+                    .format(batch_size, nmsbox_num, 4 + 1 + len(cfg.CLASSES)))
+                model.trt_efficientnms = create_tensorrt_efficientnms(
+                    tmp_example_scores,
+                    iou_thres=model.nms_thre,
+                    score_thres=model.test_conf)
+                model.use_trt_efficientnms = True
+
+            model.eval()
+            model.to(device)
+
+            model_export = ModelExportWrapper(
+                model,
+                input.to(device),
+                trace_model=True,
+            )
+
+            model_export.eval().to(device)
+
+            # trace model
             yolox_trace = torch.jit.trace(model_export, input.to(device))
 
-        if getattr(cfg.export, 'export_blade', False):
-            blade_config = cfg.export.get('blade_config',
-                                          dict(enable_fp16=True))
+            # save export model
+            if export_type == 'blade':
+                blade_config = cfg.export.get(
+                    'blade_config',
+                    dict(enable_fp16=True, fp16_fallback_op_ratio=0.3))
 
-            from easycv.toolkit.blade import blade_env_assert, blade_optimize
+                from easycv.toolkit.blade import blade_env_assert, blade_optimize
+                assert blade_env_assert()
 
-            assert blade_env_assert()
+                # optimize model with blade
+                yolox_blade = blade_optimize(
+                    speed_test_model=model,
+                    model=yolox_trace,
+                    inputs=(input.to(device), ),
+                    blade_config=blade_config,
+                    static_opt=static_opt)
 
-            if end2end:
-                input = 255 * torch.rand(img_scale + (3, ))
+                with io.open(filename + '.blade', 'wb') as ofile:
+                    torch.jit.save(yolox_blade, ofile)
+                with io.open(filename + '.blade.config.json', 'w') as ofile:
+                    config = dict(
+                        model=cfg.model,
+                        export=cfg.export,
+                        test_pipeline=cfg.test_pipeline,
+                        classes=cfg.CLASSES)
 
-            yolox_blade = blade_optimize(
-                script_model=model,
-                model=yolox_trace,
-                inputs=(input.to(device), ),
-                blade_config=blade_config)
+                    json.dump(config, ofile)
 
-            with io.open(filename + '.blade', 'wb') as ofile:
-                torch.jit.save(yolox_blade, ofile)
-            with io.open(filename + '.blade.config.json', 'w') as ofile:
-                config = dict(
-                    export=cfg.export,
-                    test_pipeline=cfg.test_pipeline,
-                    classes=cfg.CLASSES)
+            if export_type == 'jit':
+                with io.open(filename + '.jit', 'wb') as ofile:
+                    torch.jit.save(yolox_trace, ofile)
 
-                json.dump(config, ofile)
+                with io.open(filename + '.jit.config.json', 'w') as ofile:
+                    config = dict(
+                        model=cfg.model,
+                        export=cfg.export,
+                        test_pipeline=cfg.test_pipeline,
+                        classes=cfg.CLASSES)
 
-        if getattr(cfg.export, 'use_jit', False):
-            with io.open(filename + '.jit', 'wb') as ofile:
-                torch.jit.save(yolox_trace, ofile)
+                    json.dump(config, ofile)
 
-            with io.open(filename + '.jit.config.json', 'w') as ofile:
-                config = dict(
-                    export=cfg.export,
-                    test_pipeline=cfg.test_pipeline,
-                    classes=cfg.CLASSES)
+            # save export preprocess/postprocess
+            if save_preprocess_jit:
+                tpre_input = 255 * torch.rand((batch_size, ) + img_scale +
+                                              (3, ))
+                tpre = ProcessExportWrapper(
+                    example_inputs=tpre_input.to(device),
+                    process_fn=PreProcess(
+                        target_size=img_scale, keep_ratio=True))
+                tpre.eval().to(device)
 
-                json.dump(config, ofile)
+                preprocess = torch.jit.script(tpre)
+                with io.open(filename + '.preprocess', 'wb') as prefile:
+                    torch.jit.save(preprocess, prefile)
 
-    else:
-        if hasattr(cfg, 'test_pipeline'):
-            # with last pipeline Collect
-            test_pipeline = cfg.test_pipeline
-            print(test_pipeline)
         else:
-            print('test_pipeline not found, using default preprocessing!')
-            raise ValueError('export model config without test_pipeline')
+            if hasattr(cfg, 'test_pipeline'):
+                # with last pipeline Collect
+                test_pipeline = cfg.test_pipeline
+                print(test_pipeline)
+            else:
+                print('test_pipeline not found, using default preprocessing!')
+                raise ValueError('export model config without test_pipeline')
 
-        config = dict(
-            model=cfg.model,
-            test_pipeline=test_pipeline,
-            CLASSES=cfg.CLASSES,
-        )
+            config = dict(
+                model=cfg.model,
+                test_pipeline=test_pipeline,
+                CLASSES=cfg.CLASSES,
+            )
 
-        meta = dict(config=json.dumps(config))
-        checkpoint = dict(
-            state_dict=model.state_dict(), meta=meta, author='EasyCV')
-        with io.open(filename, 'wb') as ofile:
-            torch.save(checkpoint, ofile)
+            meta = dict(config=json.dumps(config))
+            checkpoint = dict(
+                state_dict=model.state_dict(), meta=meta, author='EasyCV')
+            with io.open(filename, 'wb') as ofile:
+                torch.save(checkpoint, ofile)
 
 
 def _export_swav(model, cfg, filename):
@@ -484,15 +548,14 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
         ) -> Tuple[torch.Tensor, Dict[str, Tuple[float, float]]]:
             """
             Args:
-                image (torch.Tensor): image format should be [H, W, C]
+                image (torch.Tensor): image format should be [b, H, W, C]
             """
             input_h, input_w = self.target_size
-            image = image.permute(2, 0, 1)
+            image = image.permute(0, 3, 1, 2)
 
             # rgb2bgr
-            image = image[torch.tensor([2, 1, 0]), :, :]
+            image = image[:, torch.tensor([2, 1, 0]), :, :]
 
-            image = torch.unsqueeze(image, 0)
             ori_h, ori_w = image.shape[-2:]
 
             mean = [123.675, 116.28, 103.53]
@@ -526,115 +589,18 @@ if LooseVersion(torch.__version__) >= LooseVersion('1.7.0'):
                 'ori_img_shape': (float(ori_h), float(ori_w)),
                 'img_shape': (float(h), float(w))
             }
+
             return out_image, output_info
 
-    @torch.jit.script
-    class DetPostProcess:
-        """Process output values of detection models.
-
-        Args:
-            max_det: max number of detections to keep.
-        """
-
-        def __init__(self, max_det: int = 100, score_thresh: float = 0.5):
-            self.max_det = max_det
-            self.score_thresh = score_thresh
-
-        def __call__(
-            self, output: List[torch.Tensor], sample_info: Dict[str,
-                                                                Tuple[float,
-                                                                      float]]
-        ) -> Dict[str, torch.Tensor]:
-            """
-            Args:
-                output (List[torch.Tensor]): model output
-                sample_info (dict): sample infomation containing keys:
-                    pad: Pixel size of each side width and height padding
-                    scale_factor: the preprocessing scale factor
-                    ori_img_shape: original image shape
-                    img_shape: processed image shape
-            """
-            pad = sample_info['pad']
-            scale_factor = sample_info['scale_factor']
-            ori_h, ori_w = sample_info['ori_img_shape']
-            h, w = sample_info['img_shape']
-
-            output = output[0]
-
-            det_out = output[:self.max_det]
-
-            det_out = scale_coords((int(h), int(w)), det_out,
-                                   (int(ori_h), int(ori_w)),
-                                   (scale_factor, pad))
-
-            detection_boxes = det_out[:, :4].cpu()
-            detection_scores = (det_out[:, 4] * det_out[:, 5]).cpu()
-            detection_classes = det_out[:, 6].cpu().int()
-
-            out = {
-                'detection_boxes': detection_boxes,
-                'detection_scores': detection_scores,
-                'detection_classes': detection_classes,
-            }
-
-            return out
 else:
     PreProcess = None
-    DetPostProcess = None
 
 
-class End2endModelExportWrapper(torch.nn.Module):
-    """Model export wrapper that supports end-to-end export of pre-processing and post-processing.
-    We support some built-in preprocessing and postprocessing functions.
-    If the requirements are not met, you can customize the preprocessing and postprocessing functions.
-    The custom functions must support satisfy requirements of `torch.jit.script`,
-    please refer to: https://pytorch.org/docs/stable/jit_language_reference_v2.html
-
-    Args:
-        model (torch.nn.Module):  `torch.nn.Module` that will be run with `example_inputs`.
-            `model` arguments and return values must be tensors or (possibly nested) tuples
-            that contain tensors. When a module is passed `torch.jit.trace`, only the
-            ``forward_export`` method is run and traced (see :func:`torch.jit.trace
-            <torch.jit.trace_module>` for details).
-        example_inputs (tuple or torch.Tensor):  A tuple of example inputs that
-            will be passed to the function while tracing. The resulting trace
-            can be run with inputs of different types and shapes assuming the
-            traced operations support those types and shapes. `example_inputs`
-            may also be a single Tensor in which case it is automatically
-            wrapped in a tuple.
-        preprocess_fn (callable or None): A Python function for processing example_input.
-            If there is only one return value, it will be passed to `model.forward_export`.
-            If there are multiple return values, the first return value will be passed to `model.forward_export`,
-            and the remaining return values ​​will be passed to `postprocess_fn`.
-        postprocess_fn (callable or None): A Python function for processing the output value of the model.
-            If `preprocess_fn` has multiple outputs, the output value of `preprocess_fn`
-            will also be passed to `postprocess_fn`. For details, please refer to: `preprocess_fn`.
-        trace_model (bool): If True, before exporting the end-to-end model,
-            `torch.jit.trace` will be used to export the `model` first.
-            Traceing an ``nn.Module`` by default will compile the ``forward_export`` method and recursively.
-
-    Examples:
-        import torch
-
-        batch_size = 1
-        example_inputs = 255 * torch.rand((batch_size, 3, 640, 640), device='cuda')
-        end2end_model = End2endModelExportWrapper(
-            model,
-            example_inputs,
-            preprocess_fn=PreProcess(target_size=(640, 640)),  # `PreProcess` refer to ev_torch.apis.export.PreProcess
-            postprocess_fn=DetPostProcess()  # `DetPostProcess` refer to ev_torch.apis.export.DetPostProcess
-            trace_model=True)
-
-        model_script = torch.jit.script(end2end_model)
-        with io.open('/tmp/model.jit', 'wb') as f:
-            torch.jit.save(model_script, f)
-    """
+class ModelExportWrapper(torch.nn.Module):
 
     def __init__(self,
                  model,
                  example_inputs,
-                 preprocess_fn: Optional[Callable] = None,
-                 postprocess_fn: Optional[Callable] = None,
                  trace_model: bool = True) -> None:
         super().__init__()
 
@@ -643,8 +609,7 @@ class End2endModelExportWrapper(torch.nn.Module):
             self.model.export_init()
 
         self.example_inputs = example_inputs
-        self.preprocess_fn = preprocess_fn
-        self.postprocess_fn = postprocess_fn
+
         self.trace_model = trace_model
         if self.trace_model:
             self.trace_module()
@@ -655,23 +620,27 @@ class End2endModelExportWrapper(torch.nn.Module):
         self.model = trace_model
 
     def forward(self, image):
-        preprocess_outputs = ()
 
         with torch.no_grad():
-            if self.preprocess_fn is not None:
-                output = self.preprocess_fn(image)
-                # if multi values ​​are returned, the first one must be image, others ​​are optional,
-                # and others will all be passed into postprocess_fn
-                if isinstance(output, tuple):
-                    image = output[0]
-                    preprocess_outputs = output[1:]
-                else:
-                    image = output
-
             model_output = self.model.forward_export(image)
 
-            if self.postprocess_fn is not None:
-                model_output = self.postprocess_fn(model_output,
-                                                   *preprocess_outputs)
-
         return model_output
+
+
+class ProcessExportWrapper(torch.nn.Module):
+    """
+        split the preprocess that can be wrapped as a preprocess jit model
+        the preproprocess procedure cannot be optimized in an end2end blade model due to dynamic shape problem
+    """
+
+    def __init__(self,
+                 example_inputs,
+                 process_fn: Optional[Callable] = None) -> None:
+        super().__init__()
+        self.process_fn = process_fn
+
+    def forward(self, image):
+        with torch.no_grad():
+            output = self.process_fn(image)
+
+        return output

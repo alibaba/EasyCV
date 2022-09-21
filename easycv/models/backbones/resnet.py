@@ -4,6 +4,7 @@ import torch.utils.checkpoint as cp
 from mmcv.cnn import constant_init, kaiming_init
 from torch.nn.modules.batchnorm import _BatchNorm
 
+from easycv.framework.errors import KeyError
 from ..modelzoo import resnet as model_urls
 from ..registry import BACKBONES
 from ..utils import FReLU, build_conv_layer, build_norm_layer
@@ -437,8 +438,8 @@ class ResNet(nn.Module):
 
         self.feat_dim = self.block.expansion * self.original_inplanes * 2**(
             len(self.stage_blocks) - 1)
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         if num_classes > 0:
+            self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
             self.fc = nn.Linear(self.feat_dim, num_classes)
 
         self.default_pretrained_model_path = model_urls.get(

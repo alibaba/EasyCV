@@ -1,4 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+# flake8: noqa
+import copy
 import inspect
 import logging
 
@@ -9,11 +11,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
+from easycv.framework.errors import TypeError, ValueError
 from easycv.models.registry import BACKBONES, HEADS, MODELS, NECKS
 from .test_util import run_in_subprocess
 
+MMDET = 'mmdet'
+
 try:
     from mmcv.runner.hooks import HOOKS
+    import mmdet
     HOOKS._module_dict.pop('YOLOXLrUpdaterHook', None)
     from mmdet.models.builder import MODELS as MMMODELS
     from mmdet.models.builder import BACKBONES as MMBACKBONES
@@ -21,6 +27,15 @@ try:
     from mmdet.models.builder import HEADS as MMHEADS
     from mmdet.core import BitmapMasks, PolygonMasks, encode_mask_results
     from mmdet.core.mask import mask2bbox
+    MM_REGISTRY = {
+        MMDET: {
+            'model': MMMODELS,
+            'backbone': MMBACKBONES,
+            'neck': MMNECKS,
+            'head': MMHEADS
+        }
+    }
+    MM_ORIGINAL_REGISTRY = copy.deepcopy(MM_REGISTRY)
 except ImportError:
     pass
 
@@ -30,7 +45,7 @@ EASYCV_REGISTRY_MAP = {
     'neck': NECKS,
     'head': HEADS
 }
-MMDET = 'mmdet'
+
 SUPPORT_MMLAB_TYPES = [MMDET]
 _MMLAB_COPIES = locals()
 
@@ -55,9 +70,11 @@ class MMAdapter:
             self.mmtype_list.add(mmtype)
 
         self.check_env()
-        self.fix_conflicts()
 
-        self.MMTYPE_REGISTRY_MAP = self._get_mmtype_registry_map()
+        # Remove the annotation in feature
+        # self.fix_conflicts()
+
+        self.MMTYPE_REGISTRY_MAP = MMAdapter.reset_mm_registry()
         self.modules_config = modules_config
 
     def check_env(self):
@@ -100,7 +117,8 @@ class MMAdapter:
             self._merge_all_easycv_modules_to_mmlab(mmtype)
 
     def wrap_module(self, mmtype, module_type, module_name):
-        module_obj = self._get_mm_module_obj(mmtype, module_type, module_name)
+        module_obj = self._get_mm_module_obj_in_easycv(mmtype, module_type,
+                                                       module_name)
         if mmtype == MMDET:
             MMDetWrapper().wrap_module(module_obj, module_type)
 
@@ -122,9 +140,13 @@ class MMAdapter:
         # Add mmlab module to my module registry.
         easycv_registry_type = EASYCV_REGISTRY_MAP[module_type]
         # Copy a duplicate to avoid directly modifying the properties of the original object
-        _MMLAB_COPIES[module_name] = type(module_name, (model_obj, ), dict())
-        easycv_registry_type.register_module(
-            _MMLAB_COPIES[module_name], force=force)
+        key = '.'.join([mmtype, module_type, module_name])
+        _MMLAB_COPIES[key] = type(module_name, (model_obj, ), dict())
+        easycv_registry_type.register_module(_MMLAB_COPIES[key], force=force)
+
+    def _get_mm_module_obj_in_easycv(self, mmtype, module_type, module_name):
+        key = '.'.join([mmtype, module_type, module_name])
+        return _MMLAB_COPIES[key]
 
     def _get_mm_module_obj(self, mmtype, module_type, module_name):
         if isinstance(module_name, str):
@@ -138,27 +160,26 @@ class MMAdapter:
         elif inspect.isclass(module_name):
             module_obj = module_name
         else:
-            raise ValueError(
+            raise TypeError(
                 'Only support type `str` and `class` object, but get type {}'.
                 format(type(module_name)))
         return module_obj
 
-    def _get_mmtype_registry_map(self):
-        registry_map = {
-            MMDET: {
-                'model': MMMODELS,
-                'backbone': MMBACKBONES,
-                'neck': MMNECKS,
-                'head': MMHEADS
-            }
-        }
-        return registry_map
+    @staticmethod
+    def reset_mm_registry():
+        for mmtype, registries in MM_ORIGINAL_REGISTRY.items():
+            for k, ori_v in registries.items():
+                MM_REGISTRY[mmtype][k]._module_dict = copy.deepcopy(
+                    ori_v._module_dict)
+
+        return MM_REGISTRY
 
 
 class MMDetWrapper:
 
-    def __init__(self):
-        self.refactor_modules()
+    def __init__(self, refactor_modules=True):
+        if refactor_modules:
+            self.refactor_modules()
 
     def wrap_module(self, cls, module_type):
         if hasattr(cls, 'is_wrap') and cls.is_wrap:
@@ -338,3 +359,9 @@ def dynamic_adapt_for_mmlab(cfg):
     if len(mmlab_modules_cfg) > 1:
         adapter = MMAdapter(mmlab_modules_cfg)
         adapter.adapt_mmlab_modules()
+
+
+def remove_adapt_for_mmlab(cfg):
+    mmlab_modules_cfg = cfg.get('mmlab_modules', [])
+    adapter = MMAdapter(mmlab_modules_cfg)
+    adapter.reset_mm_registry()

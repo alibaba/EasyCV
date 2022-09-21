@@ -3,6 +3,8 @@ import argparse
 
 import torch
 
+from easycv.framework.errors import ValueError
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -24,7 +26,7 @@ def main():
             output_dict['state_dict'][key[9:]] = value
             has_backbone = True
     if not has_backbone:
-        raise Exception('Cannot find a backbone module in the checkpoint.')
+        raise ValueError('Cannot find a backbone module in the checkpoint.')
     torch.save(output_dict, args.output)
 
 

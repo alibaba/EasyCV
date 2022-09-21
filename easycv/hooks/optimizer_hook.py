@@ -6,6 +6,7 @@ import torch
 from mmcv.parallel import is_module_wrapper
 from mmcv.runner import OptimizerHook as _OptimizerHook
 
+from easycv.framework.errors import TypeError
 from easycv.utils.dist_utils import get_dist_info
 from easycv.utils.torchacc_util import is_torchacc_enabled
 
@@ -34,10 +35,8 @@ class OptimizerHook(_OptimizerHook):
         '''
             ignore_key: [str,...], ignore_key[i], name of parameters, which's gradient will be set to zero before every optimizer step when epoch < ignore_key_epoch[i]
             ignore_key_epoch: [int,...], epoch < ignore_key_epoch[i], ignore_key[i]'s gradient will be set to zero.
-
             multiply_key:[str,...] multiply_key[i], name of parameters, which will set different learning rate ratio by multipy_rate
             multiply_rate:[float,...] multiply_rate[i], different ratio
-
         '''
         self.grad_clip = grad_clip
         self.coalesce = coalesce
@@ -47,9 +46,6 @@ class OptimizerHook(_OptimizerHook):
         self.ignore_key_epoch = ignore_key_epoch
         self.multiply_key = multiply_key
         self.multiply_rate = multiply_rate
-
-    def before_run(self, runner):
-        runner.optimizer.zero_grad()
 
     def _get_module(self, runner):
         module = runner.model
@@ -139,7 +135,7 @@ class AMPFP16OptimizerHook(OptimizerHook):
             elif isinstance(loss_scale, dict):
                 self.scaler = amp.GradScaler(**loss_scale)
             else:
-                raise ValueError(
+                raise TypeError(
                     '`loss_scale` type must be in [float, dict], but got {loss_scale}'
                 )
 
@@ -151,8 +147,6 @@ class AMPFP16OptimizerHook(OptimizerHook):
         for m in runner.model.modules():
             if hasattr(m, 'fp16_enabled'):
                 m.fp16_enabled = True
-
-        runner.optimizer.zero_grad()
 
     def after_train_iter(self, runner):
         loss = runner.outputs['loss'] / self.update_interval

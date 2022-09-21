@@ -7,7 +7,8 @@ import unittest
 import uuid
 
 from tests.ut_config import (BASE_LOCAL_PATH, CLS_DATA_NPY_LOCAL,
-                             CLS_DATA_NPY_OSS, IO_DATA_TXTX_OSS, TMP_DIR_OSS)
+                             CLS_DATA_NPY_OSS, IO_DATA_MULTI_DIRS_OSS,
+                             IO_DATA_TXTX_OSS, TMP_DIR_OSS)
 
 from easycv.file import io
 
@@ -124,6 +125,28 @@ class IOForOSSTest(unittest.TestCase):
         io.copytree(temp_dir, oss_file_path2)
         self.assertTrue(io.exists(oss_file_path2))
         self.assertCountEqual(io.listdir(oss_file_path2), ['a.txt', 'b.txt'])
+
+        io.remove(temp_dir)
+        io.remove(oss_file_path2)
+
+    def test_copytree_multi_dirs(self):
+        target = [
+            'dir1/a.txt', 'dir1/dir1_1/a.txt', 'dir1/dir1_1/b.txt',
+            'dir2/b.txt'
+        ]
+        # test copy dir from oss to local
+        oss_file_path1 = IO_DATA_MULTI_DIRS_OSS
+        temp_dir = tempfile.TemporaryDirectory().name
+        io.copytree(oss_file_path1, temp_dir)
+        self.assertTrue(io.exists(temp_dir))
+        self.assertCountEqual(io.listdir(temp_dir, recursive=True), target)
+
+        # test copy dir from local to oss
+        oss_file_path2 = os.path.join(TMP_DIR_OSS, '%s' % uuid.uuid4().hex)
+        io.copytree(temp_dir, oss_file_path2)
+        self.assertTrue(io.exists(oss_file_path2))
+        self.assertCountEqual(
+            io.listdir(oss_file_path2, recursive=True), target)
 
         io.remove(temp_dir)
         io.remove(oss_file_path2)

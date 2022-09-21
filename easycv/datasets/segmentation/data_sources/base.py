@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from easycv.datasets.registry import DATASOURCES
 from easycv.file.image import load_image as _load_img
+from easycv.framework.errors import NotImplementedError, ValueError
 
 
 def load_image(img_path):
@@ -26,7 +27,7 @@ def load_image(img_path):
 
 
 def load_seg_map(seg_path, reduce_zero_label):
-    gt_semantic_seg = _load_img(seg_path, mode='RGB')
+    gt_semantic_seg = _load_img(seg_path, mode='P')
     # reduce zero_label
     if reduce_zero_label:
         # avoid using underflow conversion
@@ -133,10 +134,14 @@ class SegSourceBase(object):
 
         return samples_list
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         result_dict = self.samples_list[idx]
         load_success = True
         try:
+            # avoid data cache from taking up too much memory
+            if not self.cache_at_init and not self.cache_on_the_fly:
+                result_dict = copy.deepcopy(result_dict)
+
             if not self.cache_at_init:
                 if result_dict.get('img', None) is None:
                     result_dict.update(load_image(result_dict['filename']))
@@ -161,7 +166,7 @@ class SegSourceBase(object):
             if self._retry_count >= self._max_retry_num:
                 raise ValueError('All samples failed to load!')
 
-            result_dict = self.get_sample((idx + 1) % self.num_samples)
+            result_dict = self[(idx + 1) % self.num_samples]
 
         return result_dict
 

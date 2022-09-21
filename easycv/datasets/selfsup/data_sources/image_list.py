@@ -7,6 +7,7 @@ from PIL import Image, ImageFile
 
 from easycv.datasets.registry import DATASOURCES
 from easycv.file import io
+from easycv.framework.errors import ValueError
 
 
 @DATASOURCES.register_module
@@ -64,7 +65,7 @@ class SSLSourceImageList(object):
     def __len__(self):
         return len(self.fns)
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         img = None
         try_idx = 0
 
@@ -82,6 +83,6 @@ class SSLSourceImageList(object):
             try_idx += 1
 
         if img is None:
-            return self.get_sample(idx + 1)
+            return self[(idx + 1) % len(self.fns)]
 
         return {'img': img}

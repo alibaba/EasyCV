@@ -14,18 +14,27 @@ class ViTDetTest(unittest.TestCase):
     def test_vitdet(self):
         model = ViTDet(
             img_size=1024,
+            patch_size=16,
             embed_dim=768,
             depth=12,
             num_heads=12,
+            drop_path_rate=0.1,
+            window_size=14,
             mlp_ratio=4,
             qkv_bias=True,
-            qk_scale=None,
-            drop_rate=0.,
-            attn_drop_rate=0.,
-            drop_path_rate=0.1,
-            use_abs_pos_emb=True,
-            aggregation='attn',
-        )
+            window_block_indexes=[
+                # 2, 5, 8 11 for global attention
+                0,
+                1,
+                3,
+                4,
+                6,
+                7,
+                9,
+                10,
+            ],
+            residual_block_indexes=[],
+            use_rel_pos=True)
 
         model.init_weights()
         model.train()

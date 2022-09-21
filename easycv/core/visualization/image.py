@@ -10,6 +10,8 @@ import numpy as np
 from mmcv.utils.misc import deprecated_api_warning
 from PIL import Image, ImageDraw, ImageFont
 
+from easycv.framework.errors import FileNotFoundError
+
 
 def get_font_path():
     root_path = opd(opd(opd(os.path.realpath(__file__))))
@@ -22,8 +24,8 @@ def get_font_path():
     elif os.path.exists(find_path_source):
         return find_path_source
     else:
-        raise ValueError('Not find font file both in %s and %s' %
-                         (find_path_whl, find_path_source))
+        raise FileNotFoundError('Not find font file both in %s and %s' %
+                                (find_path_whl, find_path_source))
 
 
 _FONT_PATH = get_font_path()

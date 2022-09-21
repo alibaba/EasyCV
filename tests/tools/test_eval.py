@@ -70,13 +70,13 @@ class EvalTest(unittest.TestCase):
             content = f.readlines()
             res = json.loads(content[0])
             self.assertAlmostEqual(
-                res['DetectionBoxes_Precision/mAP'], 0.423, delta=0.001)
+                res['DetectionBoxes_Precision/mAP'], 0.450, delta=0.001)
             self.assertAlmostEqual(
                 res['DetectionBoxes_Precision/mAP@.50IOU'],
-                0.5816,
+                0.6132,
                 delta=0.001)
             self.assertAlmostEqual(
-                res['DetectionBoxes_Precision/mAP@.75IOU'], 0.451, delta=0.001)
+                res['DetectionBoxes_Precision/mAP@.75IOU'], 0.490, delta=0.001)
 
     def _base_eval(self, eval_cfgs, dist=False, dist_eval=False):
         cfg_file = eval_cfgs.pop('config_file')

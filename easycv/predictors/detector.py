@@ -3,25 +3,23 @@ import json
 import os
 from glob import glob
 
-import cv2
 import numpy as np
 import torch
-from mmcv.ops import RoIPool
-from mmcv.parallel import collate, scatter
-from torch.hub import load_state_dict_from_url
 from torchvision.transforms import Compose
 
+from easycv.apis.export import reparameterize_models
 from easycv.core.visualization import imshow_bboxes
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.utils import replace_ImageToTensor
 from easycv.file import io
-from easycv.file.utils import is_url_path, url_path_exists
 from easycv.models import build_model
+from easycv.models.detection.utils import postprocess
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
-from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
+from easycv.utils.misc import deprecated
 from easycv.utils.registry import build_from_cfg
+from .base import PredictorV2
 from .builder import PREDICTORS
 from .classifier import TorchClassifier
 
@@ -37,12 +35,104 @@ except Exception:
 
 
 @PREDICTORS.register_module()
+class DetectionPredictor(PredictorV2):
+    """Generic Detection Predictor, it will filter bbox results by ``score_threshold`` .
+    """
+
+    def __init__(self,
+                 model_path,
+                 config_file=None,
+                 batch_size=1,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 pipelines=None,
+                 score_threshold=0.5,
+                 *arg,
+                 **kwargs):
+        super(DetectionPredictor, self).__init__(
+            model_path,
+            config_file=config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            pipelines=pipelines,
+        )
+        self.score_thresh = score_threshold
+        self.CLASSES = self.cfg.get('CLASSES', None)
+
+    def build_processor(self):
+        if self.pipelines is not None:
+            pipelines = self.pipelines
+        elif self.cfg is None:
+            pipelines = []
+        else:
+            pipelines = self.cfg.get('test_pipeline', [])
+
+        # for batch inference
+        self.pipelines = replace_ImageToTensor(pipelines)
+
+        return super().build_processor()
+
+    def postprocess_single(self, inputs, *args, **kwargs):
+        if inputs['detection_scores'] is None or len(
+                inputs['detection_scores']) < 1:
+            return inputs
+
+        scores = inputs['detection_scores']
+        if scores is not None and self.score_thresh > 0:
+            keeped_ids = scores > self.score_thresh
+            inputs['detection_scores'] = inputs['detection_scores'][keeped_ids]
+            inputs['detection_boxes'] = inputs['detection_boxes'][keeped_ids]
+            inputs['detection_classes'] = inputs['detection_classes'][
+                keeped_ids]
+
+        class_names = []
+        for _, classes_id in enumerate(inputs['detection_classes']):
+            if classes_id is None:
+                class_names.append(None)
+            elif self.CLASSES is not None and len(self.CLASSES) > 0:
+                class_names.append(self.CLASSES[int(classes_id)])
+            else:
+                class_names.append(classes_id)
+
+        inputs['detection_class_names'] = class_names
+
+        return inputs
+
+    def visualize(self, img, results, show=False, out_file=None):
+        """Only support show one sample now."""
+        bboxes = results['detection_boxes']
+        labels = results['detection_class_names']
+        img = self._load_input(img)['img']
+        imshow_bboxes(
+            img,
+            bboxes,
+            labels=labels,
+            colors='cyan',
+            text_color='cyan',
+            font_size=18,
+            thickness=2,
+            font_scale=0.0,
+            show=show,
+            out_file=out_file)
+
+
+@deprecated(reason='Please use DetectionPredictor.')
+@PREDICTORS.register_module()
+class DetrPredictor(DetectionPredictor):
+    """"""
+
+
+@PREDICTORS.register_module()
 class TorchYoloXPredictor(PredictorInterface):
 
     def __init__(self,
                  model_path,
                  max_det=100,
                  score_thresh=0.5,
+                 use_trt_efficientnms=False,
                  model_config=None):
         """
         init model
@@ -56,12 +146,16 @@ class TorchYoloXPredictor(PredictorInterface):
         self.model_path = model_path
         self.max_det = max_det
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.use_jit = model_path.endswith('jit') or model_path.endswith(
-            'blade')
+        # set type
+        self.model_type = 'raw'
+        if model_path.endswith('jit'):
+            self.model_type = 'jit'
+        if model_path.endswith('blade'):
+            self.model_type = 'blade'
 
-        self.use_blade = model_path.endswith('blade')
+        self.use_trt_efficientnms = use_trt_efficientnms
 
-        if self.use_blade:
+        if self.model_type == 'blade' or self.use_trt_efficientnms:
             import torch_blade
 
         if model_config:
@@ -72,21 +166,29 @@ class TorchYoloXPredictor(PredictorInterface):
         self.score_thresh = model_config[
             'score_thresh'] if 'score_thresh' in model_config else score_thresh
 
-        if self.use_jit:
+        if self.model_type != 'raw':
+            # jit or blade model
+            preprocess_path = '.'.join(
+                model_path.split('.')[:-1] + ['preprocess'])
+            if os.path.exists(preprocess_path):
+                # use a preprocess jit model to speed up
+                with io.open(preprocess_path, 'rb') as infile:
+                    map_location = 'cpu' if self.device == 'cpu' else 'cuda'
+                    self.preprocess = torch.jit.load(infile, map_location)
+
             with io.open(model_path, 'rb') as infile:
                 map_location = 'cpu' if self.device == 'cpu' else 'cuda'
                 self.model = torch.jit.load(infile, map_location)
-
             with io.open(model_path + '.config.json', 'r') as infile:
                 self.cfg = json.load(infile)
                 test_pipeline = self.cfg['test_pipeline']
                 self.CLASSES = self.cfg['classes']
-                self.end2end = self.cfg['export']['end2end']
+                self.preprocess_jit = self.cfg['export']['preprocess_jit']
 
             self.traceable = True
 
         else:
-            self.end2end = False
+            self.preprocess_jit = False
             with io.open(self.model_path, 'rb') as infile:
                 checkpoint = torch.load(infile, map_location='cpu')
 
@@ -116,15 +218,20 @@ class TorchYoloXPredictor(PredictorInterface):
             self.ckpt = load_checkpoint(
                 self.model, self.model_path, map_location=map_location)
 
+            self.model = reparameterize_models(self.model)
+
             self.model.to(self.device)
             self.model.eval()
-
             test_pipeline = self.cfg.test_pipeline
             self.CLASSES = self.cfg.CLASSES
 
         # build pipeline
         pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
         self.pipeline = Compose(pipeline)
+
+        self.test_conf = self.cfg['model'].get('test_conf', 0.01)
+        self.nms_thre = self.cfg['model'].get('nms_thre', 0.65)
+        self.num_classes = len(self.CLASSES)
 
     def post_assign(self, outputs, img_metas):
         detection_boxes = []
@@ -137,6 +244,7 @@ class TorchYoloXPredictor(PredictorInterface):
                 img_metas_list.append(img_metas[i])
             if outputs[i].requires_grad == True:
                 outputs[i] = outputs[i].detach()
+
             if outputs[i] is not None:
                 bboxes = outputs[i][:, 0:4] if outputs[i] is not None else None
                 if img_metas:
@@ -179,27 +287,13 @@ class TorchYoloXPredictor(PredictorInterface):
                 img = np.asarray(img)
 
             ori_img_shape = img.shape[:2]
-
-            if self.end2end:
+            if self.preprocess_jit:
                 # the input should also be as the type of uint8 as mmcv
                 img = torch.from_numpy(img).to(self.device)
-                det_out = self.model(img)
+                img = img.unsqueeze(0)
 
-                detection_scores = det_out['detection_scores']
-
-                if detection_scores is not None:
-                    sel_ids = detection_scores > self.score_thresh
-                    detection_scores = detection_scores[sel_ids]
-                    detection_boxes = det_out['detection_boxes'][sel_ids]
-                    detection_classes = det_out['detection_classes'][sel_ids]
-                else:
-                    detection_boxes = []
-                    detection_classes = []
-
-                if to_numpy:
-                    detection_scores = detection_scores.detach().numpy()
-                    detection_boxes = detection_boxes.detach().numpy()
-                    detection_classes = detection_classes.detach().numpy()
+                if hasattr(self, 'preprocess'):
+                    img, img_info = self.preprocess(img)
 
             else:
                 data_dict = {'img': img}
@@ -207,36 +301,47 @@ class TorchYoloXPredictor(PredictorInterface):
                 img = data_dict['img']
                 img = torch.unsqueeze(img._data, 0).to(self.device)
                 data_dict.pop('img')
+                img_info = data_dict['img_metas']._data
 
-                if self.traceable:
+            if self.traceable:
+                if self.use_trt_efficientnms:
+                    with torch.no_grad():
+                        tmp_out = self.model(img)
+                        det_out = {}
+                        det_out['detection_boxes'] = tmp_out[1] / img_info[
+                            'scale_factor'][0]
+                        det_out['detection_scores'] = tmp_out[2]
+                        det_out['detection_classes'] = tmp_out[3]
+
+                else:
                     with torch.no_grad():
                         det_out = self.post_assign(
-                            self.model(img),
-                            img_metas=[data_dict['img_metas']._data])
-                else:
-                    with torch.no_grad():
-                        det_out = self.model(
-                            img,
-                            mode='test',
-                            img_metas=[data_dict['img_metas']._data])
+                            postprocess(
+                                self.model(img), self.num_classes,
+                                self.test_conf, self.nms_thre),
+                            img_metas=[img_info])
+            else:
+                with torch.no_grad():
+                    det_out = self.model(
+                        img, mode='test', img_metas=[img_info])
 
-                # det_out = det_out[:self.max_det]
-                # scale box to original image scale, this logic has some operation
-                # that can not be traced, see
-                # https://discuss.pytorch.org/t/windows-libtorch-c-load-cuda-module-with-std-runtime-error-message-shape-4-is-invalid-for-input-if-size-40/63073/4
-                # det_out = scale_coords(img.shape[2:], det_out, ori_img_shape, (scale_factor, pad))
+            # print(det_out)
+            # det_out = det_out[:self.max_det]
+            # scale box to original image scale, this logic has some operation
+            # that can not be traced, see
+            # https://discuss.pytorch.org/t/windows-libtorch-c-load-cuda-module-with-std-runtime-error-message-shape-4-is-invalid-for-input-if-size-40/63073/4
+            # det_out = scale_coords(img.shape[2:], det_out, ori_img_shape, (scale_factor, pad))
 
-                detection_scores = det_out['detection_scores'][0]
+            detection_scores = det_out['detection_scores'][0]
 
-                if detection_scores is not None:
-                    sel_ids = detection_scores > self.score_thresh
-                    detection_scores = detection_scores[sel_ids]
-                    detection_boxes = det_out['detection_boxes'][0][sel_ids]
-                    detection_classes = det_out['detection_classes'][0][
-                        sel_ids]
-                else:
-                    detection_boxes = None
-                    detection_classes = None
+            if detection_scores is not None:
+                sel_ids = detection_scores > self.score_thresh
+                detection_scores = detection_scores[sel_ids]
+                detection_boxes = det_out['detection_boxes'][0][sel_ids]
+                detection_classes = det_out['detection_classes'][0][sel_ids]
+            else:
+                detection_boxes = None
+                detection_classes = None
 
             num_boxes = detection_classes.shape[
                 0] if detection_classes is not None else 0
@@ -257,182 +362,6 @@ class TorchYoloXPredictor(PredictorInterface):
             output_list.append(out)
 
         return output_list
-
-
-@PREDICTORS.register_module()
-class TorchViTDetPredictor(PredictorInterface):
-
-    def __init__(self, model_path):
-
-        self.model_path = model_path
-
-        if is_url_path(self.model_path) and url_path_exists(self.model_path):
-            checkpoint = load_state_dict_from_url(model_path)
-        else:
-            assert io.exists(
-                self.model_path), f'{self.model_path} does not exists'
-
-            with io.open(self.model_path, 'rb') as infile:
-                checkpoint = torch.load(infile, map_location='cpu')
-
-        assert 'meta' in checkpoint and 'config' in checkpoint[
-            'meta'], 'meta.config is missing from checkpoint'
-
-        config_str = checkpoint['meta']['config']
-        if isinstance(config_str, dict):
-            config_str = json.dumps(config_str)
-
-        # get config
-        basename = os.path.basename(self.model_path)
-        fname, _ = os.path.splitext(basename)
-        self.local_config_file = os.path.join(CACHE_DIR,
-                                              f'{fname}_config.json')
-        if not os.path.exists(CACHE_DIR):
-            os.makedirs(CACHE_DIR)
-        with open(self.local_config_file, 'w') as ofile:
-            ofile.write(config_str)
-        self.cfg = mmcv_config_fromfile(self.local_config_file)
-
-        # dynamic adapt mmdet models
-        dynamic_adapt_for_mmlab(self.cfg)
-
-        # build model
-        self.model = build_model(self.cfg.model)
-
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        map_location = 'cpu' if self.device == 'cpu' else 'cuda'
-        self.ckpt = load_checkpoint(
-            self.model, self.model_path, map_location=map_location)
-
-        self.model.to(self.device)
-        self.model.eval()
-
-        self.CLASSES = self.cfg.CLASSES
-
-    def predict(self, imgs):
-        """Inference image(s) with the detector.
-        Args:
-            model (nn.Module): The loaded detector.
-            imgs (str/ndarray or list[str/ndarray] or tuple[str/ndarray]):
-            Either image files or loaded images.
-        Returns:
-            If imgs is a list or tuple, the same length list type results
-            will be returned, otherwise return the detection results directly.
-        """
-
-        if isinstance(imgs, (list, tuple)):
-            is_batch = True
-        else:
-            imgs = [imgs]
-            is_batch = False
-
-        print(imgs)
-
-        cfg = self.cfg
-        device = next(self.model.parameters()).device  # model device
-
-        if isinstance(imgs[0], np.ndarray):
-            cfg = cfg.copy()
-            # set loading pipeline type
-            cfg.data.val.pipeline.insert(0, dict(type='LoadImageFromWebcam'))
-        else:
-            cfg = cfg.copy()
-            # set loading pipeline type
-            cfg.data.val.pipeline.insert(
-                0,
-                dict(
-                    type='LoadImageFromFile',
-                    file_client_args=dict(
-                        backend=('http' if imgs[0].startswith('http'
-                                                              ) else 'disk'))))
-
-        cfg.data.val.pipeline = replace_ImageToTensor(cfg.data.val.pipeline)
-
-        transforms = []
-        for transform in cfg.data.val.pipeline:
-            if 'img_scale' in transform:
-                transform['img_scale'] = tuple(transform['img_scale'])
-            if isinstance(transform, dict):
-                transform = build_from_cfg(transform, PIPELINES)
-                transforms.append(transform)
-            elif callable(transform):
-                transforms.append(transform)
-            else:
-                raise TypeError('transform must be callable or a dict')
-        test_pipeline = Compose(transforms)
-
-        datas = []
-        for img in imgs:
-            # prepare data
-            if isinstance(img, np.ndarray):
-                # directly add img
-                data = dict(img=img)
-            else:
-                # add information into dict
-                data = dict(img_info=dict(filename=img), img_prefix=None)
-            # build the data pipeline
-            data = test_pipeline(data)
-            datas.append(data)
-
-        data = collate(datas, samples_per_gpu=len(imgs))
-        # just get the actual data from DataContainer
-        data['img_metas'] = [
-            img_metas.data[0] for img_metas in data['img_metas']
-        ]
-        data['img'] = [img.data[0] for img in data['img']]
-        if next(self.model.parameters()).is_cuda:
-            # scatter to specified GPU
-            data = scatter(data, [device])[0]
-        else:
-            for m in self.model.modules():
-                assert not isinstance(
-                    m, RoIPool
-                ), 'CPU inference with RoIPool is not supported currently.'
-
-        # forward the model
-        with torch.no_grad():
-            results = self.model(mode='test', **data)
-
-        return results
-
-    def show_result_pyplot(self,
-                           img,
-                           results,
-                           score_thr=0.3,
-                           show=False,
-                           out_file=None):
-        bboxes = results['detection_boxes'][0]
-        scores = results['detection_scores'][0]
-        labels = results['detection_classes'][0].tolist()
-
-        # If self.CLASSES is not None, class_id will be converted to self.CLASSES for visualization,
-        # otherwise the class_id will be displayed.
-        # And don't try to modify the value in results, it may cause some bugs or even precision problems,
-        # because `self.evaluate` will also use the results, refer to: https://github.com/alibaba/EasyCV/pull/67
-
-        if self.CLASSES is not None and len(self.CLASSES) > 0:
-            for i, classes_id in enumerate(labels):
-                if classes_id is None:
-                    labels[i] = None
-                else:
-                    labels[i] = self.CLASSES[int(classes_id)]
-
-        if scores is not None and score_thr > 0:
-            inds = scores > score_thr
-            bboxes = bboxes[inds]
-            labels = np.array(labels)[inds]
-
-        imshow_bboxes(
-            img,
-            bboxes,
-            labels=labels,
-            colors='green',
-            text_color='white',
-            font_size=20,
-            thickness=1,
-            font_scale=0.5,
-            show=show,
-            out_file=out_file)
 
 
 @PREDICTORS.register_module()

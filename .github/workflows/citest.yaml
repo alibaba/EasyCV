@@ -43,6 +43,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+            lfs: 'true'
+      - name: Checkout LFS objects
+        run: git lfs checkout
       - name: Run unittest
         shell: bash
         run: |
@@ -67,6 +71,7 @@ jobs:
           PYTHONPATH=. python tests/run.py
 
 
+# blade test env will be updated! we do not support test with trt_efficient_nms
   ut-torch181-blade:
     # The type of runner that the job will run on
     runs-on: [unittest-t4]

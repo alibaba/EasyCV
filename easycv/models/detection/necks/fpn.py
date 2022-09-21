@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
+from easycv.framework.errors import NotImplementedError
 from easycv.models.registry import NECKS
 
 
@@ -37,7 +38,6 @@ class FPN(nn.Module):
             Default: None.
         upsample_cfg (dict): Config dict for interpolate layer.
             Default: dict(mode='nearest').
-        init_cfg (dict or list[dict], optional): Initialization config dict.
     Example:
         >>> import torch
         >>> in_channels = [2, 3, 5, 7]
@@ -67,8 +67,6 @@ class FPN(nn.Module):
                  norm_cfg=None,
                  act_cfg=None,
                  upsample_cfg=dict(mode='nearest')):
-        #  init_cfg=dict(
-        #      type='Xavier', layer='Conv2d', distribution='uniform')):
         super(FPN, self).__init__()
         assert isinstance(in_channels, list)
         self.in_channels = in_channels

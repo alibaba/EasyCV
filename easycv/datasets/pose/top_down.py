@@ -3,6 +3,7 @@ from easycv.core.evaluation.coco_evaluation import CoCoPoseTopDownEvaluator
 from easycv.datasets.pose.data_sources.coco import PoseTopDownSource
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
+from easycv.framework.errors import ValueError
 
 
 @DATASETS.register_module()
@@ -49,6 +50,6 @@ class PoseTopDownDataset(BaseDataset):
 
     def __getitem__(self, idx):
         """Get the sample given index."""
-        results = self.data_source.get_sample(idx)
+        results = self.data_source[idx]
 
         return self.pipeline(results)

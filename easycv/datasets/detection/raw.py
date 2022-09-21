@@ -9,6 +9,7 @@ from easycv.datasets.detection.data_sources import DetSourceCoco
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
 from easycv.file.image import load_image
+from easycv.framework.errors import TimeoutError
 
 
 @DATASETS.register_module
@@ -38,8 +39,8 @@ class DetDataset(BaseDataset):
         count = 0
         while True:
             if count > 10:
-                raise RuntimeError('Loops timeout')
-            data_dict = self.data_source.get_sample(idx)
+                raise TimeoutError('Loops timeout')
+            data_dict = self.data_source[idx]
             data_dict = self.pipeline(data_dict)
             if data_dict is None:
                 count += 1

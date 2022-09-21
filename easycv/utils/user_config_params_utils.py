@@ -1,3 +1,5 @@
+from easycv.framework.errors import TypeError
+
 VALID_TYPES = {tuple, list, str, int, float, bool, type(None)}
 
 

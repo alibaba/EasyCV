@@ -12,6 +12,7 @@ from mmcv.utils.path import is_filepath
 from xtcocotools.coco import COCO
 
 from easycv.datasets.registry import DATASOURCES
+from easycv.framework.errors import ValueError
 
 
 class DatasetInfo:
@@ -344,7 +345,7 @@ class PoseTopDownSource(object, metaclass=ABCMeta):
         img = mmcv.imread(image_file, 'color', 'rgb')
         return img
 
-    def get_sample(self, idx):
+    def __getitem__(self, idx):
         results = copy.deepcopy(self.db[idx])
         # TODO: optimize fault tolerance for image load
         try:
@@ -353,7 +354,7 @@ class PoseTopDownSource(object, metaclass=ABCMeta):
         except:
             logging.warning('Fail to read %s%s, load next sample!' %
                             (idx, results['image_file']))
-            return self.get_sample((idx + 1) % len(self.db))
+            return self[(idx + 1) % len(self.db)]
 
         results['ann_info'] = self.ann_info
 

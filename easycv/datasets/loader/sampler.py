@@ -6,9 +6,12 @@ import random
 
 import numpy as np
 import torch
+import torch.distributed as dist
 from mmcv.runner import get_dist_info
 from torch.utils.data import DistributedSampler as _DistributedSampler
 from torch.utils.data import Sampler
+
+from easycv.framework.errors import ValueError
 
 
 class DistributedMPSampler(_DistributedSampler):
@@ -83,7 +86,9 @@ class DistributedMPSampler(_DistributedSampler):
         self.label_list = []
 
         if not self.dataset.data_source.has_labels:
-            raise 'MPSampler need initial with classification datasets which has label!'
+            raise ValueError(
+                'MPSampler need initial with classification datasets which has label!'
+            )
 
         for idx, label in enumerate(self.dataset.data_source.labels):
             if label in self.label_dict.keys():
@@ -161,6 +166,7 @@ class DistributedSampler(_DistributedSampler):
         num_replicas=None,
         rank=None,
         shuffle=True,
+        seed=0,
         replace=False,
         split_huge_listfile_byrank=False,
     ):
@@ -171,11 +177,13 @@ class DistributedSampler(_DistributedSampler):
                 distributed training.
             rank (optional): Rank of the current process within num_replicas.
             shuffle (optional): If true (default), sampler will shuffle the indices
+            seed (int, Optional): The seed. Default to 0.
             split_huge_listfile_byrank: if split, return all indice for each rank, because list for each rank has been
                 split before build dataset in dist training
         """
         super().__init__(dataset, num_replicas=num_replicas, rank=rank)
         self.shuffle = shuffle
+        self.seed = seed
         self.replace = replace
         self.unif_sampling_flag = False
         self.split_huge_listfile_byrank = split_huge_listfile_byrank
@@ -197,7 +205,7 @@ class DistributedSampler(_DistributedSampler):
     def generate_new_list(self):
         if self.shuffle:
             g = torch.Generator()
-            g.manual_seed(self.epoch)
+            g.manual_seed(self.epoch + self.seed)
             if self.replace:
                 indices = torch.randint(
                     low=0,
@@ -299,6 +307,7 @@ class DistributedGroupSampler(Sampler):
         Dataset is assumed to be of constant size.
     Args:
         dataset: Dataset used for sampling.
+        seed (int, Optional): The seed. Default to 0.
         num_replicas (optional): Number of processes participating in
             distributed training.
         rank (optional): Rank of the current process within num_replicas.
@@ -307,6 +316,7 @@ class DistributedGroupSampler(Sampler):
     def __init__(self,
                  dataset,
                  samples_per_gpu=1,
+                 seed=0,
                  num_replicas=None,
                  rank=None):
         _rank, _num_replicas = get_dist_info()
@@ -316,6 +326,7 @@ class DistributedGroupSampler(Sampler):
             rank = _rank
         self.dataset = dataset
         self.samples_per_gpu = samples_per_gpu
+        self.seed = seed
         self.num_replicas = num_replicas
         self.rank = rank
         self.epoch = 0
@@ -334,7 +345,7 @@ class DistributedGroupSampler(Sampler):
     def __iter__(self):
         # deterministically shuffle based on epoch
         g = torch.Generator()
-        g.manual_seed(self.epoch)
+        g.manual_seed(self.epoch + self.seed)
 
         indices = []
         for i, size in enumerate(self.group_sizes):
@@ -436,7 +447,6 @@ class DistributedGivenIterationSampler(Sampler):
         self.indices = indices
 
     def gen_new_list(self):
-
         # each process shuffle all list with same seed, and pick one piece according to rank
         np.random.seed(0)
 
@@ -464,3 +474,73 @@ class DistributedGivenIterationSampler(Sampler):
 
     def set_epoch(self, epoch):
         pass
+
+
+class RASampler(torch.utils.data.Sampler):
+    """Sampler that restricts data loading to a subset of the dataset for distributed,
+    with repeated augmentation.
+    It ensures that different each augmented version of a sample will be visible to a
+    different process (GPU)
+    Heavily based on torch.utils.data.DistributedSampler
+    """
+
+    def __init__(self,
+                 dataset,
+                 num_replicas=None,
+                 rank=None,
+                 shuffle=True,
+                 num_repeats: int = 3):
+        if num_replicas is None:
+            if not dist.is_available():
+                raise RuntimeError(
+                    'Requires distributed package to be available')
+            num_replicas = dist.get_world_size()
+        if rank is None:
+            if not dist.is_available():
+                raise RuntimeError(
+                    'Requires distributed package to be available')
+            rank = dist.get_rank()
+        if num_repeats < 1:
+            raise ValueError('num_repeats should be greater than 0')
+        self.dataset = dataset
+        self.num_replicas = num_replicas
+        self.rank = rank
+        self.num_repeats = num_repeats
+        self.epoch = 0
+        self.num_samples = int(
+            math.ceil(
+                len(self.dataset) * self.num_repeats / self.num_replicas))
+        self.total_size = self.num_samples * self.num_replicas
+        # self.num_selected_samples = int(math.ceil(len(self.dataset) / self.num_replicas))
+        self.num_selected_samples = int(
+            math.floor(len(self.dataset) // 256 * 256 / self.num_replicas))
+        self.shuffle = shuffle
+
+    def __iter__(self):
+        if self.shuffle:
+            # deterministically shuffle based on epoch
+            g = torch.Generator()
+            g.manual_seed(self.epoch)
+            indices = torch.randperm(len(self.dataset), generator=g)
+        else:
+            indices = torch.arange(start=0, end=len(self.dataset))
+
+        # add extra samples to make it evenly divisible
+        indices = torch.repeat_interleave(
+            indices, repeats=self.num_repeats, dim=0).tolist()
+        padding_size: int = self.total_size - len(indices)
+        if padding_size > 0:
+            indices += indices[:padding_size]
+        assert len(indices) == self.total_size
+
+        # subsample
+        indices = indices[self.rank:self.total_size:self.num_replicas]
+        assert len(indices) == self.num_samples
+
+        return iter(indices[:self.num_selected_samples])
+
+    def __len__(self):
+        return self.num_selected_samples
+
+    def set_epoch(self, epoch):
+        self.epoch = epoch

@@ -3,6 +3,7 @@ from PIL import Image
 
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
+from easycv.framework.errors import NotImplementedError
 
 
 @DATASETS.register_module
@@ -21,7 +22,7 @@ class ClsOdpsDataset(BaseDataset):
         self.label_key = label_key
 
     def __getitem__(self, idx):
-        data_dict = self.data_source.get_sample(idx)
+        data_dict = self.data_source[idx]
         assert (self.image_key in data_dict.keys())
         assert (self.label_key in data_dict.keys())
 
