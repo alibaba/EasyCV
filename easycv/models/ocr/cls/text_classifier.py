@@ -8,7 +8,6 @@ from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
 from easycv.models.ocr.backbones.rec_mobilenet_v3 import MobileNetV3
-from easycv.models.ocr.heads.cls_head import ClsHead
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 
@@ -22,7 +21,6 @@ class TextClassifier(BaseModel):
         self,
         backbone,
         head,
-        postprocess=None,
         neck=None,
         loss=None,
         pretrained=None,
@@ -34,10 +32,8 @@ class TextClassifier(BaseModel):
 
         self.backbone = eval(backbone.type)(**backbone)
         self.neck = builder.build_neck(neck) if neck else None
-        self.head = eval(head.type)(**head)
+        self.head = builder.build_head(head)
         self.loss = nn.CrossEntropyLoss()
-        self.postprocess_op = eval(postprocess.type)(
-            **postprocess) if postprocess else None
         self.init_weights()
 
     def init_weights(self):
@@ -68,7 +64,9 @@ class TextClassifier(BaseModel):
         if self.neck:
             x = self.neck(x)
             y['neck_out'] = x
-        x = self.head(x)
+        # convert to list in order to fit easycv cls head
+        x = self.head([x])[0]
+        x = F.softmax(x, dim=1)
         y['head_out'] = x
         return y
 

@@ -5,8 +5,9 @@ model = dict(
     backbone=dict(type='MobileNetV3', scale=0.35, model_name='small'),
     head=dict(
         type='ClsHead',
+        with_avg_pool=True,
         in_channels=200,
-        class_dim=2,
+        num_classes=2,
     ),
     pretrained=
     'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/cls/ch_ppocr_mobile_v2.0_cls/best_accuracy.pth'
