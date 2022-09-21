@@ -29,6 +29,8 @@ from torch.nn.init import constant_
 from torch.nn.modules.linear import Linear
 from torch.nn.modules.module import Module
 
+from easycv.framework.errors import RuntimeError
+
 try:
     from torch.overrides import has_torch_function, handle_torch_function
 except:

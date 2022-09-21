@@ -25,6 +25,7 @@ from easycv.core.sailfish.function import (all_cat, all_log_softmax,
                                            shard_correct_predictions,
                                            shard_target_and_mask,
                                            shard_topk_correct_predictions)
+from easycv.framework.errors import NotImplementedError, ValueError
 
 
 class DistributedParallel:

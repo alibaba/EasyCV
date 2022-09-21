@@ -13,6 +13,7 @@ from mmcv.cnn.utils.weight_init import (constant_init, normal_init,
                                         trunc_normal_init)
 from mmcv.runner import BaseModule, ModuleList, Sequential
 
+from easycv.framework.errors import TypeError
 from easycv.models.registry import BACKBONES
 from easycv.models.segmentation.utils import (PatchEmbed, nchw_to_nlc,
                                               nlc_to_nchw)

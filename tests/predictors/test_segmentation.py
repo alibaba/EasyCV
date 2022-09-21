@@ -8,6 +8,7 @@ import unittest
 import numpy as np
 from PIL import Image
 from tests.ut_config import (MODEL_CONFIG_SEGFORMER,
+                             PRETRAINED_MODEL_MASK2FORMER_DIR,
                              PRETRAINED_MODEL_SEGFORMER, TEST_IMAGES_DIR)
 
 from easycv.predictors.segmentation import SegmentationPredictor
@@ -31,14 +32,14 @@ class SegmentationPredictorTest(unittest.TestCase):
 
         outputs = predict_pipeline(img_path, keep_inputs=True)
         self.assertEqual(len(outputs), 1)
-        self.assertEqual(outputs[0]['inputs'], [img_path])
+        results = outputs[0]
+        self.assertEqual(results['inputs'], img_path)
 
-        results = outputs[0]['results']
         self.assertListEqual(
-            list(img.shape)[:2], list(results['seg_pred'][0].shape))
-        self.assertListEqual(results['seg_pred'][0][1, :10].tolist(),
+            list(img.shape)[:2], list(results['seg_pred'].shape))
+        self.assertListEqual(results['seg_pred'][1, :10].tolist(),
                              [161 for i in range(10)])
-        self.assertListEqual(results['seg_pred'][0][-1, -10:].tolist(),
+        self.assertListEqual(results['seg_pred'][-1, -10:].tolist(),
                              [133 for i in range(10)])
 
     def test_batch(self):
@@ -56,19 +57,15 @@ class SegmentationPredictorTest(unittest.TestCase):
         total_samples = 3
         outputs = predict_pipeline(
             [img_path] * total_samples, keep_inputs=True)
-        self.assertEqual(len(outputs), 2)
+        self.assertEqual(len(outputs), 3)
 
-        self.assertEqual(outputs[0]['inputs'], [img_path] * 2)
-        self.assertEqual(outputs[1]['inputs'], [img_path] * 1)
-        self.assertEqual(len(outputs[0]['results']['seg_pred']), 2)
-        self.assertEqual(len(outputs[1]['results']['seg_pred']), 1)
-
-        for result in [outputs[0]['results'], outputs[1]['results']]:
+        for i in range(len(outputs)):
+            self.assertEqual(outputs[i]['inputs'], img_path)
             self.assertListEqual(
-                list(img.shape)[:2], list(result['seg_pred'][0].shape))
-            self.assertListEqual(result['seg_pred'][0][1, :10].tolist(),
+                list(img.shape)[:2], list(outputs[i]['seg_pred'].shape))
+            self.assertListEqual(outputs[i]['seg_pred'][1, :10].tolist(),
                                  [161 for i in range(10)])
-            self.assertListEqual(result['seg_pred'][0][-1, -10:].tolist(),
+            self.assertListEqual(outputs[i]['seg_pred'][-1, -10:].tolist(),
                                  [133 for i in range(10)])
 
     def test_dump(self):
@@ -91,16 +88,46 @@ class SegmentationPredictorTest(unittest.TestCase):
 
         total_samples = 3
         outputs = predict_pipeline(
-            [img_path] * total_samples, keep_inputs=True)
+            [img_path] * total_samples, keep_inputs=False)
         self.assertEqual(outputs, [])
 
         with open(tmp_path, 'rb') as f:
             results = pickle.loads(f.read())
 
-        self.assertIn('inputs', results[0])
-        self.assertIn('results', results[0])
+        for res in results:
+            self.assertNotIn('inputs', res)
+            self.assertIn('seg_pred', res)
 
         shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+@unittest.skipIf(True, 'WIP')
+class Mask2formerPredictorTest(unittest.TestCase):
+
+    def test_single(self):
+        import cv2
+        from easycv.predictors.segmentation import Mask2formerPredictor
+        pan_ckpt = os.path.join(PRETRAINED_MODEL_MASK2FORMER_DIR,
+                                'mask2former_pan_export.pth')
+        instance_ckpt = os.path.join(PRETRAINED_MODEL_MASK2FORMER_DIR,
+                                     'mask2former_r50_instance.pth')
+        img_path = os.path.join(TEST_IMAGES_DIR, 'mask2former.jpg')
+
+        # panop
+        predictor = Mask2formerPredictor(
+            model_path=pan_ckpt, output_mode='panoptic')
+        img = cv2.imread(img_path)
+        predict_out = predictor([img])
+        pan_img = predictor.show_panoptic(img, predict_out[0]['pan'])
+        cv2.imwrite('pan_out.jpg', pan_img)
+
+        # instance
+        predictor = Mask2formerPredictor(
+            model_path=instance_ckpt, output_mode='instance')
+        img = cv2.imread(img_path)
+        predict_out = predictor.predict([img], mode='instance')
+        instance_img = predictor.show_instance(img, **predict_out[0])
+        cv2.imwrite('instance_out.jpg', instance_img)
 
 
 if __name__ == '__main__':

@@ -7,6 +7,7 @@ import json_tricks as json
 import numpy as np
 
 from easycv.datasets.registry import DATASOURCES
+from easycv.framework.errors import ValueError
 from .top_down import PoseTopDownSource
 
 COCO_DATASET_INFO = dict(

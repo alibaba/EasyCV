@@ -19,7 +19,7 @@ class FaceKeypointsPredictorWithoutDetectorTest(unittest.TestCase):
     def test_single(self):
         predict_pipeline = FaceKeypointsPredictor(
             model_path=self.model_path, config_file=self.model_config_path)
-        output = predict_pipeline(self.image_path)[0][0]
+        output = predict_pipeline(self.image_path)[0]
         output_keypoints = output['point']
         output_pose = output['pose']
         img = cv2.imread(self.image_path)
@@ -38,18 +38,10 @@ class FaceKeypointsPredictorWithoutDetectorTest(unittest.TestCase):
         total_samples = 3
         output = predict_pipeline([self.image_path] * total_samples)
 
-        self.assertEqual(len(output), 2)
-        self.assertEqual(len(output[0]), 2)
-        self.assertEqual(len(output[1]), 1)
-        self.assertEqual(output[0][0]['point'].shape[0], 106)
-        self.assertEqual(output[0][0]['point'].shape[1], 2)
-        self.assertEqual(output[0][0]['pose'].shape[0], 3)
-        self.assertEqual(output[0][1]['point'].shape[0], 106)
-        self.assertEqual(output[0][1]['point'].shape[1], 2)
-        self.assertEqual(output[0][1]['pose'].shape[0], 3)
-        self.assertEqual(output[1][0]['point'].shape[0], 106)
-        self.assertEqual(output[1][0]['point'].shape[1], 2)
-        self.assertEqual(output[1][0]['pose'].shape[0], 3)
+        self.assertEqual(len(output), total_samples)
+        for out in output:
+            self.assertEqual(out['point'].shape, (106, 2))
+            self.assertEqual(out['pose'].shape, (3, ))
 
 
 if __name__ == '__main__':

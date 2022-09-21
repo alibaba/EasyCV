@@ -1,5 +1,6 @@
 import torch
 
+from easycv.framework.errors import KeyError
 from .. import builder
 from ..base import BaseModel
 from ..registry import MODELS
@@ -84,4 +85,4 @@ class MAE(BaseModel):
         elif mode == 'test':
             return self.forward_test(img, **kwargs)
         else:
-            raise Exception('No such mode: {}'.format(mode))
+            raise KeyError('No such mode: {}'.format(mode))

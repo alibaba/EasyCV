@@ -2,6 +2,8 @@
 import torch
 import torch.nn as nn
 
+from easycv.framework.errors import KeyError, NotImplementedError
+
 
 class SyncIBN(nn.Module):
     r"""Instance-Batch Normalization layer from

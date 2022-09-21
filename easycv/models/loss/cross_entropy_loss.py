@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from easycv.framework.errors import ValueError
 from easycv.models.builder import LOSSES
 from easycv.models.loss.utils import weight_reduce_loss
 

@@ -9,6 +9,8 @@ from datetime import datetime
 from functools import lru_cache
 from typing import List, Union
 
+from easycv.framework.errors import NotImplementedError
+
 
 class IOBase:
 

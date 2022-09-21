@@ -3,6 +3,7 @@ from easycv.core.evaluation.coco_evaluation import CoCoPoseTopDownEvaluator
 from easycv.datasets.pose.data_sources.coco import PoseTopDownSource
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
+from easycv.framework.errors import ValueError
 
 
 @DATASETS.register_module()

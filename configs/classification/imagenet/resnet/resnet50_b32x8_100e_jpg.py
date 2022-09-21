@@ -86,3 +86,13 @@ checkpoint_config = dict(interval=10)
 
 # runtime settings
 total_epochs = 100
+
+predict = dict(
+    type='ClassificationPredictor',
+    pipelines=[
+        dict(type='Resize', size=256),
+        dict(type='CenterCrop', size=224),
+        dict(type='ToTensor'),
+        dict(type='Normalize', **img_norm_cfg),
+        dict(type='Collect', keys=['img'])
+    ])

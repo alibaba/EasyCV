@@ -5,6 +5,7 @@ r""" This model is taken from the official PyTorch model zoo.
 
 from torch import nn
 
+from easycv.framework.errors import ValueError
 from ..modelzoo import mobilenetv2 as model_urls
 from ..registry import BACKBONES
 

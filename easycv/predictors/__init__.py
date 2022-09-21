@@ -9,5 +9,4 @@ from .feature_extractor import (TorchFaceAttrExtractor,
 from .hand_keypoints_predictor import HandKeypointsPredictor
 from .pose_predictor import (TorchPoseTopDownPredictor,
                              TorchPoseTopDownPredictorWithDetector)
-from .segmentation import (Mask2formerPredictor, SegFormerPredictor,
-                           SegmentationPredictor)
+from .segmentation import Mask2formerPredictor, SegmentationPredictor

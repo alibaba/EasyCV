@@ -7,6 +7,7 @@ import numpy as np
 import torch.nn as nn
 
 from easycv.core.evaluation.top_down_eval import keypoints_from_heatmaps
+from easycv.framework.errors import ValueError
 
 
 class TopdownHeatmapBaseHead(nn.Module):

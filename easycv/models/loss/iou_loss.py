@@ -7,6 +7,7 @@ import mmcv
 import torch
 import torch.nn as nn
 
+from easycv.framework.errors import NotImplementedError
 from easycv.models.detection.utils import bbox_overlaps
 from easycv.models.loss.utils import weighted_loss
 from ..registry import LOSSES

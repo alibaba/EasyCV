@@ -8,6 +8,8 @@ import torch.distributed as dist
 import torch.nn as nn
 from torch import Tensor
 
+from easycv.framework.errors import NotImplementedError, TypeError
+
 
 class BaseModel(nn.Module, metaclass=ABCMeta):
     ''' base class for model. '''

@@ -18,6 +18,7 @@ import numpy as np
 import torch
 
 from easycv.file import io
+from easycv.framework.errors import RuntimeError
 
 TEST_DIR = '/tmp/ev_pytorch_test'
 

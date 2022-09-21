@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from easycv.datasets.registry import DATASOURCES
 from easycv.file.image import load_image as _load_img
+from easycv.framework.errors import NotImplementedError, ValueError
 
 
 def load_image(img_path):
@@ -26,7 +27,7 @@ def load_image(img_path):
 
 
 def load_seg_map(seg_path, reduce_zero_label):
-    gt_semantic_seg = _load_img(seg_path, mode='RGB')
+    gt_semantic_seg = _load_img(seg_path, mode='P')
     # reduce zero_label
     if reduce_zero_label:
         # avoid using underflow conversion

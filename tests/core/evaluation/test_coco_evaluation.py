@@ -21,6 +21,7 @@ import numpy as np
 
 from easycv.core import standard_fields
 from easycv.core.evaluation import coco_evaluation
+from easycv.framework.errors import ValueError
 
 
 class CocoDetectionEvaluationTest(unittest.TestCase):

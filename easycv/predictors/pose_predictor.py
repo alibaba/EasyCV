@@ -11,6 +11,7 @@ from torchvision.transforms import Compose
 from easycv.datasets.pose.data_sources.top_down import DatasetInfo
 from easycv.datasets.registry import PIPELINES
 from easycv.file import io
+from easycv.framework.errors import ModuleNotFoundError, TypeError, ValueError
 from easycv.models import build_model
 from easycv.predictors.builder import PREDICTORS
 from easycv.predictors.detector import TorchYoloXPredictor
