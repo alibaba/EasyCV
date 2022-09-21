@@ -25,42 +25,20 @@ _QUANTIZE_OPTIONS = {
     'data.imgs_per_gpu': 16,
 }
 
-_PRUNE_OPTIONS = {
-    'total_epochs': 11,
-    'data.imgs_per_gpu': 1,
-}
-
-TRAIN_CONFIGS = [
-    {
-        'config_file': 'configs/edge_models/yolox_edge.py',
-        'model_type': 'YOLOX_EDGE',
-        'cfg_options': {
-            **_QUANTIZE_OPTIONS, 'data.train.data_source.ann_file':
-            SMALL_IMAGENET_DATA_ROOT + 'annotations/instances_train2017.json',
-            'data.train.data_source.img_prefix':
-            SMALL_IMAGENET_DATA_ROOT + 'images',
-            'data.val.data_source.ann_file':
-            SMALL_IMAGENET_DATA_ROOT + 'annotations/instances_train2017.json',
-            'data.val.data_source.img_prefix':
-            SMALL_IMAGENET_DATA_ROOT + 'images'
-        }
-    },
-    {
-        'config_file': 'configs/edge_models/yolox_edge.py',
-        'model_type': 'YOLOX_EDGE',
-        'cfg_options': {
-            **_PRUNE_OPTIONS, 'img_scale': (128, 128),
-            'data.train.data_source.ann_file':
-            SMALL_IMAGENET_DATA_ROOT + 'annotations/instances_train2017.json',
-            'data.train.data_source.img_prefix':
-            SMALL_IMAGENET_DATA_ROOT + 'images',
-            'data.val.data_source.ann_file':
-            SMALL_IMAGENET_DATA_ROOT + 'annotations/instances_train2017.json',
-            'data.val.data_source.img_prefix':
-            SMALL_IMAGENET_DATA_ROOT + 'images'
-        }
-    },
-]
+TRAIN_CONFIGS = [{
+    'config_file': 'configs/edge_models/yolox_edge.py',
+    'model_type': 'YOLOX_EDGE',
+    'cfg_options': {
+        **_QUANTIZE_OPTIONS, 'data.train.data_source.ann_file':
+        SMALL_IMAGENET_DATA_ROOT + 'annotations/instances_train2017.json',
+        'data.train.data_source.img_prefix':
+        SMALL_IMAGENET_DATA_ROOT + 'images',
+        'data.val.data_source.ann_file':
+        SMALL_IMAGENET_DATA_ROOT + 'annotations/instances_train2017.json',
+        'data.val.data_source.img_prefix':
+        SMALL_IMAGENET_DATA_ROOT + 'images'
+    }
+}]
 
 
 class ModelQuantizeTest(unittest.TestCase):
