@@ -27,12 +27,12 @@ from easycv.predictors.ocr import OCRPredictor
 ! wget http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/simfang.ttf
 ! wget http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/ocr_det.jpg
 predictor = OCRPredictor(
-    det_model_path=PRETRAINED_MODEL_OCRDET,
-    rec_model_path=PRETRAINED_MODEL_OCRREC,
-    cls_model_path=PRETRAINED_MODEL_OCRCLS,
+    det_model_path=path_to_detmodel,
+    rec_model_path=path_to_recmodel,
+    cls_model_path=path_to_clsmodel,
     use_angle_cls=True)
 img = cv2.imread('ocr_det.jpg')
-filter_boxes, filter_rec_res = predictor.predict_single(img)
+filter_boxes, filter_rec_res = predictor(img)
 out_img = predictor.show(
     filter_boxes,
     filter_rec_res,
