@@ -88,7 +88,6 @@ class DBNet(BaseModel):
         post_results['ignore_tags'] = ignore_tags
         post_results['polys'] = polys
         return post_results
-        # return preds
 
     def postprocess(self, preds, shape_list):
 

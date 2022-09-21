@@ -15,66 +15,58 @@ from easycv.predictors.builder import PREDICTORS
 from easycv.predictors.interface import PredictorInterface
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.registry import build_from_cfg
+from .base import PredictorV2
 
 
 @PREDICTORS.register_module()
-class OCRDetPredictor(PredictorInterface):
+class OCRDetPredictor(PredictorV2):
 
-    def __init__(self, det_model_path):
+    def __init__(self,
+                 model_path,
+                 config_file=None,
+                 batch_size=1,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 pipelines=None,
+                 *args,
+                 **kwargs):
 
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        super(OCRDetPredictor, self).__init__(
+            model_path,
+            config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            pipelines=pipelines,
+            *args,
+            **kwargs)
 
-        # build detection model
-        self.det_model_path = det_model_path
-        self.det_model = None
-        with io.open(self.det_model_path, 'rb') as infile:
-            det_checkpoint = torch.load(infile, map_location='cpu')
-
-        assert 'meta' in det_checkpoint and 'config' in det_checkpoint[
-            'meta'], 'meta.config is missing from checkpoint'
-
-        self.det_cfg = det_checkpoint['meta']['config']
-        self.det_model = build_model(self.det_cfg.model)
-        self.ckpt = load_checkpoint(
-            self.det_model, self.det_model_path, map_location=self.device)
-        self.det_model.to(self.device)
-        self.det_model.eval()
-
-        # build pipeline
-        test_pipeline = self.det_cfg.test_pipeline
-        pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
-        self.pipeline = Compose(pipeline)
-
-    def predict(self, input_data_list):
+    def preprocess_single(self, input):
+        """Preprocess single input sample.
+        If you need custom ops to load or process a single input sample, you need to reimplement it.
         """
-        Args:
-            input_data_list: a list of numpy array(in rgb order), each array is a sample
-        to be predicted
-        """
-        if isinstance(input_data_list, list):
-            output_list = []
-            for idx, img in enumerate(input_data_list):
-                res = self.predict_single(img)
-                output_list.append(res[0])
-            return output_list
-        else:
-            res = self.predict_single(input_data_list)[0]
-            return res
+        input = self._load_input(input)
+        input['ori_img_shape'] = input['ori_shape']
+        return self.processor(input)
 
-    def predict_single(self, img):
-        if not isinstance(img, np.ndarray):
-            img = np.asarray(img)
-        ori_shape = img.shape
-        data_dict = {'img': img, 'ori_img_shape': ori_shape}
-        data_dict = self.pipeline(data_dict)
-        img = data_dict['img']
-        img = torch.unsqueeze(img, 0).to(self.device)
+    def forward(self, inputs):
+        """Model forward.
+        If you need refactor model forward, you need to reimplement it.
+        """
+        shape_list = [
+            img_meta['ori_img_shape'] for img_meta in inputs['img_metas']
+        ]
         with torch.no_grad():
-            res = self.det_model.extract_feat(img, )
-        res = self.det_model.postprocess(res, [ori_shape])
-        return res
+            outputs = self.model.extract_feat(inputs['img'], )
+        outputs = self.model.postprocess(outputs, shape_list)
+        return outputs
 
-    def show(self, dt_boxes, img):
+    def postprocess(self, inputs, *args, **kwargs):
+        return inputs
+
+    def show_result(self, dt_boxes, img):
         img = img.astype(np.uint8)
         for box in dt_boxes:
             box = np.array(box).astype(np.int32).reshape(-1, 2)
@@ -83,153 +75,67 @@ class OCRDetPredictor(PredictorInterface):
 
 
 @PREDICTORS.register_module()
-class OCRRecPredictor(PredictorInterface):
+class OCRRecPredictor(PredictorV2):
 
-    def __init__(self, rec_model_path):
+    def __init__(self,
+                 model_path,
+                 config_file=None,
+                 batch_size=1,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 pipelines=None,
+                 *args,
+                 **kwargs):
 
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-        # build detection model
-        self.rec_model_path = rec_model_path
-        self.rec_model = None
-        with io.open(self.rec_model_path, 'rb') as infile:
-            rec_checkpoint = torch.load(infile, map_location='cpu')
-
-        assert 'meta' in rec_checkpoint and 'config' in rec_checkpoint[
-            'meta'], 'meta.config is missing from checkpoint'
-
-        self.rec_cfg = rec_checkpoint['meta']['config']
-        self.rec_model = build_model(self.rec_cfg.model)
-        self.ckpt = load_checkpoint(
-            self.rec_model, self.rec_model_path, map_location=self.device)
-        self.rec_model.to(self.device)
-        self.rec_model.eval()
-
-        # build pipeline
-        test_pipeline = self.rec_cfg.test_pipeline
-        pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
-        self.pipeline = Compose(pipeline)
-
-    def predict(self, input_data_list):
-        """
-        Args:
-            input_data_list: a list of numpy array(in rgb order), each array is a sample
-        to be predicted
-        """
-        if isinstance(input_data_list, list):
-            img_list = []
-            output_list = []
-            for idx, img in enumerate(input_data_list):
-                img = self.preprocess(img)
-                img_list.append(img)
-            img_batch = torch.stack(img_list).to(self.device)
-            res = self.rec_model.forward_test(img_batch, )
-            return res
-        else:
-            res = self.predict_single(input_data_list)
-            return res
-
-    def predict_single(self, img):
-
-        if not isinstance(img, np.ndarray):
-            img = np.asarray(img)
-        ori_shape = img.shape
-        data_dict = {'img': img, 'ori_shape': ori_shape}
-        data_dict = self.pipeline(data_dict)
-        img = data_dict['img']
-        img = torch.unsqueeze(img, 0).to(self.device)
-        res = self.rec_model.forward_test(img, )
-        return res
-
-    def preprocess(self, img):
-        if not isinstance(img, np.ndarray):
-            img = np.asarray(img)
-        ori_shape = img.shape
-        data_dict = {'img': img, 'ori_shape': ori_shape}
-        data_dict = self.pipeline(data_dict)
-        img = data_dict['img']
-        return img
+        super(OCRRecPredictor, self).__init__(
+            model_path,
+            config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            pipelines=pipelines,
+            *args,
+            **kwargs)
 
 
 @PREDICTORS.register_module()
-class OCRClsPredictor(PredictorInterface):
+class OCRClsPredictor(PredictorV2):
 
-    def __init__(self, cls_model_path):
+    def __init__(self,
+                 model_path,
+                 config_file=None,
+                 batch_size=1,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 pipelines=None,
+                 *args,
+                 **kwargs):
 
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        super(OCRClsPredictor, self).__init__(
+            model_path,
+            config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            pipelines=pipelines,
+            *args,
+            **kwargs)
 
-        # build detection model
-        self.cls_model_path = cls_model_path
-        self.cls_model = None
-        with io.open(self.cls_model_path, 'rb') as infile:
-            cls_checkpoint = torch.load(infile, map_location='cpu')
-
-        assert 'meta' in cls_checkpoint and 'config' in cls_checkpoint[
-            'meta'], 'meta.config is missing from checkpoint'
-
-        self.cls_cfg = cls_checkpoint['meta']['config']
-        self.cls_model = build_model(self.cls_cfg.model)
-        self.ckpt = load_checkpoint(
-            self.cls_model, self.cls_model_path, map_location=self.device)
-        self.cls_model.to(self.device)
-        self.cls_model.eval()
-
-        # build pipeline
-        test_pipeline = self.cls_cfg.test_pipeline
-        pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
-        self.pipeline = Compose(pipeline)
-
-    def predict(self, input_data_list):
-        """
-        Args:
-            input_data_list: a list of numpy array(in rgb order), each array is a sample
-        to be predicted
-        """
-        if isinstance(input_data_list, list):
-            img_list = []
-            output_list = []
-            for idx, img in enumerate(input_data_list):
-                img = self.preprocess(img)
-                img_list.append(img)
-            img_batch = torch.stack(img_list).to(self.device)
-            res = self.cls_model.forward_test(img_batch, )
-        else:
-            res = self.predict_single(input_data_list)
-        res = self.postprocess(res, input_data_list)
-        return res
-
-    def predict_single(self, img):
-
-        if not isinstance(img, np.ndarray):
-            img = np.asarray(img)
-        ori_shape = img.shape
-        data_dict = {'img': img, 'ori_shape': ori_shape}
-        data_dict = self.pipeline(data_dict)
-        img = data_dict['img']
-        img = torch.unsqueeze(img, 0).to(self.device)
-        res = self.cls_model.forward_test(img, )
-        return res
-
-    def preprocess(self, img):
-        if not isinstance(img, np.ndarray):
-            img = np.asarray(img)
-        ori_shape = img.shape
-        data_dict = {'img': img, 'ori_shape': ori_shape}
-        data_dict = self.pipeline(data_dict)
-        img = data_dict['img']
-        return img
-
-    def postprocess(self, result, img_list, threshold=0.9):
-        labels, logits = result['class'], result['neck']
-        result = {'labels': [], 'logits': []}
+    def flip_img(self, result, img_list, threshold=0.9):
+        output = {'labels': [], 'logits': []}
         img_list_out = []
-        for img, label, logit in zip(img_list, labels, logits):
-            result['labels'].append(label)
-            result['logits'].append(logit[label])
+        for img, res in zip(img_list, result):
+            label, logit = res['class'], res['neck']
+            output['labels'].append(label)
+            output['logits'].append(logit[label])
             if label == 1 and logit[label] > threshold:
                 img = cv2.flip(img, -1)
             img_list_out.append(img)
-        return img_list_out, result
+        return img_list_out, output
 
 
 @PREDICTORS.register_module()
@@ -303,10 +209,10 @@ class OCRPredictor(PredictorInterface):
             dst_img = np.rot90(dst_img)
         return dst_img
 
-    def predict_single(self, img):
+    def __call__(self, img):
         ori_im = img.copy()
 
-        dt_boxes = self.det_predictor.predict(img)
+        dt_boxes = self.det_predictor([img])[0]
         dt_boxes = self.sorted_boxes(dt_boxes)
         img_crop_list = []
         for bno in range(len(dt_boxes)):
@@ -314,15 +220,17 @@ class OCRPredictor(PredictorInterface):
             img_crop = self.get_rotate_crop_image(ori_im, tmp_box)
             img_crop_list.append(img_crop)
         if self.use_angle_cls:
-            img_crop_list, cls_res = self.cls_predictor.predict(img_crop_list)
+            cls_res = self.cls_predictor(img_crop_list)
+            img_crop_list, cls_res = self.cls_predictor.flip_img(
+                cls_res, img_crop_list)
 
-        rec_res = self.rec_predictor.predict(img_crop_list)
+        rec_res = self.rec_predictor(img_crop_list)
         filter_boxes, filter_rec_res = [], []
-        for box, rec_reuslt in zip(dt_boxes, rec_res['preds_text']):
-            text, score = rec_reuslt
+        for box, rec_reuslt in zip(dt_boxes, rec_res):
+            score = rec_reuslt['preds_text'][1]
             if score >= self.drop_score:
                 filter_boxes.append(box)
-                filter_rec_res.append(rec_reuslt)
+                filter_rec_res.append(rec_reuslt['preds_text'])
         return filter_boxes, filter_rec_res
 
     def show(self,
