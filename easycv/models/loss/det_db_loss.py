@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from easycv.models.builder import LOSSES
+
 
 class BalanceLoss(nn.Module):
 
@@ -145,6 +147,7 @@ class BCELoss(nn.Module):
         return loss
 
 
+@LOSSES.register_module()
 class DBLoss(nn.Module):
     """
     Differentiable Binarization (DB) Loss Function

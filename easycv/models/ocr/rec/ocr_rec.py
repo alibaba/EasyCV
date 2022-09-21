@@ -8,7 +8,6 @@ from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
 from easycv.models.ocr.backbones.rec_mv1_enhance import MobileNetV1Enhance
-from easycv.models.ocr.loss.rec_multi_loss import MultiLoss
 from easycv.models.ocr.postprocess.rec_postprocess import CTCLabelDecode
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
@@ -36,7 +35,7 @@ class OCRRecNet(BaseModel):
         self.backbone = eval(backbone.type)(**backbone)
         self.neck = builder.build_neck(neck) if neck else None
         self.head = builder.build_head(head)
-        self.loss = eval(loss.type)(**loss) if loss else None
+        self.loss = builder.build_loss(loss) if loss else None
         self.postprocess_op = eval(postprocess.type)(**postprocess)
         self.init_weights()
 

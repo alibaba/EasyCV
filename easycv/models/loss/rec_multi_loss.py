@@ -1,10 +1,11 @@
 # Modified from https://github.com/PaddlePaddle/PaddleOCR/tree/release/2.6/ppocr/losses
-from __future__ import absolute_import, division, print_function
-
 import torch
 from torch import nn
 
+from easycv.models.builder import LOSSES
 
+
+@LOSSES.register_module()
 class CTCLoss(nn.Module):
 
     def __init__(self, use_focal_loss=False, **kwargs):
@@ -33,6 +34,7 @@ class CTCLoss(nn.Module):
         return {'loss': loss}
 
 
+@LOSSES.register_module()
 class SARLoss(nn.Module):
 
     def __init__(self, **kwargs):
@@ -58,6 +60,7 @@ class SARLoss(nn.Module):
         return {'loss': loss}
 
 
+@LOSSES.register_module()
 class MultiLoss(nn.Module):
 
     def __init__(self, **kwargs):

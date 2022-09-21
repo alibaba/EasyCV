@@ -9,7 +9,6 @@ from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
 from easycv.models.ocr.backbones.det_mobilenet_v3 import MobileNetV3
 from easycv.models.ocr.backbones.det_resnet_vd import ResNet
-from easycv.models.ocr.loss.det_db_loss import DBLoss
 from easycv.models.ocr.postprocess.db_postprocess import DBPostProcess
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
@@ -37,7 +36,7 @@ class DBNet(BaseModel):
         self.backbone = eval(backbone.type)(**backbone)
         self.neck = builder.build_neck(neck)
         self.head = builder.build_head(head)
-        self.loss = eval(loss.type)(**loss) if loss else None
+        self.loss = builder.build_loss(loss) if loss else None
         self.postprocess_op = DBPostProcess(**postprocess)
         self.init_weights()
 

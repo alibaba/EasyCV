@@ -138,7 +138,7 @@ log_config = dict(
         dict(type='TextLoggerHook'),
     ])
 
-eval_config = dict(initial=False, interval=10, gpu_collect=False)
+eval_config = dict(initial=True, interval=1, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',
