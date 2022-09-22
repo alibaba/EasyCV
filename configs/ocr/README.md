@@ -13,7 +13,7 @@ We test on on [DTRB](https://arxiv.org/abs/1904.01906) dataset.
 |:---:|:---:|:---:|:---:|:---:|
 |SVTR|MobileNetv1|[rec_model_en.py](configs/ocr/recognition/rec_model_en.py)|0.7536|[log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/rec/fintune_dtrb/20220914_125616.log.json)-[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/rec/fintune_dtrb/epoch_60.pth)|
 ### predict
-We provide exported models contains weight and process config for easyly predict, which convert from PaddleOCRv3.
+We provide exported models contain weights and process config for easyly predict, which convert from PaddleOCRv3.
 #### det model
 |language|Download|
 |---|---|
