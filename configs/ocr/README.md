@@ -81,6 +81,6 @@ out_img = predictor.show(
     font_path='simfang.ttf')
 cv2.imwrite('out_img.jpg', out_img)
 ```
-There are some ocr result.<br/>
+There are some ocr results.<br/>
 ![ocr_result1](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/result/test_ocr_1_out.jpg)
 ![ocr_result2](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/result/test_ocr_2_out.jpg)
