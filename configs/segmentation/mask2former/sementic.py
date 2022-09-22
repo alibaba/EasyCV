@@ -219,19 +219,26 @@ optimizer = dict(
         'norm': dict(weight_decay=0.),
     })
 optimizer_config = dict(grad_clip=dict(max_norm=0.01, norm_type=2))
-total_epochs = 50
+total_epochs = 127
 
 # learning policy
+# lr_config = dict(
+#     policy='step',
+#     gamma=0.1,
+#     by_epoch=False,
+#     step=[327778, 355092],
+#     warmup='linear',
+#     warmup_by_epoch=False,
+#     warmup_ratio=1.0,  # no warmup
+#     warmup_iters=10)
 lr_config = dict(
-    policy='step',
-    gamma=0.1,
-    by_epoch=False,
-    step=[327778, 355092],
+    policy='CosineAnnealing',
+    min_lr=1e-5,
     warmup='linear',
+    warmup_iters=1,
+    warmup_ratio=1e-4,
     warmup_by_epoch=False,
-    warmup_ratio=1.0,  # no warmup
-    warmup_iters=10)
-
+    by_epoch=False)
 checkpoint_config = dict(interval=1)
 
 eval_config = dict(initial=False, interval=1, gpu_collect=False)
