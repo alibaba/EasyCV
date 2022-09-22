@@ -75,9 +75,18 @@ train_pipeline = [
         ]),
 ]
 
+# test_pipeline = [
+#     dict(type='MMResize', img_scale=(960, 960)),
+#     dict(type='ResizeDivisor', size_divisor=32),
+#     dict(type='MMNormalize', **img_norm_cfg),
+#     dict(type='ImageToTensor', keys=['img']),
+#     dict(
+#         type='Collect',
+#         keys=['img'],
+#         meta_keys=['ori_img_shape', 'polys', 'ignore_tags']),
+# ]
 test_pipeline = [
-    dict(type='MMResize', img_scale=(960, 960)),
-    dict(type='ResizeDivisor', size_divisor=32),
+    dict(type='OCRDetResize', limit_side_len=640, limit_type='min'),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
     dict(

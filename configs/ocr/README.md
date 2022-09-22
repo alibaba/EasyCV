@@ -14,13 +14,51 @@ We test on on [DTRB](https://arxiv.org/abs/1904.01906) dataset.
 |SVTR|MobileNetv1|[rec_model_en.py](configs/ocr/recognition/rec_model_en.py)|0.7536|[log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/rec/fintune_dtrb/20220914_125616.log.json)-[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/rec/fintune_dtrb/epoch_60.pth)|
 ### predict
 We provide exported models contains weight and process config for easyly predict, which convert from PaddleOCRv3.
-|Algorithm|Download|
+#### det model
+|language|Download|
 |---|---|
-|det|[ch_PP-OCRv3_det_sutdent](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/ch_PP-OCRv3_det/student_export.pth)|
-||[Multilingual_PP-OCRv3_det_student](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/Multilingual_PP-OCRv3_det/student_export.pth)|
-|rec|[ch_PP-OCRv3_rec_student](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/rec/ch_PP-OCRv3_rec/best_accuracy_student_export.pth)|
-||[en_PP-OCRv3_rec_student](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/rec/en_PP-OCRv3_rec/best_accuracy.pth)|
-|direction_cls|[ch_ppocr_mobile_v2.0_cls](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/cls/ch_ppocr_mobile_v2.0_cls/best_accuracy_export.pth)|
+|chinese|[chinese_det.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/det/chinese_det.pth)|
+|english|[english_det.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/det/english_det.pth)|
+|multilingual|[multilingual_det.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/det/multilingual_det.pth)|
+#### rec model
+|language|Download|
+|---|---|
+|chiese|[chinese_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/chinese_rec.pth)|
+|english|[english_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/english_rec.pth)|
+|korean|[korean_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/korean_rec.pth)|
+|japan|[japan_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/japan_rec.pth)|
+|chinese_cht|[chinese_cht_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/chinese_cht_rec.pth)|
+|Telugu|[te_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/te_rec.pth)|
+|Canada|[ka_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/ka_rec.pth)|
+|Tamil|[ta_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/ta_rec.pth)|
+|latin|[latin_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/latin_rec.pth)|
+|cyrillic|[cyrillic_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/cyrillic_rec.pth)|
+|devanagari|[devanagari_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/devanagari_rec.pth)|
+#### direction model
+|language|Download|
+|---|---|
+||[direction.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/cls/direction.pth)|
+#### usage
+##### detection
+```
+import cv2
+from easycv.predictors.ocr import OCRDetPredictor
+img = cv2.imread(img_path)
+predictor = OCRDetPredictor(model_path)
+out = predictor([img])
+out_img = predictor.show_result(out[0], img)
+cv2.imwrite(out_img_path,out_img)
+```
+##### recognition
+```
+import cv2
+from easycv.predictors.ocr import OCRRecPredictor
+img = cv2.imread(img_path)
+predictor = OCRRecPredictor(model_path)
+out = predictor([img])
+print(out)
+```
+##### end2end
 ```
 import cv2
 from easycv.predictors.ocr import OCRPredictor

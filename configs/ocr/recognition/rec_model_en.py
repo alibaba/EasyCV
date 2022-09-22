@@ -1,6 +1,7 @@
 _base_ = ['configs/base.py']
 
-character_dict_path = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/dict/ic15_dict.txt'
+# character_dict_path = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/dict/ic15_dict.txt'
+character_dict_path = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/dict/en_dict.txt'
 model = dict(
     type='OCRRecNet',
     backbone=dict(
@@ -23,9 +24,13 @@ model = dict(
     head=dict(
         type='MultiHead',
         in_channels=512,
+        # out_channels_list=dict(
+        #     CTCLabelDecode=37,
+        #     SARLabelDecode=39,
+        # ),
         out_channels_list=dict(
-            CTCLabelDecode=37,
-            SARLabelDecode=39,
+            CTCLabelDecode=97,
+            SARLabelDecode=99,
         ),
         head_list=[
             dict(
@@ -45,7 +50,8 @@ model = dict(
         use_space_char=False),
     loss=dict(
         type='MultiLoss',
-        ignore_index=38,
+        # ignore_index=38,
+        ignore_index=98,
         loss_config_list=[
             dict(CTCLoss=None),
             dict(SARLoss=None),
@@ -83,10 +89,15 @@ val_pipeline = [
         keys=['img', 'label_ctc', 'label_sar', 'length', 'valid_ratio'],
         meta_keys=['img_path'])
 ]
+# test_pipeline = [
+#     dict(type='OCRResizeNorm', img_shape=(48, 320)),
+#     dict(type='ImageToTensor', keys=['img']),
+#     dict(type='Collect', keys=['img']),
+# ]
 test_pipeline = [
-    dict(type='OCRResizeNorm', img_shape=(48, 320)),
-    dict(type='ImageToTensor', keys=['img']),
-    dict(type='Collect', keys=['img']),
+    dict(type='RecResizeImg', image_shape=(3, 48, 320)),
+    dict(type='MMToTensor'),
+    dict(type='Collect', keys=['img'], meta_keys=['img_path'])
 ]
 
 train_dataset = dict(
