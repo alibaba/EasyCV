@@ -49,6 +49,7 @@ out = predictor([img])
 out_img = predictor.show_result(out[0], img)
 cv2.imwrite(out_img_path,out_img)
 ```
+![det_result](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/result/det_result.jpg)
 ##### recognition
 ```
 import cv2
@@ -58,6 +59,8 @@ predictor = OCRRecPredictor(model_path)
 out = predictor([img])
 print(out)
 ```
+![rec_input](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/test_image/japan_rec.jpg)<br/>
+![rec_putput](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/test_image/japan_predict.jpg)
 ##### end2end
 ```
 import cv2
