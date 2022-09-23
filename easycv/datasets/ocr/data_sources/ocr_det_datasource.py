@@ -13,7 +13,7 @@ from easycv.file.image import load_image
 IGNORE_TAGS = ['*', '###']
 
 
-@DATASOURCES.register_module(force=True)
+@DATASOURCES.register_module()
 class OCRDetSource(object):
     """ocr det data source
     """
@@ -43,6 +43,17 @@ class OCRDetSource(object):
             data_lines.extend(lines)
         return data_lines
 
+    def expand_points_num(self, boxes):
+        max_points_num = 0
+        for box in boxes:
+            if len(box) > max_points_num:
+                max_points_num = len(box)
+        ex_boxes = []
+        for box in boxes:
+            ex_box = box + [box[-1]] * (max_points_num - len(box))
+            ex_boxes.append(ex_box)
+        return ex_boxes
+
     def label_encode(self, data):
         label = data['label']
         label = json.loads(label)
@@ -68,26 +79,20 @@ class OCRDetSource(object):
         data['ignore_tags'] = txt_tags
         return data
 
-    def expand_points_num(self, boxes):
-        max_points_num = 0
-        for box in boxes:
-            if len(box) > max_points_num:
-                max_points_num = len(box)
-        ex_boxes = []
-        for box in boxes:
-            ex_box = box + [box[-1]] * (max_points_num - len(box))
-            ex_boxes.append(ex_box)
-        return ex_boxes
+    def parse(self, data_line):
+
+        data_line = data_line.decode('utf-8')
+        substr = data_line.strip('\n').split(self.delimiter)
+        file_name = substr[0]
+        label = substr[1]
+
+        return file_name, label
 
     def __getitem__(self, idx):
         data_line = self.data_lines[idx]
         try:
-            data_line = data_line.decode('utf-8')
-            substr = data_line.strip('\n').split(self.delimiter)
-            file_name = substr[0]
-            label = substr[1]
+            file_name, label = self.parse(data_line)
             img_path = os.path.join(self.data_dir, file_name)
-
             data = {'img_path': img_path, 'label': label}
             if not os.path.exists(img_path):
                 raise Exception('{} does not exist!'.format(img_path))
@@ -111,8 +116,8 @@ class OCRDetSource(object):
         return len(self.data_lines)
 
 
-@DATASOURCES.register_module(force=True)
-class OCRPaiDetSource(object):
+@DATASOURCES.register_module()
+class OCRPaiDetSource(OCRDetSource):
     """ocr det data source for pai format
     """
 
@@ -124,9 +129,8 @@ class OCRPaiDetSource(object):
             data_dir (str, optional): folder of imgge data. Defaults to ''.
             test_mode (bool, optional): whether train or test. Defaults to False.
         """
-        self.data_dir = data_dir
-        self.test_mode = test_mode
-        self.data_lines = self.get_image_info_list(label_file)
+        super(OCRPaiDetSource, self).__init__(
+            label_file, data_dir=data_dir, test_mode=test_mode)
 
     def get_image_info_list(self, label_file):
         data_lines = []
@@ -137,7 +141,7 @@ class OCRPaiDetSource(object):
             data_lines = list(csv.reader(open(label_file)))[1:]
         return data_lines
 
-    def detlabel_encode(self, data):
+    def label_encode(self, data):
         label = data['label']
         nBox = len(label)
         boxes, txts, txt_tags = [], [], []
@@ -162,42 +166,9 @@ class OCRPaiDetSource(object):
         data['ignore_tags'] = txt_tags
         return data
 
-    def expand_points_num(self, boxes):
-        max_points_num = 0
-        for box in boxes:
-            if len(box) > max_points_num:
-                max_points_num = len(box)
-        ex_boxes = []
-        for box in boxes:
-            ex_box = box + [box[-1]] * (max_points_num - len(box))
-            ex_boxes.append(ex_box)
-        return ex_boxes
+    def parse(self, data_line):
 
-    def __getitem__(self, idx):
-        data_line = self.data_lines[idx]
-        try:
-            file_name = json.loads(data_line[1])['tfspath'].split('/')[-1]
-            label = json.loads(data_line[2])[0]
-            img_path = os.path.join(self.data_dir, file_name)
+        file_name = json.loads(data_line[1])['tfspath'].split('/')[-1]
+        label = json.loads(data_line[2])[0]
 
-            data = {'img_path': img_path, 'label': label}
-            if not os.path.exists(img_path):
-                raise Exception('{} does not exist!'.format(img_path))
-
-            img = load_image(img_path, mode='BGR')
-            data['img'] = img.astype(np.float32)
-            data['ori_img_shape'] = img.shape
-            outs = self.detlabel_encode(data)
-        except:
-            logging.error(
-                'When parsing line {}, error happened with msg: {}'.format(
-                    data_line, traceback.format_exc()))
-            outs = None
-        if outs is None:
-            rnd_idx = np.random.randint(self.__len__(
-            )) if not self.test_mode else (idx + 1) % self.__len__()
-            return self.__getitem__(rnd_idx)
-        return outs
-
-    def __len__(self):
-        return len(self.data_lines)
+        return file_name, label
