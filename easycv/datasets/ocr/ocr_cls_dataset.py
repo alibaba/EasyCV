@@ -1,15 +1,15 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from easycv.datasets.ocr.ocr_det_dataset import OCRDetDataset
 from easycv.datasets.registry import DATASETS
+from .ocr_raw_dataset import OCRRawDataset
 
 
 @DATASETS.register_module(force=True)
-class OCRClsDataset(OCRDetDataset):
+class OCRClsDataset(OCRRawDataset):
     """Dataset for ocr text classification
     """
 
     def __init__(self, data_source, pipeline, profiling=False):
-        super(OCRDetDataset, self).__init__(
+        super(OCRRawDataset, self).__init__(
             data_source, pipeline, profiling=profiling)
 
     def evaluate(self, results, evaluators, logger=None, **kwargs):

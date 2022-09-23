@@ -1,10 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from easycv.datasets.ocr.ocr_det_dataset import OCRDetDataset
 from easycv.datasets.registry import DATASETS
+from .ocr_raw_dataset import OCRRawDataset
 
 
-@DATASETS.register_module(force=True)
-class OCRRecDataset(OCRDetDataset):
+@DATASETS.register_module()
+class OCRRecDataset(OCRRawDataset):
     """Dataset for ocr text recognition
     """
 

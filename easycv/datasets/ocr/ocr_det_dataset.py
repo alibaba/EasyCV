@@ -5,34 +5,17 @@ import traceback
 import numpy as np
 
 from easycv.datasets.registry import DATASETS
-from easycv.datasets.shared.base import BaseDataset
+from .ocr_raw_dataset import OCRRawDataset
 
 
-@DATASETS.register_module(force=True)
-class OCRDetDataset(BaseDataset):
+@DATASETS.register_module()
+class OCRDetDataset(OCRRawDataset):
     """Dataset for ocr text detection
     """
 
     def __init__(self, data_source, pipeline, profiling=False):
         super(OCRDetDataset, self).__init__(
             data_source, pipeline, profiling=profiling)
-
-    def __len__(self):
-        return len(self.data_source)
-
-    def __getitem__(self, idx):
-        try:
-            data_dict = self.data_source[idx]
-            data_dict = self.pipeline(data_dict)
-        except:
-            logging.error(
-                'When parsing line {}, error happened with msg: {}'.format(
-                    idx, traceback.format_exc()))
-            data_dict = None
-        if data_dict is None:
-            rnd_idx = np.random.randint(self.__len__())
-            return self.__getitem__(rnd_idx)
-        return data_dict
 
     def evaluate(self, results, evaluators, logger=None, **kwargs):
         assert len(evaluators) == 1, \
