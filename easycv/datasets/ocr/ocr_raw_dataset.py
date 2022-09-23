@@ -8,7 +8,7 @@ from easycv.datasets.shared.base import BaseDataset
 
 
 class OCRRawDataset(BaseDataset):
-    """Dataset for ocr text detection
+    """Dataset for ocr
     """
 
     def __init__(self, data_source, pipeline, profiling=False):
