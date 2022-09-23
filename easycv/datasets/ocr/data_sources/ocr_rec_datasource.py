@@ -11,7 +11,7 @@ from easycv.datasets.registry import DATASOURCES
 from easycv.file.image import load_image
 
 
-@DATASOURCES.register_module(force=True)
+@DATASOURCES.register_module()
 class OCRRecSource(object):
     """ocr rec data source
     """

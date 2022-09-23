@@ -3,7 +3,7 @@ from easycv.datasets.ocr.data_sources.ocr_det_datasource import OCRDetSource
 from easycv.datasets.registry import DATASOURCES
 
 
-@DATASOURCES.register_module(force=True)
+@DATASOURCES.register_module()
 class OCRClsSource(OCRDetSource):
     """ocr direction classification data source
     """
