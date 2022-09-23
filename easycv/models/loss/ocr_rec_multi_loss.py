@@ -63,13 +63,18 @@ class SARLoss(nn.Module):
 @LOSSES.register_module()
 class MultiLoss(nn.Module):
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 loss_config_list,
+                 weight_1=1.0,
+                 weight_2=1.0,
+                 gtc_loss='sar',
+                 **kwargs):
         super().__init__()
         self.loss_funcs = {}
-        self.loss_list = kwargs.pop('loss_config_list')
-        self.weight_1 = kwargs.get('weight_1', 1.0)
-        self.weight_2 = kwargs.get('weight_2', 1.0)
-        self.gtc_loss = kwargs.get('gtc_loss', 'sar')
+        self.loss_list = loss_config_list
+        self.weight_1 = weight_1
+        self.weight_2 = weight_2
+        self.gtc_loss = gtc_loss
         for loss_info in self.loss_list:
             for name, param in loss_info.items():
                 if param is not None:

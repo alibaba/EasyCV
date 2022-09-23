@@ -34,8 +34,8 @@ class BaseRecLabelEncode(object):
                  use_space_char=False):
 
         self.max_text_len = max_text_length
-        self.beg_str = 'sos'
-        self.end_str = 'eos'
+        self.BEGIN_STR = 'sos'
+        self.END_STR = 'eos'
         self.lower = False
 
         if character_dict_path is None:
@@ -110,6 +110,7 @@ class CTCLabelEncode(BaseRecLabelEncode):
                  character_dict_path=None,
                  use_space_char=False,
                  **kwargs):
+        self.BLANK = ['blank']
         super(CTCLabelEncode,
               self).__init__(max_text_length, character_dict_path,
                              use_space_char)
@@ -130,7 +131,7 @@ class CTCLabelEncode(BaseRecLabelEncode):
         return data
 
     def add_special_char(self, dict_character):
-        dict_character = ['blank'] + dict_character
+        dict_character = self.BLANK + dict_character
         return dict_character
 
 
@@ -143,20 +144,20 @@ class SARLabelEncode(BaseRecLabelEncode):
                  character_dict_path=None,
                  use_space_char=False,
                  **kwargs):
+        self.BEG_END_STR = '<BOS/EOS>'
+        self.UNKNOWN_STR = '<UKN>'
+        self.PADDING_STR = '<PAD>'
         super(SARLabelEncode,
               self).__init__(max_text_length, character_dict_path,
                              use_space_char)
 
     def add_special_char(self, dict_character):
-        beg_end_str = '<BOS/EOS>'
-        unknown_str = '<UKN>'
-        padding_str = '<PAD>'
-        dict_character = dict_character + [unknown_str]
+        dict_character = dict_character + [self.UNKNOWN_STR]
         self.unknown_idx = len(dict_character) - 1
-        dict_character = dict_character + [beg_end_str]
+        dict_character = dict_character + [self.BEG_END_STR]
         self.start_idx = len(dict_character) - 1
         self.end_idx = len(dict_character) - 1
-        dict_character = dict_character + [padding_str]
+        dict_character = dict_character + [self.PADDING_STR]
         self.padding_idx = len(dict_character) - 1
 
         return dict_character
@@ -204,8 +205,8 @@ class MultiLabelEncode(BaseRecLabelEncode):
         data_out = dict()
         data_out['img_path'] = data.get('img_path', None)
         data_out['img'] = data['img']
-        ctc = self.ctc_encode.__call__(data_ctc)
-        sar = self.sar_encode.__call__(data_sar)
+        ctc = self.ctc_encode(data_ctc)
+        sar = self.sar_encode(data_sar)
         if ctc is None or sar is None:
             return None
         data_out['label_ctc'] = ctc['label']
