@@ -78,7 +78,7 @@ class OCRRecSource(object):
         ext_data = []
 
         while len(ext_data) < self.ext_data_num:
-            data = self.get_sample(
+            data = self.__getitem__(
                 np.random.randint(self.__len__()), get_ext=False)
             ext_data.append(data)
         return ext_data

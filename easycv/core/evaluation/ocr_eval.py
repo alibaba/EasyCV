@@ -19,10 +19,7 @@ class OCRDetEvaluator(Evaluator):
         self.area_precision_constraint = 0.5
         super().__init__(dataset_name, metric_names)
 
-    def _evaluate_impl(self, predictions, labels, **kwargs):
-        pass
-
-    def evaluate_image(self, gt, pred):
+    def _evaluate_impl(self, gt, pred):
 
         def get_union(pD, pG):
             return Polygon(pD).union(Polygon(pG)).area
@@ -92,7 +89,6 @@ class OCRDetEvaluator(Evaluator):
 
         evaluationLog = ''
 
-        # print(len(gt))
         for n in range(len(gt)):
             points = gt[n]['points']
             # transcription = gt[n]['text']
@@ -226,10 +222,9 @@ class OCRDetEvaluator(Evaluator):
                 'points': det_polyon,
                 'text': ''
             } for det_polyon in pred]
-            result = self.evaluate_image(gt_info_list, det_info_list)
+            result = self._evaluate_impl(gt_info_list, det_info_list)
             results.append(result)
         results = self.combine_results(results)
-        print(results)
         return results
 
 
@@ -246,8 +241,8 @@ class OCRRecEvaluator(Evaluator):
         self.ignore_space = ignore_space
         self.eps = 1e-5
 
-    def _evaluate_impl(self, predictions, labels, **kwargs):
-        pass
+    # def _evaluate_impl(self, predictions, labels, **kwargs):
+    #     pass
 
     def _normalize_text(self, text):
         text = ''.join(
@@ -255,7 +250,7 @@ class OCRRecEvaluator(Evaluator):
                    text))
         return text.lower()
 
-    def evaluate(self, preds, labels, **kwargs):
+    def _evaluate_impl(self, preds, labels, **kwargs):
         correct_num = 0
         all_num = 0
         norm_edit_dis = 0.0
@@ -270,8 +265,6 @@ class OCRRecEvaluator(Evaluator):
             if pred == target:
                 correct_num += 1
             all_num += 1
-        print(correct_num / (all_num + self.eps),
-              1 - norm_edit_dis / (all_num + self.eps))
         return {
             'acc': correct_num / (all_num + self.eps),
             'norm_edit_dis': 1 - norm_edit_dis / (all_num + self.eps)
