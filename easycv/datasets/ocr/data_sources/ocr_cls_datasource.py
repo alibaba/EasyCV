@@ -1,13 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import logging
-import os
-import traceback
-
-import numpy as np
-
 from easycv.datasets.ocr.data_sources.ocr_det_datasource import OCRDetSource
 from easycv.datasets.registry import DATASOURCES
-from easycv.file.image import load_image
 
 
 @DATASOURCES.register_module(force=True)
