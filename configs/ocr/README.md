@@ -14,13 +14,13 @@ We test on on [DTRB](https://arxiv.org/abs/1904.01906) dataset.
 |SVTR|MobileNetv1|[rec_model_en.py](configs/ocr/recognition/rec_model_en.py)|0.7536|[log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/rec/fintune_dtrb/20220914_125616.log.json)-[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/rec/fintune_dtrb/epoch_60.pth)|
 ### predict
 We provide exported models contain weights and process config for easyly predict, which convert from PaddleOCRv3.
-#### det model
+#### detection model
 |language|Download|
 |---|---|
 |chinese|[chinese_det.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/det/chinese_det.pth)|
 |english|[english_det.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/det/english_det.pth)|
 |multilingual|[multilingual_det.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/det/multilingual_det.pth)|
-#### rec model
+#### recognition model
 |language|Download|
 |---|---|
 |chiese|[chinese_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/chinese_rec.pth)|
@@ -43,9 +43,9 @@ We provide exported models contain weights and process config for easyly predict
 ```
 import cv2
 from easycv.predictors.ocr import OCRDetPredictor
-img = cv2.imread(img_path)
 predictor = OCRDetPredictor(model_path)
-out = predictor([img])
+out = predictor([img_path]) # out = predictor([img])
+img = cv2.imread(img_path)
 out_img = predictor.show_result(out[0], img)
 cv2.imwrite(out_img_path,out_img)
 ```
@@ -54,9 +54,8 @@ cv2.imwrite(out_img_path,out_img)
 ```
 import cv2
 from easycv.predictors.ocr import OCRRecPredictor
-img = cv2.imread(img_path)
 predictor = OCRRecPredictor(model_path)
-out = predictor([img])
+out = predictor([img_path])
 print(out)
 ```
 ![rec_input](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/test_image/japan_rec.jpg)<br/>
