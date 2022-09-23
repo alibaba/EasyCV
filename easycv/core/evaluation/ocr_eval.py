@@ -241,9 +241,6 @@ class OCRRecEvaluator(Evaluator):
         self.ignore_space = ignore_space
         self.eps = 1e-5
 
-    # def _evaluate_impl(self, predictions, labels, **kwargs):
-    #     pass
-
     def _normalize_text(self, text):
         text = ''.join(
             filter(lambda x: x in (string.digits + string.ascii_letters),
