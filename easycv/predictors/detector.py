@@ -125,113 +125,133 @@ class DetrPredictor(DetectionPredictor):
     """"""
 
 
+class _JitProcessorWrapper:
+
+    def __init__(self, processor, device) -> None:
+        self.processor = processor
+        self.device = device
+
+    def __call__(self, results):
+        if self.processor is not None:
+            from mmcv.parallel import DataContainer as DC
+            outputs = {}
+            img = results['img']
+            img = torch.from_numpy(img).to(self.device)
+            img, img_meta = self.processor(img.unsqueeze(0))  # process batch
+            outputs['img'] = DC(
+                img.squeeze(0),
+                stack=True)  # DC wrapper for collate batch and to device
+            outputs['img_metas'] = DC(img_meta, cpu_only=True)
+            return outputs
+        return results
+
+
 @PREDICTORS.register_module()
-class TorchYoloXPredictor(PredictorInterface):
+class YoloXPredictor(DetectionPredictor):
+    """Detection predictor for Yolox."""
 
     def __init__(self,
                  model_path,
+                 config_file=None,
+                 batch_size=1,
+                 use_trt_efficientnms=False,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 pipelines=None,
                  max_det=100,
                  score_thresh=0.5,
-                 use_trt_efficientnms=False,
-                 model_config=None):
-        """
-        init model
-
-        Args:
-          model_path: model file path
-          max_det: maximum number of detection
-          score_thresh:  score_thresh to filter box
-          model_config: config string for model to init, in json format
-        """
-        self.model_path = model_path
+                 nms_thresh=None,
+                 test_conf=None,
+                 *arg,
+                 **kwargs):
         self.max_det = max_det
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        # set type
-        self.model_type = 'raw'
+        self.use_trt_efficientnms = use_trt_efficientnms
+
         if model_path.endswith('jit'):
             self.model_type = 'jit'
-        if model_path.endswith('blade'):
+        elif model_path.endswith('blade'):
             self.model_type = 'blade'
-
-        self.use_trt_efficientnms = use_trt_efficientnms
+        else:
+            self.model_type = 'raw'
 
         if self.model_type == 'blade' or self.use_trt_efficientnms:
             import torch_blade
 
-        if model_config:
-            model_config = json.loads(model_config)
-        else:
-            model_config = {}
+        if self.model_type != 'raw' and config_file is None:
+            config_file = model_path + '.config.json'
 
-        self.score_thresh = model_config[
-            'score_thresh'] if 'score_thresh' in model_config else score_thresh
+        super(YoloXPredictor, self).__init__(
+            model_path,
+            config_file=config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            pipelines=pipelines,
+            score_threshold=score_thresh)
 
+        self.test_conf = test_conf or self.cfg['model'].get('test_conf', 0.01)
+        self.nms_thre = nms_thresh or self.cfg['model'].get('nms_thre', 0.65)
+        self.CLASSES = self.cfg.get('CLASSES', None) or self.cfg.get(
+            'classes', None)
+        assert self.CLASSES is not None
+
+    def _build_model(self):
         if self.model_type != 'raw':
+            with io.open(self.model_path, 'rb') as infile:
+                model = torch.jit.load(infile, self.device)
+        else:
+            model = super()._build_model()
+            model = reparameterize_models(model)
+        return model
+
+    def prepare_model(self):
+        """Build model from config file by default.
+        If the model is not loaded from a configuration file, e.g. torch jit model, you need to reimplement it.
+        """
+        model = self._build_model()
+        model.to(self.device)
+        model.eval()
+        if self.model_type == 'raw':
+            load_checkpoint(model, self.model_path, map_location='cpu')
+        return model
+
+    def build_processor(self):
+        self.jit_preprocess = False
+        if self.model_type != 'raw':
+            if hasattr(self.cfg, 'export'):
+                self.jit_preprocess = self.cfg['export'].get(
+                    'preprocess_jit', False)
+
+        if self.model_type != 'raw' and self.jit_preprocess:
             # jit or blade model
+            processor = None
             preprocess_path = '.'.join(
-                model_path.split('.')[:-1] + ['preprocess'])
+                self.model_path.split('.')[:-1] + ['preprocess'])
             if os.path.exists(preprocess_path):
                 # use a preprocess jit model to speed up
                 with io.open(preprocess_path, 'rb') as infile:
-                    map_location = 'cpu' if self.device == 'cpu' else 'cuda'
-                    self.preprocess = torch.jit.load(infile, map_location)
-
-            with io.open(model_path, 'rb') as infile:
-                map_location = 'cpu' if self.device == 'cpu' else 'cuda'
-                self.model = torch.jit.load(infile, map_location)
-            with io.open(model_path + '.config.json', 'r') as infile:
-                self.cfg = json.load(infile)
-                test_pipeline = self.cfg['test_pipeline']
-                self.CLASSES = self.cfg['classes']
-                self.preprocess_jit = self.cfg['export']['preprocess_jit']
-
-            self.traceable = True
-
+                    processor = torch.jit.load(infile, self.device)
+            return _JitProcessorWrapper(processor, self.device)
         else:
-            self.preprocess_jit = False
-            with io.open(self.model_path, 'rb') as infile:
-                checkpoint = torch.load(infile, map_location='cpu')
+            return super().build_processor()
 
-            assert 'meta' in checkpoint and 'config' in checkpoint[
-                'meta'], 'meta.config is missing from checkpoint'
+    def forward(self, inputs):
+        """Model forward.
+        If you need refactor model forward, you need to reimplement it.
+        """
+        if self.model_type != 'raw':
+            with torch.no_grad():
+                outputs = self.model(inputs['img'])
+                outputs = {'results': outputs}  # convert to dict format
+        else:
+            outputs = super().forward(inputs)
 
-            config_str = checkpoint['meta']['config']
-            # get config
-            basename = os.path.basename(self.model_path)
-            fname, _ = os.path.splitext(basename)
-            self.local_config_file = os.path.join(CACHE_DIR,
-                                                  f'{fname}_config.json')
-            if not os.path.exists(CACHE_DIR):
-                os.makedirs(CACHE_DIR)
-            with open(self.local_config_file, 'w') as ofile:
-                ofile.write(config_str)
+        if 'img_metas' not in outputs:
+            outputs['img_metas'] = inputs['img_metas']
 
-            self.cfg = mmcv_config_fromfile(self.local_config_file)
-
-            # build model
-            self.model = build_model(self.cfg.model)
-
-            self.traceable = getattr(self.model, 'trace_able', False)
-
-            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-            map_location = 'cpu' if self.device == 'cpu' else 'cuda'
-            self.ckpt = load_checkpoint(
-                self.model, self.model_path, map_location=map_location)
-
-            self.model = reparameterize_models(self.model)
-
-            self.model.to(self.device)
-            self.model.eval()
-            test_pipeline = self.cfg.test_pipeline
-            self.CLASSES = self.cfg.CLASSES
-
-        # build pipeline
-        pipeline = [build_from_cfg(p, PIPELINES) for p in test_pipeline]
-        self.pipeline = Compose(pipeline)
-
-        self.test_conf = self.cfg['model'].get('test_conf', 0.01)
-        self.nms_thre = self.cfg['model'].get('nms_thre', 0.65)
-        self.num_classes = len(self.CLASSES)
+        return outputs
 
     def post_assign(self, outputs, img_metas):
         detection_boxes = []
@@ -267,101 +287,73 @@ class TorchYoloXPredictor(PredictorInterface):
         }
         return test_outputs
 
-    def predict(self, input_data_list, batch_size=-1, to_numpy=True):
+    def postprocess_single(self, inputs):
+        det_out = inputs
+        img_meta = det_out['img_metas']
+
+        if self.model_type != 'raw':
+            results = det_out['results']
+            if self.use_trt_efficientnms:
+                det_out = {}
+                det_out['detection_boxes'] = results[1] / img_meta[
+                    'scale_factor'][0]
+                det_out['detection_scores'] = results[2]
+                det_out['detection_classes'] = results[3]
+            else:
+                det_out = self.post_assign(
+                    postprocess(
+                        results.unsqueeze(0), len(self.CLASSES),
+                        self.test_conf, self.nms_thre),
+                    img_metas=[img_meta])
+            det_out['detection_scores'] = det_out['detection_scores'][0]
+            det_out['detection_boxes'] = det_out['detection_boxes'][0]
+            det_out['detection_classes'] = det_out['detection_classes'][0]
+
+        resuts = super().postprocess_single(det_out)
+        resuts['ori_img_shape'] = list(img_meta['ori_img_shape'][:2])
+        return resuts
+
+
+@deprecated(reason='Please use YoloXPredictor.')
+@PREDICTORS.register_module()
+class TorchYoloXPredictor(YoloXPredictor):
+
+    def __init__(self,
+                 model_path,
+                 max_det=100,
+                 score_thresh=0.5,
+                 use_trt_efficientnms=False,
+                 model_config=None):
         """
-    using session run predict a number of samples using batch_size
+        Args:
+          model_path: model file path
+          max_det: maximum number of detection
+          score_thresh:  score_thresh to filter box
+          model_config: config string for model to init, in json format
+        """
+        if model_config:
+            model_config = json.loads(model_config)
+        else:
+            model_config = {}
 
-    Args:
-      input_data_list:  a list of numpy array(in rgb order), each array is a sample
-        to be predicted
-      batch_size: batch_size passed by the caller, you can also ignore this param and
-        use a fixed number if you do not want to adjust batch_size in runtime
-    Return:
-      result: a list of dict, each dict is the prediction result of one sample
-        eg, {"output1": value1, "output2": value2}, the value type can be
-        python int str float, and numpy array
-    """
-        output_list = []
-        for idx, img in enumerate(input_data_list):
-            if type(img) is not np.ndarray:
-                img = np.asarray(img)
+        score_thresh = model_config[
+            'score_thresh'] if 'score_thresh' in model_config else score_thresh
+        super().__init__(
+            model_path,
+            config_file=None,
+            batch_size=1,
+            use_trt_efficientnms=use_trt_efficientnms,
+            device=None,
+            save_results=False,
+            save_path=None,
+            pipelines=None,
+            max_det=max_det,
+            score_thresh=score_thresh,
+            nms_thresh=None,
+            test_conf=None)
 
-            ori_img_shape = img.shape[:2]
-            if self.preprocess_jit:
-                # the input should also be as the type of uint8 as mmcv
-                img = torch.from_numpy(img).to(self.device)
-                img = img.unsqueeze(0)
-
-                if hasattr(self, 'preprocess'):
-                    img, img_info = self.preprocess(img)
-
-            else:
-                data_dict = {'img': img}
-                data_dict = self.pipeline(data_dict)
-                img = data_dict['img']
-                img = torch.unsqueeze(img._data, 0).to(self.device)
-                data_dict.pop('img')
-                img_info = data_dict['img_metas']._data
-
-            if self.traceable:
-                if self.use_trt_efficientnms:
-                    with torch.no_grad():
-                        tmp_out = self.model(img)
-                        det_out = {}
-                        det_out['detection_boxes'] = tmp_out[1] / img_info[
-                            'scale_factor'][0]
-                        det_out['detection_scores'] = tmp_out[2]
-                        det_out['detection_classes'] = tmp_out[3]
-
-                else:
-                    with torch.no_grad():
-                        det_out = self.post_assign(
-                            postprocess(
-                                self.model(img), self.num_classes,
-                                self.test_conf, self.nms_thre),
-                            img_metas=[img_info])
-            else:
-                with torch.no_grad():
-                    det_out = self.model(
-                        img, mode='test', img_metas=[img_info])
-
-            # print(det_out)
-            # det_out = det_out[:self.max_det]
-            # scale box to original image scale, this logic has some operation
-            # that can not be traced, see
-            # https://discuss.pytorch.org/t/windows-libtorch-c-load-cuda-module-with-std-runtime-error-message-shape-4-is-invalid-for-input-if-size-40/63073/4
-            # det_out = scale_coords(img.shape[2:], det_out, ori_img_shape, (scale_factor, pad))
-
-            detection_scores = det_out['detection_scores'][0]
-
-            if detection_scores is not None:
-                sel_ids = detection_scores > self.score_thresh
-                detection_scores = detection_scores[sel_ids]
-                detection_boxes = det_out['detection_boxes'][0][sel_ids]
-                detection_classes = det_out['detection_classes'][0][sel_ids]
-            else:
-                detection_boxes = None
-                detection_classes = None
-
-            num_boxes = detection_classes.shape[
-                0] if detection_classes is not None else 0
-
-            detection_classes_names = [
-                self.CLASSES[detection_classes[idx]]
-                for idx in range(num_boxes)
-            ]
-
-            out = {
-                'ori_img_shape': list(ori_img_shape),
-                'detection_boxes': detection_boxes,
-                'detection_scores': detection_scores,
-                'detection_classes': detection_classes,
-                'detection_class_names': detection_classes_names,
-            }
-
-            output_list.append(out)
-
-        return output_list
+    def predict(self, input_data_list, batch_size=-1, to_numpy=True):
+        return super().__call__(input_data_list)
 
 
 @PREDICTORS.register_module()
