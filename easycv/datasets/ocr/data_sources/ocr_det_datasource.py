@@ -10,6 +10,8 @@ import numpy as np
 from easycv.datasets.registry import DATASOURCES
 from easycv.file.image import load_image
 
+IGNORE_TAGS = ['*', '###']
+
 
 @DATASOURCES.register_module(force=True)
 class OCRDetSource(object):
@@ -51,7 +53,7 @@ class OCRDetSource(object):
             txt = label[bno]['transcription']
             boxes.append(box)
             txts.append(txt)
-            if txt in ['*', '###']:
+            if txt in IGNORE_TAGS:
                 txt_tags.append(True)
             else:
                 txt_tags.append(False)
@@ -100,9 +102,9 @@ class OCRDetSource(object):
                     data_line, traceback.format_exc()))
             outs = None
         if outs is None:
-            rnd_idx = np.random.randint(self.__len__(
-            )) if not self.test_mode else (idx + 1) % self.__len__()
-            return self.__getitem__(rnd_idx)
+            rnd_idx = np.random.randint(
+                len(self)) if not self.test_mode else (idx + 1) % len(self)
+            return self[rnd_idx]
         return outs
 
     def __len__(self):
@@ -146,7 +148,7 @@ class OCRPaiDetSource(object):
             txt = json.loads(label[bno]['text'])['text']
             boxes.append(box)
             txts.append(txt)
-            if txt in ['*', '###']:
+            if txt in IGNORE_TAGS:
                 txt_tags.append(True)
             else:
                 txt_tags.append(False)
