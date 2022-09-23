@@ -2,13 +2,11 @@
 import math
 
 import torch
-from mmcv.runner import OPTIMIZERS
 from torch.optim import Optimizer
 
 from easycv.framework.errors import RuntimeError
 
 
-@OPTIMIZERS.register_module()
 class Lamb(Optimizer):
     """A pure pytorch variant of FuseLAMB (NvLamb variant) optimizer.
     This class is copied from `timm`_. The LAMB was proposed in `Large Batch
