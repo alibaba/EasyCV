@@ -11,6 +11,7 @@ import pyclipper
 from shapely.geometry import Polygon
 
 from easycv.datasets.registry import PIPELINES
+from easycv.framework.errors import RuntimeError
 
 
 class AugmenterBuilder(object):
@@ -196,6 +197,10 @@ def crop_area(im, text_polys, min_crop_side_ratio, max_tries):
 
 @PIPELINES.register_module()
 class EastRandomCropData(object):
+    """
+    crop method for ocr detection, ensure the cropped area not across a text,
+    and keep min side larger than min_crop_side_ratio
+    """
 
     def __init__(self,
                  size=(640, 640),
@@ -203,6 +208,14 @@ class EastRandomCropData(object):
                  min_crop_side_ratio=0.1,
                  keep_ratio=True,
                  **kwargs):
+        """
+
+        Args:
+            size (tuple, optional): target size to crop. Defaults to (640, 640).
+            max_tries (int, optional): max try times. Defaults to 10.
+            min_crop_side_ratio (float, optional): min side should larger than this. Defaults to 0.1.
+            keep_ratio (bool, optional): whether to keep ratio. Defaults to True.
+        """
         self.size = size
         self.max_tries = max_tries
         self.min_crop_side_ratio = min_crop_side_ratio
@@ -216,11 +229,11 @@ class EastRandomCropData(object):
         all_care_polys = [
             text_polys[i] for i, tag in enumerate(ignore_tags) if not tag
         ]
-        # 计算crop区域
+        # compute crop area
         crop_x, crop_y, crop_w, crop_h = crop_area(img, all_care_polys,
                                                    self.min_crop_side_ratio,
                                                    self.max_tries)
-        # crop 图片 保持比例填充
+        # crop img
         scale_w = self.size[0] / crop_w
         scale_h = self.size[1] / crop_h
         scale = min(scale_w, scale_h)
@@ -236,7 +249,7 @@ class EastRandomCropData(object):
             img = cv2.resize(
                 img[crop_y:crop_y + crop_h, crop_x:crop_x + crop_w],
                 tuple(self.size))
-        # crop 文本框
+        # crop text
         text_polys_crop = []
         ignore_tags_crop = []
         texts_crop = []
@@ -255,6 +268,9 @@ class EastRandomCropData(object):
 
 @PIPELINES.register_module()
 class MakeBorderMap(object):
+    """
+    Making Border binary mask from DBNet algorithm
+    """
 
     def __init__(self,
                  shrink_ratio=0.4,
@@ -533,7 +549,6 @@ class OCRDetResize(object):
         ratio_h = float(resize_h) / ori_h
         ratio_w = float(resize_w) / ori_w
         img = cv2.resize(img, (int(resize_w), int(resize_h)))
-        # return img, np.array([ori_h, ori_w])
         return img, [ratio_h, ratio_w]
 
     def resize_image_type0(self, img):
