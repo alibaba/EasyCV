@@ -274,12 +274,12 @@ class PredictorV2(object):
                 else:
                     out_i[k] = None
 
-            out_i = self.postprocess_single(out_i)
+            out_i = self.postprocess_single(out_i, *args, **kwargs)
             outputs.append(out_i)
 
         return outputs
 
-    def postprocess_single(self, inputs):
+    def postprocess_single(self, inputs, *args, **kwargs):
         """Process outputs of single sample.
         If you need add some processing ops, you need to reimplement it.
         """
