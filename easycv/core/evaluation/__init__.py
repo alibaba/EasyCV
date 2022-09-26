@@ -15,3 +15,4 @@ from .segmentation_eval import SegmentationEvaluator
 from .top_down_eval import (keypoint_auc, keypoint_epe, keypoint_nme,
                             keypoint_pck_accuracy, keypoints_from_heatmaps,
                             pose_pck_accuracy)
+from .wholebody_keypoint_eval import WholeBodyKeyPointEvaluator

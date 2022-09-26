@@ -315,8 +315,8 @@ class PredictorV2(object):
             batch_outputs = self.preprocess(batch)
             batch_outputs = self.forward(batch_outputs)
             results = self.postprocess(batch_outputs)
-            assert len(results) == len(
-                batch), f'Mismatch size {len(results)} != {len(batch)}'
+            # assert len(results) == len(
+            #     batch), f'Mismatch size {len(results)} != {len(batch)}'
             if keep_inputs:
                 for i in range(len(batch)):
                     results[i].update({'inputs': batch[i]})

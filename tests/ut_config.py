@@ -131,3 +131,4 @@ PRETRAINED_MODEL_SEGFORMER = os.path.join(
 MODEL_CONFIG_SEGFORMER = (
     './configs/segmentation/segformer/segformer_b0_coco.py')
 SMALL_COCO_WHOLE_BODY_HAND_ROOT = 'data/test/pose/hand/small_whole_body_hand_coco'
+SMALL_COCO_WHOLEBODY_ROOT = 'data/test/pose/wholebody/data'
