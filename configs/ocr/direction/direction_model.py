@@ -2,7 +2,7 @@ _base_ = ['configs/base.py']
 
 model = dict(
     type='TextClassifier',
-    backbone=dict(type='MobileNetV3', scale=0.35, model_name='small'),
+    backbone=dict(type='OCRRecMobileNetV3', scale=0.35, model_name='small'),
     head=dict(
         type='ClsHead',
         with_avg_pool=True,

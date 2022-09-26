@@ -3,7 +3,10 @@ _base_ = ['configs/base.py']
 model = dict(
     type='DBNet',
     backbone=dict(
-        type='MobileNetV3', scale=0.5, model_name='large', disable_se=True),
+        type='OCRDetMobileNetV3',
+        scale=0.5,
+        model_name='large',
+        disable_se=True),
     neck=dict(
         type='RSEFPN',
         in_channels=[16, 24, 56, 480],

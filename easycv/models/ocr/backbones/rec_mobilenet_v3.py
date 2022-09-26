@@ -1,11 +1,13 @@
 # Modified from https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/ppocr/modeling/backbones/rec_mobilenet_v3.py
 import torch.nn as nn
 
+from easycv.models.registry import BACKBONES
 from .det_mobilenet_v3 import (Activation, ConvBNLayer, ResidualUnit,
                                make_divisible)
 
 
-class MobileNetV3(nn.Module):
+@BACKBONES.register_module()
+class OCRRecMobileNetV3(nn.Module):
     """mobilenetv3 backbone for ocr recognition
     """
 
@@ -16,7 +18,7 @@ class MobileNetV3(nn.Module):
                  large_stride=None,
                  small_stride=None,
                  **kwargs):
-        super(MobileNetV3, self).__init__()
+        super(OCRRecMobileNetV3, self).__init__()
         if small_stride is None:
             small_stride = [2, 2, 2, 2]
         if large_stride is None:

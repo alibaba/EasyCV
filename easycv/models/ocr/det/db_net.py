@@ -7,14 +7,12 @@ import torch.nn.functional as F
 from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
-from easycv.models.ocr.backbones.det_mobilenet_v3 import MobileNetV3
-from easycv.models.ocr.backbones.det_resnet_vd import ResNet
 from easycv.models.ocr.postprocess.db_postprocess import DBPostProcess
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 
 
-@MODELS.register_module(force=True)
+@MODELS.register_module()
 class DBNet(BaseModel):
     """DBNet for text detection
     """
@@ -33,7 +31,7 @@ class DBNet(BaseModel):
 
         self.pretrained = pretrained
 
-        self.backbone = eval(backbone.type)(**backbone)
+        self.backbone = builder.build_backbone(backbone)
         self.neck = builder.build_neck(neck)
         self.head = builder.build_head(head)
         self.loss = builder.build_loss(loss) if loss else None

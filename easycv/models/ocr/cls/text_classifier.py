@@ -7,12 +7,11 @@ import torch.nn.functional as F
 from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
-from easycv.models.ocr.backbones.rec_mobilenet_v3 import MobileNetV3
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 
 
-@MODELS.register_module(force=True)
+@MODELS.register_module()
 class TextClassifier(BaseModel):
     """for text classification
     """
@@ -30,7 +29,7 @@ class TextClassifier(BaseModel):
 
         self.pretrained = pretrained
 
-        self.backbone = eval(backbone.type)(**backbone)
+        self.backbone = builder.build_backbone(backbone)
         self.neck = builder.build_neck(neck) if neck else None
         self.head = builder.build_head(head)
         self.loss = nn.CrossEntropyLoss()
@@ -70,10 +69,10 @@ class TextClassifier(BaseModel):
         y['head_out'] = x
         return y
 
-    def forward_train(self, img, **kwargs):
+    def forward_train(self, img, label, **kwargs):
         out = {}
         preds = self.extract_feat(img)
-        out['loss'] = self.loss(preds['head_out'], kwargs['label'])
+        out['loss'] = self.loss(preds['head_out'], label)
         return out
 
     def forward_test(self, img, **kwargs):

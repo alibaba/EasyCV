@@ -7,13 +7,12 @@ import torch.nn.functional as F
 from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
-from easycv.models.ocr.backbones.rec_mv1_enhance import MobileNetV1Enhance
 from easycv.models.ocr.postprocess.rec_postprocess import CTCLabelDecode
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
 
 
-@MODELS.register_module(force=True)
+@MODELS.register_module()
 class OCRRecNet(BaseModel):
     """for text recognition
     """
@@ -32,7 +31,8 @@ class OCRRecNet(BaseModel):
 
         self.pretrained = pretrained
 
-        self.backbone = eval(backbone.type)(**backbone)
+        # self.backbone = eval(backbone.type)(**backbone)
+        self.backbone = builder.build_backbone(backbone)
         self.neck = builder.build_neck(neck) if neck else None
         self.head = builder.build_head(head)
         self.loss = builder.build_loss(loss) if loss else None

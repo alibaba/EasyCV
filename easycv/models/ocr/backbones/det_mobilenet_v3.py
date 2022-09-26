@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from easycv.models.registry import BACKBONES
+
 
 class Hswish(nn.Module):
 
@@ -213,7 +215,8 @@ class ResidualUnit(nn.Module):
         return x
 
 
-class MobileNetV3(nn.Module):
+@BACKBONES.register_module()
+class OCRDetMobileNetV3(nn.Module):
 
     def __init__(self,
                  in_channels=3,
@@ -226,7 +229,7 @@ class MobileNetV3(nn.Module):
         Args:
             params(dict): the super parameters for build network
         """
-        super(MobileNetV3, self).__init__()
+        super(OCRDetMobileNetV3, self).__init__()
 
         self.disable_se = disable_se
 

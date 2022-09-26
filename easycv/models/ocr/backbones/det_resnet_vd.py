@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from easycv.models.registry import BACKBONES
 from .det_mobilenet_v3 import Activation
 
 
@@ -160,10 +161,11 @@ class BasicBlock(nn.Module):
         return y
 
 
-class ResNet(nn.Module):
+@BACKBONES.register_module()
+class OCRDetResNet(nn.Module):
 
     def __init__(self, in_channels=3, layers=50, **kwargs):
-        super(ResNet, self).__init__()
+        super(OCRDetResNet, self).__init__()
 
         self.layers = layers
         supported_layers = [18, 34, 50, 101, 152, 200]

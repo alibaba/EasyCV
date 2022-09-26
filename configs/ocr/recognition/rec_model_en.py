@@ -5,7 +5,7 @@ character_dict_path = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com
 model = dict(
     type='OCRRecNet',
     backbone=dict(
-        type='MobileNetV1Enhance',
+        type='OCRRecMobileNetV1Enhance',
         scale=0.5,
         last_conv_stride=[1, 2],
         last_pool_type='avg'),
@@ -104,7 +104,7 @@ train_dataset = dict(
     type='OCRRecDataset',
     data_source=dict(
         type='OCRReclmdbSource',
-        data_dir='ocr/rec/DTRB/debug/data_lmdb_release/training',
+        data_dir='ocr/rec/DTRB/debug/data_lmdb_release/validation',
         ext_data_num=2,
     ),
     pipeline=train_pipeline)

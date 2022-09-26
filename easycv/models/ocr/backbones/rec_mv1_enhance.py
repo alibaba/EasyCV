@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from easycv.models.registry import BACKBONES
 from .det_mobilenet_v3 import Activation
 
 
@@ -78,7 +79,8 @@ class DepthwiseSeparable(nn.Module):
         return y
 
 
-class MobileNetV1Enhance(nn.Module):
+@BACKBONES.register_module()
+class OCRRecMobileNetV1Enhance(nn.Module):
 
     def __init__(self,
                  in_channels=3,

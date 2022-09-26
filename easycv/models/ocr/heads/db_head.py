@@ -6,10 +6,10 @@ import torch.nn.functional as F
 from easycv.models.builder import HEADS
 
 
-class Head(nn.Module):
+class DBBaseHead(nn.Module):
 
     def __init__(self, in_channels, kernel_list=[3, 2, 2], **kwargs):
-        super(Head, self).__init__()
+        super(DBBaseHead, self).__init__()
         self.conv1 = nn.Conv2d(
             in_channels=in_channels,
             out_channels=in_channels // 4,
@@ -65,8 +65,8 @@ class DBHead(nn.Module):
             'conv2d_57', 'batch_norm_49', 'conv2d_transpose_2',
             'batch_norm_50', 'conv2d_transpose_3', 'thresh'
         ]
-        self.binarize = Head(in_channels, **kwargs)
-        self.thresh = Head(in_channels, **kwargs)
+        self.binarize = DBBaseHead(in_channels, **kwargs)
+        self.thresh = DBBaseHead(in_channels, **kwargs)
 
     def step_function(self, x, y):
         return torch.reciprocal(1 + torch.exp(-self.k * (x - y)))

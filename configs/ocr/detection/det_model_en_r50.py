@@ -2,7 +2,7 @@ _base_ = ['configs/base.py']
 
 model = dict(
     type='DBNet',
-    backbone=dict(type='ResNet', in_channels=3, layers=50),
+    backbone=dict(type='OCRDetResNet', in_channels=3, layers=50),
     neck=dict(
         type='LKPAN',
         in_channels=[256, 512, 1024, 2048],
