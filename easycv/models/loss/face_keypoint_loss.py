@@ -54,7 +54,7 @@ class WingLossWithPose(nn.Module):
 
         self.part_weight = None
         if part_weight is not None:
-            self.part_weight = torch.from_numpy(part_weight).cuda()
+            self.part_weight = torch.from_numpy(part_weight)
 
     def forward(self, pred, target, pose):
         weight = 5.0 * (1.0 - torch.cos(pose * np.pi / 180.0)) + 1.0
