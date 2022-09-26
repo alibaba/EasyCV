@@ -1,4 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+# isort:skip_file
+from easycv.utils.import_utils import check_numpy
+check_numpy()
 from .auc_eval import AucEvaluator
 from .base_evaluator import Evaluator
 from .classification_eval import ClsEvaluator
