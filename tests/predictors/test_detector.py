@@ -7,152 +7,99 @@ import unittest
 import tempfile
 import numpy as np
 from PIL import Image
-
-from easycv.predictors.detector import TorchYoloXPredictor, DetectionPredictor
+from easycv.predictors.detector import DetectionPredictor, YoloXPredictor, TorchYoloXPredictor
 from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_EXPORT,
-                             PRETRAINED_MODEL_YOLOXS_EXPORT_OLD,
                              PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_JIT,
                              PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT,
                              DET_DATA_SMALL_COCO_LOCAL)
 from numpy.testing import assert_array_almost_equal
 
 
-class DetectorTest(unittest.TestCase):
+class YoloXPredictorTest(unittest.TestCase):
+    img = os.path.join(DET_DATA_SMALL_COCO_LOCAL, 'val2017/000000522713.jpg')
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
-    def test_yolox_old_detector(self):
-        detection_model_path = PRETRAINED_MODEL_YOLOXS_EXPORT_OLD
-
-        img = os.path.join(DET_DATA_SMALL_COCO_LOCAL,
-                           'val2017/000000522713.jpg')
-
-        input_data_list = [np.asarray(Image.open(img))]
-        predictor = TorchYoloXPredictor(
-            model_path=detection_model_path, score_thresh=0.5)
-
-        output = predictor.predict(input_data_list)[0]
-
-    def test_yolox_detector(self):
-        detection_model_path = PRETRAINED_MODEL_YOLOXS_EXPORT
-
-        img = os.path.join(DET_DATA_SMALL_COCO_LOCAL,
-                           'val2017/000000522713.jpg')
-
-        input_data_list = [np.asarray(Image.open(img))]
-        predictor = TorchYoloXPredictor(
-            model_path=detection_model_path, score_thresh=0.5)
-
-        output = predictor.predict(input_data_list)[0]
-        self.assertIn('detection_boxes', output)
-        self.assertIn('detection_scores', output)
-        self.assertIn('detection_classes', output)
-        self.assertIn('detection_class_names', output)
-        self.assertIn('ori_img_shape', output)
-
-        self.assertEqual(len(output['detection_boxes']), 4)
-        self.assertEqual(output['ori_img_shape'], [480, 640])
-
-        self.assertListEqual(output['detection_classes'].tolist(),
+    def _assert_results(self, results):
+        self.assertEqual(results['ori_img_shape'], [480, 640])
+        self.assertListEqual(results['detection_classes'].tolist(),
                              np.array([13, 8, 8, 8], dtype=np.int32).tolist())
-
-        self.assertListEqual(output['detection_class_names'],
+        self.assertListEqual(results['detection_class_names'],
                              ['bench', 'boat', 'boat', 'boat'])
-
         assert_array_almost_equal(
-            output['detection_scores'],
-            np.array([0.92593855, 0.60268813, 0.57775956, 0.5750004],
+            results['detection_scores'],
+            np.array([0.92335737, 0.59416807, 0.5567955, 0.55368793],
                      dtype=np.float32),
             decimal=2)
-
         assert_array_almost_equal(
-            output['detection_boxes'],
-            np.array([[407.89523, 284.62598, 561.4984, 356.7296],
-                      [439.37653, 263.42395, 467.01526, 271.79144],
-                      [480.8597, 269.64435, 502.18765, 274.80127],
-                      [510.37033, 268.4982, 527.67017, 273.04935]]),
+            results['detection_boxes'],
+            np.array([[408.1708, 285.11456, 561.84924, 356.42285],
+                      [438.88098, 264.46606, 467.07275, 271.76355],
+                      [510.19467, 268.46664, 528.26935, 273.37192],
+                      [480.9472, 269.74115, 502.00842, 274.85553]]),
             decimal=1)
 
-    def test_yolox_detector_jit_nopre_notrt(self):
-        img = os.path.join(DET_DATA_SMALL_COCO_LOCAL,
-                           'val2017/000000522713.jpg')
+    def _base_test_single(self, model_path, inputs):
+        predictor = YoloXPredictor(model_path=model_path, score_thresh=0.5)
 
-        input_data_list = [np.asarray(Image.open(img))]
+        outputs = predictor(inputs)
+        self.assertEqual(len(outputs), 1)
+        output = outputs[0]
+        self._assert_results(output)
 
+    def _base_test_batch(self, model_path, inputs, num_samples, batch_size):
+        assert isinstance(inputs, list) and len(inputs) == 1
+
+        predictor = YoloXPredictor(
+            model_path=model_path, score_thresh=0.5, batch_size=batch_size)
+        outputs = predictor(inputs * num_samples)
+
+        self.assertEqual(len(outputs), num_samples)
+        for output in outputs:
+            self._assert_results(output)
+
+    def test_single_raw(self):
+        model_path = PRETRAINED_MODEL_YOLOXS_EXPORT
+        inputs = [np.asarray(Image.open(self.img))]
+        self._base_test_single(model_path, inputs)
+
+    def test_batch_raw(self):
+        model_path = PRETRAINED_MODEL_YOLOXS_EXPORT
+        inputs = [np.asarray(Image.open(self.img))]
+        self._base_test_batch(model_path, inputs, num_samples=3, batch_size=2)
+
+    def test_single_jit_nopre_notrt(self):
         jit_path = PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_JIT
-        predictor_jit = TorchYoloXPredictor(
-            model_path=jit_path, score_thresh=0.5)
+        self._base_test_single(jit_path, self.img)
 
-        output = predictor_jit.predict(input_data_list)[0]
-        self.assertIn('detection_boxes', output)
-        self.assertIn('detection_scores', output)
-        self.assertIn('detection_classes', output)
-        self.assertIn('detection_class_names', output)
-        self.assertIn('ori_img_shape', output)
+    def test_batch_jit_nopre_notrt(self):
+        jit_path = PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_JIT
+        self._base_test_batch(
+            jit_path, [self.img], num_samples=2, batch_size=1)
 
-        self.assertEqual(len(output['detection_boxes']), 4)
-        self.assertEqual(output['ori_img_shape'], [480, 640])
-
-        self.assertListEqual(output['detection_classes'].tolist(),
-                             np.array([13, 8, 8, 8], dtype=np.int32).tolist())
-
-        self.assertListEqual(output['detection_class_names'],
-                             ['bench', 'boat', 'boat', 'boat'])
-
-        assert_array_almost_equal(
-            output['detection_scores'],
-            np.array([0.92593855, 0.60268813, 0.57775956, 0.5750004],
-                     dtype=np.float32),
-            decimal=2)
-
-        assert_array_almost_equal(
-            output['detection_boxes'],
-            np.array([[407.89523, 284.62598, 561.4984, 356.7296],
-                      [439.37653, 263.42395, 467.01526, 271.79144],
-                      [480.8597, 269.64435, 502.18765, 274.80127],
-                      [510.37033, 268.4982, 527.67017, 273.04935]]),
-            decimal=1)
-
-    def test_yolox_detector_jit_pre_trt(self):
-        img = os.path.join(DET_DATA_SMALL_COCO_LOCAL,
-                           'val2017/000000522713.jpg')
-
-        input_data_list = [np.asarray(Image.open(img))]
-
+    def test_single_jit_pre_trt(self):
         jit_path = PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT
-        predictor_jit = TorchYoloXPredictor(
-            model_path=jit_path, score_thresh=0.5)
+        self._base_test_single(jit_path, [self.img])
 
-        output = predictor_jit.predict(input_data_list)[0]
-        self.assertIn('detection_boxes', output)
-        self.assertIn('detection_scores', output)
-        self.assertIn('detection_classes', output)
-        self.assertIn('detection_class_names', output)
-        self.assertIn('ori_img_shape', output)
+    def test_batch_jit_pre_trt(self):
+        jit_path = PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT
+        self._base_test_batch(
+            jit_path, [self.img], num_samples=4, batch_size=2)
 
-        self.assertEqual(len(output['detection_boxes']), 4)
-        self.assertEqual(output['ori_img_shape'], [480, 640])
+    def test_single_raw_TorchYoloXPredictor(self):
+        detection_model_path = PRETRAINED_MODEL_YOLOXS_EXPORT
+        input_data_list = [np.asarray(Image.open(self.img))]
+        predictor = TorchYoloXPredictor(
+            model_path=detection_model_path, score_thresh=0.5)
+        output = predictor(input_data_list)[0]
+        self._assert_results(output)
 
-        self.assertListEqual(output['detection_classes'].tolist(),
-                             np.array([13, 8, 8, 8], dtype=np.int32).tolist())
 
-        self.assertListEqual(output['detection_class_names'],
-                             ['bench', 'boat', 'boat', 'boat'])
+class DetectionPredictorTest(unittest.TestCase):
 
-        assert_array_almost_equal(
-            output['detection_scores'],
-            np.array([0.92593855, 0.60268813, 0.57775956, 0.5750004],
-                     dtype=np.float32),
-            decimal=2)
-
-        assert_array_almost_equal(
-            output['detection_boxes'],
-            np.array([[407.89523, 284.62598, 561.4984, 356.7296],
-                      [439.37653, 263.42395, 467.01526, 271.79144],
-                      [480.8597, 269.64435, 502.18765, 274.80127],
-                      [510.37033, 268.4982, 527.67017, 273.04935]]),
-            decimal=1)
+    def setUp(self):
+        print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
     def _detection_detector_assert(self, output):
         self.assertIn('detection_boxes', output)
