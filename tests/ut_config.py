@@ -73,6 +73,13 @@ COMPRESSION_TEST_DATA = os.path.join(BASE_LOCAL_PATH,
 SEG_DATA_SMALL_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                         'data/segmentation/small_voc_200')
 
+# OCR data
+SMALL_OCR_CLS_DATA = os.path.join(BASE_LOCAL_PATH, 'data/ocr/small_ocr_cls')
+SMALL_OCR_DET_DATA = os.path.join(BASE_LOCAL_PATH, 'data/ocr/small_ocr_det')
+SMALL_OCR_DET_PAI_DATA = os.path.join(BASE_LOCAL_PATH,
+                                      'data/ocr/small_ocr_det_pai')
+SMALL_OCR_REC_DATA = os.path.join(BASE_LOCAL_PATH, 'data/ocr/small_ocr_rec')
+
 PRETRAINED_MODEL_MOCO = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/selfsup/moco/moco_epoch_200.pth')
 PRETRAINED_MODEL_RESNET50 = os.path.join(

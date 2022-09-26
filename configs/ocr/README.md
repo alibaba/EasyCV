@@ -71,11 +71,11 @@ predictor = OCRPredictor(
     rec_model_path=path_to_recmodel,
     cls_model_path=path_to_clsmodel,
     use_angle_cls=True)
+filter_boxes, filter_rec_res = predictor(img_path)
 img = cv2.imread('ocr_det.jpg')
-filter_boxes, filter_rec_res = predictor(img)
 out_img = predictor.show(
-    filter_boxes,
-    filter_rec_res,
+    filter_boxes[0],
+    filter_rec_res[0],
     img,
     font_path='simfang.ttf')
 cv2.imwrite('out_img.jpg', out_img)

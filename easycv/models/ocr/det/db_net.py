@@ -76,15 +76,17 @@ class DBNet(BaseModel):
         shape_list = [
             img_meta['ori_img_shape'] for img_meta in kwargs['img_metas']
         ]
-        ignore_tags = [
-            img_meta['ignore_tags'] for img_meta in kwargs['img_metas']
-        ]
-        polys = [img_meta['polys'] for img_meta in kwargs['img_metas']]
         with torch.no_grad():
             preds = self.extract_feat(img)
         post_results = self.postprocess_op(preds, shape_list)
-        post_results['ignore_tags'] = ignore_tags
-        post_results['polys'] = polys
+        if 'ignore_tags' in kwargs['img_metas'][0]:
+            ignore_tags = [
+                img_meta['ignore_tags'] for img_meta in kwargs['img_metas']
+            ]
+            post_results['ignore_tags'] = ignore_tags
+        if 'polys' in kwargs['img_metas'][0]:
+            polys = [img_meta['polys'] for img_meta in kwargs['img_metas']]
+            post_results['polys'] = polys
         return post_results
 
     def postprocess(self, preds, shape_list):

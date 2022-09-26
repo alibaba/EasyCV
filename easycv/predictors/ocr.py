@@ -43,29 +43,6 @@ class OCRDetPredictor(PredictorV2):
             *args,
             **kwargs)
 
-    def preprocess_single(self, input):
-        """Preprocess single input sample.
-        If you need custom ops to load or process a single input sample, you need to reimplement it.
-        """
-        input = self._load_input(input)
-        input['ori_img_shape'] = input['ori_shape']
-        return self.processor(input)
-
-    def forward(self, inputs):
-        """Model forward.
-        If you need refactor model forward, you need to reimplement it.
-        """
-        shape_list = [
-            img_meta['ori_img_shape'] for img_meta in inputs['img_metas']
-        ]
-        with torch.no_grad():
-            outputs = self.model.extract_feat(inputs['img'], )
-        outputs = self.model.postprocess(outputs, shape_list)
-        return outputs
-
-    def postprocess(self, inputs, *args, **kwargs):
-        return inputs
-
     def show_result(self, dt_boxes, img):
         img = img.astype(np.uint8)
         for box in dt_boxes:
@@ -125,34 +102,28 @@ class OCRClsPredictor(PredictorV2):
             *args,
             **kwargs)
 
-    def flip_img(self, result, img_list, threshold=0.9):
-        output = {'labels': [], 'logits': []}
-        img_list_out = []
-        for img, res in zip(img_list, result):
-            label, logit = res['class'], res['neck']
-            output['labels'].append(label)
-            output['logits'].append(logit[label])
-            if label == 1 and logit[label] > threshold:
-                img = cv2.flip(img, -1)
-            img_list_out.append(img)
-        return img_list_out, output
-
 
 @PREDICTORS.register_module()
-class OCRPredictor(PredictorInterface):
+class OCRPredictor(object):
 
     def __init__(self,
                  det_model_path,
                  rec_model_path,
                  cls_model_path=None,
+                 det_batch_size=1,
+                 rec_batch_size=64,
+                 cls_batch_size=64,
                  drop_score=0.5,
                  use_angle_cls=False):
 
         self.use_angle_cls = use_angle_cls
         if use_angle_cls:
-            self.cls_predictor = OCRClsPredictor(cls_model_path)
-        self.det_predictor = OCRDetPredictor(det_model_path)
-        self.rec_predictor = OCRRecPredictor(rec_model_path)
+            self.cls_predictor = OCRClsPredictor(
+                cls_model_path, batch_size=cls_batch_size)
+        self.det_predictor = OCRDetPredictor(
+            det_model_path, batch_size=det_batch_size)
+        self.rec_predictor = OCRRecPredictor(
+            rec_model_path, batch_size=rec_batch_size)
         self.drop_score = drop_score
 
     def sorted_boxes(self, dt_boxes):
@@ -198,6 +169,7 @@ class OCRPredictor(PredictorInterface):
         pts_std = np.float32([[0, 0], [img_crop_width, 0],
                               [img_crop_width, img_crop_height],
                               [0, img_crop_height]])
+        points = np.float32(points)
         M = cv2.getPerspectiveTransform(points, pts_std)
         dst_img = cv2.warpPerspective(
             img,
@@ -209,29 +181,50 @@ class OCRPredictor(PredictorInterface):
             dst_img = np.rot90(dst_img)
         return dst_img
 
-    def __call__(self, img):
-        ori_im = img.copy()
+    def __call__(self, inputs):
+        # support srt list(str) list(np.array) as input
+        if isinstance(inputs, str):
+            inputs = [inputs]
+        if isinstance(inputs[0], str):
+            inputs = [cv2.imread(path) for path in inputs]
 
-        dt_boxes = self.det_predictor([img])[0]
-        dt_boxes = self.sorted_boxes(dt_boxes)
-        img_crop_list = []
-        for bno in range(len(dt_boxes)):
-            tmp_box = copy.deepcopy(dt_boxes[bno])
-            img_crop = self.get_rotate_crop_image(ori_im, tmp_box)
-            img_crop_list.append(img_crop)
-        if self.use_angle_cls:
-            cls_res = self.cls_predictor(img_crop_list)
-            img_crop_list, cls_res = self.cls_predictor.flip_img(
-                cls_res, img_crop_list)
+        dt_boxes_batch = self.det_predictor(inputs)
+        boxes_res = []
+        text_res = []
+        for img, dt_boxes in zip(inputs, dt_boxes_batch):
+            dt_boxes = dt_boxes['points']
+            dt_boxes = self.sorted_boxes(dt_boxes)
+            img_crop_list = []
+            for bno in range(len(dt_boxes)):
+                tmp_box = copy.deepcopy(dt_boxes[bno])
+                img_crop = self.get_rotate_crop_image(img, tmp_box)
+                img_crop_list.append(img_crop)
+            if self.use_angle_cls:
+                cls_res = self.cls_predictor(img_crop_list)
+                img_crop_list, cls_res = self.flip_img(cls_res, img_crop_list)
 
-        rec_res = self.rec_predictor(img_crop_list)
-        filter_boxes, filter_rec_res = [], []
-        for box, rec_reuslt in zip(dt_boxes, rec_res):
-            score = rec_reuslt['preds_text'][1]
-            if score >= self.drop_score:
-                filter_boxes.append(box)
-                filter_rec_res.append(rec_reuslt['preds_text'])
-        return filter_boxes, filter_rec_res
+            rec_res = self.rec_predictor(img_crop_list)
+            filter_boxes, filter_rec_res = [], []
+            for box, rec_reuslt in zip(dt_boxes, rec_res):
+                score = rec_reuslt['preds_text'][1]
+                if score >= self.drop_score:
+                    filter_boxes.append(np.float32(box))
+                    filter_rec_res.append(rec_reuslt['preds_text'])
+            boxes_res.append(filter_boxes)
+            text_res.append(filter_rec_res)
+        return boxes_res, text_res
+
+    def flip_img(self, result, img_list, threshold=0.9):
+        output = {'labels': [], 'logits': []}
+        img_list_out = []
+        for img, res in zip(img_list, result):
+            label, logit = res['class'], res['neck']
+            output['labels'].append(label)
+            output['logits'].append(logit[label])
+            if label == 1 and logit[label] > threshold:
+                img = cv2.flip(img, -1)
+            img_list_out.append(img)
+        return img_list_out, output
 
     def show(self,
              boxes,
