@@ -231,7 +231,7 @@ class OCRPredictor(object):
              rec_res,
              img,
              drop_score=0.5,
-             font_path='./doc/simfang.ttf'):
+             font_path='resource/simhei.ttf'):
         img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
         txts = [rec_res[i][0] for i in range(len(rec_res))]
         scores = [rec_res[i][1] for i in range(len(rec_res))]
@@ -252,7 +252,7 @@ def draw_ocr_box_txt(image,
                      txts,
                      scores=None,
                      drop_score=0.5,
-                     font_path='./doc/simfang.ttf'):
+                     font_path='resource/simhei.ttf'):
     h, w = image.height, image.width
     img_left = image.copy()
     img_right = Image.new('RGB', (w, h), (255, 255, 255))
