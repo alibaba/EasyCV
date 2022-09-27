@@ -47,7 +47,7 @@ class TorchOCRTest(unittest.TestCase):
             use_angle_cls=True)
         img = cv2.imread(os.path.join(TEST_IMAGES_DIR, 'ocr_det.jpg'))
         filter_boxes, filter_rec_res = predictor([img])
-        self.assertEqual(filter_rec_res[0][0][0], '发足够的滋养')
+        self.assertEqual(filter_rec_res[0][0][0], '纯臻营养护发素')
         self.assertGreater(filter_rec_res[0][0][1], 0.91)
 
 

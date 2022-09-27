@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import copy
 import math
+import os
 
 import cv2
 import numpy as np
@@ -226,23 +227,17 @@ class OCRPredictor(object):
             img_list_out.append(img)
         return img_list_out, output
 
-    def show(self,
-             boxes,
-             rec_res,
-             img,
-             drop_score=0.5,
-             font_path='resource/simhei.ttf'):
+    def show(self, boxes, rec_res, img, drop_score=0.5, font_path=None):
+        if font_path == None:
+            dir_path, _ = os.path.split(os.path.realpath(__file__))
+            font_path = os.path.join(dir_path, '../resource/simhei.ttf')
+
         img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
         txts = [rec_res[i][0] for i in range(len(rec_res))]
         scores = [rec_res[i][1] for i in range(len(rec_res))]
 
         draw_img = draw_ocr_box_txt(
-            img,
-            boxes,
-            txts,
-            scores,
-            drop_score=drop_score,
-            font_path=font_path)
+            img, boxes, txts, font_path, scores=scores, drop_score=drop_score)
         draw_img = draw_img[..., ::-1]
         return draw_img
 
@@ -250,9 +245,9 @@ class OCRPredictor(object):
 def draw_ocr_box_txt(image,
                      boxes,
                      txts,
+                     font_path,
                      scores=None,
-                     drop_score=0.5,
-                     font_path='resource/simhei.ttf'):
+                     drop_score=0.5):
     h, w = image.height, image.width
     img_left = image.copy()
     img_right = Image.new('RGB', (w, h), (255, 255, 255))
