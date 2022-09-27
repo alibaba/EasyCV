@@ -6,35 +6,25 @@ import tempfile
 import unittest
 
 import numpy as np
+from mmcv import Config
 from PIL import Image
 from tests.ut_config import (MODEL_CONFIG_SEGFORMER,
                              PRETRAINED_MODEL_MASK2FORMER_DIR,
                              PRETRAINED_MODEL_SEGFORMER, TEST_IMAGES_DIR)
 
+from easycv.file import io
 from easycv.predictors.segmentation import SegmentationPredictor
 
 
 class SegmentationPredictorTest(unittest.TestCase):
+    img_path = os.path.join(TEST_IMAGES_DIR, '000000289059.jpg')
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
-    def test_single(self):
-        segmentation_model_path = PRETRAINED_MODEL_SEGFORMER
-        segmentation_model_config = MODEL_CONFIG_SEGFORMER
-
-        img_path = os.path.join(TEST_IMAGES_DIR, '000000289059.jpg')
-        img = np.asarray(Image.open(img_path))
-
-        predict_pipeline = SegmentationPredictor(
-            model_path=segmentation_model_path,
-            config_file=segmentation_model_config)
-
-        outputs = predict_pipeline(img_path, keep_inputs=True)
-        self.assertEqual(len(outputs), 1)
-        results = outputs[0]
+    def _assert_results(self, results, img_path):
         self.assertEqual(results['inputs'], img_path)
-
+        img = np.asarray(Image.open(img_path))
         self.assertListEqual(
             list(img.shape)[:2], list(results['seg_pred'].shape))
         self.assertListEqual(results['seg_pred'][1, :10].tolist(),
@@ -42,13 +32,43 @@ class SegmentationPredictorTest(unittest.TestCase):
         self.assertListEqual(results['seg_pred'][-1, -10:].tolist(),
                              [133 for i in range(10)])
 
+    def test_single_cpu(self):
+        cfg_file = MODEL_CONFIG_SEGFORMER
+        model_path = PRETRAINED_MODEL_SEGFORMER
+
+        with tempfile.NamedTemporaryFile(suffix='.py') as tmppath:
+            with io.open(cfg_file, 'r') as f:
+                cfg_str = f.read()
+
+            cfg_str = cfg_str.replace('SyncBN', 'BN')
+            with io.open(tmppath.name, 'w') as f:
+                f.write(cfg_str)
+
+            cfg = Config.fromfile(tmppath.name)
+
+        predict_pipeline = SegmentationPredictor(
+            model_path=model_path, config_file=cfg, device='cpu')
+
+        outputs = predict_pipeline(self.img_path, keep_inputs=True)
+        self.assertEqual(len(outputs), 1)
+        results = outputs[0]
+        self._assert_results(results, self.img_path)
+
+    def test_single(self):
+        segmentation_model_path = PRETRAINED_MODEL_SEGFORMER
+        segmentation_model_config = MODEL_CONFIG_SEGFORMER
+        predict_pipeline = SegmentationPredictor(
+            model_path=segmentation_model_path,
+            config_file=segmentation_model_config)
+
+        outputs = predict_pipeline(self.img_path, keep_inputs=True)
+        self.assertEqual(len(outputs), 1)
+        results = outputs[0]
+        self._assert_results(results, self.img_path)
+
     def test_batch(self):
         segmentation_model_path = PRETRAINED_MODEL_SEGFORMER
         segmentation_model_config = MODEL_CONFIG_SEGFORMER
-
-        img_path = os.path.join(TEST_IMAGES_DIR, '000000289059.jpg')
-        img = np.asarray(Image.open(img_path))
-
         predict_pipeline = SegmentationPredictor(
             model_path=segmentation_model_path,
             config_file=segmentation_model_config,
@@ -56,24 +76,15 @@ class SegmentationPredictorTest(unittest.TestCase):
 
         total_samples = 3
         outputs = predict_pipeline(
-            [img_path] * total_samples, keep_inputs=True)
+            [self.img_path] * total_samples, keep_inputs=True)
         self.assertEqual(len(outputs), 3)
 
         for i in range(len(outputs)):
-            self.assertEqual(outputs[i]['inputs'], img_path)
-            self.assertListEqual(
-                list(img.shape)[:2], list(outputs[i]['seg_pred'].shape))
-            self.assertListEqual(outputs[i]['seg_pred'][1, :10].tolist(),
-                                 [161 for i in range(10)])
-            self.assertListEqual(outputs[i]['seg_pred'][-1, -10:].tolist(),
-                                 [133 for i in range(10)])
+            self._assert_results(outputs[i], self.img_path)
 
     def test_dump(self):
         segmentation_model_path = PRETRAINED_MODEL_SEGFORMER
         segmentation_model_config = MODEL_CONFIG_SEGFORMER
-
-        img_path = os.path.join(TEST_IMAGES_DIR, '000000289059.jpg')
-
         temp_dir = tempfile.TemporaryDirectory().name
         if not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
@@ -88,7 +99,7 @@ class SegmentationPredictorTest(unittest.TestCase):
 
         total_samples = 3
         outputs = predict_pipeline(
-            [img_path] * total_samples, keep_inputs=False)
+            [self.img_path] * total_samples, keep_inputs=False)
         self.assertEqual(outputs, [])
 
         with open(tmp_path, 'rb') as f:

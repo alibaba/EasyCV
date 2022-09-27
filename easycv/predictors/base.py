@@ -292,9 +292,8 @@ class PredictorV2(object):
         return collate(inputs, samples_per_gpu=self.batch_size)
 
     def _to_device(self, inputs):
-        target_gpus = [-1] if self.device == 'cpu' else [
-            torch.cuda.current_device()
-        ]
+        target_gpus = [-1] if str(
+            self.device) == 'cpu' else [torch.cuda.current_device()]
         _, kwargs = scatter_kwargs(None, inputs, target_gpus=target_gpus)
         return kwargs[0]
 
