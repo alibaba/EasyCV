@@ -8,8 +8,6 @@ import torch
 import torch.nn as nn
 from mmcv import ConfigDict
 from mmcv.cnn import build_norm_layer, xavier_init
-from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
-                                         TransformerLayerSequence)
 from mmcv.runner import auto_fp16, force_fp32
 from mmcv.runner.base_module import BaseModule, ModuleList
 from mmcv.utils import TORCH_VERSION, digit_version
@@ -22,6 +20,8 @@ from easycv.models.detection.utils.misc import inverse_sigmoid
 from easycv.models.registry import (POSITIONAL_ENCODING, TRANSFORMER,
                                     TRANSFORMER_LAYER,
                                     TRANSFORMER_LAYER_SEQUENCE)
+from easycv.models.utils.transformer import (BaseTransformerLayer,
+                                             TransformerLayerSequence)
 from . import (CustomMSDeformableAttention, MSDeformableAttention3D,
                TemporalSelfAttention)
 

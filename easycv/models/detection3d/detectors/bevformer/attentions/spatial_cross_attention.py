@@ -3,11 +3,11 @@
 import torch
 import torch.nn as nn
 from mmcv.cnn import xavier_init
-from mmcv.cnn.bricks.registry import ATTENTION
 from mmcv.runner import force_fp32
 from mmcv.runner.base_module import BaseModule
 
 from easycv.models.builder import build_attention
+from easycv.models.registry import ATTENTION
 
 
 @ATTENTION.register_module()

@@ -6,10 +6,11 @@ import warnings
 import torch
 import torch.nn as nn
 from mmcv.cnn import constant_init, xavier_init
-from mmcv.cnn.bricks.registry import ATTENTION
 from mmcv.ops.multi_scale_deform_attn import \
     multi_scale_deformable_attn_pytorch
 from mmcv.runner.base_module import BaseModule
+
+from easycv.models.registry import ATTENTION
 
 
 @ATTENTION.register_module()
