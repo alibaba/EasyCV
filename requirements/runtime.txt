@@ -6,6 +6,7 @@ h5py
 imgaug
 json_tricks
 lmdb
+numba
 numpy
 open3d
 opencv-python
