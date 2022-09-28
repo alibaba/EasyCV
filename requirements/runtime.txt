@@ -7,6 +7,7 @@ imgaug
 json_tricks
 lmdb
 numpy
+open3d
 opencv-python
 oss2
 packaging

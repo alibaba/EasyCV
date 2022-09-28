@@ -12,8 +12,8 @@ from easycv.models.builder import HEADS, build_neck
 from easycv.models.detection.utils import (DetrPostProcess, box_xyxy_to_cxcywh,
                                            inverse_sigmoid)
 from easycv.models.loss import CDNCriterion, HungarianMatcher, SetCriterion
-from easycv.models.utils import (MLP, get_world_size,
-                                 is_dist_avail_and_initialized)
+from easycv.models.utils import MLP
+from easycv.utils.dist_utils import get_dist_info, is_dist_available
 from ..dab_detr.dab_detr_transformer import PositionEmbeddingSineHW
 from .cdn_components import cdn_post_process, prepare_for_cdn
 
@@ -443,9 +443,10 @@ class DINOHead(nn.Module):
         num_boxes = torch.as_tensor([num_boxes],
                                     dtype=torch.float,
                                     device=next(iter(outputs.values())).device)
-        if is_dist_avail_and_initialized():
+        if is_dist_available():
             torch.distributed.all_reduce(num_boxes)
-        num_boxes = torch.clamp(num_boxes / get_world_size(), min=1).item()
+        _, world_size = get_dist_info()
+        num_boxes = torch.clamp(num_boxes / world_size, min=1).item()
 
         losses = self.criterion(outputs, targets, num_boxes=num_boxes)
         losses.update(

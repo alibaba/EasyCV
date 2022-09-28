@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 
-from easycv.utils import bbox_util
+from easycv.core.bbox import bbox_util
 
 
 class BboxUtilTest(unittest.TestCase):
