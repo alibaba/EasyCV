@@ -6,6 +6,7 @@ from .detection import *
 from .face import *
 from .heads import *
 from .loss import *
+from .ocr import *
 from .pose import TopDown
 from .registry import BACKBONES, HEADS, LOSSES, MODELS, NECKS
 from .segmentation import *
