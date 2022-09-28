@@ -259,24 +259,21 @@ class PredictorV2(object):
         """Process model batch outputs.
         """
         outputs = []
-        out_i = {}
         batch_size = 1
         # get current batch size
         for k, batch_v in inputs.items():
             if batch_v is not None:
                 batch_size = len(batch_v)
                 break
-
         for i in range(batch_size):
+            out_i = {}
             for k, batch_v in inputs.items():
                 if batch_v is not None:
                     out_i[k] = batch_v[i]
                 else:
                     out_i[k] = None
-
             out_i = self.postprocess_single(out_i, *args, **kwargs)
             outputs.append(out_i)
-
         return outputs
 
     def postprocess_single(self, inputs, *args, **kwargs):
@@ -328,5 +325,4 @@ class PredictorV2(object):
                     results_list.extend(results)
                 else:
                     results_list.append(results)
-
         return results_list
