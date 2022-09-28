@@ -47,6 +47,7 @@ class ModelPruneTest(unittest.TestCase):
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
+        torch.cuda.empty_cache()
 
     def tearDown(self):
         super().tearDown()
