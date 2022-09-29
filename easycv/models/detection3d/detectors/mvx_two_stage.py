@@ -104,6 +104,7 @@ class MVXTwoStageDetector(Base3DDetector):
                               'key, please consider using init_cfg')
                 self.pts_backbone.init_cfg = dict(
                     type='Pretrained', checkpoint=pts_pretrained)
+        self.init_weights()
 
     @property
     def with_img_shared_head(self):

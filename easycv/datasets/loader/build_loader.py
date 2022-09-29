@@ -8,14 +8,14 @@ import numpy as np
 import torch
 from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
-from torch.utils.data import DataLoader, RandomSampler
+from torch.utils.data import DataLoader
 
+from easycv.datasets.builder import build_sampler
 from easycv.datasets.shared.odps_reader import set_dataloader_workid
 from easycv.framework.errors import NotImplementedError
 from easycv.utils.dist_utils import sync_random_seed
 from easycv.utils.torchacc_util import is_torchacc_enabled
 from .collate import CollateWrapper
-from .sampler import DistributedMPSampler, DistributedSampler, RASampler
 
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
@@ -37,6 +37,7 @@ def build_dataloader(dataset,
                      persistent_workers=False,
                      collate_hooks=None,
                      use_repeated_augment_sampler=False,
+                     sampler=None,
                      **kwargs):
     """Build PyTorch DataLoader.
     In distributed training, each GPU/process has a dataloader.
@@ -68,43 +69,47 @@ def build_dataloader(dataset,
 
     if dist:
         seed = sync_random_seed(seed)
-        split_huge_listfile_byrank = getattr(dataset,
-                                             'split_huge_listfile_byrank',
-                                             False)
-
-        if use_repeated_augment_sampler:
-            sampler = RASampler(dataset, world_size, rank, shuffle=shuffle)
-        elif hasattr(dataset, 'm_per_class') and dataset.m_per_class > 1:
-            sampler = DistributedMPSampler(
-                dataset,
-                world_size,
-                rank,
-                shuffle=shuffle,
-                split_huge_listfile_byrank=split_huge_listfile_byrank)
-        else:
-            sampler = DistributedSampler(
-                dataset,
-                world_size,
-                rank,
-                shuffle=shuffle,
-                seed=seed,
-                split_huge_listfile_byrank=split_huge_listfile_byrank)
         batch_size = imgs_per_gpu
         num_workers = workers_per_gpu
     else:
         if replace:
             raise NotImplementedError
-
-        if use_repeated_augment_sampler:
-            sampler = RASampler(dataset, 1, 0, shuffle=shuffle)
-        elif hasattr(dataset, 'm_per_class') and dataset.m_per_class > 1:
-            sampler = DistributedMPSampler(
-                dataset, 1, 0, shuffle=shuffle, replace=replace)
-        else:
-            sampler = RandomSampler(
-                dataset) if shuffle else None  # TODO: set replace
         batch_size = num_gpus * imgs_per_gpu
         num_workers = num_gpus * workers_per_gpu
+
+    default_sampler_args = dict(
+        dataset=dataset,
+        num_replicas=world_size,
+        rank=rank,
+        shuffle=shuffle,
+        seed=seed,
+        replace=replace)
+
+    split_huge_listfile_byrank = getattr(dataset, 'split_huge_listfile_byrank',
+                                         False)
+
+    if sampler is not None:
+        sampler_cfg = sampler
+        sampler_cfg.update(default_sampler_args)
+    elif use_repeated_augment_sampler:
+        sampler_cfg = dict(type='RASampler', **default_sampler_args)
+    elif hasattr(dataset, 'm_per_class') and dataset.m_per_class > 1:
+        sampler_cfg = dict(
+            type='DistributedMPSampler',
+            split_huge_listfile_byrank=split_huge_listfile_byrank,
+            **default_sampler_args)
+    else:
+        if dist:
+            sampler_cfg = dict(
+                type='DistributedSampler',
+                split_huge_listfile_byrank=split_huge_listfile_byrank,
+                **default_sampler_args)
+        else:
+            sampler_cfg = dict(
+                type='RandomSampler',
+                data_source=dataset) if shuffle else None  # TODO: set replace
+
+    sampler = build_sampler(sampler_cfg) if sampler_cfg is not None else None
 
     init_fn = partial(
         worker_init_fn,

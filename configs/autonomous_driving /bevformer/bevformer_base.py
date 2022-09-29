@@ -196,6 +196,9 @@ test_pipeline = [
 data = dict(
     imgs_per_gpu=1,
     workers_per_gpu=4,
+    # TODO: support custom sampler config
+    # shuffler_sampler=dict(type='DistributedGroupSampler'),
+    # nonshuffler_sampler=dict(type='DistributedSampler'),
     train=dict(
         type=dataset_type,
         data_root=data_root,
@@ -226,9 +229,7 @@ data = dict(
         pipeline=test_pipeline,
         bev_size=(bev_h_, bev_w_),
         classes=class_names,
-        modality=input_modality),
-    shuffler_sampler=dict(type='DistributedGroupSampler'),
-    nonshuffler_sampler=dict(type='DistributedSampler'))
+        modality=input_modality))
 
 paramwise_cfg = dict(custom_keys={
     'img_backbone': dict(lr_mult=0.1),
