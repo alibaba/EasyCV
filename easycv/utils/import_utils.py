@@ -9,7 +9,8 @@ def check_numpy():
 
     def require(version):
         if LooseVersion(np.__version__) < LooseVersion(version):
-            raise ImportError('numpy version should be greater than version')
+            raise ImportError(
+                f'numpy version should be greater than {version}')
 
     if sys.version_info.minor == 6:
         require('1.19.5')
