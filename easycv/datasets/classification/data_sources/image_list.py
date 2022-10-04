@@ -86,12 +86,20 @@ class ClsSourceImageList(object):
 
         fns = []
         labels = []
+        str_dict = dict()
 
         for l in lines:
             splits = l.strip().split(delimeter)
             fns.append(os.path.join(root, splits[0]))
-            # must be int,other with mmcv collect will crash
-            label = [int(i) for i in splits[1:]]
+            label = []
+            for i in splits[1:]:
+                # if i is digit, label = int(i); otherwise, label = str_dict[i]
+                if i.isdigit():
+                    label.append(int(i))
+                else:
+                    if i not in str_dict:
+                        str_dict[i] = len(str_dict)
+                    label.append(str_dict[i])
             labels.append(
                 label[0]) if len(label) == 1 else labels.append(label)
 
