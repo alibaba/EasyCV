@@ -123,17 +123,17 @@ class SegSourceBase(object):
 
     def build_samples(self, iterable, process_fn):
         samples_list = []
-        # with Pool(processes=self.num_processes) as p:
-        #     with tqdm(total=len(iterable), desc='Scanning images') as pbar:
-        #         for _, result_dict in enumerate(
-        #                 p.imap_unordered(process_fn, iterable)):
-        #             if result_dict:
-        #                 samples_list.append(result_dict)
-        #             pbar.update()
-        for member in iterable:
-            result_dict = process_fn(source_item=member)
-            if result_dict:
-                samples_list.append(result_dict)
+        with Pool(processes=self.num_processes) as p:
+            with tqdm(total=len(iterable), desc='Scanning images') as pbar:
+                for _, result_dict in enumerate(
+                        p.imap_unordered(process_fn, iterable)):
+                    if result_dict:
+                        samples_list.append(result_dict)
+                    pbar.update()
+        # for member in iterable:
+        #     result_dict = process_fn(source_item=member)
+        #     if result_dict:
+        #         samples_list.append(result_dict)
         return samples_list
 
     def __getitem__(self, idx):
