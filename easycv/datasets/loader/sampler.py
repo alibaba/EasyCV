@@ -11,6 +11,8 @@ from mmcv.runner import get_dist_info
 from torch.utils.data import DistributedSampler as _DistributedSampler
 from torch.utils.data import Sampler
 
+from easycv.framework.errors import ValueError
+
 
 class DistributedMPSampler(_DistributedSampler):
 
@@ -84,7 +86,9 @@ class DistributedMPSampler(_DistributedSampler):
         self.label_list = []
 
         if not self.dataset.data_source.has_labels:
-            raise 'MPSampler need initial with classification datasets which has label!'
+            raise ValueError(
+                'MPSampler need initial with classification datasets which has label!'
+            )
 
         for idx, label in enumerate(self.dataset.data_source.labels):
             if label in self.label_dict.keys():

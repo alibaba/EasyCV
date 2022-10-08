@@ -8,12 +8,55 @@ import unittest
 
 import cv2
 import torch
-
-from easycv.predictors.classifier import TorchClassifier
-
+from easycv.predictors.builder import build_predictor
 from easycv.utils.test_util import clean_up, get_tmp_dir
+from easycv.utils.config_tools import mmcv_config_fromfile
 from tests.ut_config import (PRETRAINED_MODEL_RESNET50_WITHOUTHEAD,
                              IMAGENET_LABEL_TXT, TEST_IMAGES_DIR)
+
+
+class ClassificationPredictorTest(unittest.TestCase):
+
+    def setUp(self):
+        print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
+
+    def test_single(self):
+        checkpoint = PRETRAINED_MODEL_RESNET50_WITHOUTHEAD
+        config_file = 'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py'
+        cfg = mmcv_config_fromfile(config_file)
+        predict_op = build_predictor(
+            dict(
+                **cfg.predict,
+                model_path=checkpoint,
+                config_file=config_file,
+                label_map_path=IMAGENET_LABEL_TXT))
+        img_path = os.path.join(TEST_IMAGES_DIR, 'catb.jpg')
+
+        results = predict_op([img_path])[0]
+        self.assertListEqual(results['class'], [283])
+        self.assertListEqual(results['class_name'], ['"Persian cat",'])
+        self.assertEqual(len(results['class_probs']), 1000)
+
+    def test_batch(self):
+        checkpoint = PRETRAINED_MODEL_RESNET50_WITHOUTHEAD
+        config_file = 'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py'
+        cfg = mmcv_config_fromfile(config_file)
+        predict_op = build_predictor(
+            dict(
+                **cfg.predict,
+                model_path=checkpoint,
+                config_file=config_file,
+                label_map_path=IMAGENET_LABEL_TXT,
+                batch_size=3))
+        img_path = os.path.join(TEST_IMAGES_DIR, 'catb.jpg')
+
+        num_imgs = 4
+        results = predict_op([img_path] * num_imgs)
+        self.assertEqual(len(results), num_imgs)
+        for res in results:
+            self.assertListEqual(res['class'], [283])
+            self.assertListEqual(res['class_name'], ['"Persian cat",'])
+            self.assertEqual(len(res['class_probs']), 1000)
 
 
 class TorchClassifierTest(unittest.TestCase):
@@ -61,6 +104,8 @@ class TorchClassifierTest(unittest.TestCase):
 
         output_ckpt = f'{self.tmp_dir}/export.pth'
         torch.save(output_dict, output_ckpt)
+
+        from easycv.predictors.classifier import TorchClassifier
 
         fe = TorchClassifier(
             output_ckpt, topk=topk, label_map_path=IMAGENET_LABEL_TXT)

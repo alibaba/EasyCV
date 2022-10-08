@@ -25,9 +25,11 @@ class HandKeypointsPredictor(PredictorV2):
         config_file: path or ``Config`` of config file
         detection_model_config: dict of hand detection model predictor config,
                                 example like ``dict(type="", model_path="", config_file="", ......)``
-        batch_size: batch_size to infer
-        save_results: bool
-        save_path: path of result image
+        batch_size (int): batch size for forward.
+        device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
+        save_results (bool): Whether to save predict results.
+        save_path (str): File path for saving results, only valid when `save_results` is True.
+        pipelines (list[dict]): Data pipeline configs.
     """
 
     def __init__(self,
@@ -38,7 +40,7 @@ class HandKeypointsPredictor(PredictorV2):
                  device=None,
                  save_results=False,
                  save_path=None,
-                 mode='rgb',
+                 pipelines=None,
                  *args,
                  **kwargs):
         super(HandKeypointsPredictor, self).__init__(
@@ -48,7 +50,7 @@ class HandKeypointsPredictor(PredictorV2):
             device=device,
             save_results=save_results,
             save_path=save_path,
-            mode=mode,
+            pipelines=pipelines,
             *args,
             **kwargs)
         self.dataset_info = DatasetInfo(COCO_WHOLEBODY_HAND_DATASET_INFO)
@@ -70,52 +72,48 @@ class HandKeypointsPredictor(PredictorV2):
                     }
                 }
         """
-        image_paths = input['inputs']
-        batch_data = []
+        image_path = input['inputs']
+        data_list = []
         box_id = 0
-        for batch_index, image_path in enumerate(image_paths):
-            det_bbox_result = input['results']['detection_boxes'][batch_index]
-            det_bbox_scores = input['results']['detection_scores'][batch_index]
-            img = mmcv.imread(image_path, 'color', self.mode)
-            for bbox, score in zip(det_bbox_result, det_bbox_scores):
-                center, scale = _box2cs(self.cfg.data_cfg['image_size'], bbox)
-                # prepare data
-                data = {
-                    'image_file':
-                    image_path,
-                    'img':
-                    img,
-                    'image_id':
-                    batch_index,
-                    'center':
-                    center,
-                    'scale':
-                    scale,
-                    'bbox_score':
-                    score,
-                    'bbox_id':
-                    box_id,  # need to be assigned if batch_size > 1
-                    'dataset':
-                    'coco_wholebody_hand',
-                    'joints_3d':
-                    np.zeros((self.cfg.data_cfg.num_joints, 3),
-                             dtype=np.float32),
-                    'joints_3d_visible':
-                    np.zeros((self.cfg.data_cfg.num_joints, 3),
-                             dtype=np.float32),
-                    'rotation':
-                    0,
-                    'flip_pairs':
-                    self.dataset_info.flip_pairs,
-                    'ann_info': {
-                        'image_size':
-                        np.array(self.cfg.data_cfg['image_size']),
-                        'num_joints': self.cfg.data_cfg['num_joints']
-                    }
+        det_bbox_result = input['detection_boxes']
+        det_bbox_scores = input['detection_scores']
+        img = mmcv.imread(image_path, 'color', self.INPUT_IMAGE_MODE)
+        for bbox, score in zip(det_bbox_result, det_bbox_scores):
+            center, scale = _box2cs(self.cfg.data_cfg['image_size'], bbox)
+            # prepare data
+            data = {
+                'image_file':
+                image_path,
+                'img':
+                img,
+                'image_id':
+                0,
+                'center':
+                center,
+                'scale':
+                scale,
+                'bbox_score':
+                score,
+                'bbox_id':
+                box_id,  # need to be assigned if batch_size > 1
+                'dataset':
+                'coco_wholebody_hand',
+                'joints_3d':
+                np.zeros((self.cfg.data_cfg.num_joints, 3), dtype=np.float32),
+                'joints_3d_visible':
+                np.zeros((self.cfg.data_cfg.num_joints, 3), dtype=np.float32),
+                'rotation':
+                0,
+                'flip_pairs':
+                self.dataset_info.flip_pairs,
+                'ann_info': {
+                    'image_size': np.array(self.cfg.data_cfg['image_size']),
+                    'num_joints': self.cfg.data_cfg['num_joints']
                 }
-                batch_data.append(data)
-                box_id += 1
-        return batch_data
+            }
+            data_list.append(data)
+            box_id += 1
+        return data_list
 
     def preprocess_single(self, input):
         results = []
@@ -128,8 +126,11 @@ class HandKeypointsPredictor(PredictorV2):
         """Process all inputs list. And collate to batch and put to target device.
         If you need custom ops to load or process a batch samples, you need to reimplement it.
         """
+        # hand det and return source image
+        det_results = self.detection_predictor(inputs, keep_inputs=True)
+
         batch_outputs = []
-        for i in inputs:
+        for i in det_results:
             for res in self.preprocess_single(i, *args, **kwargs):
                 batch_outputs.append(res)
         batch_outputs = self._collate_fn(batch_outputs)
@@ -137,37 +138,25 @@ class HandKeypointsPredictor(PredictorV2):
         return batch_outputs
 
     def postprocess(self, inputs, *args, **kwargs):
-        output = {}
-        output['keypoints'] = inputs['preds']
-        output['boxes'] = inputs['boxes']
-        for i, bbox in enumerate(output['boxes']):
+        keypoints = inputs['preds']
+        boxes = inputs['boxes']
+        for i, bbox in enumerate(boxes):
             center, scale = bbox[:2], bbox[2:4]
-            output['boxes'][i][:4] = bbox_cs2xyxy(center, scale)
-        output['boxes'] = output['boxes'][:, :4]
-        return output
-
-    def __call__(self, inputs, keep_inputs=False):
-        if isinstance(inputs, str):
-            inputs = [inputs]
-
-        results_list = []
-        for i in range(0, len(inputs), self.batch_size):
-            batch = inputs[i:max(len(inputs) - 1, i + self.batch_size)]
-            # hand det and return source image
-            det_results = self.detection_predictor(batch, keep_inputs=True)
-            # hand keypoints
-            batch_outputs = self.preprocess(det_results)
-            batch_outputs = self.forward(batch_outputs)
-            results = self.postprocess(batch_outputs)
-            if keep_inputs:
-                results = {'inputs': batch, 'results': results}
-            # if dump, the outputs will not added to the return value to prevent taking up too much memory
-            if self.save_results:
-                self.dump([results], self.save_path, mode='ab+')
-            else:
-                results_list.append(results)
-
-        return results_list
+            boxes[i][:4] = bbox_cs2xyxy(center, scale)
+        boxes = boxes[:, :4]
+        # TODO: support multi bboxes for a single sample
+        assert len(keypoints.shape) == 3
+        assert len(boxes.shape) == 2
+        batch_outputs = []
+        batch_size = keypoints.shape[0]
+        keypoints = np.split(keypoints, batch_size)
+        boxes = np.split(boxes, batch_size)
+        for i in range(batch_size):
+            batch_outputs.append({
+                'keypoints': keypoints[i],
+                'boxes': boxes[i]
+            })
+        return batch_outputs
 
     def show_result(self,
                     image_path,

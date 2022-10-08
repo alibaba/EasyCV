@@ -73,6 +73,13 @@ COMPRESSION_TEST_DATA = os.path.join(BASE_LOCAL_PATH,
 SEG_DATA_SMALL_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                         'data/segmentation/small_voc_200')
 
+# OCR data
+SMALL_OCR_CLS_DATA = os.path.join(BASE_LOCAL_PATH, 'data/ocr/small_ocr_cls')
+SMALL_OCR_DET_DATA = os.path.join(BASE_LOCAL_PATH, 'data/ocr/small_ocr_det')
+SMALL_OCR_DET_PAI_DATA = os.path.join(BASE_LOCAL_PATH,
+                                      'data/ocr/small_ocr_det_pai')
+SMALL_OCR_REC_DATA = os.path.join(BASE_LOCAL_PATH, 'data/ocr/small_ocr_rec')
+
 PRETRAINED_MODEL_MOCO = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/selfsup/moco/moco_epoch_200.pth')
 PRETRAINED_MODEL_RESNET50 = os.path.join(
@@ -120,10 +127,17 @@ PRETRAINED_MODEL_YOLOX_COMPRESSION = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/compression/yolox_compression.pth')
 PRETRAINED_MODEL_MAE = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/classification/vit/mae_vit_b_1600.pth')
-PRETRAINED_MODEL_MASK2FORMER = os.path.join(
+PRETRAINED_MODEL_MASK2FORMER_DIR = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/segmentation/mask2former/')
+PRETRAINED_MODEL_MASK2FORMER = os.path.join(PRETRAINED_MODEL_MASK2FORMER_DIR,
+                                            'mask2former_r50_instance.pth')
+PRETRAINED_MODEL_OCRDET = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/ocr/det/student_export.pth')
+PRETRAINED_MODEL_OCRREC = os.path.join(
     BASE_LOCAL_PATH,
-    'pretrained_models/segmentation/mask2former/mask2former_r50_instance.pth')
-
+    'pretrained_models/ocr/rec/best_accuracy_student_export.pth')
+PRETRAINED_MODEL_OCRCLS = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/ocr/cls/best_accuracy_export.pth')
 PRETRAINED_MODEL_SEGFORMER = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/segmentation/segformer/segformer_b0/SegmentationEvaluator_mIoU_best.pth'

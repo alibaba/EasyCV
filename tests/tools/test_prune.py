@@ -2,6 +2,7 @@
 import copy
 import logging
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -19,10 +20,6 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 logging.basicConfig(level=logging.INFO)
 
 SMALL_IMAGENET_DATA_ROOT = COMPRESSION_TEST_DATA.rstrip('/') + '/'
-_QUANTIZE_OPTIONS = {
-    'total_epochs': 1,
-    'data.imgs_per_gpu': 16,
-}
 
 _PRUNE_OPTIONS = {
     'total_epochs': 11,
@@ -33,21 +30,7 @@ TRAIN_CONFIGS = [
     {
         'config_file': 'configs/edge_models/yolox_edge.py',
         'cfg_options': {
-            **_QUANTIZE_OPTIONS, 'data.train.data_source.ann_file':
-            SMALL_IMAGENET_DATA_ROOT + 'annotations/instances_train2017.json',
-            'data.train.data_source.img_prefix':
-            SMALL_IMAGENET_DATA_ROOT + 'images',
-            'data.val.data_source.ann_file':
-            SMALL_IMAGENET_DATA_ROOT + 'annotations/instances_train2017.json',
-            'data.val.data_source.img_prefix':
-            SMALL_IMAGENET_DATA_ROOT + 'images'
-        }
-    },
-    {
-        'config_file': 'configs/edge_models/yolox_edge.py',
-        'cfg_options': {
-            **_PRUNE_OPTIONS, 'img_scale': (128, 128),
-            'data.train.data_source.ann_file':
+            **_PRUNE_OPTIONS, 'data.train.data_source.ann_file':
             SMALL_IMAGENET_DATA_ROOT + 'annotations/instances_train2017.json',
             'data.train.data_source.img_prefix':
             SMALL_IMAGENET_DATA_ROOT + 'images',
@@ -64,11 +47,12 @@ class ModelPruneTest(unittest.TestCase):
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
+        torch.cuda.empty_cache()
 
     def tearDown(self):
         super().tearDown()
 
-    def _base_prune(self, train_cfgs):
+    def _base_prune(self, train_cfgs, img_scale=(128, 128)):
         print(train_cfgs)
         cfg_file = train_cfgs.pop('config_file')
         cfg_options = train_cfgs.pop('cfg_options', None)
@@ -76,7 +60,22 @@ class ModelPruneTest(unittest.TestCase):
         if not work_dir:
             work_dir = tempfile.TemporaryDirectory().name
 
-        cfg = Config.fromfile(cfg_file)
+        # replace img_scale value, it is used in many places and not convenient to use cfg_options to replace
+        with tempfile.NamedTemporaryFile(suffix='.py') as tmppath:
+            with io.open(cfg_file, 'r') as f:
+                cfg_str = f.read()
+
+            # find first img_scale and replace value
+            res = re.search(r'img_scale(\s*)=(\s*)\(\d+,(\s*)\d+\)', cfg_str)
+            cfg_str_list = list(cfg_str)
+            cfg_str_list[res.span()[0]:res.span(
+            )[1]] = f'img_scale = ({img_scale[0]}, {img_scale[0]})'
+            cfg_str = ''.join(cfg_str_list)
+            with io.open(tmppath.name, 'w') as f:
+                f.write(cfg_str)
+
+            cfg = Config.fromfile(tmppath.name)
+
         if cfg_options is not None:
             cfg.merge_from_dict(cfg_options)
         cfg.eval_pipelines[0].data = dict(**cfg.data.val)
@@ -107,7 +106,7 @@ class ModelPruneTest(unittest.TestCase):
     @unittest.skipIf(torch.__version__ < '1.8.0',
                      'model compression need pytorch version >= 1.8.0')
     def test_model_prune(self):
-        train_cfgs = copy.deepcopy(TRAIN_CONFIGS[1])
+        train_cfgs = copy.deepcopy(TRAIN_CONFIGS[0])
 
         self._base_prune(train_cfgs)
 

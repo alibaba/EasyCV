@@ -21,6 +21,7 @@ import tempfile
 import unittest
 
 from easycv.file import io
+from easycv.framework.errors import ValueError
 from easycv.utils import json_utils
 
 

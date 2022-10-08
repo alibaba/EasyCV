@@ -2,10 +2,11 @@
 import argparse
 import os
 import shutil
-import sys
 import time
 
 import torch
+
+from easycv.framework.errors import ValueError
 
 args = argparse.ArgumentParser(description='Process some integers.')
 args.add_argument(
@@ -88,7 +89,7 @@ def extract_model(model_path):
             output_dict['state_dict'][key[9:]] = value
             has_backbone = True
     if not has_backbone:
-        raise Exception('Cannot find a backbone module in the checkpoint.')
+        raise ValueError('Cannot find a backbone module in the checkpoint.')
     torch.save(output_dict, backbone_file)
 
     return backbone_file

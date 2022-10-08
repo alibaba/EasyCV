@@ -3,6 +3,8 @@ import torch
 from torch.optim import *  # noqa: F401,F403
 from torch.optim.optimizer import Optimizer, required
 
+from easycv.framework.errors import ValueError
+
 
 class LARS(Optimizer):
     r"""Implements layer-wise adaptive rate scaling for SGD.

@@ -6,6 +6,7 @@ import numpy as np
 import torch
 from PIL import Image
 
+from easycv.framework.errors import ValueError
 from .base import Predictor
 from .builder import PREDICTORS
 
@@ -522,7 +523,7 @@ class TorchFaceAttrExtractor(PredictorInterface):
                             neck_output.device)
                         neck_output = (distribute * neck_output).sum(dim=1)
                     else:
-                        raise Exception(
+                        raise ValueError(
                             'TorchFaceAttrExtractor for neck %d only support attr_method softmax/distributed sum'
                             % (neck_idx))
                         neck_output = torch.argmax(neck_output, dim=1)

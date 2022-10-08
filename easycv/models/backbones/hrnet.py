@@ -7,6 +7,7 @@ from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
                       normal_init)
 from torch.nn.modules.batchnorm import _BatchNorm
 
+from easycv.framework.errors import NotImplementedError, TypeError, ValueError
 from easycv.models.registry import BACKBONES
 from ..modelzoo import hrnet as model_urls
 from .resnet import BasicBlock

@@ -8,6 +8,7 @@ import torchvision
 from mmcv.runner import get_dist_info
 from torch import Tensor, nn
 
+from easycv.framework.errors import ValueError
 from .point_rend import (get_uncertain_point_coords_with_randomness,
                          point_sample)
 
