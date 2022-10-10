@@ -17,7 +17,7 @@ from easycv.core.bbox import Box3DMode, Coord3DMode
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
 from easycv.datasets.shared.pipelines import Compose
-from .utils import extract_result_dict, get_loading_pipeline
+from .utils import extract_result_dict
 
 
 @DATASETS.register_module
@@ -234,13 +234,7 @@ class NuScenesDataset(BaseDataset):
                 get from self.pipeline.
         """
         if pipeline is None:
-            if not hasattr(self, 'pipeline') or self.pipeline is None:
-                warnings.warn(
-                    'Use default pipeline for data loading, this may cause '
-                    'errors when data is on ceph')
-                return self._build_default_pipeline()
-            loading_pipeline = get_loading_pipeline(self.pipeline.transforms)
-            return Compose(loading_pipeline)
+            return self._build_default_pipeline()
         return Compose(pipeline)
 
     def _extract_data(self, index, pipeline, key):
@@ -256,8 +250,7 @@ class NuScenesDataset(BaseDataset):
                 A single or a list of loaded data.
         """
         assert pipeline is not None, 'data loading pipeline is not provided'
-        input_dict = self.data_source.get_data_info(index)
-        self.data_source.pre_pipeline(input_dict)
+        input_dict = self.data_source[index]
         example = pipeline(input_dict)
 
         # extract data items according to keys
