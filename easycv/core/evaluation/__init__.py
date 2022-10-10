@@ -7,6 +7,7 @@ from .face_eval import FaceKeypointEvaluator
 from .faceid_pair_eval import FaceIDPairEvaluator
 from .keypoint_eval import KeyPointEvaluator
 from .mse_eval import MSEEvaluator
+from .nuscenes_eval import NuScenesEvaluator
 from .ocr_eval import OCRDetEvaluator, OCRRecEvaluator
 from .retrival_topk_eval import RetrivalTopKEvaluator
 from .segmentation_eval import SegmentationEvaluator

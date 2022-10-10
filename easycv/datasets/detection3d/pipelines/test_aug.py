@@ -4,9 +4,9 @@ import warnings
 from copy import deepcopy
 
 import mmcv
-from mmdet3d.datasets.pipelines.compose import Compose
 
 from easycv.datasets.registry import PIPELINES
+from easycv.datasets.shared.pipelines import Compose
 
 
 @PIPELINES.register_module()

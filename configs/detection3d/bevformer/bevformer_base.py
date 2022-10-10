@@ -8,7 +8,7 @@ voxel_size = [0.2, 0.2, 8]
 img_norm_cfg = dict(
     mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
 # For nuScenes we usually do 10-class detection
-class_names = [
+CLASSES = [
     'car', 'truck', 'construction_vehicle', 'bus', 'trailer', 'barrier',
     'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
 ]
@@ -168,10 +168,10 @@ train_pipeline = [
         with_label_3d=True,
         with_attr_label=False),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
-    dict(type='ObjectNameFilter', classes=class_names),
+    dict(type='ObjectNameFilter', classes=CLASSES),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
     dict(type='PadMultiViewImage', size_divisor=32),
-    dict(type='DefaultFormatBundle3D', class_names=class_names),
+    dict(type='DefaultFormatBundle3D', class_names=CLASSES),
     dict(type='CustomCollect3D', keys=['gt_bboxes_3d', 'gt_labels_3d', 'img'])
 ]
 
@@ -187,7 +187,7 @@ test_pipeline = [
         transforms=[
             dict(
                 type='DefaultFormatBundle3D',
-                class_names=class_names,
+                class_names=CLASSES,
                 with_label=False),
             dict(type='CustomCollect3D', keys=['img'])
         ])
@@ -204,7 +204,7 @@ data = dict(
         data_root=data_root,
         ann_file=data_root + 'nuscenes_infos_temporal_train.pkl',
         pipeline=train_pipeline,
-        classes=class_names,
+        classes=CLASSES,
         modality=input_modality,
         test_mode=False,
         use_valid_flag=True,
@@ -214,22 +214,24 @@ data = dict(
         # and box_type_3d='Depth' in sunrgbd and scannet dataset.
         box_type_3d='LiDAR'),
     val=dict(
+        imgs_per_gpu=1,
         type=dataset_type,
         data_root=data_root,
         ann_file=data_root + 'nuscenes_infos_temporal_val.pkl',
         pipeline=test_pipeline,
         bev_size=(bev_h_, bev_w_),
-        classes=class_names,
+        classes=CLASSES,
         modality=input_modality,
-        samples_per_gpu=1),
+        test_mode=True),
     test=dict(
         type=dataset_type,
         data_root=data_root,
         ann_file=data_root + 'nuscenes_infos_temporal_val.pkl',
         pipeline=test_pipeline,
         bev_size=(bev_h_, bev_w_),
-        classes=class_names,
-        modality=input_modality))
+        classes=CLASSES,
+        modality=input_modality,
+        test_mode=True))
 
 paramwise_cfg = dict(custom_keys={
     'img_backbone': dict(lr_mult=0.1),
@@ -246,9 +248,22 @@ lr_config = dict(
     warmup_ratio=1.0 / 3,
     min_lr_ratio=1e-3)
 total_epochs = 24
-evaluation = dict(interval=1, pipeline=test_pipeline)
 
-runner = dict(type='EpochBasedRunner', max_epochs=total_epochs)
+eval_config = dict(initial=False, interval=1, gpu_collect=False)
+eval_pipelines = [
+    dict(
+        mode='test',
+        data=data['val'],
+        dist_eval=True,
+        evaluators=[
+            dict(
+                type='NuScenesEvaluator',
+                classes=CLASSES,
+                result_names=['pts_bbox'])
+        ],
+    )
+]
+
 load_from = '/root/workspace/data/nuScenes/r101_dcn_fcos3d_pretrain.pth'
 log_config = dict(
     interval=1,

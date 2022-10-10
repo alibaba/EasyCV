@@ -1,17 +1,16 @@
-# Copyright (c) OpenMMLab. All rights reserved.
+# Refer to https://github.com/fundamentalvision/BEVFormer/blob/master/projects/mmdet3d_plugin/datasets/nuscnes_eval.py
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import argparse
 import copy
-import json
 import os
+import os.path as osp
 import time
 from typing import Any, Tuple
 
+import mmcv
 import numpy as np
 import tqdm
 from matplotlib import pyplot as plt
 from nuscenes import NuScenes
-from nuscenes.eval.common.config import config_factory
 from nuscenes.eval.common.data_classes import EvalBoxes
 from nuscenes.eval.common.loaders import (add_center_dist, filter_eval_boxes,
                                           load_prediction)
@@ -33,6 +32,10 @@ from nuscenes.eval.tracking.data_classes import TrackingBox
 from nuscenes.utils.data_classes import Box
 from nuscenes.utils.geometry_utils import BoxVisibility, view_points
 from nuscenes.utils.splits import create_splits_scenes
+
+from easycv.core.evaluation.base_evaluator import Evaluator
+from easycv.core.evaluation.builder import EVALUATORS
+from .metric_registry import METRICS
 
 Axis = Any
 
@@ -112,7 +115,7 @@ def class_tp_curve(md_list: DetectionMetricDataList,
         plt.close()
 
 
-class DetectionBox_modified(DetectionBox):
+class CustomDetectionBox(DetectionBox):
 
     def __init__(self,
                  *args,
@@ -247,7 +250,7 @@ def load_gt(nusc: NuScenes, eval_split: str, box_cls, verbose: bool = False):
     """
 
     # Init.
-    if box_cls == DetectionBox_modified:
+    if box_cls == CustomDetectionBox:
         attribute_map = {a['token']: a['name'] for a in nusc.attribute}
 
     if verbose:
@@ -312,7 +315,7 @@ def load_gt(nusc: NuScenes, eval_split: str, box_cls, verbose: bool = False):
 
             sample_annotation = nusc.get('sample_annotation',
                                          sample_annotation_token)
-            if box_cls == DetectionBox_modified:
+            if box_cls == CustomDetectionBox:
                 # Get label name in detection task and filter unused labels.
                 detection_name = category_to_detection_name(
                     sample_annotation['category_name'])
@@ -515,7 +518,7 @@ def filter_eval_boxes_by_overlap(nusc: NuScenes,
     return eval_boxes
 
 
-class NuScenesEval_custom(NuScenesEval):
+class CustomNuScenesEval(NuScenesEval):
     """
     Dummy class for backward-compatibility. Same as DetectionEval.
     """
@@ -569,7 +572,7 @@ class NuScenesEval_custom(NuScenesEval):
             DetectionBox,
             verbose=verbose)
         self.gt_boxes = load_gt(
-            self.nusc, self.eval_set, DetectionBox_modified, verbose=verbose)
+            self.nusc, self.eval_set, CustomDetectionBox, verbose=verbose)
 
         assert set(self.pred_boxes.sample_tokens) == set(self.gt_boxes.sample_tokens), \
             "Samples in split doesn't match samples in predictions."
@@ -749,83 +752,106 @@ class NuScenesEval_custom(NuScenesEval):
                 savepath=savepath('dist_pr_' + str(dist_th)))
 
 
-if __name__ == '__main__':
+@EVALUATORS.register_module()
+class NuScenesEvaluator(Evaluator):
+    """NuScenes evaluator.
+    Args:
+        classes (list): List of class names.
+        result_name (str, optional): Result name in the metric prefix.
+                Default: 'pts_bbox'.
+        eval_version (str, optional): Name of desired configuration in eval_detection_configs.
+            Default: 'detection_cvpr_2019'.
+        dataset_name (str, optional): Dataset name to be evaluated.
+        metric_names (List[str]): Metric names this evaluator will return.
+    """
+    ErrNameMapping = {
+        'trans_err': 'mATE',
+        'scale_err': 'mASE',
+        'orient_err': 'mAOE',
+        'vel_err': 'mAVE',
+        'attr_err': 'mAAE'
+    }
 
-    # Settings.
-    parser = argparse.ArgumentParser(
-        description='Evaluate nuScenes detection results.',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        'result_path', type=str, help='The submission as a JSON file.')
-    parser.add_argument(
-        '--output_dir',
-        type=str,
-        default='~/nuscenes-metrics',
-        help=
-        'Folder to store result metrics, graphs and example visualizations.')
-    parser.add_argument(
-        '--eval_set',
-        type=str,
-        default='val',
-        help='Which dataset split to evaluate on, train, val or test.')
-    parser.add_argument(
-        '--dataroot',
-        type=str,
-        default='data/nuscenes',
-        help='Default nuScenes data directory.')
-    parser.add_argument(
-        '--version',
-        type=str,
-        default='v1.0-trainval',
-        help=
-        'Which version of the nuScenes dataset to evaluate on, e.g. v1.0-trainval.'
-    )
-    parser.add_argument(
-        '--config_path',
-        type=str,
-        default='',
-        help='Path to the configuration file.'
-        'If no path given, the CVPR 2019 configuration will be used.')
-    parser.add_argument(
-        '--plot_examples',
-        type=int,
-        default=0,
-        help='How many example visualizations to write to disk.')
-    parser.add_argument(
-        '--render_curves',
-        type=int,
-        default=1,
-        help='Whether to render PR and TP curves to disk.')
-    parser.add_argument(
-        '--verbose', type=int, default=1, help='Whether to print to stdout.')
-    args = parser.parse_args()
+    def __init__(self,
+                 classes,
+                 result_names=['pts_bbox'],
+                 eval_version='detection_cvpr_2019',
+                 dataset_name=None,
+                 metric_names=['mAP']):
+        super().__init__(dataset_name=dataset_name, metric_names=metric_names)
+        self.classes = classes
+        self.result_names = result_names
+        self.eval_version = eval_version
+        from nuscenes.eval.detection.config import config_factory
+        self.eval_detection_configs = config_factory(self.eval_version)
 
-    result_path_ = os.path.expanduser(args.result_path)
-    output_dir_ = os.path.expanduser(args.output_dir)
-    eval_set_ = args.eval_set
-    dataroot_ = args.dataroot
-    version_ = args.version
-    config_path = args.config_path
-    plot_examples_ = args.plot_examples
-    render_curves_ = bool(args.render_curves)
-    verbose_ = bool(args.verbose)
+    def _evaluate_single(self, result_path, nusc, result_name='pts_bbox'):
+        """Evaluation for a single model in nuScenes protocol.
 
-    if config_path == '':
-        cfg_ = config_factory('detection_cvpr_2019')
-    else:
-        with open(config_path, 'r') as _f:
-            cfg_ = DetectionConfig.deserialize(json.load(_f))
+        Args:
+            result_path (str): Path of the result file.
+            nusc: Instance of nuscenes.NuScenes.
+            result_name (str, optional): Result name in the metric prefix.
+                Default: 'pts_bbox'.
 
-    nusc_ = NuScenes(version=version_, verbose=verbose_, dataroot=dataroot_)
-    nusc_eval = NuScenesEval_custom(
-        nusc_,
-        config=cfg_,
-        result_path=result_path_,
-        eval_set=eval_set_,
-        output_dir=output_dir_,
-        verbose=verbose_)
-    for vis in ['1', '2', '3', '4']:
-        nusc_eval.update_gt(type_='vis', visibility=vis)
-        print(f'================ {vis} ===============')
-        nusc_eval.main(
-            plot_examples=plot_examples_, render_curves=render_curves_)
+        Returns:
+            dict: Dictionary of evaluation details.
+        """
+        from nuscenes.eval.detection.evaluate import NuScenesEval
+
+        output_dir = osp.join(*osp.split(result_path)[:-1])
+        eval_set_map = {
+            'v1.0-mini': 'mini_val',
+            'v1.0-trainval': 'val',
+        }
+        nusc_eval = NuScenesEval(
+            nusc,
+            config=self.eval_detection_configs,
+            result_path=result_path,
+            eval_set=eval_set_map[nusc.version],
+            output_dir=output_dir,
+            verbose=False)
+        nusc_eval.main(render_curves=False)
+
+        # record metrics
+        metrics = mmcv.load(osp.join(output_dir, 'metrics_summary.json'))
+        detail = dict()
+        metric_prefix = f'{result_name}_NuScenes'
+        for name in self.classes:
+            for k, v in metrics['label_aps'][name].items():
+                val = float('{:.4f}'.format(v))
+                detail['{}/{}_AP_dist_{}'.format(metric_prefix, name, k)] = val
+            for k, v in metrics['label_tp_errors'][name].items():
+                val = float('{:.4f}'.format(v))
+                detail['{}/{}_{}'.format(metric_prefix, name, k)] = val
+            for k, v in metrics['tp_errors'].items():
+                val = float('{:.4f}'.format(v))
+                detail['{}/{}'.format(metric_prefix,
+                                      self.ErrNameMapping[k])] = val
+
+        detail['{}/NDS'.format(metric_prefix)] = metrics['nd_score']
+        detail['{}/mAP'.format(metric_prefix)] = metrics['mean_ap']
+        return detail
+
+    def _evaluate_impl(self, prediction, groundtruth, **kwargs):
+        """
+        Args:
+            prediction (str | Dict[str]): Path of the result file or dict of path of the result file.
+            groundtruth: Instance of nuscenes.NuScenes.
+        """
+        result_files = prediction
+        nusc = groundtruth
+
+        if isinstance(result_files, dict):
+            results_dict = dict()
+            for name in self.result_names:
+                print('Evaluating bboxes of {}'.format(name))
+                ret_dict = self._evaluate_single(result_files[name], nusc)
+            results_dict.update(ret_dict)
+        elif isinstance(result_files, str):
+            results_dict = self._evaluate_single(result_files, nusc)
+
+        return results_dict
+
+
+METRICS.register_default_best_metric(NuScenesEvaluator, 'mAP', 'max')

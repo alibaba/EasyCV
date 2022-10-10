@@ -204,7 +204,7 @@ class BEVFormer(MVXTwoStageDetector):
         losses.update(losses_pts)
         return losses
 
-    def forward_test(self, img_metas, img=None, **kwargs):
+    def forward_test(self, img_metas, img=None, rescale=True, **kwargs):
         for var, name in [(img_metas, 'img_metas')]:
             if not isinstance(var, list):
                 raise TypeError('{} must be a list, but got {}'.format(
@@ -237,6 +237,7 @@ class BEVFormer(MVXTwoStageDetector):
             img_metas[0],
             img[0],
             prev_bev=self.prev_frame_info['prev_bev'],
+            rescale=rescale,
             **kwargs)
         # During inference, we save the BEV features and ego motion of each timestamp.
         self.prev_frame_info['prev_pos'] = tmp_pos

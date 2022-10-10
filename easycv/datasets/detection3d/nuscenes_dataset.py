@@ -17,7 +17,6 @@ from easycv.core.bbox import Box3DMode, Coord3DMode, LiDARInstance3DBoxes
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.pipelines import Compose
 from .base import Custom3DDataset
-from .nuscenes_eval import NuScenesEval_custom
 
 
 @DATASETS.register_module()
@@ -373,64 +372,6 @@ class NuScenesDataset(Custom3DDataset):
         mmcv.dump(nusc_submissions, res_path)
         return res_path
 
-    def _evaluate_single(self,
-                         result_path,
-                         logger=None,
-                         metric='bbox',
-                         result_name='pts_bbox'):
-        """Evaluation for a single model in nuScenes protocol.
-
-        Args:
-            result_path (str): Path of the result file.
-            logger (logging.Logger | str, optional): Logger used for printing
-                related information during evaluation. Default: None.
-            metric (str, optional): Metric name used for evaluation.
-                Default: 'bbox'.
-            result_name (str, optional): Result name in the metric prefix.
-                Default: 'pts_bbox'.
-
-        Returns:
-            dict: Dictionary of evaluation details.
-        """
-        from nuscenes import NuScenes
-        from nuscenes.eval.detection.evaluate import NuScenesEval
-
-        output_dir = osp.join(*osp.split(result_path)[:-1])
-        nusc = NuScenes(
-            version=self.version, dataroot=self.data_root, verbose=False)
-        eval_set_map = {
-            'v1.0-mini': 'mini_val',
-            'v1.0-trainval': 'val',
-        }
-        nusc_eval = NuScenesEval(
-            nusc,
-            config=self.eval_detection_configs,
-            result_path=result_path,
-            eval_set=eval_set_map[self.version],
-            output_dir=output_dir,
-            verbose=False)
-        nusc_eval.main(render_curves=False)
-
-        # record metrics
-        metrics = mmcv.load(osp.join(output_dir, 'metrics_summary.json'))
-        detail = dict()
-        metric_prefix = f'{result_name}_NuScenes'
-        for name in self.CLASSES:
-            for k, v in metrics['label_aps'][name].items():
-                val = float('{:.4f}'.format(v))
-                detail['{}/{}_AP_dist_{}'.format(metric_prefix, name, k)] = val
-            for k, v in metrics['label_tp_errors'][name].items():
-                val = float('{:.4f}'.format(v))
-                detail['{}/{}_{}'.format(metric_prefix, name, k)] = val
-            for k, v in metrics['tp_errors'].items():
-                val = float('{:.4f}'.format(v))
-                detail['{}/{}'.format(metric_prefix,
-                                      self.ErrNameMapping[k])] = val
-
-        detail['{}/NDS'.format(metric_prefix)] = metrics['nd_score']
-        detail['{}/mAP'.format(metric_prefix)] = metrics['mean_ap']
-        return detail
-
     def format_results(self, results, jsonfile_prefix=None):
         """Format the results to json (standard format for COCO evaluation).
 
@@ -478,19 +419,17 @@ class NuScenesDataset(Custom3DDataset):
 
     def evaluate(self,
                  results,
-                 metric='bbox',
                  logger=None,
                  jsonfile_prefix=None,
-                 result_names=['pts_bbox'],
                  show=False,
                  out_dir=None,
-                 pipeline=None):
+                 pipeline=None,
+                 evaluators=[],
+                 **kwargs):
         """Evaluation in nuScenes protocol.
 
         Args:
             results (list[dict]): Testing results of the dataset.
-            metric (str | list[str], optional): Metrics to be evaluated.
-                Default: 'bbox'.
             logger (logging.Logger | str, optional): Logger used for printing
                 related information during evaluation. Default: None.
             jsonfile_prefix (str, optional): The prefix of json files including
@@ -507,15 +446,14 @@ class NuScenesDataset(Custom3DDataset):
             dict[str, float]: Results of each evaluation metric.
         """
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
+        from nuscenes import NuScenes
 
-        if isinstance(result_files, dict):
-            results_dict = dict()
-            for name in result_names:
-                print('Evaluating bboxes of {}'.format(name))
-                ret_dict = self._evaluate_single(result_files[name])
-            results_dict.update(ret_dict)
-        elif isinstance(result_files, str):
-            results_dict = self._evaluate_single(result_files)
+        nusc = NuScenes(
+            version=self.version, dataroot=self.data_root, verbose=False)
+
+        results_dict = {}
+        for evaluator in evaluators:
+            results_dict.update(evaluator.evaluate(result_files, nusc))
 
         if tmp_dir is not None:
             tmp_dir.cleanup()
@@ -828,66 +766,8 @@ class CustomNuScenesDataset(NuScenesDataset):
         if self.test_mode:
             return self.prepare_test_data(idx)
         while True:
-
             data = self.prepare_train_data(idx)
             if data is None:
                 idx = self._rand_another(idx)
                 continue
             return data
-
-    def _evaluate_single(self,
-                         result_path,
-                         logger=None,
-                         metric='bbox',
-                         result_name='pts_bbox'):
-        """Evaluation for a single model in nuScenes protocol.
-
-        Args:
-            result_path (str): Path of the result file.
-            logger (logging.Logger | str | None): Logger used for printing
-                related information during evaluation. Default: None.
-            metric (str): Metric name used for evaluation. Default: 'bbox'.
-            result_name (str): Result name in the metric prefix.
-                Default: 'pts_bbox'.
-
-        Returns:
-            dict: Dictionary of evaluation details.
-        """
-        from nuscenes import NuScenes
-        self.nusc = NuScenes(
-            version=self.version, dataroot=self.data_root, verbose=True)
-
-        output_dir = osp.join(*osp.split(result_path)[:-1])
-
-        eval_set_map = {
-            'v1.0-mini': 'mini_val',
-            'v1.0-trainval': 'val',
-        }
-        self.nusc_eval = NuScenesEval_custom(
-            self.nusc,
-            config=self.eval_detection_configs,
-            result_path=result_path,
-            eval_set=eval_set_map[self.version],
-            output_dir=output_dir,
-            verbose=True,
-            overlap_test=self.overlap_test,
-            data_infos=self.data_infos)
-        self.nusc_eval.main(plot_examples=0, render_curves=False)
-        # record metrics
-        metrics = mmcv.load(osp.join(output_dir, 'metrics_summary.json'))
-        detail = dict()
-        metric_prefix = f'{result_name}_NuScenes'
-        for name in self.CLASSES:
-            for k, v in metrics['label_aps'][name].items():
-                val = float('{:.4f}'.format(v))
-                detail['{}/{}_AP_dist_{}'.format(metric_prefix, name, k)] = val
-            for k, v in metrics['label_tp_errors'][name].items():
-                val = float('{:.4f}'.format(v))
-                detail['{}/{}_{}'.format(metric_prefix, name, k)] = val
-            for k, v in metrics['tp_errors'].items():
-                val = float('{:.4f}'.format(v))
-                detail['{}/{}'.format(metric_prefix,
-                                      self.ErrNameMapping[k])] = val
-        detail['{}/NDS'.format(metric_prefix)] = metrics['nd_score']
-        detail['{}/mAP'.format(metric_prefix)] = metrics['mean_ap']
-        return detail
