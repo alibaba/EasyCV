@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import random
 from abc import ABCMeta, abstractmethod
 
 from torch.utils.data import Dataset
@@ -20,6 +21,15 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
 
     def __len__(self):
         return len(self.data_source)
+
+    def _rand_another(self, idx):
+        """Randomly get another item.
+
+        Returns:
+            int: Another index of item.
+        """
+        idx = random.randint(0, len(self) - 1)
+        return idx
 
     @abstractmethod
     def __getitem__(self, idx):

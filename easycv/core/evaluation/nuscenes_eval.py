@@ -531,8 +531,7 @@ class CustomNuScenesEval(NuScenesEval):
                  output_dir: str = None,
                  verbose: bool = True,
                  overlap_test=False,
-                 eval_mask=False,
-                 data_infos=None):
+                 eval_mask=False):
         """
         Initialize a DetectionEval object.
         :param nusc: A NuScenes object.
@@ -551,7 +550,6 @@ class CustomNuScenesEval(NuScenesEval):
         self.cfg = config
         self.overlap_test = overlap_test
         self.eval_mask = eval_mask
-        self.data_infos = data_infos
         # Check result file exists.
         assert os.path.exists(
             result_path), 'Error: The result file does not exist!'
@@ -759,8 +757,6 @@ class NuScenesEvaluator(Evaluator):
         classes (list): List of class names.
         result_name (str, optional): Result name in the metric prefix.
                 Default: 'pts_bbox'.
-        eval_version (str, optional): Name of desired configuration in eval_detection_configs.
-            Default: 'detection_cvpr_2019'.
         dataset_name (str, optional): Dataset name to be evaluated.
         metric_names (List[str]): Metric names this evaluator will return.
     """
@@ -775,44 +771,45 @@ class NuScenesEvaluator(Evaluator):
     def __init__(self,
                  classes,
                  result_names=['pts_bbox'],
-                 eval_version='detection_cvpr_2019',
+                 overlap_test=False,
                  dataset_name=None,
                  metric_names=['mAP']):
         super().__init__(dataset_name=dataset_name, metric_names=metric_names)
         self.classes = classes
         self.result_names = result_names
-        self.eval_version = eval_version
-        from nuscenes.eval.detection.config import config_factory
-        self.eval_detection_configs = config_factory(self.eval_version)
+        self.overlap_test = overlap_test
 
-    def _evaluate_single(self, result_path, nusc, result_name='pts_bbox'):
+    def _evaluate_single(self,
+                         result_path,
+                         nusc,
+                         eval_detection_configs,
+                         result_name='pts_bbox'):
         """Evaluation for a single model in nuScenes protocol.
 
         Args:
             result_path (str): Path of the result file.
-            nusc: Instance of nuscenes.NuScenes.
+            nusc: A NuScenes object.
             result_name (str, optional): Result name in the metric prefix.
                 Default: 'pts_bbox'.
 
         Returns:
             dict: Dictionary of evaluation details.
         """
-        from nuscenes.eval.detection.evaluate import NuScenesEval
-
         output_dir = osp.join(*osp.split(result_path)[:-1])
+
         eval_set_map = {
             'v1.0-mini': 'mini_val',
             'v1.0-trainval': 'val',
         }
-        nusc_eval = NuScenesEval(
+        self.nusc_eval = CustomNuScenesEval(
             nusc,
-            config=self.eval_detection_configs,
+            config=eval_detection_configs,
             result_path=result_path,
             eval_set=eval_set_map[nusc.version],
             output_dir=output_dir,
-            verbose=False)
-        nusc_eval.main(render_curves=False)
-
+            verbose=True,
+            overlap_test=self.overlap_test)
+        self.nusc_eval.main(plot_examples=0, render_curves=False)
         # record metrics
         metrics = mmcv.load(osp.join(output_dir, 'metrics_summary.json'))
         detail = dict()
@@ -833,23 +830,28 @@ class NuScenesEvaluator(Evaluator):
         detail['{}/mAP'.format(metric_prefix)] = metrics['mean_ap']
         return detail
 
-    def _evaluate_impl(self, prediction, groundtruth, **kwargs):
+    def _evaluate_impl(self, prediction, groundtruth, eval_detection_configs,
+                       **kwargs):
         """
         Args:
             prediction (str | Dict[str]): Path of the result file or dict of path of the result file.
-            groundtruth: Instance of nuscenes.NuScenes.
+            groundtruth: A NuScenes object.
+            eval_detection_configs: A DetectionConfig instance that can be used to initialize a NuScenesEval instance.
         """
         result_files = prediction
-        nusc = groundtruth
+        nusc_instance = groundtruth
 
         if isinstance(result_files, dict):
             results_dict = dict()
             for name in self.result_names:
                 print('Evaluating bboxes of {}'.format(name))
-                ret_dict = self._evaluate_single(result_files[name], nusc)
+                ret_dict = self._evaluate_single(result_files[name],
+                                                 nusc_instance,
+                                                 eval_detection_configs)
             results_dict.update(ret_dict)
         elif isinstance(result_files, str):
-            results_dict = self._evaluate_single(result_files, nusc)
+            results_dict = self._evaluate_single(result_files, nusc_instance,
+                                                 eval_detection_configs)
 
         return results_dict
 

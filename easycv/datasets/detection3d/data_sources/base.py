@@ -1,27 +1,16 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import tempfile
-import warnings
 from os import path as osp
 
 import mmcv
 import numpy as np
-from torch.utils.data import Dataset
 
 from easycv.core.bbox import get_box_type
-from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.pipelines import Compose
-from .utils import extract_result_dict, get_loading_pipeline
 
 
-@DATASETS.register_module()
-class Custom3DDataset(Dataset):
-    """Customized 3D dataset.
-
-    This is the base dataset of SUNRGB-D, ScanNet, nuScenes, and KITTI
-    dataset.
-
-    .. code-block:: none
+class Det3dSourceBase(object):
+    """Base 3D data source.
 
     [
         {'sample_idx':
@@ -39,11 +28,11 @@ class Custom3DDataset(Dataset):
     ]
 
     Args:
-        data_root (str): Path of dataset root.
+        data_root (str): Path of data root.
         ann_file (str): Path of annotation file.
         pipeline (list[dict], optional): Pipeline used for data processing.
             Defaults to None.
-        classes (tuple[str], optional): Classes used in the dataset.
+        classes (list[str], optional): Classes of the dataset.
             Defaults to None.
         modality (dict, optional): Modality to specify the sensor data used
             as input. Defaults to None.
@@ -69,8 +58,7 @@ class Custom3DDataset(Dataset):
                  modality=None,
                  box_type_3d='LiDAR',
                  filter_empty_gt=True,
-                 test_mode=False,
-                 file_client_args=dict(backend='disk')):
+                 test_mode=False):
         super().__init__()
         self.data_root = data_root
         self.ann_file = ann_file
@@ -80,28 +68,12 @@ class Custom3DDataset(Dataset):
         self.box_type_3d, self.box_mode_3d = get_box_type(box_type_3d)
 
         self.CLASSES = self.get_classes(classes)
-        self.file_client = mmcv.FileClient(**file_client_args)
         self.cat2id = {name: i for i, name in enumerate(self.CLASSES)}
-
-        # load annotations
-        if hasattr(self.file_client, 'get_local_path'):
-            with self.file_client.get_local_path(self.ann_file) as local_path:
-                self.data_infos = self.load_annotations(open(local_path, 'rb'))
-        else:
-            warnings.warn(
-                'The used MMCV version does not have get_local_path. '
-                f'We treat the {self.ann_file} as local paths and it '
-                'might cause errors if the path is not a local path. '
-                'Please use MMCV>= 1.3.16 if you meet errors.')
-            self.data_infos = self.load_annotations(self.ann_file)
+        self.data_infos = self.load_annotations(self.ann_file)
 
         # process pipeline
         if pipeline is not None:
             self.pipeline = Compose(pipeline)
-
-        # set group flag for the samplers
-        if not self.test_mode:
-            self._set_group_flag()
 
     def load_annotations(self, ann_file):
         """Load annotations from ann_file.
@@ -228,9 +200,8 @@ class Custom3DDataset(Dataset):
             return None
         self.pre_pipeline(input_dict)
         example = self.pipeline(input_dict)
-        if self.filter_empty_gt and \
-                (example is None or
-                    ~(example['gt_labels_3d']._data != -1).any()):
+        if self.filter_empty_gt and (example is None or
+                                     ~(example['gt_labels_3d'] != -1).any()):
             return None
         return example
 
@@ -248,7 +219,6 @@ class Custom3DDataset(Dataset):
         example = self.pipeline(input_dict)
         return example
 
-    @classmethod
     def get_classes(cls, classes=None):
         """Get class names of current dataset.
 
@@ -275,138 +245,6 @@ class Custom3DDataset(Dataset):
 
         return class_names
 
-    def format_results(self,
-                       outputs,
-                       pklfile_prefix=None,
-                       submission_prefix=None):
-        """Format the results to pkl file.
-
-        Args:
-            outputs (list[dict]): Testing results of the dataset.
-            pklfile_prefix (str): The prefix of pkl files. It includes
-                the file path and the prefix of filename, e.g., "a/b/prefix".
-                If not specified, a temp file will be created. Default: None.
-
-        Returns:
-            tuple: (outputs, tmp_dir), outputs is the detection results,
-                tmp_dir is the temporal directory created for saving json
-                files when ``jsonfile_prefix`` is not specified.
-        """
-        if pklfile_prefix is None:
-            tmp_dir = tempfile.TemporaryDirectory()
-            pklfile_prefix = osp.join(tmp_dir.name, 'results')
-            out = f'{pklfile_prefix}.pkl'
-        mmcv.dump(outputs, out)
-        return outputs, tmp_dir
-
-    def evaluate(self,
-                 results,
-                 metric=None,
-                 iou_thr=(0.25, 0.5),
-                 logger=None,
-                 show=False,
-                 out_dir=None,
-                 pipeline=None):
-        """Evaluate.
-
-        Evaluation in indoor protocol.
-
-        Args:
-            results (list[dict]): List of results.
-            metric (str | list[str], optional): Metrics to be evaluated.
-                Defaults to None.
-            iou_thr (list[float]): AP IoU thresholds. Defaults to (0.25, 0.5).
-            logger (logging.Logger | str, optional): Logger used for printing
-                related information during evaluation. Defaults to None.
-            show (bool, optional): Whether to visualize.
-                Default: False.
-            out_dir (str, optional): Path to save the visualization results.
-                Default: None.
-            pipeline (list[dict], optional): raw data loading for showing.
-                Default: None.
-
-        Returns:
-            dict: Evaluation results.
-        """
-        from mmdet3d.core.evaluation import indoor_eval
-        assert isinstance(
-            results, list), f'Expect results to be list, got {type(results)}.'
-        assert len(results) > 0, 'Expect length of results > 0.'
-        assert len(results) == len(self.data_infos)
-        assert isinstance(
-            results[0], dict
-        ), f'Expect elements in results to be dict, got {type(results[0])}.'
-        gt_annos = [info['annos'] for info in self.data_infos]
-        label2cat = {i: cat_id for i, cat_id in enumerate(self.CLASSES)}
-        ret_dict = indoor_eval(
-            gt_annos,
-            results,
-            iou_thr,
-            label2cat,
-            logger=logger,
-            box_type_3d=self.box_type_3d,
-            box_mode_3d=self.box_mode_3d)
-        if show:
-            self.show(results, out_dir, pipeline=pipeline)
-
-        return ret_dict
-
-    def _build_default_pipeline(self):
-        """Build the default pipeline for this dataset."""
-        raise NotImplementedError('_build_default_pipeline is not implemented '
-                                  f'for dataset {self.__class__.__name__}')
-
-    def _get_pipeline(self, pipeline):
-        """Get data loading pipeline in self.show/evaluate function.
-
-        Args:
-            pipeline (list[dict]): Input pipeline. If None is given,
-                get from self.pipeline.
-        """
-        if pipeline is None:
-            if not hasattr(self, 'pipeline') or self.pipeline is None:
-                warnings.warn(
-                    'Use default pipeline for data loading, this may cause '
-                    'errors when data is on ceph')
-                return self._build_default_pipeline()
-            loading_pipeline = get_loading_pipeline(self.pipeline.transforms)
-            return Compose(loading_pipeline)
-        return Compose(pipeline)
-
-    def _extract_data(self, index, pipeline, key, load_annos=False):
-        """Load data using input pipeline and extract data according to key.
-
-        Args:
-            index (int): Index for accessing the target data.
-            pipeline (:obj:`Compose`): Composed data loading pipeline.
-            key (str | list[str]): One single or a list of data key.
-            load_annos (bool): Whether to load data annotations.
-                If True, need to set self.test_mode as False before loading.
-
-        Returns:
-            np.ndarray | torch.Tensor | list[np.ndarray | torch.Tensor]:
-                A single or a list of loaded data.
-        """
-        assert pipeline is not None, 'data loading pipeline is not provided'
-        # when we want to load ground-truth via pipeline (e.g. bbox, seg mask)
-        # we need to set self.test_mode as False so that we have 'annos'
-        if load_annos:
-            original_test_mode = self.test_mode
-            self.test_mode = False
-        input_dict = self.get_data_info(index)
-        self.pre_pipeline(input_dict)
-        example = pipeline(input_dict)
-
-        # extract data items according to keys
-        if isinstance(key, str):
-            data = extract_result_dict(example, key)
-        else:
-            data = [extract_result_dict(example, k) for k in key]
-        if load_annos:
-            self.test_mode = original_test_mode
-
-        return data
-
     def __len__(self):
         """Return the length of data infos.
 
@@ -414,15 +252,6 @@ class Custom3DDataset(Dataset):
             int: Length of data infos.
         """
         return len(self.data_infos)
-
-    def _rand_another(self, idx):
-        """Randomly get another item with the same flag.
-
-        Returns:
-            int: Another index of item with the same flag.
-        """
-        pool = np.where(self.flag == self.flag[idx])[0]
-        return np.random.choice(pool)
 
     def __getitem__(self, idx):
         """Get item from infos according to the given index.
@@ -432,18 +261,5 @@ class Custom3DDataset(Dataset):
         """
         if self.test_mode:
             return self.prepare_test_data(idx)
-        while True:
-            data = self.prepare_train_data(idx)
-            if data is None:
-                idx = self._rand_another(idx)
-                continue
-            return data
-
-    def _set_group_flag(self):
-        """Set flag according to image aspect ratio.
-
-        Images with aspect ratio greater than 1 will be set as group 1,
-        otherwise group 0. In 3D datasets, they are all the same, thus are all
-        zeros.
-        """
-        self.flag = np.zeros(len(self), dtype=np.uint8)
+        else:
+            return self.prepare_train_data(idx)

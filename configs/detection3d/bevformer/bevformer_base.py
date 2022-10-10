@@ -155,18 +155,11 @@ model = dict(
                 ),  # Fake cost. This is just to make it compatible with DETR head.
                 pc_range=point_cloud_range))))
 
-dataset_type = 'CustomNuScenesDataset'
+dataset_type = 'NuScenesDataset'
 data_root = '/root/workspace/data/nuScenes/nuscenes-v1.0-mini/'
-file_client_args = dict(backend='disk')
 
 train_pipeline = [
-    dict(type='LoadMultiViewImageFromFiles', to_float32=True),
     dict(type='PhotoMetricDistortionMultiViewImage'),
-    dict(
-        type='LoadAnnotations3D',
-        with_bbox_3d=True,
-        with_label_3d=True,
-        with_attr_label=False),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=CLASSES),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
@@ -176,7 +169,6 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(type='LoadMultiViewImageFromFiles', to_float32=True),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
     dict(type='PadMultiViewImage', size_divisor=32),
     dict(
@@ -201,38 +193,56 @@ data = dict(
     # nonshuffler_sampler=dict(type='DistributedSampler'),
     train=dict(
         type=dataset_type,
-        data_root=data_root,
-        ann_file=data_root + 'nuscenes_infos_temporal_train.pkl',
+        data_source=dict(
+            type='Det3dSourceNuScenes',
+            data_root=data_root,
+            ann_file=data_root + 'nuscenes_infos_temporal_train.pkl',
+            pipeline=[
+                dict(type='LoadMultiViewImageFromFiles', to_float32=True),
+                dict(
+                    type='LoadAnnotations3D',
+                    with_bbox_3d=True,
+                    with_label_3d=True,
+                    with_attr_label=False)
+            ],
+            classes=CLASSES,
+            modality=input_modality,
+            test_mode=False,
+            use_valid_flag=True,
+            # we use box_type_3d='LiDAR' in kitti and nuscenes dataset
+            # and box_type_3d='Depth' in sunrgbd and scannet dataset.
+            box_type_3d='LiDAR'),
         pipeline=train_pipeline,
-        classes=CLASSES,
-        modality=input_modality,
-        test_mode=False,
-        use_valid_flag=True,
-        bev_size=(bev_h_, bev_w_),
         queue_length=queue_length,
-        # we use box_type_3d='LiDAR' in kitti and nuscenes dataset
-        # and box_type_3d='Depth' in sunrgbd and scannet dataset.
-        box_type_3d='LiDAR'),
+    ),
     val=dict(
         imgs_per_gpu=1,
         type=dataset_type,
-        data_root=data_root,
-        ann_file=data_root + 'nuscenes_infos_temporal_val.pkl',
-        pipeline=test_pipeline,
-        bev_size=(bev_h_, bev_w_),
-        classes=CLASSES,
-        modality=input_modality,
-        test_mode=True),
+        data_source=dict(
+            type='Det3dSourceNuScenes',
+            data_root=data_root,
+            ann_file=data_root + 'nuscenes_infos_temporal_val.pkl',
+            pipeline=[
+                dict(type='LoadMultiViewImageFromFiles', to_float32=True)
+            ],
+            classes=CLASSES,
+            modality=input_modality,
+            test_mode=True),
+        pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        data_root=data_root,
-        ann_file=data_root + 'nuscenes_infos_temporal_val.pkl',
+        data_source=dict(
+            type='Det3dSourceNuScenes',
+            data_root=data_root,
+            ann_file=data_root + 'nuscenes_infos_temporal_val.pkl',
+            pipeline=[
+                dict(type='LoadMultiViewImageFromFiles', to_float32=True)
+            ],
+            classes=CLASSES,
+            modality=input_modality,
+            test_mode=True),
         pipeline=test_pipeline,
-        bev_size=(bev_h_, bev_w_),
-        classes=CLASSES,
-        modality=input_modality,
-        test_mode=True))
-
+    ))
 paramwise_cfg = dict(custom_keys={
     'img_backbone': dict(lr_mult=0.1),
 })
