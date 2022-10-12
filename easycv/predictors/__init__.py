@@ -1,7 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from .classifier import TorchClassifier
 from .detector import (DetectionPredictor, TorchFaceDetector,
-                       TorchYoloXClassifierPredictor, TorchYoloXPredictor, YoloXPredictor)
+                       TorchYoloXClassifierPredictor, TorchYoloXPredictor,
+                       YoloXPredictor)
 from .face_keypoints_predictor import FaceKeypointsPredictor
 from .feature_extractor import (TorchFaceAttrExtractor,
                                 TorchFaceFeatureExtractor,
