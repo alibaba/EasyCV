@@ -36,7 +36,8 @@ try:
         }
     }
     MM_ORIGINAL_REGISTRY = copy.deepcopy(MM_REGISTRY)
-except ImportError:
+except ImportError as e:
+    print(e)
     pass
 
 EASYCV_REGISTRY_MAP = {
