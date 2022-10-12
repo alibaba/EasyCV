@@ -36,6 +36,7 @@ SMALL_IMAGENET_RAW_LOCAL = os.path.join(
     BASE_LOCAL_PATH, 'data/classification/small_imagenet_raw')
 CIFAR10_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/classification/cifar10')
 CIFAR100_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/classification/cifar100')
+SAMLL_IMAGENET_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/classification/small_imagenet_raw')
 SMALL_IMAGENET_TFRECORD_LOCAL = os.path.join(
     BASE_LOCAL_PATH, 'data/classification/small_imagenet_tfrecord/')
 IMAGENET_LABEL_TXT = os.path.join(
