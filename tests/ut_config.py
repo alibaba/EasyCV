@@ -145,3 +145,8 @@ PRETRAINED_MODEL_SEGFORMER = os.path.join(
 MODEL_CONFIG_SEGFORMER = (
     './configs/segmentation/segformer/segformer_b0_coco.py')
 SMALL_COCO_WHOLE_BODY_HAND_ROOT = 'data/test/pose/hand/small_whole_body_hand_coco'
+SMALL_COCO_WHOLEBODY_ROOT = 'data/test/pose/wholebody/data'
+MODEL_CONFIG_MASK2FORMER_PAN = (
+    './configs/segmentation/mask2former/mask2former_r50_8xb2_e50_panoptic.py')
+MODEL_CONFIG_MASK2FORMER_INS = (
+    './configs/segmentation/mask2former/mask2former_r50_8xb2_e50_instance.py')
