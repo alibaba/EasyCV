@@ -1,19 +1,18 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import random
 import unittest
-
-from tests.ut_config import SMALL_IMAGENET_TFRECORD_LOCAL
-
+from tests.ut_config import SAMLL_IMAGENET1K_RAW_LOCAL
 from easycv.datasets.builder import build_datasource
 
 
-class ClsSourceImageNet1k(unittest.TestCase):
+class ClsSourceImageNet1kTest(unittest.TestCase):
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
     def test_ImageNet1k(self):
-        base_data_root = SMALL_IMAGENET_TFRECORD_LOCAL
+        base_data_root = SAMLL_IMAGENET1K_RAW_LOCAL
+
         cfg = dict(type='ClsSourceImageNet1k', root=base_data_root, split='train')
         data_source = build_datasource(cfg)
 
@@ -23,11 +22,12 @@ class ClsSourceImageNet1k(unittest.TestCase):
             img = results['img']
             label = results['gt_labels']
             self.assertEqual(img.mode, 'RGB')
-            self.assertIn(label, list(range(10)))
+            self.assertIn(label, list(range(200)))
             img.close()
 
         length = len(data_source)
-        self.assertEqual(length, 50000)
+
+        self.assertEqual(length, 1281167)
 
 
 if __name__ == '__main__':
