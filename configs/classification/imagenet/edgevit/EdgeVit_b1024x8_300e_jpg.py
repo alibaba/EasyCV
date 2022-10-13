@@ -45,12 +45,12 @@ model = dict(
     #     },
     #     with_fc=True))
 
-data_train_list = '/root/database/imagenet-raw/meta/train_labeled.txt'
-data_train_root = '/root/database/imagenet-raw/train/'
-data_test_list = '/root/database/imagenet-raw/meta/val_labeled.txt'
-data_test_root = '/root/database/imagenet-raw/val/'
-data_all_list = '/root/database/imagenet-raw/meta/all_labeled.txt'
-data_root = '/root/database/imagenet-raw/'
+data_train_list = 'data/imagenet_raw/meta/train_labeled.txt'
+data_train_root = 'data/imagenet_raw/train/'
+data_test_list = 'data/imagenet_raw/meta/val_labeled.txt'
+data_test_root = 'data/imagenet_raw/validation/'
+data_all_list = 'data/imagenet_raw/meta/all_labeled.txt'
+data_root = 'data/imagenet_raw/'
 
 dataset_type = 'ClsDataset'
 img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
