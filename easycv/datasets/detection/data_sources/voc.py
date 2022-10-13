@@ -120,6 +120,8 @@ class DetSourceVOC(DetSourceBase):
         Args:
             path: path of img id list file in ImageSets/Main/
             classes: classes list
+            data_name: need download data from internet else None example voc2007 or voc2012
+            split: train or val
             img_root_path: image dir path, if None, default to detect the image dir by the relative path of the `path`
                 according to the VOC data format.
             label_root_path: label dir path, if None, default to detect the label dir by the relative path of the `path`
@@ -130,6 +132,7 @@ class DetSourceVOC(DetSourceBase):
             label_suffix: suffix of label file
             parse_fn: parse function to parse item of source iterator
             num_processes: number of processes to parse samples
+            dataset_home: dataset root path
         """
 
         self.path = path
@@ -138,6 +141,7 @@ class DetSourceVOC(DetSourceBase):
         self.img_suffix = img_suffix
         self.label_suffix = label_suffix
 
+        # Determine whether to download it
         if data_name:
             tmp_path = download_file(data_name, dataset_home)
             assert split in ["train", 'val'], f"{split} not in [train, val]"

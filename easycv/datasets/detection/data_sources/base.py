@@ -51,8 +51,8 @@ DATASETS = {
 
 def download_file(data_name, dataset_home=DATASET_HOME):
     '''
-        data_name: download file of name
-        dataset_home: data root path
+    data_name: download file of name
+    dataset_home: data root path
     '''
     data_name = data_name.lower()
     assert data_name in DATASETS.keys(), f"{data_name} is not down link"
@@ -69,10 +69,14 @@ def download_file(data_name, dataset_home=DATASET_HOME):
 
         if not os.path.exists(os.path.join(dataset_home, filename)):
             try:
+                print(f"{filename} is start download........")
                 filename = wget.download(link_list, out=dataset_home)
                 print(f"{filename} is download finished\n")
             except:
                 print(f"{filename} is download fail")
+        # The prevention of Ctrol + C
+        if not os.path.exists(os.path.join(dataset_home, filename)):
+            exit()
 
         if not os.path.exists(os.path.join(dataset_home, tmp_data)):
             if DATASETS[data_name][2]:
