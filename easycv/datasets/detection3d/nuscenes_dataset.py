@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import copy
+import logging
 import random
 import tempfile
-import warnings
 from os import path as osp
 
 import mmcv
@@ -51,6 +51,8 @@ class NuScenesDataset(BaseDataset):
         from nuscenes.eval.detection.config import config_factory
         self.eval_version = eval_version
         self.eval_detection_configs = config_factory(self.eval_version)
+        self.flag = np.zeros(
+            len(self), dtype=np.uint8)  # for DistributedGroupSampler
 
     def _format_bbox(self, results, jsonfile_prefix=None):
         """Convert the results to the standard format.
@@ -325,25 +327,32 @@ class NuScenesDataset(BaseDataset):
         queue = queue[-1]
         return queue
 
+    def _get_queue_data(self, idx):
+        queue = []
+        idx_list = list(range(idx - self.queue_length, idx))
+        random.shuffle(idx_list)
+        idx_list = sorted(idx_list[1:])
+        idx_list.append(idx)
+        for i in idx_list:
+            i = max(0, i)
+            try:
+                data = self.data_source[i]
+                data = self.pipeline(data)
+                if data is None or ~(data['gt_labels_3d']._data != -1).any():
+                    return None
+            except Exception as e:
+                logging.error(e)
+                return None
+            queue.append(data)
+        return self.union2one(queue)
+
     def __getitem__(self, idx):
         while True:
             if self.queue_length is None:
                 data_dict = self.data_source[idx]
                 data_dict = self.pipeline(data_dict)
             else:
-                queue = []
-                idx_list = list(range(idx - self.queue_length, idx))
-                random.shuffle(idx_list)
-                idx_list = sorted(idx_list[1:])
-                idx_list.append(idx)
-                for i in idx_list:
-                    i = max(0, i)
-                    data = self.data_source[i]
-                    data = self.pipeline(data)
-                    if data is None:
-                        return None
-                    queue.append(data)
-                data_dict = self.union2one(queue)
+                data_dict = self._get_queue_data(idx)
 
             if data_dict is None:
                 idx = self._rand_another(idx)
