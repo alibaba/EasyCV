@@ -35,7 +35,7 @@ model = dict(
         loss_config=dict(
             type='CrossEntropyLossWithLabelSmooth',
 
-            label_smooth=0),
+            label_smooth=0),))
     # head=dict(
     #     type='ClsHead',
     #     with_avg_pool=True,
