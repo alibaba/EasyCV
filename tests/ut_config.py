@@ -51,7 +51,7 @@ IO_DATA_MULTI_DIRS_OSS = os.path.join(BASE_OSS_PATH,
                                       'data/io_test_dir/multi_dirs/')
 DET_DATA_SMALL_COCO_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                          'data/detection/small_coco')
-VOC_DATASET_LOCAL = os.path.join(BASE_LOCAL_PATH, "download_local")
+VOC_DATASET_DOWNLOAD_LOCAL = os.path.join(BASE_LOCAL_PATH, "download_local")
 CONFIG_PATH = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
 
 DET_DATA_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/detection/raw_data')

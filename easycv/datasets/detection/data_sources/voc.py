@@ -6,7 +6,7 @@ from multiprocessing import cpu_count
 
 import numpy as np
 
-from easycv.datasets.detection.data_sources.base import DetSourceBase
+from easycv.datasets.detection.data_sources.base import DetSourceBase, download_file, DATASET_HOME
 from easycv.datasets.registry import DATASOURCES
 from easycv.file import io
 
@@ -84,11 +84,28 @@ class DetSourceVOC(DetSourceBase):
             img_root_path='/your/voc_data/images',
             img_root_path='/your/voc_data/annotations'
         )
+
+    Example1:
+        data_source = DetSourceVOC(
+            path='',
+            classes=${VOC_CLASSES},
+            data_name='voc2012',
+            split='train',
+        )
+    Example1:
+        data_source = DetSourceVOC(
+            path='',
+            classes=${VOC_CLASSES},
+            data_name='voc2007',
+            split='train',
+        )
     """
 
     def __init__(self,
                  path,
                  classes=[],
+                 data_name=None,
+                 split='train',
                  img_root_path=None,
                  label_root_path=None,
                  cache_at_init=False,
@@ -97,6 +114,7 @@ class DetSourceVOC(DetSourceBase):
                  label_suffix='.xml',
                  parse_fn=parse_xml,
                  num_processes=int(cpu_count() / 2),
+                 dataset_home=DATASET_HOME,
                  **kwargs):
         """
         Args:
@@ -119,6 +137,16 @@ class DetSourceVOC(DetSourceBase):
         self.label_root_path = label_root_path
         self.img_suffix = img_suffix
         self.label_suffix = label_suffix
+
+        if data_name:
+            tmp_path = download_file(data_name, dataset_home)
+            assert split in ["train", 'val'], f"{split} not in [train, val]"
+            if split == "train":
+                self.path = os.path.join(tmp_path, "ImageSets/Main/train.txt")
+            else:
+                self.path = os.path.join(tmp_path, "ImageSets/Main/val.txt")
+        assert os.path.exists(self.path), f"{self.path} is not exists"
+
         super(DetSourceVOC, self).__init__(
             classes=classes,
             cache_at_init=cache_at_init,
