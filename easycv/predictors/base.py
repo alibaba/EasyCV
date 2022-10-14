@@ -147,6 +147,10 @@ class PredictorV2(object):
         if self.cfg is None:
             raise ValueError('Please provide "config_file"!')
 
+        # avoid unnecessarily loading backbone weights from url
+        if 'model' in self.cfg and 'pretrained' in self.cfg.model:
+            self.cfg.model.pretrained = None
+
         self.model = self.prepare_model()
         self.pipelines = pipelines
         self.processor = self.build_processor()
