@@ -7,6 +7,7 @@ EasyCV provides various datasets for multi tasks. Please refer to the following 
 - [Self-Supervised Learning](#Self-Supervised-Learning)
 - [Pose (Keypoint)](#Pose)
 - [Image Segmentation](#Image-Segmentation)
+- [Object Detection 3D](#Object-Detection-3D)
 
 
 ## Image Classification
@@ -383,3 +384,36 @@ python tools/prepare_data/coco_stuff164k.py /path/to/coco_stuff164k --nproc 8
 By convention, mask labels in `/path/to/coco_stuff164k/annotations/*2017/*_labelTrainIds.png` are used for COCO Stuff 164k training and testing.
 
 The details of this dataset could be found at [here](https://github.com/nightrome/cocostuff#downloads).
+
+## Object Detection 3D
+
+- [NuScenes](#NuScenes)
+
+### NuScenes
+
+Download nuScenes V1.0 full dataset data and CAN bus expansion data [HERE](https://www.nuscenes.org/download). Prepare nuscenes data by running:
+
+```python
+python tools/prepare_data/prepare_nuscenes.py \
+--root_path=./data/nuscenes \
+--canbus_root_path=./data/canbus \
+--out_dir=./data/nuscenes \
+--version=v1.0
+```
+
+It will generate `nuscenes_infos_temporal_{train,val}.pkl` files.
+
+The data structure is as follows:
+
+```
+data/nuscenes
+ ├── can_bus
+ ├── nuscenes-v1.0
+ │   ├── maps
+ │   ├── samples
+ │   ├── sweeps
+ │   ├── v1.0-test
+ |   ├── v1.0-trainval
+ |   ├── nuscenes_infos_temporal_train.pkl
+ |   ├── nuscenes_infos_temporal_val.pkl
+```
