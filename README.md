@@ -194,7 +194,7 @@ notebook
       </td>
       <td>
         <ul>
-            <li><a href="configs/detection3d/bevformer">BEVFormer ( ECCV'2022)</a></li>
+            <li><a href="configs/detection3d/bevformer">BEVFormer (ECCV'2022)</a></li>
       </ul>
       </td>
     </tr>
