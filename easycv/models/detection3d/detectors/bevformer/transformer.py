@@ -36,36 +36,29 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
             should be consistent with it in `operation_order`. If it is
             a dict, it would be expand to the number of attention in
             `operation_order`.
-        feedforward_channels (int): The hidden dimension for FFNs.
-        ffn_dropout (float): Probability of an element to be zeroed
-            in ffn. Default 0.0.
+        ffn_cfgs (list[`mmcv.ConfigDict`] | obj:`mmcv.ConfigDict` | None )):
+            Configs for FFN, The order of the configs in the list should be
+            consistent with corresponding ffn in operation_order.
+            If it is a dict, all of the attention modules in operation_order
+            will be built with this config.
         operation_order (tuple[str]): The execution order of operation
             in transformer. Such as ('self_attn', 'norm', 'ffn', 'norm').
             Default：None
-        act_cfg (dict): The activation config for FFNs. Default: `LN`
         norm_cfg (dict): Config dict for normalization layer.
             Default: `LN`.
-        ffn_num_fcs (int): The number of fully-connected layers in FFNs.
-            Default：2.
     """
 
     def __init__(self,
                  attn_cfgs,
-                 feedforward_channels,
-                 ffn_dropout=0.0,
+                 ffn_cfgs,
                  operation_order=None,
-                 act_cfg=dict(type='ReLU', inplace=True),
                  norm_cfg=dict(type='LN'),
-                 ffn_num_fcs=2,
                  **kwargs):
         super(DetrTransformerDecoderLayer, self).__init__(
             attn_cfgs=attn_cfgs,
-            feedforward_channels=feedforward_channels,
-            ffn_dropout=ffn_dropout,
+            ffn_cfgs=ffn_cfgs,
             operation_order=operation_order,
-            act_cfg=act_cfg,
             norm_cfg=norm_cfg,
-            ffn_num_fcs=ffn_num_fcs,
             **kwargs)
         assert len(operation_order) == 6
         assert set(operation_order) == set(
@@ -115,20 +108,6 @@ class BEVFormerLayer(BaseModule):
                  batch_first=True,
                  init_cfg=None,
                  **kwargs):
-
-        deprecated_args = dict(
-            feedforward_channels='feedforward_channels',
-            ffn_dropout='ffn_drop',
-            ffn_num_fcs='num_fcs')
-        for ori_name, new_name in deprecated_args.items():
-            if ori_name in kwargs:
-                warnings.warn(
-                    f'The arguments `{ori_name}` in BaseTransformerLayer '
-                    f'has been deprecated, now you should set `{new_name}` '
-                    f'and other FFN related arguments '
-                    f'to a dict named `ffn_cfgs`. ')
-                ffn_cfgs[new_name] = kwargs[ori_name]
-
         super(BEVFormerLayer, self).__init__(init_cfg)
 
         self.batch_first = batch_first
@@ -707,10 +686,7 @@ class PerceptionTransformer(BaseModule):
         for m in self.modules():
             if isinstance(m, MSDeformableAttention3D) or isinstance(m, TemporalSelfAttention) \
                     or isinstance(m, CustomMSDeformableAttention):
-                try:
-                    m.init_weight()
-                except AttributeError:
-                    m.init_weights()
+                m.init_weights()
         normal_(self.level_embeds)
         normal_(self.cams_embeds)
         xavier_init(self.reference_points, distribution='uniform', bias=0.)

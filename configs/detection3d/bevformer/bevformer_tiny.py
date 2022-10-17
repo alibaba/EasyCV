@@ -51,7 +51,8 @@ model = dict(
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
-        style='pytorch'),
+        style='pytorch',
+        zero_init_residual=True),
     img_neck=dict(
         type='FPN',
         in_channels=[2048],
@@ -100,8 +101,14 @@ model = dict(
                             embed_dims=_dim_,
                         )
                     ],
-                    feedforward_channels=_ffn_dim_,
-                    ffn_dropout=0.1,
+                    ffn_cfgs=dict(
+                        type='FFN',
+                        embed_dims=256,
+                        feedforward_channels=_ffn_dim_,
+                        num_fcs=2,
+                        ffn_drop=0.1,
+                        act_cfg=dict(type='ReLU', inplace=True),
+                    ),
                     operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
                                      'ffn', 'norm'))),
             decoder=dict(
@@ -121,8 +128,14 @@ model = dict(
                             embed_dims=_dim_,
                             num_levels=1),
                     ],
-                    feedforward_channels=_ffn_dim_,
-                    ffn_dropout=0.1,
+                    ffn_cfgs=dict(
+                        type='FFN',
+                        embed_dims=256,
+                        feedforward_channels=_ffn_dim_,
+                        num_fcs=2,
+                        ffn_drop=0.1,
+                        act_cfg=dict(type='ReLU', inplace=True),
+                    ),
                     operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
                                      'ffn', 'norm')))),
         bbox_coder=dict(
@@ -163,7 +176,7 @@ model = dict(
                 pc_range=point_cloud_range))))
 
 dataset_type = 'NuScenesDataset'
-data_root = '/root/workspace/data/nuScenes/nuscenes-v1.0-mini/'
+data_root = '/root/workspace/data/nuScenes/nuscenes-v1.0/'
 
 train_pipeline = [
     dict(type='PhotoMetricDistortionMultiViewImage'),
@@ -255,9 +268,8 @@ data = dict(
             modality=input_modality,
             test_mode=True),
         pipeline=test_pipeline))
-paramwise_cfg = dict(custom_keys={
-    'img_backbone': dict(lr_mult=0.1),
-})
+
+paramwise_cfg = {'img_backbone': dict(lr_mult=0.1)}
 optimizer = dict(
     type='AdamW', lr=2e-4, paramwise_options=paramwise_cfg, weight_decay=0.01)
 
@@ -287,8 +299,9 @@ eval_pipelines = [
 ]
 
 log_config = dict(
-    interval=1,
+    interval=50,
     hooks=[dict(type='TextLoggerHook'),
            dict(type='TensorboardLoggerHook')])
 
 checkpoint_config = dict(interval=1)
+cudnn_benchmark = True

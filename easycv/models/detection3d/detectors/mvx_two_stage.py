@@ -1,6 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import warnings
 from os import path as osp
 
 import mmcv
@@ -17,6 +16,8 @@ from easycv.core.utils.misc import multi_apply
 from easycv.core.visualization.image_3d import show_result
 from easycv.models import builder
 from easycv.models.registry import MODELS
+from easycv.utils.checkpoint import load_checkpoint
+from easycv.utils.logger import get_root_logger
 from .base import Base3DDetector
 
 
@@ -86,25 +87,30 @@ class MVXTwoStageDetector(Base3DDetector):
             raise ValueError(
                 f'pretrained should be a dict, got {type(pretrained)}')
 
+        self.init_weights()
+
+        logger = get_root_logger()
         if self.with_img_backbone:
             if img_pretrained is not None:
-                warnings.warn('DeprecationWarning: pretrained is a deprecated '
-                              'key, please consider using init_cfg.')
-                self.img_backbone.init_cfg = dict(
-                    type='Pretrained', checkpoint=img_pretrained)
+                load_checkpoint(
+                    self.img_backbone,
+                    img_pretrained,
+                    strict=False,
+                    logger=logger)
         if self.with_img_roi_head:
             if img_pretrained is not None:
-                warnings.warn('DeprecationWarning: pretrained is a deprecated '
-                              'key, please consider using init_cfg.')
-                self.img_roi_head.init_cfg = dict(
-                    type='Pretrained', checkpoint=img_pretrained)
+                load_checkpoint(
+                    self.img_roi_head,
+                    img_pretrained,
+                    strict=False,
+                    logger=logger)
         if self.with_pts_backbone:
             if pts_pretrained is not None:
-                warnings.warn('DeprecationWarning: pretrained is a deprecated '
-                              'key, please consider using init_cfg')
-                self.pts_backbone.init_cfg = dict(
-                    type='Pretrained', checkpoint=pts_pretrained)
-        self.init_weights()
+                load_checkpoint(
+                    self.pts_backbone,
+                    pts_pretrained,
+                    strict=False,
+                    logger=logger)
 
     @property
     def with_img_shared_head(self):

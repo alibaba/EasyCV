@@ -341,7 +341,6 @@ class NuScenesDataset(BaseDataset):
                 if data is None or ~(data['gt_labels_3d']._data != -1).any():
                     return None
             except Exception as e:
-                logging.error(e)
                 return None
             queue.append(data)
         return self.union2one(queue)
