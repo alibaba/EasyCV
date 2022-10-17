@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import os
 
 import mmcv
 import numpy as np
@@ -225,6 +226,8 @@ class Det3dSourceNuScenes(Det3dSourceBase):
             lidar2cam_rts = []
             cam_intrinsics = []
             for cam_type, cam_info in info['cams'].items():
+                cam_info['data_path'] = os.path.join(self.data_root,
+                                                     cam_info['data_path'])
                 image_paths.append(cam_info['data_path'])
                 # obtain lidar to image transformation matrix
                 lidar2cam_r = np.linalg.inv(cam_info['sensor2lidar_rotation'])

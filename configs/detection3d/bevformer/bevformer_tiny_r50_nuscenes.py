@@ -176,7 +176,7 @@ model = dict(
                 pc_range=point_cloud_range))))
 
 dataset_type = 'NuScenesDataset'
-data_root = '/root/workspace/data/nuScenes/nuscenes-v1.0/'
+data_root = 'data/nuScenes/nuscenes-v1.0/'
 
 train_pipeline = [
     dict(type='PhotoMetricDistortionMultiViewImage'),

@@ -167,7 +167,7 @@ model = dict(
                 pc_range=point_cloud_range))))
 
 dataset_type = 'NuScenesDataset'
-data_root = '/root/workspace/data/nuScenes/nuscenes-v1.0/'
+data_root = 'data/nuScenes/nuscenes-v1.0/'
 
 train_pipeline = [
     dict(type='PhotoMetricDistortionMultiViewImage'),
@@ -257,6 +257,7 @@ data = dict(
             modality=input_modality,
             test_mode=True),
         pipeline=test_pipeline))
+
 paramwise_cfg = {'img_backbone': dict(lr_mult=0.1)}
 optimizer = dict(
     type='AdamW', lr=2e-4, paramwise_options=paramwise_cfg, weight_decay=0.01)
@@ -286,7 +287,7 @@ eval_pipelines = [
     )
 ]
 
-load_from = '/root/workspace/data/nuScenes/r101_dcn_fcos3d_pretrain.pth'
+load_from = 'https://github.com/zhiqi-li/storage/releases/download/v1.0/r101_dcn_fcos3d_pretrain.pth'
 log_config = dict(
     interval=50,
     hooks=[dict(type='TextLoggerHook'),
