@@ -28,7 +28,7 @@ class NuScenesDataset(BaseDataset):
     def __init__(self,
                  data_source,
                  pipeline,
-                 queue_length=None,
+                 queue_length=1,
                  eval_version='detection_cvpr_2019',
                  profiling=False):
         """
@@ -347,11 +347,11 @@ class NuScenesDataset(BaseDataset):
 
     def __getitem__(self, idx):
         while True:
-            if self.queue_length is None:
+            if self.queue_length > 1:
+                data_dict = self._get_queue_data(idx)
+            else:
                 data_dict = self.data_source[idx]
                 data_dict = self.pipeline(data_dict)
-            else:
-                data_dict = self._get_queue_data(idx)
 
             if data_dict is None:
                 idx = self._rand_another(idx)
@@ -379,9 +379,9 @@ def output_to_nusc_box(detection, with_velocity=True):
     box_gravity_center = box3d.gravity_center.numpy()
     box_dims = box3d.dims.numpy()
     box_yaw = box3d.yaw.numpy()
-
-    # our LiDAR coordinate system -> nuScenes box coordinate system
-    nus_box_dims = box_dims[:, [1, 0, 2]]
+    # TODO: check whether this is necessary
+    # with dir_offset & dir_limit in the head
+    box_yaw = -box_yaw - np.pi / 2
 
     box_list = []
     for i in range(len(box3d)):
@@ -396,7 +396,7 @@ def output_to_nusc_box(detection, with_velocity=True):
         # velo_val * np.cos(velo_ori), velo_val * np.sin(velo_ori), 0.0)
         box = NuScenesBox(
             box_gravity_center[i],
-            nus_box_dims[i],
+            box_dims[i],
             quat,
             label=labels[i],
             score=scores[i],
