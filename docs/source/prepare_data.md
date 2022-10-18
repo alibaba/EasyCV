@@ -393,7 +393,7 @@ The details of this dataset could be found at [here](https://github.com/nightrom
 
 Download nuScenes V1.0 full dataset data and CAN bus expansion data [HERE](https://www.nuscenes.org/download). Prepare nuscenes data by running:
 
-```python
+```shell
 python tools/prepare_data/prepare_nuscenes.py \
 --root_path=./data/nuscenes \
 --canbus_root_path=./data/canbus \
