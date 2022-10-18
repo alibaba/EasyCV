@@ -13,8 +13,20 @@ from tqdm import tqdm
 from easycv.file.image import load_image
 from easycv.framework.errors import NotImplementedError, ValueError
 
+# The location where downloaded data is stored
 DATASET_HOME = os.path.expanduser("~/.cache/easycv/dataset")
 
+'''
+    { key : value key: value, key: value, ..... } 
+    parameter:
+        key  : str
+        value: tuple
+            explain ：[links, cmd, condition, data_home]
+                links: list , collection of data download links
+                cmd: str, Data decompression command
+                condition: bool, whether to create data_name path, need if True else not need
+                data_home: The location where the data is stored after decompression
+'''
 
 DATASETS = {
 
@@ -46,6 +58,18 @@ DATASETS = {
                     True,
                     "COCO2017"
                 ),
+    'lvis': (
+        [
+            'https://s3-us-west-2.amazonaws.com/dl.fbaipublicfiles.com/LVIS/lvis_v1_train.json.zip',
+            'https://s3-us-west-2.amazonaws.com/dl.fbaipublicfiles.com/LVIS/lvis_v1_val.json.zip',
+            'http://images.cocodataset.org/zips/train2017.zip',
+            'http://images.cocodataset.org/zips/val2017.zip'
+
+        ],
+        "unzip -d",
+        True,
+        None
+    )
 }
 
 
@@ -74,6 +98,7 @@ def download_file(data_name, dataset_home=DATASET_HOME):
                 print(f"{filename} is download finished\n")
             except:
                 print(f"{filename} is download fail")
+                exit()
         # The prevention of Ctrol + C
         if not os.path.exists(os.path.join(dataset_home, filename)):
             exit()
