@@ -24,6 +24,10 @@ VOC_CLASSES = [
     'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person',
     'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'
 ]
+NUSCENES_CLASSES = [
+    'car', 'truck', 'construction_vehicle', 'bus', 'trailer', 'barrier',
+    'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+]
 
 BASE_OSS_PATH = 'oss://pai-vision-data-hz/unittest/'
 BASE_LOCAL_PATH = os.path.expanduser('~/easycv_nfs/')
@@ -145,3 +149,5 @@ PRETRAINED_MODEL_SEGFORMER = os.path.join(
 MODEL_CONFIG_SEGFORMER = (
     './configs/segmentation/segformer/segformer_b0_coco.py')
 SMALL_COCO_WHOLE_BODY_HAND_ROOT = 'data/test/pose/hand/small_whole_body_hand_coco'
+SMALL_NUSCENES_PATH = os.path.join(
+    BASE_LOCAL_PATH, 'data/detection3d/nuScenes/nuscenes-v1.0-mini')
