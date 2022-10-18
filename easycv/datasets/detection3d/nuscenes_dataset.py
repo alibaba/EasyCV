@@ -1,7 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import copy
-import logging
 import random
 import tempfile
 from os import path as osp
@@ -11,7 +10,6 @@ import numpy as np
 import pyquaternion
 import torch
 from mmcv.parallel import DataContainer as DC
-from nuscenes.utils.data_classes import Box as NuScenesBox
 
 from easycv.core.bbox import Box3DMode, Coord3DMode
 from easycv.datasets.registry import DATASETS
@@ -372,6 +370,8 @@ def output_to_nusc_box(detection, with_velocity=True):
     Returns:
         list[:obj:`NuScenesBox`]: List of standard NuScenesBoxes.
     """
+    from nuscenes.utils.data_classes import Box as NuScenesBox
+
     box3d = detection['boxes_3d']
     scores = detection['scores_3d'].numpy()
     labels = detection['labels_3d'].numpy()

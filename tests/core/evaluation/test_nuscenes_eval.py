@@ -4,7 +4,6 @@ import unittest
 
 import torch
 from mmcv.parallel import scatter_kwargs
-from nuscenes import NuScenes
 from tests.ut_config import NUSCENES_CLASSES, SMALL_NUSCENES_PATH
 
 import easycv
@@ -44,6 +43,8 @@ class NuScenesEvaluatorTest(unittest.TestCase):
         return dataset, model
 
     def test_evaluator(self):
+        from nuscenes import NuScenes
+
         dataset, model = self._prepare_data_and_model()
         model = model.cuda()
         model.eval()

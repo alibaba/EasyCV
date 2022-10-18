@@ -8,6 +8,7 @@ json_tricks
 lmdb
 numba
 numpy
+nuscenes
 open3d
 opencv-python
 oss2

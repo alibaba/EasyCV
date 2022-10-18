@@ -4,7 +4,6 @@ import os
 
 import mmcv
 import numpy as np
-from nuscenes.eval.common.utils import Quaternion, quaternion_yaw
 
 from easycv.core.bbox import LiDARInstance3DBoxes
 from easycv.datasets.registry import DATASOURCES
@@ -204,6 +203,8 @@ class Det3dSourceNuScenes(Det3dSourceBase):
                     from lidar to different cameras.
                 - ann_info (dict): Annotation info.
         """
+        from nuscenes.eval.common.utils import Quaternion, quaternion_yaw
+
         info = self.data_infos[index]
         # standard protocal modified from SECOND.Pytorch
         input_dict = dict(
