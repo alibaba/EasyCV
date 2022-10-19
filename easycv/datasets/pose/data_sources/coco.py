@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Adapt from https://github.com/open-mmlab/mmpose/blob/master/mmpose/datasets/datasets/top_down/topdown_coco_dataset.py
 import logging
-import os
+import os, wget
 
 import json_tricks as json
 import numpy as np
@@ -211,15 +211,11 @@ def download_file(data_cfg, dataset_home=DATASET_HOME):
     '''
 
     os.makedirs(dataset_home, exist_ok=True)
-
+    download_finished = list()
+    tmp_data = data_cfg[3]
     for link_list in data_cfg[0]:
-
         filename = wget.filename_from_url(link_list)
-        tmp_data = data_cfg[3]
-
-        if os.path.exists(os.path.join(dataset_home, tmp_data)):
-            return os.path.join(dataset_home, tmp_data)
-
+        download_finished.append(filename)
         if not os.path.exists(os.path.join(dataset_home, filename)):
             try:
                 print(f"{filename} is start download........")
@@ -227,6 +223,7 @@ def download_file(data_cfg, dataset_home=DATASET_HOME):
                 filename = wget.download(link_list, out=dataset_home)
                 print(f"{filename} is download finished..........\n")
                 logging.info(f"{filename} is download finished.........")
+
             except:
                 print(f"{filename} is download fail\n")
                 logging.info(f"{filename} is download fail")
@@ -236,24 +233,28 @@ def download_file(data_cfg, dataset_home=DATASET_HOME):
         if not os.path.exists(os.path.join(dataset_home, filename)):
             exit()
 
-        if not os.path.exists(os.path.join(dataset_home, tmp_data)):
-            if data_cfg[2]:
-                save_dir = os.path.join(dataset_home, tmp_data)
-                os.makedirs(save_dir, exist_ok=True)
-                if filename.endswith('zip'):
-                    cmd = f"{data_cfg[1]} {save_dir} {os.path.join(dataset_home, filename)}"
-                else:
-                    cmd = f"{data_cfg[1]} {os.path.join(dataset_home, filename)} -C {save_dir}"
-            else:
-                cmd = f"{data_cfg[1]} {os.path.join(dataset_home, filename)} -C {dataset_home}"
+    if os.path.exists(os.path.join(dataset_home, tmp_data)):
+        return os.path.join(dataset_home, tmp_data)
 
-            print("begin Unpack.....................")
-            logging.info('begin Unpack.....................')
-            os.system(cmd)
-            print(f"Unpack is finished. data is saved of {dataset_home, data_cfg[3]}")
-            logging.info(f"Unpack is finished. data is saved of {dataset_home, data_cfg[3]}")
+    for tmp_file in download_finished:
+        if data_cfg[2]:
+            save_dir = os.path.join(dataset_home, tmp_data)
+            os.makedirs(save_dir, exist_ok=True)
+            if tmp_file.endswith('zip'):
+                cmd = f"{data_cfg[1]} {save_dir} {os.path.join(dataset_home, tmp_file)}"
+            else:
+                cmd = f"{data_cfg[1]} {os.path.join(dataset_home, tmp_file)} -C {save_dir}"
+        else:
+            cmd = f"{data_cfg[1]} {os.path.join(dataset_home, tmp_file)} -C {dataset_home}"
+
+        print("begin Unpack.....................")
+        logging.info('begin Unpack.....................')
+        os.system(cmd)
+        print(f"Unpack is finished. data is saved of {dataset_home, data_cfg[3]}")
+        logging.info(f"Unpack is finished. data is saved of {dataset_home, data_cfg[3]}")
 
     return os.path.join(dataset_home, data_cfg[3])
+
 
 
 @DATASOURCES.register_module()
