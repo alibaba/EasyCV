@@ -108,7 +108,7 @@ class PredictorV2(object):
             model_path (str): Path of model path.
             config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
             batch_size (int): batch size for forward.
-            device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
+            device (str | torch.device): Support str('cuda' or 'cpu') or torch.device, if is None, detect device automatically.
             save_results (bool): Whether to save predict results.
             save_path (str): File path for saving results, only valid when `save_results` is True.
             pipelines (list[dict]): Data pipeline configs.
@@ -261,6 +261,12 @@ class PredictorV2(object):
 
     def postprocess(self, inputs, *args, **kwargs):
         """Process model batch outputs.
+        The "inputs" should be dict format as follows:
+            {
+                "key1": torch.Tensor or list, the first dimension should be batch_size,
+                "key2": torch.Tensor or list, the first dimension should be batch_size,
+                ...
+            }
         """
         outputs = []
         batch_size = 1
@@ -293,9 +299,8 @@ class PredictorV2(object):
         return collate(inputs, samples_per_gpu=self.batch_size)
 
     def _to_device(self, inputs):
-        target_gpus = [-1] if self.device == 'cpu' else [
-            torch.cuda.current_device()
-        ]
+        target_gpus = [-1] if str(
+            self.device) == 'cpu' else [torch.cuda.current_device()]
         _, kwargs = scatter_kwargs(None, inputs, target_gpus=target_gpus)
         return kwargs[0]
 
@@ -316,8 +321,8 @@ class PredictorV2(object):
             batch_outputs = self.preprocess(batch)
             batch_outputs = self.forward(batch_outputs)
             results = self.postprocess(batch_outputs)
-            assert len(results) == len(
-                batch), f'Mismatch size {len(results)} != {len(batch)}'
+            # assert len(results) == len(
+            #     batch), f'Mismatch size {len(results)} != {len(batch)}'
             if keep_inputs:
                 for i in range(len(batch)):
                     results[i].update({'inputs': batch[i]})
