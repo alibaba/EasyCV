@@ -5,9 +5,10 @@ import copy
 import torch
 
 from easycv.core.bbox.bbox_util import bbox3d2result
+from easycv.models.detection3d.detectors.mvx_two_stage import \
+    MVXTwoStageDetector
 from easycv.models.detection3d.utils.grid_mask import GridMask
 from easycv.models.registry import MODELS
-from ..mvx_two_stage import MVXTwoStageDetector
 
 
 @MODELS.register_module()
