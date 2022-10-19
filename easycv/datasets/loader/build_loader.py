@@ -38,6 +38,7 @@ def build_dataloader(dataset,
                      collate_hooks=None,
                      use_repeated_augment_sampler=False,
                      sampler=None,
+                     pin_memory=False,
                      **kwargs):
     """Build PyTorch DataLoader.
     In distributed training, each GPU/process has a dataloader.
@@ -135,7 +136,7 @@ def build_dataloader(dataset,
                 sampler=sampler,
                 num_workers=num_workers,
                 collate_fn=collate_fn,
-                pin_memory=False,
+                pin_memory=pin_memory,
                 worker_init_fn=init_fn,
                 **kwargs)
         else:
@@ -145,7 +146,7 @@ def build_dataloader(dataset,
                 sampler=sampler,
                 num_workers=num_workers,
                 collate_fn=collate_fn,
-                pin_memory=False,
+                pin_memory=pin_memory,
                 worker_init_fn=init_fn,
                 persistent_workers=persistent_workers,
                 **kwargs)
@@ -157,7 +158,7 @@ def build_dataloader(dataset,
             sampler=sampler,
             num_workers=num_workers,
             collate_fn=collate_fn,
-            pin_memory=False,
+            pin_memory=pin_memory,
             worker_init_fn=init_fn,
             **kwargs)
 

@@ -260,6 +260,15 @@ class PredictorV2(object):
         """
         outputs = []
         batch_size = 1
+
+        if isinstance(inputs, list):
+            batch_size = len(inputs)
+            for i in inputs:
+                out_i = self.postprocess_single(i, *args, **kwargs)
+                outputs.append(out_i)
+
+            return outputs
+
         # get current batch size
         for k, batch_v in inputs.items():
             if batch_v is not None:
