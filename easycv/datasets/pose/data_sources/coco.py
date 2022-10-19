@@ -188,7 +188,72 @@ COCO_DATASET_INFO = dict(
     sigmas=[
         0.026, 0.025, 0.025, 0.035, 0.035, 0.079, 0.079, 0.072, 0.072, 0.062,
         0.062, 0.107, 0.107, 0.087, 0.087, 0.089, 0.089
-    ])
+    ],
+    coco2017=(
+                    [
+                        'http://images.cocodataset.org/zips/train2017.zip',
+                        'http://images.cocodataset.org/zips/val2017.zip',
+                        'http://images.cocodataset.org/annotations/annotations_trainval2017.zip',
+                    ],
+                    "unzip -d",
+                    True,
+                    "COCO2017"
+                )
+    )
+
+DATASET_HOME = os.path.expanduser("~/.cache/easycv/dataset")
+
+
+def download_file(data_cfg, dataset_home=DATASET_HOME):
+    '''
+    data_cfg: download config
+    dataset_home: data root path
+    '''
+
+    os.makedirs(dataset_home, exist_ok=True)
+
+    for link_list in data_cfg[0]:
+
+        filename = wget.filename_from_url(link_list)
+        tmp_data = data_cfg[3]
+
+        if os.path.exists(os.path.join(dataset_home, tmp_data)):
+            return os.path.join(dataset_home, tmp_data)
+
+        if not os.path.exists(os.path.join(dataset_home, filename)):
+            try:
+                print(f"{filename} is start download........")
+                logging.info(f"{filename} is start download........")
+                filename = wget.download(link_list, out=dataset_home)
+                print(f"{filename} is download finished..........\n")
+                logging.info(f"{filename} is download finished.........")
+            except:
+                print(f"{filename} is download fail\n")
+                logging.info(f"{filename} is download fail")
+                exit()
+
+        # The prevention of Ctrol + C
+        if not os.path.exists(os.path.join(dataset_home, filename)):
+            exit()
+
+        if not os.path.exists(os.path.join(dataset_home, tmp_data)):
+            if data_cfg[2]:
+                save_dir = os.path.join(dataset_home, tmp_data)
+                os.makedirs(save_dir, exist_ok=True)
+                if filename.endswith('zip'):
+                    cmd = f"{data_cfg[1]} {save_dir} {os.path.join(dataset_home, filename)}"
+                else:
+                    cmd = f"{data_cfg[1]} {os.path.join(dataset_home, filename)} -C {save_dir}"
+            else:
+                cmd = f"{data_cfg[1]} {os.path.join(dataset_home, filename)} -C {dataset_home}"
+
+            print("begin Unpack.....................")
+            logging.info('begin Unpack.....................')
+            os.system(cmd)
+            print(f"Unpack is finished. data is saved of {dataset_home, data_cfg[3]}")
+            logging.info(f"Unpack is finished. data is saved of {dataset_home, data_cfg[3]}")
+
+    return os.path.join(dataset_home, data_cfg[3])
 
 
 @DATASOURCES.register_module()
@@ -228,6 +293,9 @@ class PoseTopDownSourceCoco(PoseTopDownSource):
             Default: None.
         data_cfg (dict): config
         dataset_info (DatasetInfo): A class containing all dataset info.
+        data_name: need download data from internet else None example coco2017
+        split: train or val
+        dataset_home: dataset root path, defalut: ~/.cache/easycv/dataset
         test_mode (bool): Store True when building test or
         validation dataset. Default: False.
     """
@@ -237,12 +305,27 @@ class PoseTopDownSourceCoco(PoseTopDownSource):
                  img_prefix,
                  data_cfg,
                  dataset_info=None,
+                 data_name=None,
+                 split='train',
+                 dataset_home=DATASET_HOME,
                  test_mode=False):
 
         if dataset_info is None:
             logging.info(
                 'dataset_info is missing, use default coco dataset info')
             dataset_info = COCO_DATASET_INFO
+
+        download_cfg = COCO_DATASET_INFO.get(data_name, 0)
+        # Determine whether to download it
+        if download_cfg:
+            root_path = download_file(download_cfg, dataset_home)
+            assert split in ["train", 'val'], f"{split} not in [train, val]"
+            if split == "train":
+                ann_file = os.path.join(root_path, "annotations/person_keypoints_train2017.json")
+                img_prefix = os.path.join(root_path, "train2017")
+            else:
+                ann_file = os.path.join(root_path, "annotations/person_keypoints_val2017.json")
+                img_prefix = os.path.join(root_path, "val2017")
 
         self.use_gt_bbox = data_cfg.get('use_gt_bbox', True)
         self.bbox_file = data_cfg.get('bbox_file', None)

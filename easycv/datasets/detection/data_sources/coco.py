@@ -38,7 +38,7 @@ class DetSourceCoco(object):
                 only works when `test_mode=False`, i.e., we never filter images
                 during tests.
             iscrowd: when traing setted as False, when val setted as True
-            dataset_home: dataset root path
+            dataset_home: dataset root path, defalut: ~/.cache/easycv/dataset
         """
         self.ann_file = ann_file
         self.img_prefix = img_prefix
