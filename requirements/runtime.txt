@@ -25,5 +25,6 @@ sklearn
 tensorboard
 thop
 timm>=0.4.9
+trimesh
 xtcocotools
 yacs
