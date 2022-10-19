@@ -128,7 +128,8 @@ class BEVFormerPredictor(PredictorV2):
 
     def preprocess_single(self, input):
         """Preprocess single input sample.
-        If you need custom ops to load or process a single input sample, you need to reimplement it.
+        Args:
+            input (str): Pickle file path, the content format is the same with the infos file of nusences.
         """
         data_info = mmcv.load(input)
         result = self._prepare_input_dict(data_info)
