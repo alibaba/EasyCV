@@ -131,10 +131,7 @@ class SegSourceBase(object):
                     if result_dict:
                         samples_list.append(result_dict)
                     pbar.update()
-        # for member in iterable:
-        #     result_dict = process_fn(source_item=member)
-        #     if result_dict:
-        #         samples_list.append(result_dict)
+
         return samples_list
 
     def __getitem__(self, idx):
