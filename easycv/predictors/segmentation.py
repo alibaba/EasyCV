@@ -169,16 +169,39 @@ class Mask2formerPredictor(SegmentationPredictor):
         """Model forward.
         """
         with torch.no_grad():
-            outputs = self.model.forward_test(**inputs, encode=False)
+            outputs = self.model.forward(**inputs, mode='test', encode=False)
         return outputs
 
-    def show_panoptic(self, img, pan_mask):
-        pan_label = np.unique(pan_mask)
-        pan_label = pan_label[pan_label % 1000 != self.classes]
-        masks = np.array([pan_mask == num for num in pan_label])
+    def postprocess_single(self, inputs, *args, **kwargs):
+        output = {}
+        if self.task_mode == 'panoptic':
+            pan_results = inputs['pan_results']
+            # keep objects ahead
+            ids = np.unique(pan_results)[::-1]
+            legal_indices = ids != len(self.CLASSES)  # for VOID label
+            ids = ids[legal_indices]
+            labels = np.array([id % 1000 for id in ids], dtype=np.int64)
+            segms = (pan_results[None] == ids[:, None, None])
+            masks = [it.astype(np.int) for it in segms]
+            labels_txt = np.array(self.CLASSES)[labels].tolist()
 
+            output['masks'] = masks
+            output['labels'] = labels_txt
+            output['labels_ids'] = labels
+        elif self.task_mode == 'instance':
+            output['segms'] = inputs['detection_masks']
+            output['bboxes'] = inputs['detection_boxes']
+            output['scores'] = inputs['detection_scores']
+            output['labels'] = inputs['detection_classes']
+        elif self.task_mode == 'semantic':
+            output['seg_pred'] = inputs['seg_pred']
+        else:
+            raise ValueError(f'Not support model {self.task_mode}')
+        return output
+
+    def show_panoptic(self, img, masks, labels):
         palette = np.asarray(self.cfg.PALETTE)
-        palette = palette[pan_label % 1000]
+        palette = palette[labels % 1000]
         panoptic_result = draw_masks(img, masks, palette)
         return panoptic_result
 
@@ -188,10 +211,11 @@ class Mask2formerPredictor(SegmentationPredictor):
             bboxes = bboxes[inds, :]
             segms = segms[inds, ...]
             labels = labels[inds]
-        palette = np.asarray(self.cfg.PALETTE)
+        palette = np.asarray(self.PALETTE)
         palette = palette[labels]
+
         instance_result = draw_masks(img, segms, palette)
-        class_name = np.array(self.class_name)
+        class_name = np.array(self.CLASSES)
         instance_result = imshow_bboxes(
             instance_result, bboxes, class_name[labels], show=False)
         return instance_result

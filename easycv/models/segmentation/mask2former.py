@@ -111,8 +111,13 @@ class Mask2Former(BaseModel):
             print_log('load model from init weights')
             self.backbone.init_weights()
 
-    def forward_train(self, img, gt_labels, gt_masks, gt_semantic_seg,
-                      img_metas):
+    def forward_train(self,
+                      img,
+                      gt_labels=None,
+                      gt_masks=None,
+                      gt_semantic_seg=None,
+                      img_metas=None,
+                      **kwargs):
         features = self.backbone(img)
         outputs = self.head(features)
         if gt_labels != None:
@@ -129,7 +134,12 @@ class Mask2Former(BaseModel):
                 losses.pop(k)
         return losses
 
-    def forward_test(self, img, img_metas, rescale=True, encode=True):
+    def forward_test(self,
+                     img,
+                     img_metas,
+                     rescale=True,
+                     encode=True,
+                     **kwargs):
         features = self.backbone(img[0])
         outputs = self.head(features)
         mask_cls_results = outputs['pred_logits']
@@ -204,23 +214,6 @@ class Mask2Former(BaseModel):
             outputs['seg_pred'] = seg_pred
         return outputs
 
-    def forward(self,
-                img,
-                mode='train',
-                gt_labels=None,
-                gt_masks=None,
-                gt_semantic_seg=None,
-                img_metas=None,
-                **kwargs):
-
-        if mode == 'train':
-            return self.forward_train(img, gt_labels, gt_masks,
-                                      gt_semantic_seg, img_metas)
-        elif mode == 'test':
-            return self.forward_test(img, img_metas)
-        else:
-            raise Exception('No such mode: {}'.format(mode))
-
     def instance_postprocess(self, mask_cls, mask_pred):
         """Instance segmengation postprocess.
 
@@ -248,8 +241,10 @@ class Mask2Former(BaseModel):
         # shape (num_queries, num_class)
         scores = F.softmax(mask_cls, dim=-1)[:, :-1]
         # shape (num_queries * num_class, )
-        labels = torch.arange(self.num_classes, device=mask_cls.device).\
-            unsqueeze(0).repeat(num_queries, 1).flatten(0, 1)
+        labels = torch.arange(
+            self.num_classes,
+            device=mask_cls.device).unsqueeze(0).repeat(num_queries,
+                                                        1).flatten(0, 1)
         scores_per_image, top_indices = scores.flatten(0, 1).topk(
             max_per_image, sorted=False)
         labels_per_image = labels[top_indices]

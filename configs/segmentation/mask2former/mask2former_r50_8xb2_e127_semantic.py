@@ -137,20 +137,15 @@ model = dict(
     pretrained=True,
 )
 
-data_root = '/root/database/ADEChallengeData2016/'
+data_root = 'ADEChallengeData2016/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 crop_size = (512, 512)
 train_pipeline = [
     dict(type='MMResize', img_scale=(2048, 512), ratio_range=(0.5, 2.0)),
-    # dict(type='MMResize',
-    #      multiscale_mode='value',
-    #      img_scale=[(256,2048),(307,2048),(358,2048),(409,2048),(460,2048),(512,2048),(563,2048),(614,2048),(665,2048),(716,2048),(768,2048),(819,2048),(870,2048),(921,2048),(972,2048),(1024,2048)]),
     dict(type='SegRandomCrop', crop_size=crop_size),
     dict(type='MMRandomFlip', flip_ratio=0.5),
-    # dict(type='ColorAugSSDTransform', img_format='BGR'),
     dict(type='MMPhotoMetricDistortion'),
-    # dict(type='MMPad', size=crop_size, pad_val=dict(img=128, seg=255)),
     dict(type='MMPad', size=crop_size),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='DefaultFormatBundle'),
@@ -167,8 +162,6 @@ test_pipeline = [
         type='MMMultiScaleFlipAug',
         img_scale=(2048, 512),
         flip=False,
-        # img_scale = [(256,3584),(384,3584),(512,3584),(640,3584),(768,3584),(896,3584)],
-        # flip=True,
         transforms=[
             dict(type='MMResize', keep_ratio=True),
             dict(type='MMRandomFlip'),
@@ -226,19 +219,10 @@ optimizer = dict(
         'level_embed': dict(weight_decay=0.),
         'norm': dict(weight_decay=0.),
     })
+# it seems grad clip not influence result
 # optimizer_config = dict(grad_clip=dict(max_norm=0.01, norm_type=2))
 total_epochs = 127
 
-# learning policy
-# lr_config = dict(
-#     policy='step',
-#     gamma=0.1,
-#     by_epoch=False,
-#     step=[327778, 355092],
-#     warmup='linear',
-#     warmup_by_epoch=False,
-#     warmup_ratio=1.0,  # no warmup
-#     warmup_iters=10)
 lr_config = dict(
     policy='Poly',
     min_lr=0,
@@ -264,5 +248,3 @@ eval_pipelines = [
         ],
     )
 ]
-
-# resume_from = 'out/mask2former_sementic_2/epoch_96.pth'

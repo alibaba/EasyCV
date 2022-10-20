@@ -28,6 +28,11 @@ Pretrained on **Pascal VOC 2012 + Aug**.
 | ---------- | ---------- | ------------------------------------------------------------ | ------------------------ |----------|---------------------------------------------------------------------------- |---------------------------------------------------------------------------- |
 | mask2former_r50 | [mask2former_r50_8xb2_e50_panopatic](https://github.com/alibaba/EasyCV/tree/master/configs/segmentation/mask2former/mask2former_r50_8xb2_e50_panopatic.py) | 18.8 | 51.64 | 44.81 | 41.88 |[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_panoptic/epoch_50.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_panoptic/20220629_170721.log.json) |
 
+### Semantic Segmentation on ADE20K
+
+| Algorithm  | Config                                                       | Train memory<br/>(GB)                                  | mIOU |Download                                                     |
+| ---------- | ---------- | ------------------------------------------------------------ |---------------------------------------------------------------------------- |---------------------------------------------------------------------------- |
+| mask2former_r50 | [mask2former_r50_8xb2_e127_semnatic](https://github.com/alibaba/EasyCV/tree/master/configs/segmentation/mask2former/mask2former_r50_8xb2_e127_semantic.py) | 5.6 | 47.03 |[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_semantic/epoch_116.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_semantic/20220929_145919.log.json) |
 
 ## SegFormer
 
