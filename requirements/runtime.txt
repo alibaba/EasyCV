@@ -9,7 +9,6 @@ lmdb
 numba
 numpy
 nuscenes-devkit
-open3d
 opencv-python
 oss2
 packaging
@@ -17,7 +16,6 @@ Pillow
 prettytable
 pyclipper
 pycocotools
-pyquaternion
 pytorch_metric_learning>=0.9.89
 rapidfuzz
 scikit-image
@@ -25,6 +23,5 @@ sklearn
 tensorboard
 thop
 timm>=0.4.9
-trimesh
 xtcocotools
 yacs

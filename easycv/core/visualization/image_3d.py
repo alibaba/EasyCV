@@ -4,7 +4,6 @@ from os import path as osp
 
 import mmcv
 import numpy as np
-import trimesh
 
 
 def _write_obj(points, out_filename):
@@ -39,6 +38,7 @@ def _write_oriented_bbox(scene_bbox, out_filename):
             heading angle of positive Y is 90 degrees.
         out_filename(str): Filename.
     """
+    import trimesh
 
     def heading2rotmat(heading_angle):
         rotmat = np.zeros((3, 3))

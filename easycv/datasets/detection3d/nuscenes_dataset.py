@@ -7,7 +7,6 @@ from os import path as osp
 
 import mmcv
 import numpy as np
-import pyquaternion
 import torch
 from mmcv.parallel import DataContainer as DC
 
@@ -370,6 +369,7 @@ def output_to_nusc_box(detection, with_velocity=True):
     Returns:
         list[:obj:`NuScenesBox`]: List of standard NuScenesBoxes.
     """
+    import pyquaternion
     from nuscenes.utils.data_classes import Box as NuScenesBox
 
     box3d = detection['boxes_3d']
@@ -419,6 +419,8 @@ def lidar_nusc_box_to_global(info, boxes, classes, eval_configs):
         list: List of standard NuScenesBoxes in the global
             coordinate.
     """
+    import pyquaternion
+
     box_list = []
     for box in boxes:
         # Move box to ego vehicle coord system

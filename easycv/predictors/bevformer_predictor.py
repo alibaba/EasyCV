@@ -3,7 +3,6 @@ import os
 
 import mmcv
 import numpy as np
-from nuscenes.eval.common.utils import Quaternion, quaternion_yaw
 
 from easycv.core.bbox import Box3DMode, Coord3DMode, get_box_type
 from easycv.datasets.detection3d.utils import extract_result_dict
@@ -61,6 +60,8 @@ class BEVFormerPredictor(PredictorV2):
         self.result_key = 'pts_bbox'
 
     def _prepare_input_dict(self, data_info):
+        from nuscenes.eval.common.utils import Quaternion, quaternion_yaw
+
         # standard protocal modified from SECOND.Pytorch
         input_dict = dict(
             sample_idx=data_info['token'],
