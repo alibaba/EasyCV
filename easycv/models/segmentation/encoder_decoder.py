@@ -171,16 +171,17 @@ class EncoderDecoder(BaseModel):
 
         return losses
 
-    def forward_test(self, imgs, img_metas, **kwargs):
+    def forward_test(self, img, img_metas, **kwargs):
         """
         Args:
-            imgs (List[Tensor]): the outer list indicates test-time
+            img (List[Tensor]): the outer list indicates test-time
                 augmentations and inner Tensor should have a shape NxCxHxW,
                 which contains all images in the batch.
             img_metas (List[List[dict]]): the outer list indicates test-time
                 augs (multiscale, flip, etc.) and the inner list indicates
                 images in a batch.
         """
+        imgs = img
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
                 raise TypeError(f'{name} must be a list, but got '

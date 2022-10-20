@@ -60,7 +60,7 @@ class TopDownTest(unittest.TestCase):
         # Test forward test
         with torch.no_grad():
             test_output = detector.forward(
-                imgs, mode='test', img_metas=img_metas)
+                img=imgs, mode='test', img_metas=img_metas)
 
         return train_output, test_output
 

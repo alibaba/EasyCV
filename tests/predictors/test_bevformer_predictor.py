@@ -45,90 +45,78 @@ class BEVFormerPredictorTest(unittest.TestCase):
 
         assert_array_almost_equal(
             res['scores_3d'][:5].numpy(),
-            np.array([0.98207057, 0.9817677, 0.981756, 0.98154163, 0.98140806],
-                     dtype=np.float32),
-            decimal=4)
+            np.array([0.982, 0.982, 0.982, 0.982, 0.981], dtype=np.float32),
+            decimal=3)
         assert_array_almost_equal(res['labels_3d'][:10].numpy(),
                                   np.array([5, 5, 5, 5, 5, 5, 5, 5, 5, 5]))
         assert_array_almost_equal(
             res['boxes_3d'].bev[:2].numpy(),
-            np.array([[9.34029, -2.6638565, 2.0343924, 0.6568423, 1.8187382],
-                      [6.6818047, -22.395258, 2.0680344, 0.6416968, 1.65906]],
+            np.array([[9.341, -2.664, 2.034, 0.657, 1.819],
+                      [6.945, -18.833, 2.047, 0.661, 1.694]],
                      dtype=np.float32),
-            decimal=4)
+            decimal=3)
         assert_array_almost_equal(
             res['boxes_3d'].bottom_center[:2].numpy(),
-            np.array([[9.34029, -2.6638565, -1.8494891],
-                      [6.6818047, -22.395258, -2.3321438]],
+            np.array([[9.341, -2.664, -1.849], [6.945, -18.833, -2.295]],
                      dtype=np.float32),
-            decimal=4)
+            decimal=3)
         assert_array_almost_equal(
             res['boxes_3d'].bottom_height[:5].numpy(),
-            np.array(
-                [-1.8494891, -2.3321438, -2.2945573, -1.5084305, -1.2044125],
-                dtype=np.float32),
-            decimal=4)
+            np.array([-1.849, -2.332, -2.295, -1.508, -1.204],
+                     dtype=np.float32),
+            decimal=1)
         assert_array_almost_equal(
             res['boxes_3d'].center[:2].numpy(),
-            np.array([[9.34029, -2.6638565, -1.8494891],
-                      [6.6818047, -22.395258, -2.3321438]],
+            np.array([[9.341, -2.664, -1.849], [6.945, -18.833, -2.295]],
                      dtype=np.float32),
-            decimal=4)
+            decimal=3)
         assert_array_almost_equal(
             res['boxes_3d'].corners[:1][0][:3].numpy(),
-            np.array([[9.908298, -3.5693488, -1.8494891],
-                      [9.908298, -3.5693488, -0.7428185],
-                      [9.271542, -3.730544, -0.7428185]],
+            np.array([[9.91, -3.569, -1.849], [9.91, -3.569, -0.742],
+                      [9.273, -3.73, -0.742]],
                      dtype=np.float32),
-            decimal=4)
+            decimal=3)
         assert_array_almost_equal(
             res['boxes_3d'].dims[:2].numpy(),
-            np.array([[2.0343924, 0.6568423, 1.1066706],
-                      [2.0680344, 0.6416968, 1.0817788]],
+            np.array([[2.034, 0.657, 1.107], [2.047, 0.661, 1.101]],
                      dtype=np.float32),
-            decimal=4)
+            decimal=3)
         assert_array_almost_equal(
             res['boxes_3d'].gravity_center[:2].numpy(),
-            np.array([[9.34029, -2.6638565, -1.2961538],
-                      [6.6818047, -22.395258, -1.7912544]],
+            np.array([[9.341, -2.664, -1.295], [6.945, -18.833, -1.745]],
                      dtype=np.float32),
-            decimal=4)
+            decimal=3)
         assert_array_almost_equal(
             res['boxes_3d'].height[:5].numpy(),
-            np.array([1.1066706, 1.0817788, 1.1004444, 1.0978955, 1.0731317],
-                     dtype=np.float32),
-            decimal=4)
+            np.array([1.107, 1.101, 1.082, 1.098, 1.073], dtype=np.float32),
+            decimal=3)
         assert_array_almost_equal(
             res['boxes_3d'].nearest_bev[:2].numpy(),
-            np.array([[9.0118685, -3.6810527, 9.668712, -1.6466603],
-                      [6.360956, -23.429276, 7.002653, -21.36124]],
+            np.array([[9.013, -3.681, 9.67, -1.647],
+                      [6.615, -19.857, 7.276, -17.81]],
                      dtype=np.float32),
-            decimal=4)
+            decimal=3)
         assert_array_almost_equal(
             res['boxes_3d'].tensor[:1].numpy(),
             np.array([[
-                9.3402901e+00, -2.6638565e+00, -1.8494891e+00, 2.0343924e+00,
-                6.5684229e-01, 1.1066706e+00, 1.8187382e+00, -8.6360151e-06,
-                2.0341220e-05
+                9.340, -2.664, -1.849, 2.0343, 6.568e-01, 1.107, 1.819,
+                -8.636e-06, 2.034e-05
             ]],
                      dtype=np.float32),
-            decimal=4)
+            decimal=3)
         assert_array_almost_equal(
             res['boxes_3d'].top_height[:5].numpy(),
-            np.array(
-                [-0.7428185, -1.250365, -1.1941129, -0.41053498, -0.13128078],
-                dtype=np.float32),
-            decimal=4)
+            np.array([-0.742, -1.194, -1.25, -0.411, -0.132],
+                     dtype=np.float32),
+            decimal=3)
         assert_array_almost_equal(
             res['boxes_3d'].volume[:5].numpy(),
-            np.array([1.4788163, 1.4355756, 1.490336, 1.49576, 1.4706278],
-                     dtype=np.float32),
-            decimal=4)
+            np.array([1.478, 1.49, 1.435, 1.495, 1.47], dtype=np.float32),
+            decimal=3)
         assert_array_almost_equal(
             res['boxes_3d'].yaw[:5].numpy(),
-            np.array([1.8187382, 1.65906, 1.694045, 1.6197505, 1.6418235],
-                     dtype=np.float32),
-            decimal=4)
+            np.array([1.819, 1.694, 1.659, 1.62, 1.641], dtype=np.float32),
+            decimal=3)
 
     def test_single(self):
         model_path = PRETRAINED_MODEL_BEVFORMER_BASE
