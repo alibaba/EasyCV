@@ -2,9 +2,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import mmcv
 import numpy as np
-from mmdet.datasets.pipelines import LoadAnnotations
 
 from easycv.core.points import BasePoints, get_points_type
+from easycv.datasets.detection.pipelines import LoadAnnotations
 from easycv.datasets.registry import PIPELINES
 
 
