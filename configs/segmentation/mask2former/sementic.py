@@ -143,11 +143,16 @@ img_norm_cfg = dict(
 crop_size = (512, 512)
 train_pipeline = [
     dict(type='MMResize', img_scale=(2048, 512), ratio_range=(0.5, 2.0)),
-    dict(type='SegRandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
+    # dict(type='MMResize',
+    #      multiscale_mode='value',
+    #      img_scale=[(256,2048),(307,2048),(358,2048),(409,2048),(460,2048),(512,2048),(563,2048),(614,2048),(665,2048),(716,2048),(768,2048),(819,2048),(870,2048),(921,2048),(972,2048),(1024,2048)]),
+    dict(type='SegRandomCrop', crop_size=crop_size),
     dict(type='MMRandomFlip', flip_ratio=0.5),
+    # dict(type='ColorAugSSDTransform', img_format='BGR'),
     dict(type='MMPhotoMetricDistortion'),
-    dict(type='MMNormalize', **img_norm_cfg),
+    # dict(type='MMPad', size=crop_size, pad_val=dict(img=128, seg=255)),
     dict(type='MMPad', size=crop_size),
+    dict(type='MMNormalize', **img_norm_cfg),
     dict(type='DefaultFormatBundle'),
     dict(
         type='Collect',
@@ -161,8 +166,9 @@ test_pipeline = [
     dict(
         type='MMMultiScaleFlipAug',
         img_scale=(2048, 512),
-        # img_ratios=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75],
         flip=False,
+        # img_scale = [(256,3584),(384,3584),(512,3584),(640,3584),(768,3584),(896,3584)],
+        # flip=True,
         transforms=[
             dict(type='MMResize', keep_ratio=True),
             dict(type='MMRandomFlip'),
@@ -181,6 +187,7 @@ train_dataset = dict(
     type='SegDataset',
     data_source=dict(
         type='SegSourceRaw',
+        cache_on_the_fly=True,
         img_root=data_root + 'images/training',
         label_root=data_root + 'annotations/training',
         reduce_zero_label=True,
@@ -193,6 +200,7 @@ val_dataset = dict(
     imgs_per_gpu=1,
     data_source=dict(
         type='SegSourceRaw',
+        cache_on_the_fly=True,
         img_root=data_root + 'images/validation',
         label_root=data_root + 'annotations/validation',
         reduce_zero_label=True,
@@ -218,7 +226,7 @@ optimizer = dict(
         'level_embed': dict(weight_decay=0.),
         'norm': dict(weight_decay=0.),
     })
-optimizer_config = dict(grad_clip=dict(max_norm=0.01, norm_type=2))
+# optimizer_config = dict(grad_clip=dict(max_norm=0.01, norm_type=2))
 total_epochs = 127
 
 # learning policy
@@ -232,13 +240,14 @@ total_epochs = 127
 #     warmup_ratio=1.0,  # no warmup
 #     warmup_iters=10)
 lr_config = dict(
-    policy='CosineAnnealing',
-    min_lr=1e-5,
+    policy='Poly',
+    min_lr=0,
     warmup='linear',
     warmup_iters=1,
     warmup_ratio=1e-4,
     warmup_by_epoch=False,
-    by_epoch=False)
+    by_epoch=False,
+    power=0.9)
 checkpoint_config = dict(interval=1)
 
 eval_config = dict(initial=False, interval=1, gpu_collect=False)
@@ -250,7 +259,10 @@ eval_pipelines = [
             dict(
                 type='SegmentationEvaluator',
                 classes=CLASSES,
+                ignore_index=255,
                 metric_names=['mIoU'])
         ],
     )
 ]
+
+# resume_from = 'out/mask2former_sementic_2/epoch_96.pth'

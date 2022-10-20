@@ -192,15 +192,16 @@ class Mask2Former(BaseModel):
                 seg_pred.append(semseg)
 
         assert len(img_metas) == 1
-        outputs = {
-            'detection_boxes': detection_boxes,
-            'detection_scores': detection_scores,
-            'detection_classes': detection_classes,
-            'detection_masks': detection_masks,
-            'img_metas': img_metas[0]
-        }
-        outputs['pan_results'] = pan_masks
-        outputs['seg_pred'] = seg_pred
+        outputs = {'img_metas': img_metas[0]}
+        if self.instance_on:
+            outputs['detection_boxes'] = detection_boxes
+            outputs['detection_scores'] = detection_scores
+            outputs['detection_classes'] = detection_classes
+            outputs['detection_masks'] = detection_masks
+        if self.panoptic_on:
+            outputs['pan_results'] = pan_masks
+        if self.semantic_on:
+            outputs['seg_pred'] = seg_pred
         return outputs
 
     def forward(self,

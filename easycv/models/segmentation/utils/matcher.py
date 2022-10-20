@@ -48,8 +48,8 @@ def batch_sigmoid_ce_loss(inputs: torch.Tensor, targets: torch.Tensor):
     return loss / hw
 
 
-batch_sigmoid_ce_loss_jit = torch.jit.script(
-    batch_sigmoid_ce_loss)  # type: torch.jit.ScriptModule
+# batch_sigmoid_ce_loss_jit = torch.jit.script(
+#     batch_sigmoid_ce_loss)  # type: torch.jit.ScriptModule
 
 
 # Modified from https://github.com/facebookresearch/detr/blob/master/models/matcher.py
@@ -125,7 +125,8 @@ class MaskHungarianMatcher(nn.Module):
                 out_mask = out_mask.float()
                 tgt_mask = tgt_mask.float()
                 # Compute the focal loss between masks
-                cost_mask = batch_sigmoid_ce_loss_jit(out_mask, tgt_mask)
+                # cost_mask = batch_sigmoid_ce_loss_jit(out_mask, tgt_mask)
+                cost_mask = batch_sigmoid_ce_loss(out_mask, tgt_mask)
 
                 # Compute the dice loss betwen masks
                 # cost_dice = batch_dice_loss_jit(out_mask, tgt_mask)
