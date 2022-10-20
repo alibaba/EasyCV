@@ -4,8 +4,7 @@ import os
 import mmcv
 import numpy as np
 
-from easycv.core.bbox import Box3DMode, Coord3DMode, get_box_type
-from easycv.datasets.detection3d.utils import extract_result_dict
+from easycv.core.bbox import get_box_type
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.shared.pipelines.transforms import Compose
 from easycv.utils.registry import build_from_cfg
@@ -62,21 +61,11 @@ class BEVFormerPredictor(PredictorV2):
     def _prepare_input_dict(self, data_info):
         from nuscenes.eval.common.utils import Quaternion, quaternion_yaw
 
-        # standard protocal modified from SECOND.Pytorch
         input_dict = dict(
-            sample_idx=data_info['token'],
-            pts_filename=data_info['lidar_path'],
-            sweeps=data_info['sweeps'],
             ego2global_translation=data_info['ego2global_translation'],
             ego2global_rotation=data_info['ego2global_rotation'],
-            prev_idx=data_info['prev'],
-            next_idx=data_info['next'],
             scene_token=data_info['scene_token'],
-            can_bus=data_info['can_bus'],
-            frame_idx=data_info['frame_idx'],
-            timestamp=data_info['timestamp'] / 1e6,
-        )
-
+            can_bus=data_info['can_bus'])
         if self.use_camera:
             image_paths = []
             lidar2img_rts = []
@@ -152,87 +141,5 @@ class BEVFormerPredictor(PredictorV2):
         # TODO: filter results by score_threshold
         return super().postprocess_single(inputs, *args, **kwargs)
 
-    def _build_default_pipeline(self):
-        """Build the default pipeline for this dataset."""
-        pipeline = [
-            dict(
-                type='LoadPointsFromFile',
-                coord_type='LIDAR',
-                load_dim=5,
-                use_dim=5,
-                file_client_args=dict(backend='disk')),
-            dict(
-                type='LoadPointsFromMultiSweeps',
-                sweeps_num=10,
-                file_client_args=dict(backend='disk')),
-            dict(
-                type='DefaultFormatBundle3D',
-                class_names=self.CLASSES,
-                with_label=False),
-            dict(type='Collect3D', keys=['points'])
-        ]
-        return Compose(pipeline)
-
-    def _get_pipeline(self, pipeline):
-        """Get data loading pipeline in self.show/evaluate function.
-
-        Args:
-            pipeline (list[dict]): Input pipeline. If None is given,
-                get from self.pipeline.
-        """
-        if pipeline is None:
-            return self._build_default_pipeline()
-        return Compose(pipeline)
-
-    def _extract_data(self, data_info, pipeline, key):
-        """Load data using input pipeline and extract data according to key.
-
-        Args:
-            data_info (int): Data info load from input file.
-            pipeline (:obj:`Compose`): Composed data loading pipeline.
-            key (str | list[str]): One single or a list of data key.
-
-        Returns:
-            np.ndarray | torch.Tensor | list[np.ndarray | torch.Tensor]:
-                A single or a list of loaded data.
-        """
-        assert pipeline is not None, 'data loading pipeline is not provided'
-        input_dict = self._prepare_input_dict(data_info)
-        example = pipeline(input_dict)
-
-        # extract data items according to keys
-        if isinstance(key, str):
-            data = extract_result_dict(example, key)
-        else:
-            data = [extract_result_dict(example, k) for k in key]
-
-        return data
-
     def visualize(self, inputs, results, out_dir, show=False, pipeline=None):
-        from easycv.core.visualization.image_3d import show_result
-
-        assert out_dir is not None, 'Expect out_dir, got none.'
-        pipeline = self._get_pipeline(pipeline)
-
-        for i, input_i in enumerate(inputs):
-            data_info = mmcv.load(input_i)
-            result = results[i]
-            if self.result_key in result.keys():
-                result = result[self.result_key]
-            pts_path = data_info['lidar_path']
-            file_name = os.path.split(pts_path)[-1].split('.')[0]
-            points = self._extract_data(data_info, pipeline, 'points').numpy()
-            # for now we convert points into depth mode
-            points = Coord3DMode.convert_point(points, Coord3DMode.LIDAR,
-                                               Coord3DMode.DEPTH)
-            inds = result['scores_3d'] > self.score_threshold
-            pred_bboxes = result['boxes_3d'][inds].tensor.numpy()
-            show_pred_bboxes = Box3DMode.convert(pred_bboxes, Box3DMode.LIDAR,
-                                                 Box3DMode.DEPTH)
-            show_result(
-                points,
-                gt_bboxes=None,
-                pred_bboxes=show_pred_bboxes,
-                out_dir=out_dir,
-                filename=file_name,
-                show=show)
+        raise NotImplementedError

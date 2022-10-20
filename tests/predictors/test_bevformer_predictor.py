@@ -154,7 +154,7 @@ class BEVFormerPredictorTest(unittest.TestCase):
             'detection3d/bevformer/bevformer_base_r101_dcn_nuscenes.py')
 
         predictor = BEVFormerPredictor(
-            model_path=model_path, config_file=config_file, batch_size=1)
+            model_path=model_path, config_file=config_file, batch_size=2)
         results = predictor([single_ann_file, single_ann_file])
         self.assertEqual(len(results), 2)
         # Input the same sample continuously, the output value is different,
