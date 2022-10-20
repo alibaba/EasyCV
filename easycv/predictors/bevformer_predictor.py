@@ -17,6 +17,18 @@ from .builder import PREDICTORS
 @PREDICTORS.register_module()
 class BEVFormerPredictor(PredictorV2):
     """Predictor for BEVFormer.
+
+    Args:
+        model_path (str): Path of model path.
+        config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
+        batch_size (int): batch size for forward.
+        device (str | torch.device): Support str('cuda' or 'cpu') or torch.device, if is None, detect device automatically.
+        save_results (bool): Whether to save predict results.
+        save_path (str): File path for saving results, only valid when `save_results` is True.
+        pipelines (list[dict]): Data pipeline configs.
+        box_type_3d (str): Box type.
+        use_camera (bool): Whether use camera data.
+        score_threshold (float): Score threshold to filter inference results.
     """
 
     def __init__(self,
