@@ -10,8 +10,6 @@ from easycv.core.visualization.image import imshow_bboxes
 from easycv.predictors.builder import PREDICTORS
 from .base import PredictorV2
 
-_OFF_WHITE = (1.0, 1.0, 240.0 / 255)
-
 
 @PREDICTORS.register_module()
 class SegmentationPredictor(PredictorV2):
@@ -171,22 +169,8 @@ class Mask2formerPredictor(SegmentationPredictor):
         """Model forward.
         """
         with torch.no_grad():
-            # outputs = self.model(**inputs, mode='test', encode=False)
             outputs = self.model.forward_test(**inputs, encode=False)
         return outputs
-
-    # def postprocess(self, inputs):
-    #     output = {}
-    #     if self.task_mode == 'panoptic':
-    #         output['pan'] = inputs['pan_results'][0]
-    #     elif self.task_mode == 'instance':
-    #         output['segms'] = inputs['detection_masks'][0]
-    #         output['bboxes'] = inputs['detection_boxes'][0]
-    #         output['scores'] = inputs['detection_scores'][0]
-    #         output['labels'] = inputs['detection_classes'][0]
-    #     else:
-    #         raise ValueError(f'Not support model {self.task_mode}')
-    #     return output
 
     def show_panoptic(self, img, pan_mask):
         pan_label = np.unique(pan_mask)
