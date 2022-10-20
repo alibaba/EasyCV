@@ -118,39 +118,6 @@ class SegmentationEvaluator(Evaluator):
 
 METRICS.register_default_best_metric(SegmentationEvaluator, 'mIoU', 'max')
 
-# def intersect_and_union(
-#     pred_label,
-#     label,
-#     num_classes,
-# ):
-#     """Calculate intersection and Union.
-
-#     Args:
-#         pred_label (ndarray): Prediction segmentation map.
-#         label (ndarray): Ground truth segmentation map.
-#         num_classes (int): Number of categories.
-
-#      Returns:
-#          torch.Tensor: The intersection of prediction and ground truth
-#             histogram on all classes.
-#          torch.Tensor: The union of prediction and ground truth histogram on
-#             all classes.
-#          torch.Tensor: The prediction histogram on all classes.
-#          torch.Tensor: The ground truth histogram on all classes.
-#     """
-#     pred_label = torch.from_numpy((pred_label))
-#     label = torch.from_numpy(label)
-
-#     intersect = pred_label[pred_label == label]
-#     area_intersect = torch.histc(
-#         intersect.float(), bins=(num_classes), min=0, max=num_classes - 1)
-#     area_pred_label = torch.histc(
-#         pred_label.float(), bins=(num_classes), min=0, max=num_classes - 1)
-#     area_label = torch.histc(
-#         label.float(), bins=(num_classes), min=0, max=num_classes - 1)
-#     area_union = area_pred_label + area_label - area_intersect
-#     return area_intersect, area_union, area_pred_label, area_label
-
 
 def intersect_and_union(pred_label,
                         label,
