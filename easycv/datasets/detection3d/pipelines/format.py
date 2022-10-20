@@ -2,11 +2,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import numpy as np
 from mmcv.parallel import DataContainer as DC
-from mmdet.datasets.pipelines import to_tensor
 
 from easycv.core.bbox import BaseInstance3DBoxes
 from easycv.core.points import BasePoints
 from easycv.datasets.registry import PIPELINES
+from easycv.datasets.shared.pipelines.format import to_tensor
 
 
 class DefaultFormatBundle(object):
