@@ -304,7 +304,6 @@ class EdgeVit(nn.Module):
                 nn.init.constant_(m.bias, 0)
                 nn.init.constant_(m.weight, 1.0)
 
-
         if isinstance(pretrained, str):
             self.apply(_init_weights)
             logger = get_root_logger()
@@ -313,7 +312,6 @@ class EdgeVit(nn.Module):
             self.apply(_init_weights)
         else:
             raise TypeError('pretrained must be a str or None')
-
 
     @torch.jit.ignore
     def no_weight_decay(self):
