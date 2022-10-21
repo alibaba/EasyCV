@@ -18,21 +18,21 @@ Pretrained on **Pascal VOC 2012 + Aug**.
 ## Mask2former
 
 ### Instance Segmentation on COCO
-| Algorithm  | Config                                                       | Train memory<br/>(GB)                                  | box MAP | Mask mAP | Download                                                     |
-| ---------- | ------------------------------------------------------------ |----------|----------|----------|----------|
-| mask2former_r50 | [mask2former_r50_8xb2_e50_instance](https://github.com/alibaba/EasyCV/tree/master/configs/segmentation/mask2former/mask2former_r50_8xb2_e50_instance.py) | 18.8 | 46.09 | 43.26 |[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_instance/epoch_50.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_instance/20220620_113639.log.json) |
+| Algorithm  | Config                                                       | Params<br/>(backbone/total)                            | Train memory<br/>(GB)                                  | inference time(A100)<br/>(ms/img)                     | box MAP | Mask mAP | Download                                                     |
+| ---------- | ------------------------------------------------------------ | ------------------------ |----------|----------|----------|----------|---|
+| mask2former_r50 | [mask2former_r50_8xb2_e50_instance](https://github.com/alibaba/EasyCV/tree/master/configs/segmentation/mask2former/mask2former_r50_8xb2_e50_instance.py) | 23.5M/44M | 18.8 | 214ms | 46.09 | 43.26 |[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_instance/epoch_50.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_instance/20220620_113639.log.json) |
 
 ### Panoptic Segmentation on COCO
 
-| Algorithm  | Config                                                       | Train memory<br/>(GB)                                  | PQ | box MAP | Mask mAP | Download                                                     |
-| ---------- | ---------- | ------------------------------------------------------------ | ------------------------ |----------|---------------------------------------------------------------------------- |---------------------------------------------------------------------------- |
-| mask2former_r50 | [mask2former_r50_8xb2_e50_panopatic](https://github.com/alibaba/EasyCV/tree/master/configs/segmentation/mask2former/mask2former_r50_8xb2_e50_panopatic.py) | 18.8 | 51.64 | 44.81 | 41.88 |[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_panoptic/epoch_50.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_panoptic/20220629_170721.log.json) |
+| Algorithm  | Config                                                       | Params<br/>(backbone/total)                            | Train memory<br/>(GB)                                  | inference time(A100)<br/>(ms/img)                     | PQ | box MAP | Mask mAP | Download                                                     |
+| ---------- | ---------- | ------------------------------------------------------------ | ------------------------ |----------|---------------------------------------------------------------------------- |---------------------------------------------------------------------------- |---|---|
+| mask2former_r50 | [mask2former_r50_8xb2_e50_panopatic](https://github.com/alibaba/EasyCV/tree/master/configs/segmentation/mask2former/mask2former_r50_8xb2_e50_panopatic.py) | 23.5M/44M | 18.8 | 241ms | 51.64 | 44.81 | 41.88 |[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_panoptic/epoch_50.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_panoptic/20220629_170721.log.json) |
 
 ### Semantic Segmentation on ADE20K
 
-| Algorithm  | Config                                                       | Train memory<br/>(GB)                                  | mIOU |Download                                                     |
-| ---------- | ---------- | ------------------------------------------------------------ |---------------------------------------------------------------------------- |---------------------------------------------------------------------------- |
-| mask2former_r50 | [mask2former_r50_8xb2_e127_semnatic](https://github.com/alibaba/EasyCV/tree/master/configs/segmentation/mask2former/mask2former_r50_8xb2_e127_semantic.py) | 5.6 | 47.03 |[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_semantic/epoch_116.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_semantic/20220929_145919.log.json) |
+| Algorithm  | Config                                                       | Params<br/>(backbone/total)                             |Train memory<br/>(GB)                                  | inference time(A100)<br/>(ms/img)|                      mIOU |Download                                                     |
+| ---------- | ---------- | ------------------------------------------------------------ |---------------------------------------------------------------------------- |---------------------------------------------------------------------------- |---|---|
+| mask2former_r50 | [mask2former_r50_8xb2_e127_semnatic](https://github.com/alibaba/EasyCV/tree/master/configs/segmentation/mask2former/mask2former_r50_8xb2_e127_semantic.py) | 23.5M/44M | 5.6 | 504ms | 47.03 |[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_semantic/epoch_116.pth) - [log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/mask2former_r50_semantic/20220929_145919.log.json) |
 
 ## SegFormer
 
