@@ -16,7 +16,7 @@ class ClsSourceCifar10(object):
     def __init__(self, root, split):
         assert split in ['train', 'test']
         self.cifar = CIFAR10(
-            root=root, train=(split == 'train'), download=False)
+            root=root, train=(split == 'train'), download=True)
         self.labels = self.cifar.targets
 
     def __len__(self):
@@ -38,7 +38,7 @@ class ClsSourceCifar100(object):
         assert split in ['train', 'test']
 
         self.cifar = CIFAR100(
-            root=root, train=(split == 'train'), download=False)
+            root=root, train=(split == 'train'), download=True)
 
         self.labels = self.cifar.targets
 
