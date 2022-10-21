@@ -61,7 +61,7 @@ DATASETS = {
 }
 
 
-def download_file(data_name, dataset_home=DATASET_HOME):
+def download_file(data_name, target_dir=DATASET_HOME):
     '''
     data_name: download file of name
     dataset_home: data root path
@@ -69,42 +69,42 @@ def download_file(data_name, dataset_home=DATASET_HOME):
     data_name = data_name.lower()
     assert data_name in DATASETS.keys(), f"{data_name} is not down link"
     data_cfg = DATASETS[data_name]
-    os.makedirs(dataset_home, exist_ok=True)
+    os.makedirs(target_dir, exist_ok=True)
     download_finished = list()
     tmp_data = data_cfg[3]
     for link_list in data_cfg[0]:
         filename = wget.filename_from_url(link_list)
         download_finished.append(filename)
-        if not os.path.exists(os.path.join(dataset_home, filename)):
+        if not os.path.exists(os.path.join(target_dir, filename)):
             try:
                 print(f"{filename} is start download........")
-                filename = wget.download(link_list, out=dataset_home)
+                filename = wget.download(link_list, out=target_dir)
                 print(f"{filename} is download finished\n")
             except:
                 print(f"{filename} is download fail")
                 exit()
 
         # The prevention of Ctrol + C
-        if not os.path.exists(os.path.join(dataset_home, filename)):
+        if not os.path.exists(os.path.join(target_dir, filename)):
             exit()
-    if os.path.exists(os.path.join(dataset_home, tmp_data)):
-        return os.path.join(dataset_home, tmp_data)
+    if os.path.exists(os.path.join(target_dir, tmp_data)):
+        return os.path.join(target_dir, tmp_data)
 
     for tmp_file in download_finished:
         if data_cfg[2]:
-            save_dir = os.path.join(dataset_home, tmp_data)
+            save_dir = os.path.join(target_dir, tmp_data)
             os.makedirs(save_dir, exist_ok=True)
             if tmp_file.endswith('zip'):
-                cmd = f"{data_cfg[1]} {save_dir} {os.path.join(dataset_home, tmp_file)}"
+                cmd = f"{data_cfg[1]} {save_dir} {os.path.join(target_dir, tmp_file)}"
             else:
-                cmd = f"{data_cfg[1]} {os.path.join(dataset_home, tmp_file)} -C {save_dir}"
+                cmd = f"{data_cfg[1]} {os.path.join(target_dir, tmp_file)} -C {save_dir}"
         else:
-            cmd = f"{data_cfg[1]} {os.path.join(dataset_home, tmp_file)} -C {dataset_home}"
+            cmd = f"{data_cfg[1]} {os.path.join(target_dir, tmp_file)} -C {target_dir}"
         print("begin Unpack.....................")
         os.system(cmd)
         print("Unpack is finished.....................")
 
-    return os.path.join(dataset_home, data_cfg[3])
+    return os.path.join(target_dir, data_cfg[3])
 
 
 def _load_image(img_path):

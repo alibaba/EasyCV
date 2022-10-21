@@ -201,26 +201,26 @@ COCO_DATASET_INFO = dict(
                 )
     )
 
-DATASET_HOME = os.path.expanduser("~/.cache/easycv/dataset")
+target_dir = os.path.expanduser("~/.cache/easycv/dataset")
 
 
-def download_file(data_cfg, dataset_home=DATASET_HOME):
+def download_file(data_cfg, target_dir=target_dir):
     '''
     data_cfg: download config
-    dataset_home: data root path
+    target_dir: data root path
     '''
 
-    os.makedirs(dataset_home, exist_ok=True)
+    os.makedirs(target_dir, exist_ok=True)
     download_finished = list()
     tmp_data = data_cfg[3]
     for link_list in data_cfg[0]:
         filename = wget.filename_from_url(link_list)
         download_finished.append(filename)
-        if not os.path.exists(os.path.join(dataset_home, filename)):
+        if not os.path.exists(os.path.join(target_dir, filename)):
             try:
                 print(f"{filename} is start download........")
                 logging.info(f"{filename} is start download........")
-                filename = wget.download(link_list, out=dataset_home)
+                filename = wget.download(link_list, out=target_dir)
                 print(f"{filename} is download finished..........\n")
                 logging.info(f"{filename} is download finished.........")
 
@@ -230,30 +230,30 @@ def download_file(data_cfg, dataset_home=DATASET_HOME):
                 exit()
 
         # The prevention of Ctrol + C
-        if not os.path.exists(os.path.join(dataset_home, filename)):
+        if not os.path.exists(os.path.join(target_dir, filename)):
             exit()
 
-    if os.path.exists(os.path.join(dataset_home, tmp_data)):
-        return os.path.join(dataset_home, tmp_data)
+    if os.path.exists(os.path.join(target_dir, tmp_data)):
+        return os.path.join(target_dir, tmp_data)
 
     for tmp_file in download_finished:
         if data_cfg[2]:
-            save_dir = os.path.join(dataset_home, tmp_data)
+            save_dir = os.path.join(target_dir, tmp_data)
             os.makedirs(save_dir, exist_ok=True)
             if tmp_file.endswith('zip'):
-                cmd = f"{data_cfg[1]} {save_dir} {os.path.join(dataset_home, tmp_file)}"
+                cmd = f"{data_cfg[1]} {save_dir} {os.path.join(target_dir, tmp_file)}"
             else:
-                cmd = f"{data_cfg[1]} {os.path.join(dataset_home, tmp_file)} -C {save_dir}"
+                cmd = f"{data_cfg[1]} {os.path.join(target_dir, tmp_file)} -C {save_dir}"
         else:
-            cmd = f"{data_cfg[1]} {os.path.join(dataset_home, tmp_file)} -C {dataset_home}"
+            cmd = f"{data_cfg[1]} {os.path.join(target_dir, tmp_file)} -C {target_dir}"
 
         print("begin Unpack.....................")
         logging.info('begin Unpack.....................')
         os.system(cmd)
-        print(f"Unpack is finished. data is saved of {dataset_home, data_cfg[3]}")
-        logging.info(f"Unpack is finished. data is saved of {dataset_home, data_cfg[3]}")
+        print(f"Unpack is finished. data is saved of {target_dir, data_cfg[3]}")
+        logging.info(f"Unpack is finished. data is saved of {target_dir, data_cfg[3]}")
 
-    return os.path.join(dataset_home, data_cfg[3])
+    return os.path.join(target_dir, data_cfg[3])
 
 
 
@@ -296,7 +296,7 @@ class PoseTopDownSourceCoco(PoseTopDownSource):
         dataset_info (DatasetInfo): A class containing all dataset info.
         data_name: need download data from internet else None example coco2017
         split: train or val
-        dataset_home: dataset root path, defalut: ~/.cache/easycv/dataset
+        target_dir: dataset root path, defalut: ~/.cache/easycv/dataset
         test_mode (bool): Store True when building test or
         validation dataset. Default: False.
     """
@@ -308,7 +308,7 @@ class PoseTopDownSourceCoco(PoseTopDownSource):
                  dataset_info=None,
                  data_name=None,
                  split='train',
-                 dataset_home=DATASET_HOME,
+                 target_dir=target_dir,
                  test_mode=False):
 
         if dataset_info is None:
@@ -319,7 +319,7 @@ class PoseTopDownSourceCoco(PoseTopDownSource):
         download_cfg = COCO_DATASET_INFO.get(data_name, 0)
         # Determine whether to download it
         if download_cfg:
-            root_path = download_file(download_cfg, dataset_home)
+            root_path = download_file(download_cfg, target_dir)
             assert split in ["train", 'val'], f"{split} not in [train, val]"
             if split == "train":
                 ann_file = os.path.join(root_path, "annotations/person_keypoints_train2017.json")
