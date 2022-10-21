@@ -1,0 +1,24 @@
+experimentWorkingDirectory: ./expdir
+searchSpaceFile: search_space.json
+trialCommand: python3 ../common/run_dlc.py --config=./config_local.ini
+# trialGpuNumber: 4
+trialConcurrency: 1
+maxTrialNumber: 4
+debug: true
+logLevel: debug
+trainingService:
+  platform: local
+  # useActiveGpu:  true
+tuner:
+  name: TPE
+  classArgs:
+    optimize_mode: maximize
+assessor:
+   codeDirectory: {hpo_tools的安装根目录}/hpo_tools/core/assessor
+   className: dlc_assessor.DLCAssessor
+   classArgs:
+      optimize_mode: maximize
+      start_step: 2
+      moving_avg: true
+      proportion: 0.6
+      patience: 2
