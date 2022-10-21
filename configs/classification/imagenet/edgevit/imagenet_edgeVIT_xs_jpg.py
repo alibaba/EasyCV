@@ -1,4 +1,4 @@
-_base_ = './EdgeVit_b256x4_300e_jpg.py'
+_base_ = './EdgeVit_b512x8_300e_jpg.py'
 # model settings
 model = dict(
     type='Classification',
