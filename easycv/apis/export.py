@@ -172,9 +172,11 @@ def _export_yolox(model, cfg, filename):
         default_export_type_list = ['raw', 'jit', 'blade']
         if export_type not in default_export_type_list:
             logging.warning(
-                'YOLOX-PAI only supports the export type as  [raw,jit,blade], otherwise we use ori as default'
+                'YOLOX-PAI only supports the export type as  [raw,jit,blade], otherwise we use raw as default'
             )
             export_type = 'raw'
+
+        model.export_type = export_type
 
         if export_type != 'raw':
             # only when we use jit or blade, we need to reparameterize_models before export
