@@ -244,7 +244,15 @@ class BEVFormer(MVXTwoStageDetector):
         self.prev_frame_info['prev_pos'] = tmp_pos
         self.prev_frame_info['prev_angle'] = tmp_angle
         self.prev_frame_info['prev_bev'] = new_prev_bev
-        return bbox_results
+
+        results_dict = {}
+        for bbox_result in bbox_results:
+            for result_name, results in bbox_result.items():
+                if result_name not in results_dict:
+                    results_dict[result_name] = []
+                results_dict[result_name].append(results)
+
+        return results_dict
 
     def simple_test_pts(self, x, img_metas, prev_bev=None, rescale=False):
         """Test function"""

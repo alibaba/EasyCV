@@ -101,8 +101,6 @@ def single_gpu_test(model, data_loader, mode='test', use_fp16=False, **kwargs):
 
     prog_bar = mmcv.ProgressBar(data_len)
     results = {}
-    results_list = []
-    is_list_result = False
     for i, data in enumerate(data_loader):
         # use scatter_kwargs to unpack DataContainer data for raw torch.nn.module
         if not isinstance(model,
@@ -116,37 +114,28 @@ def single_gpu_test(model, data_loader, mode='test', use_fp16=False, **kwargs):
             with torch.no_grad():
                 result = model(**data, mode=mode)
 
-        if isinstance(result, list):
-            batch_size = len(result)
-            results_list.extend(result)
-            is_list_result = True
-        else:
-            for k, v in result.items():
-                if k not in results:
-                    results[k] = []
-                results[k].append(v)
+        for k, v in result.items():
+            if k not in results:
+                results[k] = []
+            results[k].append(v)
 
-            if 'img_metas' in data:
-                if isinstance(data['img_metas'], list):
-                    batch_size = len(data['img_metas'][0].data[0])
-                else:
-                    batch_size = len(data['img_metas'].data[0])
-
+        if 'img_metas' in data:
+            if isinstance(data['img_metas'], list):
+                batch_size = len(data['img_metas'][0].data[0])
             else:
-                if isinstance(data['img'], list):
-                    batch_size = data['img'][0].size(0)
-                else:
-                    batch_size = data['img'].size(0)
+                batch_size = len(data['img_metas'].data[0])
+
+        else:
+            if isinstance(data['img'], list):
+                batch_size = data['img'][0].size(0)
+            else:
+                batch_size = data['img'].size(0)
 
         for _ in range(batch_size):
             prog_bar.update()
 
     # new line for prog_bar
     print()
-
-    if is_list_result:
-        return results_list
-
     for k, v in results.items():
         if len(v) == 0:
             raise ValueError(f'empty result for {k}')
@@ -197,9 +186,6 @@ def multi_gpu_test(model,
 
     model.eval()
     results = {}
-    results_list = []
-    is_list_result = False
-
     rank, world_size = get_dist_info()
 
     if hasattr(data_loader, 'dataset'):  # normal dataloader
@@ -220,20 +206,14 @@ def multi_gpu_test(model,
             #     encoded_mask_results = encode_mask_results(mask_results)
             #     result = bbox_results, encoded_mask_results
 
-        if isinstance(result, (tuple, list)):
-            results_list.extend(result)
-            is_list_result = True
-        else:
-            for k, v in result.items():
-                if k not in results:
-                    results[k] = []
+        for k, v in result.items():
+            if k not in results:
+                results[k] = []
 
-                results[k].append(v)
+            results[k].append(v)
 
         if rank == 0:
-            if is_list_result:
-                batch_size = len(result)
-            elif 'img_metas' in data:
+            if 'img_metas' in data:
                 if isinstance(data['img_metas'], list):
                     batch_size = len(data['img_metas'][0].data[0])
                 else:
@@ -244,8 +224,8 @@ def multi_gpu_test(model,
             for _ in range(batch_size * world_size):
                 prog_bar.update()
 
-    if is_list_result:
-        results = results_list
+    # new line for prog_bar
+    # print("gpu_collect", gpu_collect)
 
     # collect results from all ranks
     if gpu_collect:
@@ -254,9 +234,6 @@ def multi_gpu_test(model,
         results = collect_results_cpu(results, data_len, tmpdir)
 
     if rank == 0:
-        if is_list_result:
-            return results
-
         for k, v in results.items():
             if len(v) == 0:
                 raise ValueError(f'empty result for {k}')
@@ -301,31 +278,18 @@ def collect_results_cpu(result_part, size, tmpdir=None):
     else:
         # load results of all parts from tmp dir
         part_dict = {}
-        part_list = []
-        is_list_result = False
         for i in range(world_size):
             part_file = io.open(osp.join(tmpdir, f'part_{i}.pkl'), 'rb')
-            load_result = mmcv.load(part_file, file_format='pkl')
-            if isinstance(load_result, (list, tuple)):
-                is_list_result = True
-                part_list.append(load_result)
-            else:
-                for k, v in load_result.items():
-                    if k not in part_dict:
-                        part_dict[k] = []
-                    part_dict[k].extend(v)
-
-        # sort the results
-        if is_list_result:
-            ordered_results = []
-            for res in part_list:
-                ordered_results.extend(list(res))
-            # the dataloader may pad some samples
-            ordered_results = ordered_results[:size]
-        else:
-            # the dataloader may pad some samples
-            ordered_results = {k: v[:size] for k, v in part_dict.items()}
-
+            for k, v in mmcv.load(part_file, file_format='pkl').items():
+                if k not in part_dict:
+                    part_dict[k] = []
+                part_dict[k].extend(v)
+        # # sort the results
+        # ordered_results = []
+        # for res in zip(*part_list):
+        #     ordered_results.extend(list(res))
+        # the dataloader may pad some samples
+        ordered_results = {k: v[:size] for k, v in part_dict.items()}
         # remove tmp dir
         io.rmtree(tmpdir)
         return ordered_results
@@ -366,27 +330,18 @@ def collect_results_gpu(result_part, size):
 
     if rank == 0:
         part_dict = {}
-        part_list = []
-        is_list_result = False
         for recv, shape in zip(part_recv_list, shape_list):
             result_part = pickle.loads(recv[:shape[0]].cpu().numpy().tobytes())
-            if isinstance(result_part, (list, tuple)):
-                is_list_result = True
-                part_list.append(result_part)
-            else:
-                for k, v in result_part.items():
-                    if k not in part_dict:
-                        part_dict[k] = []
-                    part_dict[k].extend(v)
+            for k, v in result_part.items():
+                if k not in part_dict:
+                    part_dict[k] = []
+                part_dict[k].extend(v)
 
-        # sort the results
-        if is_list_result:
-            ordered_results = []
-            for res in part_list:
-                ordered_results.extend(list(res))
-            # the dataloader may pad some samples
-            ordered_results = ordered_results[:size]
-        else:
-            # the dataloader may pad some samples
-            ordered_results = {k: v[:size] for k, v in part_dict.items()}
+        # # sort the results
+        # ordered_results = []
+        # for res in zip(*part_list):
+        #     ordered_results.extend(list(res))
+        # the dataloader may pad some samples
+        # ordered_results = ordered_results[:size]
+        ordered_results = {k: v[:size] for k, v in part_dict.items()}
         return ordered_results

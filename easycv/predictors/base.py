@@ -259,6 +259,29 @@ class PredictorV2(object):
             outputs = self.model(**inputs, mode='test')
         return outputs
 
+    def _get_batch_size(self, inputs):
+        for k, batch_v in inputs.items():
+            if isinstance(batch_v, dict):
+                batch_size = self._get_batch_size(batch_v)
+            elif batch_v is not None:
+                batch_size = len(batch_v)
+                break
+            else:
+                batch_size = 1
+
+        return batch_size
+
+    def _extract_ith_result(self, inputs, i, out_i):
+        for k, batch_v in inputs.items():
+            if isinstance(batch_v, dict):
+                out_i[k] = {}
+                self._extract_ith_result(batch_v, i, out_i[k])
+            elif batch_v is not None:
+                out_i[k] = batch_v[i]
+            else:
+                out_i[k] = None
+        return out_i
+
     def postprocess(self, inputs, *args, **kwargs):
         """Process model batch outputs.
         The "inputs" should be dict format as follows:
@@ -269,28 +292,9 @@ class PredictorV2(object):
             }
         """
         outputs = []
-        batch_size = 1
-
-        if isinstance(inputs, list):
-            batch_size = len(inputs)
-            for i in inputs:
-                out_i = self.postprocess_single(i, *args, **kwargs)
-                outputs.append(out_i)
-
-            return outputs
-
-        # get current batch size
-        for k, batch_v in inputs.items():
-            if batch_v is not None:
-                batch_size = len(batch_v)
-                break
+        batch_size = self._get_batch_size(inputs)
         for i in range(batch_size):
-            out_i = {}
-            for k, batch_v in inputs.items():
-                if batch_v is not None:
-                    out_i[k] = batch_v[i]
-                else:
-                    out_i[k] = None
+            out_i = self._extract_ith_result(inputs, i, {})
             out_i = self.postprocess_single(out_i, *args, **kwargs)
             outputs.append(out_i)
         return outputs

@@ -173,7 +173,7 @@ class NuScenesDataset(BaseDataset):
         """Evaluation in nuScenes protocol.
 
         Args:
-            results (list[dict]): Testing results of the dataset.
+            results (dict[list]): Testing results of the dataset.
             evaluators: Evaluators to calculate metric with results and groundtruth.
             logger (logging.Logger | str, optional): Logger used for printing
                 related information during evaluation. Default: None.
@@ -185,7 +185,15 @@ class NuScenesDataset(BaseDataset):
         """
         from nuscenes import NuScenes
 
-        result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
+        results_list = [{} for _ in range(len(self))]
+        for k, v in results.items():
+            assert isinstance(v, list)
+            for i, result in enumerate(v):
+                results_list[i].update({k: result})
+
+        del results
+        result_files, tmp_dir = self.format_results(results_list,
+                                                    jsonfile_prefix)
         nusc = NuScenes(
             version=self.data_source.version,
             dataroot=self.data_source.data_root,
