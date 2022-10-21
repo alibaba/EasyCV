@@ -48,8 +48,9 @@ class NuScenesEvaluatorTest(unittest.TestCase):
         dataset, model = self._prepare_data_and_model()
         model = model.cuda()
         model.eval()
+        batch_size = 1
         dataloader = build_dataloader(
-            dataset, imgs_per_gpu=1, workers_per_gpu=1, shuffle=False)
+            dataset, imgs_per_gpu=batch_size, workers_per_gpu=1, shuffle=False)
         evaluator = NuScenesEvaluator(classes=NUSCENES_CLASSES)
 
         outputs_list = []
@@ -57,7 +58,13 @@ class NuScenesEvaluatorTest(unittest.TestCase):
             data, _ = scatter_kwargs(data, None, [torch.cuda.current_device()])
             with torch.no_grad():
                 outputs = model(**data[0], mode='test')
-            outputs_list.extend(outputs)
+
+            results_list = [{} for _ in range(batch_size)]
+            for k, v in outputs.items():
+                assert isinstance(v, list)
+                for i, result in enumerate(v):
+                    results_list[i].update({k: result})
+            outputs_list.extend(results_list)
 
         result_files, self.tmp_dir = dataset.format_results(outputs_list)
         nusc = NuScenes(

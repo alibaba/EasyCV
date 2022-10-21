@@ -88,8 +88,8 @@ class BEVFormerTest(unittest.TestCase):
             data, _ = scatter_kwargs(data, None, [torch.cuda.current_device()])
             with torch.no_grad():
                 outputs = model(**data[0], mode='test')
-            self.assertEqual(len(outputs), 1)
-            output = outputs[0]['pts_bbox']
+            self.assertEqual(len(outputs['pts_bbox']), 1)
+            output = outputs['pts_bbox'][0]
             self.assertEqual(output['boxes_3d'].bev.shape, torch.Size([300,
                                                                        5]))
             self.assertEqual(output['boxes_3d'].bottom_center.shape,
