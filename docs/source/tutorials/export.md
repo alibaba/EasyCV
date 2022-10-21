@@ -70,6 +70,57 @@ export = dict(export_type='raw',              # exported model type ['raw','jit'
               ),
               use_trt_efficientnms=True)      # whether to wrap the trt_nms into model
 ```
+### Inference
+Take jit script model as an example, suppose you have now obtained the following exported model:
+``` shell
+yolox_s.pt.jit
+yolox_s.pt.jit.config.json
+yolox_s.pt.preprocess (only exists when set preprocess_jit = True)
+```
+You can simply use our EasyCV predictor to use the exported model:
+```python
+import cv2
+from easycv.predictors import TorchYoloXPredictor
+
+output_ckpt = 'yolox_s.pt.jit'
+detector = TorchYoloXPredictor(output_ckpt,use_trt_efficientnms=False)
+
+img = cv2.imread('000000017627.jpg')
+output = detector.predict([img])
+print(output)
+```
+
+Or you can use our exported model with a simple environment to deploy our model on your own device:
+```python
+import io
+import torch
+import cv2
+import torchvision
+
+# load img
+img = cv2.imread('test.jpg')
+img = torch.tensor(img).unsqueeze(0).cuda()
+
+# load model
+model_path = 'yolox_s.pt.jit'
+preprocess_path = '.'.join(
+    model_path.split('.')[:-1] + ['preprocess'])
+with io.open(preprocess_path, 'rb') as infile:
+    preprocess = torch.jit.load(infile)
+with io.open(model_path, 'rb') as infile:
+    model = torch.jit.load(infile)
+
+# preporcess with the exported model or use your own preprocess func
+img, img_info = preprocess(img)
+
+# forward with nms [b,c,h,w] -> List[[n,7]]
+# n means the predicted box num of each img
+# 7 means [x1,y1,x2,y2,obj_conf,cls_conf,cls]
+output = model(img)
+print(output[0].shape)
+
+# postprocess the output information into dict or your own data structure
+```
 
 ### Inference Time Comparisons
 Use YOLOX-s as an example, we test the en2end inference time of models exported with different configs.
