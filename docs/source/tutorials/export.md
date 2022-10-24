@@ -57,6 +57,7 @@ python tools/export.py configs/detection/yolox/yolox_s_8xb16_300e_coco.py \
 
 **Export configs:**
 ```shell
+# default
 export = dict(export_type='raw',              # exported model type ['raw','jit','blade']
               preprocess_jit=True,            # whether to save a preprocess jit model
               static_opt=True,                # whether to use static shape to optimize model
@@ -70,8 +71,20 @@ export = dict(export_type='raw',              # exported model type ['raw','jit'
               ),
               use_trt_efficientnms=True)      # whether to wrap the trt_nms into model
 ```
+
+We allow users to use different combinations of "export_type", "preprocess_jit", and "use_trt_efficientnms" as shown in the Table below to export the model.
+
 ### Inference
-Take jit script model as an example, suppose you have now obtained the following exported model:
+Take jit script model as an example. Set the config file as below:
+```shell
+export = dict(export_type='jit',
+              preprocess_jit=True,
+              static_opt=True,
+              batch_size=1,
+              use_trt_efficientnms=True)
+```
+
+Then, you can obtain the following exported model:
 ``` shell
 yolox_s.pt.jit
 yolox_s.pt.jit.config.json
@@ -95,6 +108,7 @@ Or you can use our exported model with a simple environment to deploy our model 
 import io
 import torch
 import cv2
+import numpy as np
 import torchvision
 
 # load img
@@ -116,11 +130,32 @@ img, img_info = preprocess(img)
 # forward with nms [b,c,h,w] -> List[[n,7]]
 # n means the predicted box num of each img
 # 7 means [x1,y1,x2,y2,obj_conf,cls_conf,cls]
-output = model(img)
-print(output[0].shape)
+outputs = model(img)
+print(outputs[0].shape)
 
 # postprocess the output information into dict or your own data structure
+# slice box,score,class & rescale box
+detection_boxes = []
+detection_scores = []
+detection_classes = []
+bboxes = outputs[0][:, 0:4]
+bboxes /= img_info['scale_factor'][0]
+detection_boxes.append(bboxes.cpu().detach().numpy())
+detection_scores.append(
+    (outputs[0][:, 4] * outputs[0][:, 5]).cpu().detach().numpy())
+detection_classes.append(outputs[0][:, 6].cpu().detach().numpy().astype(
+    np.int32))
+
+final_outputs = {
+            'detection_boxes': detection_boxes,
+            'detection_scores': detection_scores,
+            'detection_classes': detection_classes,
+        }
+
+print(final_outputs)
 ```
+
+Note that we only allow to export an end2end TorchScript Model. For the exported Blade model, NMS is not allowed to be wrapped into the model. You should follow [postprocess.py](easycv/models/detection/utils/postprocess.py) to add the postprocess procedure.
 
 ### Inference Time Comparisons
 Use YOLOX-s as an example, we test the en2end inference time of models exported with different configs.
