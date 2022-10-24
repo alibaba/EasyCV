@@ -4,6 +4,7 @@ Auto hyperparameter optimization (HPO), or auto tuning, is one of the key featur
 
 ## Installation
 
+```shell
 hpo_tools:
 pip install https://automl-nni.oss-cn-beijing.aliyuncs.com/nni/hpo_tools/hpo_tools-0.1.1-py3-none-any.whl
 
@@ -13,10 +14,12 @@ source install_dlc.sh /mnt/workspace https://dlc-tools.oss-cn-zhangjiakou.aliyun
 # test
 cd /mnt/workspace/software
 dlc --help
+```
 
 ## RUN
 Take easycv/toolkit/hpo/search/det/ as an example
 
+```shell
 cd  EasyCV/easycv/toolkit/hpo/det/
 
 local:
@@ -25,8 +28,10 @@ nnictl create --config config_local.yml --port=8780
 dlc:
 nnictl create --config config_dlc.yml --port=8780
 
+
 ## STOP
 nnictl stop
+```
 
 For more nnictl usage, see https://nni.readthedocs.io/en/v2.1/Tutorial/QuickStart.html.
 
@@ -52,9 +57,18 @@ assessor:
       optimize_mode: maximize
       start_step: 2
 ```
-ExperimentWorkingDirectory specify save directory, searchSpaceFile specify search space,
-trialCommand startup scripts run.py (-- config specified config path), trainingService.platform specifies the training platform,
-tuner specifies the tuner algorithm, assessor specifies the assessor algorithm, classArgs specifies the algorithm parameters.
+<details>
+<summary>Arguments</summary>
+
+- `ExperimentWorkingDirectory`: the save directory
+- `searchSpaceFile`: the search space
+- `trialCommand`: startup scripts run.py(--config specified config path)
+- `trainingService.platform`: the training platform
+- `tuner`: the tuner algorithm
+- `assessor`: the assessor algorithm
+- `classArgs`: the algorithm parameters
+
+</details>
 
 The search space can reference: https://nni.readthedocs.io/en/v2.2/Tutorial/SearchSpaceSpec.html.
 
@@ -78,11 +92,31 @@ cmd2="dlc submit pytorch --name=test_nni_${exp_id}_${trial_id} \
 metric_filepath=easycv/toolkit/hpo/search/det/model/model_${exp_id}_${trial_id}/tf_logs
 val/DetectionBoxes_Precision/mAP=100
 ```
+<details>
+<summary>Arguments</summary>
+
+cmd1 specifies the area for the dlc, and cmd2 is the dlc startup command.
 [cmd_config]
---access_id and --access_key are ak information, --endpoint specifies the port, --region specifies the region.
-cmd2 specifies the dlc start command, --name specifies the experiment name, --workers specifies the number of machines, --worker_cpu specifies the number of cpus, --worker_gpu specifies the number of Gpus, --worker_memory specifies the number of memory required, --worker_spec specifies the model of the machine, --data_sources specifies the directory where the data is stored, --worker_image specifies the image to use, --workspace_id specifies the workspace, --command specifies the command to start the easycv experiment, The --user_config_param parameter is selected from searchspace.json.
+- `access_id and access_key`: the ak information
+- `endpoint`: the port
+- `region`: the region
+- `name`: the experiment name
+- `workers`: the number of machines
+- `worker_cpu`: the number of cpus
+- `worker_gpu`: the number of gpus
+- `worker_memory`: the number of memory required
+- `worker_spec`: the model of the machine
+- `data_sources`: the directory where the data is stored
+- `worker_image`: the image to use
+- `workspace_id`: the workspace
+- `command`: the command to start the easycv experiment
+- `user_config_param`: parameter is selected from searchspace.json
+
 [metric_config]
-metric_filepath is the tf_logs directory saved for the experiment and used to obtain the parameters of the hpo evaluation. For example, the above example uses the detected map as the evaluation parameter, with a maximum value of 100.
+- `metric_filepath`: tf_logs directory saved for the experiment and used to obtain the parameters of the hpo evaluation
+For example, the above example uses the detected map as the evaluation parameter, with a maximum value of 100.
+
+</details>
 
 For details about the dlc command parameters, see https://yuque.antfin-inc.com/pai-user/manual/eo7doa.
 Tuning method can be reference NNI way of use: https://nni.readthedocs.io/en/v2.1/Overview.html.
