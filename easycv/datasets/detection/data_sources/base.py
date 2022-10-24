@@ -4,107 +4,13 @@ import functools
 import logging
 from abc import abstractmethod
 from multiprocessing import Pool, cpu_count
-import os
-import wget
+
 import numpy as np
 from mmcv.runner.dist_utils import get_dist_info
 from tqdm import tqdm
 
 from easycv.file.image import load_image
 from easycv.framework.errors import NotImplementedError, ValueError
-
-# The location where downloaded data is stored
-DATASET_HOME = os.path.expanduser("~/.cache/easycv/dataset")
-
-'''
-    { key : value key: value, key: value, ..... } 
-    parameter:
-        key  : str
-        value: tuple
-            explain ：[links, cmd, condition, data_home]
-                links: list , collection of data download links
-                cmd: str, Data decompression command
-                condition: bool, whether to create data_name path, need if True else not need
-                data_home: The location where the data is stored after decompression
-'''
-
-DATASETS = {
-
-    "small_coco_itag": (
-                    ["http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/unittest/data/detection/small_coco_itag/small_coco_itag.tar.gz"],
-                    "tar -xzvf ",
-                    True,
-                    "small_coco_itag"
-                ),
-    "voc2007": (
-                    ["http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtrainval_06-Nov-2007.tar"],
-                    "tar -xvf ",
-                    False,
-                    "VOCdevkit/VOC2007"
-                ),
-    "voc2012": (
-                    ["http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar"],
-                    "tar -xvf ",
-                    False,
-                    "VOCdevkit/VOC2012/"
-                ),
-    'coco2017': (
-                    [
-                        'http://images.cocodataset.org/zips/train2017.zip',
-                        'http://images.cocodataset.org/zips/val2017.zip',
-                        'http://images.cocodataset.org/annotations/annotations_trainval2017.zip',
-                    ],
-                    "unzip -d",
-                    True,
-                    "COCO2017"
-                )
-}
-
-
-def download_file(data_name, target_dir=DATASET_HOME):
-    '''
-    data_name: download file of name
-    dataset_home: data root path
-    '''
-    data_name = data_name.lower()
-    assert data_name in DATASETS.keys(), f"{data_name} is not down link"
-    data_cfg = DATASETS[data_name]
-    os.makedirs(target_dir, exist_ok=True)
-    download_finished = list()
-    tmp_data = data_cfg[3]
-    for link_list in data_cfg[0]:
-        filename = wget.filename_from_url(link_list)
-        download_finished.append(filename)
-        if not os.path.exists(os.path.join(target_dir, filename)):
-            try:
-                print(f"{filename} is start download........")
-                filename = wget.download(link_list, out=target_dir)
-                print(f"{filename} is download finished\n")
-            except:
-                print(f"{filename} is download fail")
-                exit()
-
-        # The prevention of Ctrol + C
-        if not os.path.exists(os.path.join(target_dir, filename)):
-            exit()
-    if os.path.exists(os.path.join(target_dir, tmp_data)):
-        return os.path.join(target_dir, tmp_data)
-
-    for tmp_file in download_finished:
-        if data_cfg[2]:
-            save_dir = os.path.join(target_dir, tmp_data)
-            os.makedirs(save_dir, exist_ok=True)
-            if tmp_file.endswith('zip'):
-                cmd = f"{data_cfg[1]} {save_dir} {os.path.join(target_dir, tmp_file)}"
-            else:
-                cmd = f"{data_cfg[1]} {os.path.join(target_dir, tmp_file)} -C {save_dir}"
-        else:
-            cmd = f"{data_cfg[1]} {os.path.join(target_dir, tmp_file)} -C {target_dir}"
-        print("begin Unpack.....................")
-        os.system(cmd)
-        print("Unpack is finished.....................")
-
-    return os.path.join(target_dir, data_cfg[3])
 
 
 def _load_image(img_path):

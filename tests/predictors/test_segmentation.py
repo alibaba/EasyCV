@@ -11,6 +11,7 @@ from mmcv import Config
 from PIL import Image
 from tests.ut_config import (MODEL_CONFIG_MASK2FORMER_INS,
                              MODEL_CONFIG_MASK2FORMER_PAN,
+                             MODEL_CONFIG_MASK2FORMER_SEM,
                              MODEL_CONFIG_SEGFORMER,
                              PRETRAINED_MODEL_MASK2FORMER_DIR,
                              PRETRAINED_MODEL_SEGFORMER, TEST_IMAGES_DIR)
@@ -120,9 +121,13 @@ class Mask2formerPredictorTest(unittest.TestCase):
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
-        self.img_path = './data/test/segmentation/data/000000309022.jpg'
-        self.pan_ckpt = './data/test/segmentation/models/mask2former_pan_export.pth'
-        self.instance_ckpt = './data/test/segmentation/models/mask2former_r50_instance.pth'
+        self.img_path = os.path.join(TEST_IMAGES_DIR, '000000309022.jpg')
+        self.pan_ckpt = os.path.join(PRETRAINED_MODEL_MASK2FORMER_DIR,
+                                     'mask2former_pan_export.pth')
+        self.instance_ckpt = os.path.join(PRETRAINED_MODEL_MASK2FORMER_DIR,
+                                          'mask2former_instance_export.pth')
+        self.semantic_ckpt = os.path.join(PRETRAINED_MODEL_MASK2FORMER_DIR,
+                                          'mask2former_semantic_export.pth')
 
     def test_panoptic_single(self):
         # panop
@@ -203,6 +208,38 @@ class Mask2formerPredictorTest(unittest.TestCase):
                                  [41, 69, 72, 45, 68, 70, 41, 69, 69, 45])
             instance_img = predictor.show_instance(img, **(predict_out[i]))
             cv2.imwrite(save_name, instance_img)
+
+    def test_semantic_single(self):
+        # semantic
+        segmentation_model_config = MODEL_CONFIG_MASK2FORMER_SEM
+        predictor = Mask2formerPredictor(
+            model_path=self.semantic_ckpt,
+            task_mode='semantic',
+            config_file=segmentation_model_config)
+        img = cv2.imread(self.img_path)
+        predict_out = predictor([self.img_path])
+        self.assertEqual(len(predict_out), 1)
+        self.assertEqual(len(np.unique(predict_out[0]['seg_pred'])), 19)
+
+        semantic_img = predictor.show_semantic(img, **predict_out[0])
+        cv2.imwrite('semantic_out.jpg', semantic_img)
+
+    def test_semantic_batch(self):
+        total_samples = 2
+        segmentation_model_config = MODEL_CONFIG_MASK2FORMER_SEM
+        predictor = Mask2formerPredictor(
+            model_path=self.semantic_ckpt,
+            task_mode='semantic',
+            config_file=segmentation_model_config,
+            batch_size=total_samples)
+        img = cv2.imread(self.img_path)
+        predict_out = predictor([self.img_path] * total_samples)
+        self.assertEqual(len(predict_out), total_samples)
+        for i in range(total_samples):
+            save_name = 'semantic_out_batch_%d.jpg' % i
+            self.assertEqual(len(np.unique(predict_out[i]['seg_pred'])), 19)
+            semantic_img = predictor.show_semantic(img, **(predict_out[i]))
+            cv2.imwrite(save_name, semantic_img)
 
 
 if __name__ == '__main__':

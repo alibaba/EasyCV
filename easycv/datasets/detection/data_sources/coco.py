@@ -1,12 +1,15 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import os
+
 import numpy as np
 from xtcocotools.coco import COCO
-import os
+
 from easycv.datasets.registry import DATASOURCES, PIPELINES
 from easycv.datasets.shared.pipelines import Compose
+from easycv.datasets.utils.download_data.download_coco import (
+    check_data_exists, download_coco)
 from easycv.framework.errors import TypeError
 from easycv.utils.registry import build_from_cfg
-from easycv.datasets.detection.data_sources.base import download_file, DATASET_HOME
 
 
 @DATASOURCES.register_module
@@ -19,43 +22,23 @@ class DetSourceCoco(object):
                  ann_file,
                  img_prefix,
                  pipeline,
-                 data_name=None,
-                 split="train",
                  test_mode=False,
                  filter_empty_gt=False,
                  classes=None,
-                 iscrowd=False,
-                 dataset_home=DATASET_HOME):
+                 iscrowd=False):
         """
         Args:
             ann_file: Path of annotation file.
             img_prefix: coco path prefix
-            data_name: need download data from internet else None example voc2007 or voc2012
-            split: train or val
             test_mode (bool, optional): If set True, `self._filter_imgs` will not works.
             filter_empty_gt (bool, optional): If set true, images without bounding
                 boxes of the dataset's classes will be filtered out. This option
                 only works when `test_mode=False`, i.e., we never filter images
                 during tests.
             iscrowd: when traing setted as False, when val setted as True
-            dataset_home: dataset root path, defalut: ~/.cache/easycv/dataset
         """
         self.ann_file = ann_file
         self.img_prefix = img_prefix
-        # Determine whether to download it
-        if data_name:
-            tmp_path = download_file(data_name, dataset_home)
-            assert split in ["train", 'val'], f"{split} not in [train, val]"
-            if split == "train":
-                self.ann_file = os.path.join(tmp_path, "annotations/instances_train2017.json")
-                self.img_prefix = os.path.join(tmp_path, "train2017")
-            else:
-                self.ann_file = os.path.join(tmp_path, "annotations/instances_val2017.json")
-                self.img_prefix = os.path.join(tmp_path, "val2017")
-
-        assert os.path.exists(self.ann_file), f"{self.ann_file} is not exists"
-        assert os.path.exists(self.img_prefix), f"{self.img_prefix} is not exists"
-
         self.filter_empty_gt = filter_empty_gt
         self.CLASSES = classes
         # load annotations (and proposals)
@@ -338,3 +321,57 @@ class DetSourceCoco(object):
         """Get another random index from the same group as the given index."""
         pool = np.where(self.flag == self.flag[idx])[0]
         return np.random.choice(pool)
+
+
+@DATASOURCES.register_module
+class DetSourceCoco2017(DetSourceCoco):
+    """
+    coco2017 data source
+    """
+
+    def __init__(self,
+                 pipeline,
+                 path=None,
+                 download=True,
+                 split='train',
+                 test_mode=False,
+                 filter_empty_gt=False,
+                 classes=None,
+                 iscrowd=False):
+        """
+        Args:
+            path: This parameter is optional. If download is True and path is not provided,
+                    a temporary directory is automatically created for downloading
+            download: If the value is True, the file is automatically downloaded to the path directory.
+                      If False, automatic download is not supported and data in the path is used
+            split: train or val
+            test_mode (bool, optional): If set True, `self._filter_imgs` will not works.
+            filter_empty_gt (bool, optional): If set true, images without bounding
+                boxes of the dataset's classes will be filtered out. This option
+                only works when `test_mode=False`, i.e., we never filter images
+                during tests.
+            iscrowd: when traing setted as False, when val setted as True
+        """
+        if download:
+            if path:
+                assert os.path.isdir(path), f'{path} is not dir'
+                path = download_coco(
+                    'coco2017', split=split, target_dir=path, task='detection')
+            else:
+                path = download_coco('coco2017', split=split, task='detection')
+        else:
+            if path:
+                assert os.path.isdir(path), f'{path} is not dir'
+                path = check_data_exists(
+                    target_dir=path, split=split, task='detection')
+            else:
+                raise KeyError('your path is None')
+
+        super(DetSourceCoco2017, self).__init__(
+            ann_file=path['ann_file'],
+            img_prefix=path['img_prefix'],
+            pipeline=pipeline,
+            test_mode=test_mode,
+            filter_empty_gt=filter_empty_gt,
+            classes=classes,
+            iscrowd=iscrowd)

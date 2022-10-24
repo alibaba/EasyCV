@@ -58,8 +58,6 @@ jobs:
           fi
 
           export OSS_CONFIG_FILE=$UNITTEST_OSS_CONFIG
-
-          export PYTHONPATH=.
           export TEST_DIR="/tmp/easycv_test_${USER}_`date +%s`"
 
           # do not uncomments, casue faild in Online UT, install requirements by yourself on UT machine
@@ -67,7 +65,14 @@ jobs:
           #run test
           export CUDA_VISIBLE_DEVICES=7
           source ~/workspace/anaconda2/etc/profile.d/conda.sh
-          conda activate evtorch_torch1.8.0
+          conda activate easycv_torch1.8.0
+
+          # pip install pai-easycv
+          pip uninstall -y pai-easycv
+          python setup.py install
+          # move source code, ensure import easycv from site-package
+          mv ./easycv ./easycv_src
+
           PYTHONPATH=. python tests/run.py
 
 

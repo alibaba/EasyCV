@@ -6,8 +6,10 @@ from multiprocessing import cpu_count
 
 import numpy as np
 
-from easycv.datasets.detection.data_sources.base import DetSourceBase, download_file, DATASET_HOME
+from easycv.datasets.detection.data_sources.base import DetSourceBase
 from easycv.datasets.registry import DATASOURCES
+from easycv.datasets.utils.download_data.download_voc import (
+    check_data_exists, download_voc)
 from easycv.file import io
 
 img_formats = ['.bmp', '.jpg', '.jpeg', '.png', '.tif', '.tiff', '.dng']
@@ -84,28 +86,11 @@ class DetSourceVOC(DetSourceBase):
             img_root_path='/your/voc_data/images',
             img_root_path='/your/voc_data/annotations'
         )
-
-    Example1:
-        data_source = DetSourceVOC(
-            path='',
-            classes=${VOC_CLASSES},
-            data_name='voc2012',
-            split='train',
-        )
-    Example1:
-        data_source = DetSourceVOC(
-            path='',
-            classes=${VOC_CLASSES},
-            data_name='voc2007',
-            split='train',
-        )
     """
 
     def __init__(self,
                  path,
                  classes=[],
-                 data_name=None,
-                 split='train',
                  img_root_path=None,
                  label_root_path=None,
                  cache_at_init=False,
@@ -114,14 +99,11 @@ class DetSourceVOC(DetSourceBase):
                  label_suffix='.xml',
                  parse_fn=parse_xml,
                  num_processes=int(cpu_count() / 2),
-                 dataset_home=DATASET_HOME,
                  **kwargs):
         """
         Args:
             path: path of img id list file in ImageSets/Main/
             classes: classes list
-            data_name: need download data from internet else None example voc2007 or voc2012
-            split: train or val
             img_root_path: image dir path, if None, default to detect the image dir by the relative path of the `path`
                 according to the VOC data format.
             label_root_path: label dir path, if None, default to detect the label dir by the relative path of the `path`
@@ -132,7 +114,6 @@ class DetSourceVOC(DetSourceBase):
             label_suffix: suffix of label file
             parse_fn: parse function to parse item of source iterator
             num_processes: number of processes to parse samples
-            dataset_home: dataset root path
         """
 
         self.path = path
@@ -140,17 +121,6 @@ class DetSourceVOC(DetSourceBase):
         self.label_root_path = label_root_path
         self.img_suffix = img_suffix
         self.label_suffix = label_suffix
-
-        # Determine whether to download it
-        if data_name:
-            tmp_path = download_file(data_name, dataset_home)
-            assert split in ["train", 'val'], f"{split} not in [train, val]"
-            if split == "train":
-                self.path = os.path.join(tmp_path, "ImageSets/Main/train.txt")
-            else:
-                self.path = os.path.join(tmp_path, "ImageSets/Main/val.txt")
-        assert os.path.exists(self.path), f"{self.path} is not exists"
-
         super(DetSourceVOC, self).__init__(
             classes=classes,
             cache_at_init=cache_at_init,
@@ -180,3 +150,133 @@ class DetSourceVOC(DetSourceBase):
                 labels_path_list.append(label_path)
 
         return list(zip(imgs_path_list, labels_path_list))
+
+
+@DATASOURCES.register_module
+class DetSourceVOC2012(DetSourceVOC):
+
+    def __init__(self,
+                 path=None,
+                 download=True,
+                 split='train',
+                 classes=[],
+                 img_root_path=None,
+                 label_root_path=None,
+                 cache_at_init=False,
+                 cache_on_the_fly=False,
+                 img_suffix='.jpg',
+                 label_suffix='.xml',
+                 parse_fn=parse_xml,
+                 num_processes=int(cpu_count() / 2),
+                 **kwargs):
+        """
+        Args:
+            path: This parameter is optional. If download is True and path is not provided,
+                    a temporary directory is automatically created for downloading
+            download: If the value is True, the file is automatically downloaded to the path directory.
+                      If False, automatic download is not supported and data in the path is used
+            split: train or val
+            classes: classes list
+            img_root_path: image dir path, if None, default to detect the image dir by the relative path of the `path`
+                according to the VOC data format.
+            label_root_path: label dir path, if None, default to detect the label dir by the relative path of the `path`
+                according to the VOC data format.
+            cache_at_init: if set True, will cache in memory in __init__ for faster training
+            cache_on_the_fly: if set True, will cache in memroy during training
+            img_suffix: suffix of image file
+            label_suffix: suffix of label file
+            parse_fn: parse function to parse item of source iterator
+            num_processes: number of processes to parse samples
+        """
+
+        # Check to see if you need to download it
+        if download:
+            if path:
+                assert os.path.isdir(path), f'{path} is not dir'
+                path = download_voc(
+                    'voc2012', split=split, target_dir=path)['path']
+            else:
+                path = download_voc('voc2012', split=split)['path']
+        else:
+            if path:
+                assert os.path.isdir(path), f'{path} is not dir'
+                path = check_data_exists('voc2012', path, split)['path']
+            else:
+                raise KeyError('your path is None')
+
+        super(DetSourceVOC2012, self).__init__(
+            path=path,
+            classes=classes,
+            img_root_path=img_root_path,
+            label_root_path=label_root_path,
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly,
+            img_suffix=img_suffix,
+            label_suffix=label_suffix,
+            parse_fn=parse_fn,
+            num_processes=num_processes)
+
+
+@DATASOURCES.register_module
+class DetSourceVOC2007(DetSourceVOC):
+
+    def __init__(self,
+                 path=None,
+                 download=True,
+                 split='train',
+                 classes=[],
+                 img_root_path=None,
+                 label_root_path=None,
+                 cache_at_init=False,
+                 cache_on_the_fly=False,
+                 img_suffix='.jpg',
+                 label_suffix='.xml',
+                 parse_fn=parse_xml,
+                 num_processes=int(cpu_count() / 2),
+                 **kwargs):
+        """
+        Args:
+            path: This parameter is optional. If download is True and path is not provided,
+                    a temporary directory is automatically created for downloading
+            download: If the value is True, the file is automatically downloaded to the path directory.
+                      If False, automatic download is not supported and data in the path is used
+            split: train or val
+            classes: classes list
+            img_root_path: image dir path, if None, default to detect the image dir by the relative path of the `path`
+                according to the VOC data format.
+            label_root_path: label dir path, if None, default to detect the label dir by the relative path of the `path`
+                according to the VOC data format.
+            cache_at_init: if set True, will cache in memory in __init__ for faster training
+            cache_on_the_fly: if set True, will cache in memroy during training
+            img_suffix: suffix of image file
+            label_suffix: suffix of label file
+            parse_fn: parse function to parse item of source iterator
+            num_processes: number of processes to parse samples
+        """
+
+        # Check to see if you need to download it
+        if download:
+            if path:
+                assert os.path.isdir(path), f'{path} is not dir'
+                path = download_voc(
+                    'voc2007', split=split, target_dir=path)['path']
+            else:
+                path = download_voc('voc2007', split=split)['path']
+        else:
+            if path:
+                assert os.path.isdir(path), f'{path} is not dir'
+                path = check_data_exists('voc2007', path, split)['path']
+            else:
+                raise KeyError('your path is None')
+
+        super(DetSourceVOC2007, self).__init__(
+            path=path,
+            classes=classes,
+            img_root_path=img_root_path,
+            label_root_path=label_root_path,
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly,
+            img_suffix=img_suffix,
+            label_suffix=label_suffix,
+            parse_fn=parse_fn,
+            num_processes=num_processes)

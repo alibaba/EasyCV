@@ -1,7 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import random
 import unittest
+
 from tests.ut_config import SAMLL_IMAGENET1K_RAW_LOCAL
+
 from easycv.datasets.builder import build_datasource
 
 
@@ -13,7 +15,8 @@ class ClsSourceImageNet1kTest(unittest.TestCase):
     def test_ImageNet1k(self):
         base_data_root = SAMLL_IMAGENET1K_RAW_LOCAL
 
-        cfg = dict(type='ClsSourceImageNet1k', root=base_data_root, split='train')
+        cfg = dict(
+            type='ClsSourceImageNet1k', root=base_data_root, split='train')
         data_source = build_datasource(cfg)
 
         index_list = random.choices(list(range(100)), k=3)
@@ -21,9 +24,7 @@ class ClsSourceImageNet1kTest(unittest.TestCase):
             results = data_source[idx]
             img = results['img']
             label = results['gt_labels']
-            self.assertEqual(img.mode, 'RGB')
             self.assertIn(label, list(range(200)))
-            img.close()
 
         length = len(data_source)
 

@@ -14,6 +14,7 @@ from easycv.datasets.utils import replace_ImageToTensor
 from easycv.file import io
 from easycv.models import build_model
 from easycv.models.detection.utils import postprocess
+from easycv.thirdparty.mtcnn import FaceDetector
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
@@ -27,11 +28,6 @@ try:
     from easy_vision.python.inference.predictor import PredictorInterface
 except Exception:
     from .interface import PredictorInterface
-
-try:
-    from thirdparty.mtcnn import FaceDetector
-except Exception:
-    from easycv.thirdparty.mtcnn import FaceDetector
 
 
 @PREDICTORS.register_module()
@@ -300,11 +296,15 @@ class YoloXPredictor(DetectionPredictor):
                 det_out['detection_scores'] = results[2]
                 det_out['detection_classes'] = results[3]
             else:
-                det_out = self.post_assign(
-                    postprocess(
-                        results.unsqueeze(0), len(self.CLASSES),
-                        self.test_conf, self.nms_thre),
-                    img_metas=[img_meta])
+                if self.model_type == 'jit':
+                    det_out = self.post_assign(
+                        results.unsqueeze(0), img_metas=[img_meta])
+                else:
+                    det_out = self.post_assign(
+                        postprocess(
+                            results.unsqueeze(0), len(self.CLASSES),
+                            self.test_conf, self.nms_thre),
+                        img_metas=[img_meta])
             det_out['detection_scores'] = det_out['detection_scores'][0]
             det_out['detection_boxes'] = det_out['detection_boxes'][0]
             det_out['detection_classes'] = det_out['detection_classes'][0]

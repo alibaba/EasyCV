@@ -24,6 +24,10 @@ VOC_CLASSES = [
     'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person',
     'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor'
 ]
+NUSCENES_CLASSES = [
+    'car', 'truck', 'construction_vehicle', 'bus', 'trailer', 'barrier',
+    'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+]
 
 BASE_OSS_PATH = 'oss://pai-vision-data-hz/unittest/'
 BASE_LOCAL_PATH = os.path.expanduser('~/easycv_nfs/')
@@ -36,7 +40,8 @@ SMALL_IMAGENET_RAW_LOCAL = os.path.join(
     BASE_LOCAL_PATH, 'data/classification/small_imagenet_raw')
 CIFAR10_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/classification/cifar10')
 CIFAR100_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/classification/cifar100')
-SAMLL_IMAGENET1K_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH, 'datasets/imagenet-1k/imagenet_raw')
+SAMLL_IMAGENET1K_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH,
+                                          'datasets/imagenet-1k/imagenet_raw')
 
 SMALL_IMAGENET_TFRECORD_LOCAL = os.path.join(
     BASE_LOCAL_PATH, 'data/classification/small_imagenet_tfrecord/')
@@ -52,7 +57,11 @@ IO_DATA_MULTI_DIRS_OSS = os.path.join(BASE_OSS_PATH,
 DET_DATA_SMALL_COCO_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                          'data/detection/small_coco')
 DET_DATA_COCO2017_DOWNLOAD = os.path.join(BASE_LOCAL_PATH, 'download_local/')
-VOC_DATASET_DOWNLOAD_LOCAL = os.path.join(BASE_LOCAL_PATH, "download_local")
+VOC_DATASET_DOWNLOAD_LOCAL = os.path.join(BASE_LOCAL_PATH, 'download_local')
+VOC_DATASET_DOWNLOAD_SMALL = os.path.join(BASE_LOCAL_PATH,
+                                          'download_local/small_download')
+COCO_DATASET_DOWNLOAD_SMALL = os.path.join(BASE_LOCAL_PATH,
+                                           'download_local/small_download')
 CONFIG_PATH = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
 
 DET_DATA_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/detection/raw_data')
@@ -98,10 +107,14 @@ PRETRAINED_MODEL_YOLOXS_EXPORT_OLD = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/detection/infer_yolox/old.pt')
 PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_JIT = os.path.join(
     BASE_LOCAL_PATH,
-    'pretrained_models/detection/infer_yolox/epoch_300_nopre_notrt.pt.jit')
+    'pretrained_models/detection/infer_yolox/epoch_300_nopre_notrt_e2e.pt.jit')
 PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT = os.path.join(
     BASE_LOCAL_PATH,
-    'pretrained_models/detection/infer_yolox/epoch_300_pre_notrt.pt.jit')
+    'pretrained_models/detection/infer_yolox/epoch_300_pre_notrt_e2e.pt.jit')
+PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT_B2 = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/detection/infer_yolox/epoch_300_pre_notrt_e2e_b2.pt.jit'
+)
 PRETRAINED_MODEL_YOLOXS_NOPRE_TRT_JIT = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/detection/infer_yolox/epoch_300_nopre_trt.pt.jit')
@@ -145,11 +158,28 @@ PRETRAINED_MODEL_SEGFORMER = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/segmentation/segformer/segformer_b0/SegmentationEvaluator_mIoU_best.pth'
 )
+PRETRAINED_MODEL_BEVFORMER_BASE = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/detection3d/bevformer/bevformer_base_epoch_24.pth')
+PRETRAINED_MODEL_FACE_2D_KEYPOINTS = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/face_2d_keypoints/epoch_400.pth')
+PRETRAINED_MODEL_HAND_KEYPOINTS = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/pose/hand/hrnet/hrnet_w18_256x256.pth')
+PRETRAINED_MODEL_WHOLEBODY_DETECTION = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/pose/wholebody/epoch_290.pth')
+PRETRAINED_MODEL_WHOLEBODY = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/pose/wholebody/hrnet_w48_coco_wholebody_384x288_dark-f5726563_20200918.pth'
+)
 MODEL_CONFIG_SEGFORMER = (
     './configs/segmentation/segformer/segformer_b0_coco.py')
 SMALL_COCO_WHOLE_BODY_HAND_ROOT = 'data/test/pose/hand/small_whole_body_hand_coco'
+SMALL_NUSCENES_PATH = os.path.join(
+    BASE_LOCAL_PATH, 'data/detection3d/nuScenes/nuscenes-v1.0-mini')
 SMALL_COCO_WHOLEBODY_ROOT = 'data/test/pose/wholebody/data'
 MODEL_CONFIG_MASK2FORMER_PAN = (
     './configs/segmentation/mask2former/mask2former_r50_8xb2_e50_panoptic.py')
 MODEL_CONFIG_MASK2FORMER_INS = (
     './configs/segmentation/mask2former/mask2former_r50_8xb2_e50_instance.py')
+MODEL_CONFIG_MASK2FORMER_SEM = (
+    './configs/segmentation/mask2former/mask2former_r50_8xb2_e127_semantic.py')

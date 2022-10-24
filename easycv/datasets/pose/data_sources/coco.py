@@ -1,12 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Adapt from https://github.com/open-mmlab/mmpose/blob/master/mmpose/datasets/datasets/top_down/topdown_coco_dataset.py
 import logging
-import os, wget
+import os
 
 import json_tricks as json
 import numpy as np
 
 from easycv.datasets.registry import DATASOURCES
+from easycv.datasets.utils.download_data.download_coco import (
+    check_data_exists, download_coco)
 from easycv.framework.errors import ValueError
 from .top_down import PoseTopDownSource
 
@@ -188,73 +190,7 @@ COCO_DATASET_INFO = dict(
     sigmas=[
         0.026, 0.025, 0.025, 0.035, 0.035, 0.079, 0.079, 0.072, 0.072, 0.062,
         0.062, 0.107, 0.107, 0.087, 0.087, 0.089, 0.089
-    ],
-    coco2017=(
-                    [
-                        'http://images.cocodataset.org/zips/train2017.zip',
-                        'http://images.cocodataset.org/zips/val2017.zip',
-                        'http://images.cocodataset.org/annotations/annotations_trainval2017.zip',
-                    ],
-                    "unzip -d",
-                    True,
-                    "COCO2017"
-                )
-    )
-
-target_dir = os.path.expanduser("~/.cache/easycv/dataset")
-
-
-def download_file(data_cfg, target_dir=target_dir):
-    '''
-    data_cfg: download config
-    target_dir: data root path
-    '''
-
-    os.makedirs(target_dir, exist_ok=True)
-    download_finished = list()
-    tmp_data = data_cfg[3]
-    for link_list in data_cfg[0]:
-        filename = wget.filename_from_url(link_list)
-        download_finished.append(filename)
-        if not os.path.exists(os.path.join(target_dir, filename)):
-            try:
-                print(f"{filename} is start download........")
-                logging.info(f"{filename} is start download........")
-                filename = wget.download(link_list, out=target_dir)
-                print(f"{filename} is download finished..........\n")
-                logging.info(f"{filename} is download finished.........")
-
-            except:
-                print(f"{filename} is download fail\n")
-                logging.info(f"{filename} is download fail")
-                exit()
-
-        # The prevention of Ctrol + C
-        if not os.path.exists(os.path.join(target_dir, filename)):
-            exit()
-
-    if os.path.exists(os.path.join(target_dir, tmp_data)):
-        return os.path.join(target_dir, tmp_data)
-
-    for tmp_file in download_finished:
-        if data_cfg[2]:
-            save_dir = os.path.join(target_dir, tmp_data)
-            os.makedirs(save_dir, exist_ok=True)
-            if tmp_file.endswith('zip'):
-                cmd = f"{data_cfg[1]} {save_dir} {os.path.join(target_dir, tmp_file)}"
-            else:
-                cmd = f"{data_cfg[1]} {os.path.join(target_dir, tmp_file)} -C {save_dir}"
-        else:
-            cmd = f"{data_cfg[1]} {os.path.join(target_dir, tmp_file)} -C {target_dir}"
-
-        print("begin Unpack.....................")
-        logging.info('begin Unpack.....................')
-        os.system(cmd)
-        print(f"Unpack is finished. data is saved of {target_dir, data_cfg[3]}")
-        logging.info(f"Unpack is finished. data is saved of {target_dir, data_cfg[3]}")
-
-    return os.path.join(target_dir, data_cfg[3])
-
+    ])
 
 
 @DATASOURCES.register_module()
@@ -294,9 +230,6 @@ class PoseTopDownSourceCoco(PoseTopDownSource):
             Default: None.
         data_cfg (dict): config
         dataset_info (DatasetInfo): A class containing all dataset info.
-        data_name: need download data from internet else None example coco2017
-        split: train or val
-        target_dir: dataset root path, defalut: ~/.cache/easycv/dataset
         test_mode (bool): Store True when building test or
         validation dataset. Default: False.
     """
@@ -306,27 +239,12 @@ class PoseTopDownSourceCoco(PoseTopDownSource):
                  img_prefix,
                  data_cfg,
                  dataset_info=None,
-                 data_name=None,
-                 split='train',
-                 target_dir=target_dir,
                  test_mode=False):
 
         if dataset_info is None:
             logging.info(
                 'dataset_info is missing, use default coco dataset info')
             dataset_info = COCO_DATASET_INFO
-
-        download_cfg = COCO_DATASET_INFO.get(data_name, 0)
-        # Determine whether to download it
-        if download_cfg:
-            root_path = download_file(download_cfg, target_dir)
-            assert split in ["train", 'val'], f"{split} not in [train, val]"
-            if split == "train":
-                ann_file = os.path.join(root_path, "annotations/person_keypoints_train2017.json")
-                img_prefix = os.path.join(root_path, "train2017")
-            else:
-                ann_file = os.path.join(root_path, "annotations/person_keypoints_val2017.json")
-                img_prefix = os.path.join(root_path, "val2017")
 
         self.use_gt_bbox = data_cfg.get('use_gt_bbox', True)
         self.bbox_file = data_cfg.get('bbox_file', None)
@@ -394,3 +312,43 @@ class PoseTopDownSourceCoco(PoseTopDownSource):
         print(f'=> Total boxes after filter '
               f'low score@{self.det_bbox_thr}: {bbox_id}')
         return kpt_db
+
+
+@DATASOURCES.register_module()
+class PoseTopDownSourceCoco2017(PoseTopDownSourceCoco):
+    """
+    Args:
+        path: target dir
+        download: whether download
+        split: train or val
+        data_cfg (dict): config
+        dataset_info (DatasetInfo): A class containing all dataset info.
+        test_mode (bool): Store True when building test or
+        validation dataset. Default: False.
+    """
+
+    def __init__(self,
+                 data_cfg,
+                 path='',
+                 download=True,
+                 split='train',
+                 dataset_info=None,
+                 test_mode=False):
+        if download:
+            if os.path.isdir(path):
+                path = download_coco(
+                    'coco2017', split=split, target_dir=path, task='pose')
+            else:
+                path = download_coco('coco2017', split=split, task='pose')
+        else:
+            if os.path.isdir(path):
+                path = check_data_exists(path, split, 'pose')
+            else:
+                raise KeyError('your path is None')
+
+        super().__init__(
+            ann_file=path['ann_file'],
+            img_prefix=path['img_prefix'],
+            data_cfg=data_cfg,
+            dataset_info=dataset_info,
+            test_mode=test_mode)

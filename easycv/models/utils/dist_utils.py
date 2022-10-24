@@ -4,11 +4,7 @@ import torch.distributed as dist
 from mmcv.runner import get_dist_info
 from pytorch_metric_learning.utils import common_functions as c_f
 
-
-# modified from https://github.com/allenai/allennlp
-def is_distributed():
-    return torch.distributed.is_available(
-    ) and torch.distributed.is_initialized()
+from easycv.utils.dist_utils import is_dist_available
 
 
 # modified from https://github.com/JohnGiorgi/DeCLUTR
@@ -20,7 +16,7 @@ def all_gather(embeddings, labels):
         labels = labels.to(embeddings.device)
 
     # If we are not using distributed training, this is a no-op.
-    if not is_distributed():
+    if not is_dist_available():
         return embeddings, labels
     world_size = torch.distributed.get_world_size()
     rank = torch.distributed.get_rank()
@@ -89,17 +85,3 @@ def reduce_mean(tensor):
     tensor = tensor.clone()
     dist.all_reduce(tensor.div_(dist.get_world_size()), op=dist.ReduceOp.SUM)
     return tensor
-
-
-def is_dist_avail_and_initialized():
-    if not dist.is_available():
-        return False
-    if not dist.is_initialized():
-        return False
-    return True
-
-
-def get_world_size():
-    if not is_dist_avail_and_initialized():
-        return 1
-    return dist.get_world_size()
