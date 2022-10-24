@@ -1,6 +1,6 @@
 experimentWorkingDirectory: ./expdir
 searchSpaceFile: search_space.json
-trialCommand: python3 ../common/run_dlc.py --config=./config_local.ini
+trialCommand: python3 ../common/run.py --config=./config_local.ini
 # trialGpuNumber: 4
 trialConcurrency: 1
 maxTrialNumber: 4
