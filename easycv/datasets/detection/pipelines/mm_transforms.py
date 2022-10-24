@@ -1903,7 +1903,7 @@ class LoadAnnotations:
         repr_str += f'with_seg={self.with_seg}, '
         repr_str += f'poly2mask={self.poly2mask}, '
         repr_str += f'poly2mask={self.file_client_args})'
-        return
+        return repr_str
 
 
 @PIPELINES.register_module()

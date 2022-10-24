@@ -178,3 +178,8 @@ def sync_random_seed(seed=None, device='cuda'):
         random_num = torch.tensor(0, dtype=torch.int32, device=device)
     dist.broadcast(random_num, src=0)
     return random_num.item()
+
+
+def is_dist_available():
+    return torch.distributed.is_available(
+    ) and torch.distributed.is_initialized()

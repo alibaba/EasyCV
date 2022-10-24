@@ -59,7 +59,8 @@ norm_cfg = {
     # and potentially 'SN'
     'IBN': ('ibn', IBN),
     'SyncIBN': ('ibn', SyncIBN),
-    'IN': ('in', nn.InstanceNorm2d)
+    'IN': ('in', nn.InstanceNorm2d),
+    'LN': ('ln', nn.LayerNorm)
 }
 
 

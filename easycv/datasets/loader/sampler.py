@@ -1,7 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from __future__ import division
 import math
-import os
 import random
 
 import numpy as np
@@ -9,11 +8,16 @@ import torch
 import torch.distributed as dist
 from mmcv.runner import get_dist_info
 from torch.utils.data import DistributedSampler as _DistributedSampler
-from torch.utils.data import Sampler
+from torch.utils.data import RandomSampler, Sampler
 
+from easycv.datasets.registry import SAMPLERS
 from easycv.framework.errors import ValueError
+from easycv.utils.dist_utils import local_rank
+
+SAMPLERS.register_module(RandomSampler)
 
 
+@SAMPLERS.register_module()
 class DistributedMPSampler(_DistributedSampler):
 
     def __init__(self,
@@ -21,7 +25,8 @@ class DistributedMPSampler(_DistributedSampler):
                  num_replicas=None,
                  rank=None,
                  shuffle=True,
-                 split_huge_listfile_byrank=False):
+                 split_huge_listfile_byrank=False,
+                 **kwargs):
         """ A Distribute sampler which support sample m instance from one class once for classification dataset
             dataset: pytorch dataset object
             num_replicas (optional): Number of processes participating in
@@ -33,9 +38,7 @@ class DistributedMPSampler(_DistributedSampler):
         """
         super().__init__(dataset, num_replicas=num_replicas, rank=rank)
 
-        current_env = os.environ.copy()
-        self.local_rank = int(current_env['LOCAL_RANK'])
-
+        self.local_rank = local_rank()
         self.shuffle = shuffle
         self.unif_sampling_flag = False
         self.split_huge_listfile_byrank = split_huge_listfile_byrank
@@ -158,6 +161,7 @@ class DistributedMPSampler(_DistributedSampler):
         return self.length
 
 
+@SAMPLERS.register_module()
 class DistributedSampler(_DistributedSampler):
 
     def __init__(
@@ -256,6 +260,7 @@ class DistributedSampler(_DistributedSampler):
         return self.num_samples if not self.split_huge_listfile_byrank else self.num_samples * self.num_replicas
 
 
+@SAMPLERS.register_module()
 class GroupSampler(Sampler):
 
     def __init__(self, dataset, samples_per_gpu=1):
@@ -297,6 +302,7 @@ class GroupSampler(Sampler):
         return self.num_samples
 
 
+@SAMPLERS.register_module()
 class DistributedGroupSampler(Sampler):
     """Sampler that restricts data loading to a subset of the dataset.
     It is especially useful in conjunction with
@@ -389,6 +395,7 @@ class DistributedGroupSampler(Sampler):
         self.epoch = epoch
 
 
+@SAMPLERS.register_module()
 class DistributedGivenIterationSampler(Sampler):
 
     def __init__(self,
@@ -476,6 +483,7 @@ class DistributedGivenIterationSampler(Sampler):
         pass
 
 
+@SAMPLERS.register_module()
 class RASampler(torch.utils.data.Sampler):
     """Sampler that restricts data loading to a subset of the dataset for distributed,
     with repeated augmentation.
@@ -489,7 +497,8 @@ class RASampler(torch.utils.data.Sampler):
                  num_replicas=None,
                  rank=None,
                  shuffle=True,
-                 num_repeats: int = 3):
+                 num_repeats: int = 3,
+                 **kwargs):
         if num_replicas is None:
             if not dist.is_available():
                 raise RuntimeError(
