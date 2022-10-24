@@ -96,6 +96,7 @@ val/DetectionBoxes_Precision/mAP=100
 <summary>Arguments</summary>
 
 cmd1 specifies the area for the dlc, and cmd2 is the dlc startup command.
+
 [cmd_config]
 - `access_id and access_key`: the ak information
 - `endpoint`: the port
@@ -114,6 +115,7 @@ cmd1 specifies the area for the dlc, and cmd2 is the dlc startup command.
 
 [metric_config]
 - `metric_filepath`: tf_logs directory saved for the experiment and used to obtain the parameters of the hpo evaluation
+
 For example, the above example uses the detected map as the evaluation parameter, with a maximum value of 100.
 
 </details>
