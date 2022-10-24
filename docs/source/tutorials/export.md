@@ -69,7 +69,7 @@ export = dict(export_type='raw',              # exported model type ['raw','jit'
                                               # The layers with larger difference are likely to fallback to fp16
                                               # if the optimized result is not ture, you can choose a larger ratio.
               ),
-              use_trt_efficientnms=True)      # whether to wrap the trt_nms into model
+              use_trt_efficientnms=False)      # whether to wrap the trt_nms into model
 ```
 
 We allow users to use different combinations of "export_type", "preprocess_jit", and "use_trt_efficientnms" as shown in the Table below to export the model.
@@ -81,7 +81,7 @@ export = dict(export_type='jit',
               preprocess_jit=True,
               static_opt=True,
               batch_size=1,
-              use_trt_efficientnms=True)
+              use_trt_efficientnms=False)
 ```
 
 Then, you can obtain the following exported model:
@@ -102,6 +102,21 @@ img = cv2.imread('000000017627.jpg')
 output = detector.predict([img])
 print(output)
 ```
+We highly recommend you to use EasyCV predictor for inference with different export types below. Use YOLOX-s as an example, we test the en2end inference time of different models on a single NVIDIA Tesla V100.
+
+
+| export_type | preprocess_jit | use_trt_efficientnms | Infer time (end2end) /ms |
+| :---------: | :------------: | :------------------: | :----------------------: |
+|     ori     |       -        |          -           |          24.58           |
+|     jit     |     False      |        False         |          18.30           |
+|     jit     |     False      |         True         |          18.38           |
+|     jit     |      True      |        False         |          13.44           |
+|     jit     |      True      |         True         |          13.04           |
+|    blade    |     False      |        False         |           8.72           |
+|    blade    |     False      |         True         |           9.39           |
+|    blade    |      True      |        False         |           3.93           |
+|    blade    |      True      |         True         |           4.53           |
+
 
 Or you can use our exported model with a simple environment to deploy our model on your own device:
 ```python
@@ -155,21 +170,4 @@ final_outputs = {
 print(final_outputs)
 ```
 
-Note that we only allow to export an end2end TorchScript Model. For the exported Blade model, NMS is not allowed to be wrapped into the model. You should follow [postprocess.py](easycv/models/detection/utils/postprocess.py) to add the postprocess procedure.
-
-### Inference Time Comparisons
-Use YOLOX-s as an example, we test the en2end inference time of models exported with different configs.
-Note that blade optimization needs warmup, and we report average time among 1000 experiments on a single NVIDIA Tesla V100.
-
-
-| export_type | preprocess_jit | use_trt_efficientnms | Infer time (end2end) /ms |
-| :---------: | :------------: | :------------------: | :----------------------: |
-|     ori     |       -        |          -           |          24.58           |
-|     jit     |     False      |        False         |          18.30           |
-|     jit     |     False      |         True         |          18.38           |
-|     jit     |      True      |        False         |          13.44           |
-|     jit     |      True      |         True         |          13.04           |
-|    blade    |     False      |        False         |           8.72           |
-|    blade    |     False      |         True         |           9.39           |
-|    blade    |      True      |        False         |           3.93           |
-|    blade    |      True      |         True         |           4.53           |
+Note that we only allow to export an end2end TorchScript Model. For the exported Blade model, NMS is not allowed to be wrapped into the model. You should follow [postprocess.py](https://github.com/alibaba/EasyCV/tree/master/easycv/models/detection/utils/postprocess.py) to add the postprocess procedure.
