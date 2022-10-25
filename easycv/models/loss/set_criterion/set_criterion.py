@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from easycv.models.detection.utils import (accuracy, box_cxcywh_to_xyxy,
                                            generalized_box_iou)
 from easycv.models.loss.focal_loss import py_sigmoid_focal_loss
-from easycv.models.utils import get_world_size, is_dist_avail_and_initialized
+from easycv.utils.dist_utils import get_dist_info, is_dist_available
 
 
 class SetCriterion(nn.Module):
@@ -178,9 +178,10 @@ class SetCriterion(nn.Module):
                                         dtype=torch.float,
                                         device=next(iter(
                                             outputs.values())).device)
-            if is_dist_avail_and_initialized():
+            if is_dist_available():
                 torch.distributed.all_reduce(num_boxes)
-            num_boxes = torch.clamp(num_boxes / get_world_size(), min=1).item()
+            _, world_size = get_dist_info()
+            num_boxes = torch.clamp(num_boxes / world_size, min=1).item()
 
         # Compute all the requested losses
         losses = {}

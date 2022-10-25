@@ -1,4 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import copy
+import logging
+import warnings
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 from typing import Dict
@@ -6,19 +9,46 @@ from typing import Dict
 import torch
 import torch.distributed as dist
 import torch.nn as nn
+from mmcv.cnn.utils import initialize
 from torch import Tensor
 
 from easycv.framework.errors import NotImplementedError, TypeError
+from easycv.utils.logger import print_log
 
 
 class BaseModel(nn.Module, metaclass=ABCMeta):
     ''' base class for model. '''
 
-    def __init__(self):
+    def __init__(self, init_cfg=None):
         super(BaseModel, self).__init__()
+        self._is_init = False
+        self.init_cfg = copy.deepcopy(init_cfg)
+
+    @property
+    def is_init(self) -> bool:
+        return self._is_init
 
     def init_weights(self):
-        pass
+        module_name = self.__class__.__name__
+        if not self._is_init:
+            if self.init_cfg:
+                print_log(
+                    f'initialize {module_name} with init_cfg {self.init_cfg}')
+                initialize(self, self.init_cfg)
+                if isinstance(self.init_cfg, dict):
+                    # prevent the parameters of the pre-trained model from being overwritten by the `init_weights`
+                    if self.init_cfg['type'] == 'Pretrained':
+                        logging.warning(
+                            'Skip `init_cfg` with `Pretrained` type!')
+                        return
+
+            for m in self.children():
+                if hasattr(m, 'init_weights'):
+                    m.init_weights()
+            self._is_init = True
+        else:
+            warnings.warn(f'init_weights of {self.__class__.__name__} has '
+                          f'been called more than once.')
 
     @abstractmethod
     def forward_train(self, img: Tensor, **kwargs) -> Dict[str, Tensor]:
@@ -39,11 +69,11 @@ class BaseModel(nn.Module, metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    def forward(self, img, mode='train', **kwargs):
+    def forward(self, mode='train', *args, **kwargs):
         if mode == 'train':
-            return self.forward_train(img, **kwargs)
+            return self.forward_train(*args, **kwargs)
         elif mode == 'test':
-            return self.forward_test(img, **kwargs)
+            return self.forward_test(*args, **kwargs)
 
     def train_step(self, data, optimizer):
         """The iteration step during training.
