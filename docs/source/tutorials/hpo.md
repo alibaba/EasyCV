@@ -35,7 +35,7 @@ nnictl stop
 
 For more nnictl usage, see https://nni.readthedocs.io/en/v2.1/Tutorial/QuickStart.html.
 
-## *.ini file parameter meaning (using config_dlc.ini as an example)
+## *.yml file parameter meaning (using config_dlc.yml as an example)
 ```shell
 experimentWorkingDirectory: ./expdir
 searchSpaceFile: search_space.json
@@ -72,7 +72,7 @@ assessor:
 
 The search space can reference: https://nni.readthedocs.io/en/v2.2/Tutorial/SearchSpaceSpec.html.
 
-## *.yml file parameter meaning (using config_dlc.yml as an example)
+## *.ini file parameter meaning (using config_dlc.ini as an example)
 ```shell
 [cmd_config]
 cmd1="dlc config --access_id xxx --access_key xxx --endpoint 'pai-dlc.cn-shanghai.aliyuncs.com' --region cn-shanghai"
