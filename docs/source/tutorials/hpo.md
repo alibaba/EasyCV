@@ -22,9 +22,9 @@ pip install https://automl-nni.oss-cn-beijing.aliyuncs.com/nni/hpo_tools/hpo_too
 
 dlc_tools(options):
 wget https://automl-nni.oss-cn-beijing.aliyuncs.com/nni/hpo_tools/scripts/install_dlc.sh
-source install_dlc.sh /mnt/workspace https://dlc-tools.oss-cn-zhangjiakou.aliyuncs.com/release/linux/dlc?spm=a2c4g.11186623.0.0.1b9b4a35er7EfB
+source install_dlc.sh /mnt/data https://dlc-tools.oss-cn-zhangjiakou.aliyuncs.com/release/linux/dlc?spm=a2c4g.11186623.0.0.1b9b4a35er7EfB
 # test
-cd /mnt/workspace/software
+cd /mnt/data/software
 dlc --help
 ```
 

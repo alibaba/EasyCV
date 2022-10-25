@@ -12,7 +12,7 @@ tuner:
   classArgs:
     optimize_mode: maximize
 assessor:
-   codeDirectory: hpo_tools的安装根目录/hpo_tools/core/assessor
+   codeDirectory: /root/anaconda3/lib/python3.9/site-packages/hpo_tools/core/assessor
    className: dlc_assessor.DLCAssessor
    classArgs:
       optimize_mode: maximize
