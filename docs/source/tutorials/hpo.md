@@ -107,7 +107,7 @@ cmd1 specifies the area for the dlc, and cmd2 is the dlc startup command.
 - `worker_gpu`: the number of gpus
 - `worker_memory`: the number of memory required
 - `worker_spec`: the model of the machine
-- `data_sources`: the directory where the data is stored
+- `data_sources`: mapping mounts the nas, and the dlc is started using the data_sources code
 - `worker_image`: the image to use
 - `workspace_id`: the workspace
 - `command`: the command to start the easycv experiment
