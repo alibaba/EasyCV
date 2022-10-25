@@ -2,7 +2,8 @@
 """
 isort:skip_file
 """
-import os, io
+import os
+import io
 import unittest
 import tempfile
 import numpy as np
