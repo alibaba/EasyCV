@@ -2,6 +2,18 @@
 
 Auto hyperparameter optimization (HPO), or auto tuning, is one of the key features of NNI. The tutorial gives examples of EasyCV using HPO.
 
+## Create environment
+
+local:
+
+Create DSW/ECS.
+
+dlc:
+
+Create NAS disks, NAS datasets, and DSW/ECS (ps: Note that the three parts are created in the same region).
+
+Mount NAS disks on DSW/ECS (ps: The address where the NAS is mounted can be the same as the mount path /mnt/data where the NAS data set is created to avoid errors).
+
 ## Installation
 
 ```shell
