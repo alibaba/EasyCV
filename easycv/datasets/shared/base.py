@@ -1,7 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import random
 from abc import ABCMeta, abstractmethod
-
 from torch.utils.data import Dataset
 
 from easycv.utils.registry import build_from_cfg

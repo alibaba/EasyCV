@@ -61,8 +61,8 @@ def load_datasource(cfg):
     elif name == 'coco2017':
         map_path = DOWNLOAD.get_coco_path(name, split=args.get('split'), dataset_home=args.get('target_dir'), task=args.get('task'))
     else:
-        raise KeyError('cfg.name is not in the datasetcig')
-
+        raise KeyError('cfg.name is not in the dataset_cfg')
+    #
     for name, value in map_path.items():
         args.setdefault(name, value)
     return args
