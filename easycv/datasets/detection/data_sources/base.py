@@ -4,9 +4,9 @@ import functools
 import logging
 from abc import abstractmethod
 from multiprocessing import Pool, cpu_count
+
 import numpy as np
 from mmcv.runner.dist_utils import get_dist_info
-
 from tqdm import tqdm
 
 from easycv.file.image import load_image
