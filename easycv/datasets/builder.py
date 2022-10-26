@@ -65,4 +65,10 @@ def load_datasource(cfg):
     #
     for name, value in map_path.items():
         args.setdefault(name, value)
+
+    # Deleting Unnecessary Parameters
+    for name in ['name', 'split', 'target_dir', 'task']:
+        if name in args:
+            args.pop(name)
+
     return args
