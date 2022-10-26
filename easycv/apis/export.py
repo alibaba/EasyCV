@@ -205,7 +205,7 @@ def _export_yolox(model, cfg, filename):
                     use_trt_efficientnms == False
                 ), 'Export YoloX predictor use_trt_efficientnms=True only when use static_opt=True!'
 
-            # preprocess can not be optimized blade, to accelerate the inference, a preprocess jit model should be saved!
+            # allow to save a preprocess jit model with exported model
             save_preprocess_jit = False
 
             if preprocess_jit:
