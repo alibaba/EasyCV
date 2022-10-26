@@ -3,7 +3,6 @@ from .activation import FReLU
 from .conv_module import ConvModule, build_conv_layer
 from .conv_ws import ConvWS2d, conv_ws_2d
 from .dist_utils import (DistributedLossWrapper, DistributedMinerWrapper,
-                         get_world_size, is_dist_avail_and_initialized,
                          reduce_mean)
 from .face_keypoint_utils import (ION, InvertedResidual, Residual, Softmax,
                                   View, conv_bn, conv_no_relu,

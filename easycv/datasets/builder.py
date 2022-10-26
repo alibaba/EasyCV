@@ -4,7 +4,7 @@ import copy
 from easycv.datasets.shared.dataset_wrappers import (ConcatDataset,
                                                      RepeatDataset)
 from easycv.utils.registry import build_from_cfg
-from .registry import DALIDATASETS, DATASETS, DATASOURCES
+from .registry import DALIDATASETS, DATASETS, DATASOURCES, SAMPLERS
 
 
 def _concat_dataset(cfg, default_args=None):
@@ -47,3 +47,7 @@ def build_dali_dataset(cfg, default_args=None):
 
 def build_datasource(cfg):
     return build_from_cfg(cfg, DATASOURCES)
+
+
+def build_sampler(cfg, default_args=None):
+    return build_from_cfg(cfg, SAMPLERS, default_args)

@@ -300,11 +300,15 @@ class YoloXPredictor(DetectionPredictor):
                 det_out['detection_scores'] = results[2]
                 det_out['detection_classes'] = results[3]
             else:
-                det_out = self.post_assign(
-                    postprocess(
-                        results.unsqueeze(0), len(self.CLASSES),
-                        self.test_conf, self.nms_thre),
-                    img_metas=[img_meta])
+                if self.model_type == 'jit':
+                    det_out = self.post_assign(
+                        results.unsqueeze(0), img_metas=[img_meta])
+                else:
+                    det_out = self.post_assign(
+                        postprocess(
+                            results.unsqueeze(0), len(self.CLASSES),
+                            self.test_conf, self.nms_thre),
+                        img_metas=[img_meta])
             det_out['detection_scores'] = det_out['detection_scores'][0]
             det_out['detection_boxes'] = det_out['detection_boxes'][0]
             det_out['detection_classes'] = det_out['detection_classes'][0]

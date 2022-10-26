@@ -4,13 +4,14 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from easycv.core.utils.misc import multi_apply
 from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
 from easycv.models.segmentation.utils.criterion import SetCriterion
 from easycv.models.segmentation.utils.matcher import MaskHungarianMatcher
 from easycv.models.segmentation.utils.panoptic_gt_processing import (
-    multi_apply, preprocess_panoptic_gt, preprocess_semantic_gt)
+    preprocess_panoptic_gt, preprocess_semantic_gt)
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger, print_log
 
