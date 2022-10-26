@@ -5,7 +5,7 @@ from abc import ABCMeta, abstractmethod
 from torch.utils.data import Dataset
 
 from easycv.utils.registry import build_from_cfg
-from ..builder import build_datasource
+from ..builder import build_datasource, load_datasource
 from ..registry import PIPELINES
 from .pipelines.transforms import Compose
 
@@ -15,6 +15,10 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
     """
 
     def __init__(self, data_source, pipeline, profiling=False):
+        # Check to see if you need to download it
+        if data_source.get('name'):
+            data_source = load_datasource(data_source)
+
         self.data_source = build_datasource(data_source)
         pipeline = [build_from_cfg(p, PIPELINES) for p in pipeline]
         self.pipeline = Compose(pipeline, profiling=profiling)

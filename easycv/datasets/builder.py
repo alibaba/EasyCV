@@ -4,7 +4,7 @@ import copy
 from easycv.datasets.shared.dataset_wrappers import (ConcatDataset,
                                                      RepeatDataset)
 from easycv.utils.registry import build_from_cfg
-from .registry import DALIDATASETS, DATASETS, DATASOURCES, SAMPLERS
+from .registry import DALIDATASETS, DATASETS, DATASOURCES, SAMPLERS, DOWNLOAD
 
 
 def _concat_dataset(cfg, default_args=None):
@@ -51,3 +51,18 @@ def build_datasource(cfg):
 
 def build_sampler(cfg, default_args=None):
     return build_from_cfg(cfg, SAMPLERS, default_args)
+
+
+def load_datasource(cfg):
+    args = cfg.copy()
+    name = args.pop('name')
+    if name == 'voc2007' or name == 'voc2012':
+        map_path = DOWNLOAD.get_voc_path(name, split=args.get('split'), dataset_home=args.get('target_dir'), task=args.get('task'))
+    elif name == 'coco2017':
+        map_path = DOWNLOAD.get_coco_path(name, split=args.get('split'), dataset_home=args.get('target_dir'), task=args.get('task'))
+    else:
+        raise KeyError('cfg.name is not in the datasetcig')
+
+    for name, value in map_path.items():
+        args.setdefault(name, value)
+    return args
