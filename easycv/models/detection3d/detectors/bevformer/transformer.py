@@ -170,7 +170,6 @@ class BEVFormerLayer(BaseModule):
         for _ in range(num_norms):
             self.norms.append(build_norm_layer(norm_cfg, self.embed_dims)[1])
 
-        self.fp16_enabled = False
         assert len(operation_order) == 6
         assert set(operation_order) == set(
             ['self_attn', 'norm', 'cross_attn', 'ffn'])
@@ -309,7 +308,6 @@ class Detr3DTransformerDecoder(TransformerLayerSequence):
     def __init__(self, *args, return_intermediate=False, **kwargs):
         super(Detr3DTransformerDecoder, self).__init__(*args, **kwargs)
         self.return_intermediate = return_intermediate
-        self.fp16_enabled = False
 
     def forward(self,
                 query,
@@ -402,7 +400,6 @@ class BEVFormerEncoder(TransformerLayerSequence):
 
         self.num_points_in_pillar = num_points_in_pillar
         self.pc_range = pc_range
-        self.fp16_enabled = False
 
     @staticmethod
     def get_reference_points(H,
@@ -650,7 +647,6 @@ class PerceptionTransformer(BaseModule):
         self.embed_dims = embed_dims
         self.num_feature_levels = num_feature_levels
         self.num_cams = num_cams
-        self.fp16_enabled = False
 
         self.rotate_prev_bev = rotate_prev_bev
         self.use_shift = use_shift

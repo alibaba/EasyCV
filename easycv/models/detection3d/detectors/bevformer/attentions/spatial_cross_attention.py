@@ -41,7 +41,6 @@ class SpatialCrossAttention(BaseModule):
         self.init_cfg = init_cfg
         self.dropout = nn.Dropout(dropout)
         self.pc_range = pc_range
-        self.fp16_enabled = False
         self.deformable_attention = build_attention(deformable_attention)
         self.embed_dims = embed_dims
         self.num_cams = num_cams

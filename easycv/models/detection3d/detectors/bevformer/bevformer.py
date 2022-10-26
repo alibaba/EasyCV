@@ -45,7 +45,6 @@ class BEVFormer(MVXTwoStageDetector):
         self.grid_mask = GridMask(
             True, True, rotate=1, offset=False, ratio=0.5, mode=1, prob=0.7)
         self.use_grid_mask = use_grid_mask
-        self.fp16_enabled = False
 
         # temporal
         self.video_test_mode = video_test_mode

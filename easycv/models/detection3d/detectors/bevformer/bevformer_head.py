@@ -71,7 +71,6 @@ class BEVFormerHead(AnchorFreeHead):
 
         self.bev_h = bev_h
         self.bev_w = bev_w
-        self.fp16_enabled = False
         self.with_box_refine = with_box_refine
         self.as_two_stage = as_two_stage
         if self.as_two_stage:
@@ -139,7 +138,6 @@ class BEVFormerHead(AnchorFreeHead):
         self.num_reg_fcs = num_reg_fcs
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        self.fp16_enabled = False
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.loss_iou = build_loss(loss_iou)
@@ -396,6 +394,7 @@ class BEVFormerHead(AnchorFreeHead):
         bbox_weights[pos_inds] = 1.0
 
         # DETR
+        sampling_result.pos_gt_bboxes = sampling_result.pos_gt_bboxes.type_as(bbox_targets)
         bbox_targets[pos_inds] = sampling_result.pos_gt_bboxes
         return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
                 neg_inds)

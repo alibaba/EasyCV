@@ -60,7 +60,6 @@ class CustomMSDeformableAttention(BaseModule):
         self.norm_cfg = norm_cfg
         self.dropout = nn.Dropout(dropout)
         self.batch_first = batch_first
-        self.fp16_enabled = False
 
         # you'd better set dim_per_head to a power of 2
         # which is more efficient in the CUDA implementation
@@ -214,19 +213,28 @@ class CustomMSDeformableAttention(BaseModule):
 
         if torch.cuda.is_available() and value.is_cuda:
             from thirdparty.deformable_attention.functions import MSDeformAttnFunction
-            if value.dtype == torch.float16:
-                # for mixed precision
-                output = MSDeformAttnFunction.apply(
-                    value.to(torch.float32), spatial_shapes, level_start_index,
-                    sampling_locations.to(torch.float32), attention_weights,
-                    self.im2col_step)
-                output = output.to(torch.float16)
+            if not torch.jit.is_scripting() and not torch.jit.is_tracing():
+                if value.dtype == torch.float16:
+                    # for mixed precision
+                    output = MSDeformAttnFunction.apply(
+                        value.to(torch.float32), spatial_shapes, level_start_index,
+                        sampling_locations.to(torch.float32), attention_weights,
+                        self.im2col_step)
+                    output = output.to(torch.float16)
+                else:
+                    output = MSDeformAttnFunction.apply(value, spatial_shapes,
+                                                        level_start_index,
+                                                        sampling_locations,
+                                                        attention_weights,
+                                                        self.im2col_step)
             else:
-                output = MSDeformAttnFunction.apply(value, spatial_shapes,
-                                                    level_start_index,
-                                                    sampling_locations,
-                                                    attention_weights,
-                                                    self.im2col_step)
+                output = torch.ops.custom.ms_deform_attn(
+                    value, spatial_shapes,
+                    level_start_index,
+                    sampling_locations,
+                    attention_weights,
+                    self.im2col_step
+                )
         else:
             output = multi_scale_deformable_attn_pytorch(
                 value, spatial_shapes, sampling_locations, attention_weights)
