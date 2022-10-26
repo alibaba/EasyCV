@@ -8,6 +8,7 @@ from mmcv.parallel import collate
 from mmcv.utils.path import is_filepath
 from torchvision.transforms import Compose
 
+from easycv.core.bbox.bbox_util import xywh2xyxy_coco, xyxy2xywh_coco
 from easycv.datasets.pose.data_sources.top_down import DatasetInfo
 from easycv.datasets.registry import PIPELINES
 from easycv.file import io
@@ -15,7 +16,6 @@ from easycv.framework.errors import ModuleNotFoundError, TypeError, ValueError
 from easycv.models import build_model
 from easycv.predictors.builder import PREDICTORS
 from easycv.predictors.detector import TorchYoloXPredictor
-from easycv.utils.bbox_util import xywh2xyxy_coco, xyxy2xywh_coco
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.registry import build_from_cfg

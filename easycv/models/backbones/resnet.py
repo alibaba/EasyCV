@@ -23,9 +23,10 @@ class BasicBlock(nn.Module):
                  with_cp=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
-                 frelu=False):
+                 frelu=False,
+                 dcn=None):
         super(BasicBlock, self).__init__()
-
+        assert dcn is None, 'Not implemented yet.'
         self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
         self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
 
@@ -99,14 +100,15 @@ class Bottleneck(nn.Module):
                  with_cp=False,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
-                 frelu=False):
+                 frelu=False,
+                 dcn=None):
         """Bottleneck block for ResNet.
         If style is "pytorch", the stride-two layer is the 3x3 conv layer,
         if it is "caffe", the stride-two layer is the first 1x1 conv layer.
         """
         super(Bottleneck, self).__init__()
         assert style in ['pytorch', 'caffe']
-
+        assert dcn is None or isinstance(dcn, dict)
         self.inplanes = inplanes
         self.planes = planes
         self.stride = stride
@@ -115,6 +117,8 @@ class Bottleneck(nn.Module):
         self.with_cp = with_cp
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+        self.dcn = dcn
+        self.with_dcn = dcn is not None
 
         if self.style == 'pytorch':
             self.conv1_stride = 1
@@ -136,15 +140,31 @@ class Bottleneck(nn.Module):
             stride=self.conv1_stride,
             bias=False)
         self.add_module(self.norm1_name, norm1)
-        self.conv2 = build_conv_layer(
-            conv_cfg,
-            planes,
-            planes,
-            kernel_size=3,
-            stride=self.conv2_stride,
-            padding=dilation,
-            dilation=dilation,
-            bias=False)
+        fallback_on_stride = False
+        if self.with_dcn:
+            fallback_on_stride = dcn.pop('fallback_on_stride', False)
+        if not self.with_dcn or fallback_on_stride:
+            self.conv2 = build_conv_layer(
+                conv_cfg,
+                planes,
+                planes,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=dilation,
+                dilation=dilation,
+                bias=False)
+        else:
+            assert self.conv_cfg is None, 'conv_cfg must be None for DCN'
+            self.conv2 = build_conv_layer(
+                dcn,
+                planes,
+                planes,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=dilation,
+                dilation=dilation,
+                bias=False)
+
         self.add_module(self.norm2_name, norm2)
         self.conv3 = build_conv_layer(
             conv_cfg,
@@ -228,6 +248,7 @@ def make_res_layer(
     with_cp=False,
     conv_cfg=None,
     norm_cfg=dict(type='BN'),
+    dcn=None,
     frelu=False,
     multi_grid=None,
     contract_dilation=False,
@@ -275,7 +296,8 @@ def make_res_layer(
             with_cp=with_cp,
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
-            frelu=frelu))
+            frelu=frelu,
+            dcn=dcn))
     inplanes = planes * block.expansion
     for i in range(1, blocks):
         layers.append(
@@ -288,7 +310,8 @@ def make_res_layer(
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
-                frelu=frelu))
+                frelu=frelu,
+                dcn=dcn))
 
     return nn.Sequential(*layers)
 
@@ -367,6 +390,8 @@ class ResNet(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  norm_eval=False,
+                 dcn=None,
+                 stage_with_dcn=(False, False, False, False),
                  with_cp=False,
                  frelu=False,
                  original_inplanes=64,
@@ -393,6 +418,10 @@ class ResNet(nn.Module):
         self.norm_cfg = norm_cfg
         self.with_cp = with_cp
         self.norm_eval = norm_eval
+        self.dcn = dcn
+        self.stage_with_dcn = stage_with_dcn
+        if dcn is not None:
+            assert len(stage_with_dcn) == num_stages
         self.zero_init_residual = zero_init_residual
         self.block, stage_blocks = self.arch_settings[depth]
         self.stage_blocks = stage_blocks[:num_stages]
@@ -409,6 +438,7 @@ class ResNet(nn.Module):
         for i, num_blocks in enumerate(self.stage_blocks):
             stride = strides[i]
             dilation = dilations[i]
+            dcn = self.dcn if self.stage_with_dcn[i] else None
             # multi grid is applied to last layer only
             stage_multi_grid = multi_grid if i == len(
                 self.stage_blocks) - 1 else None
@@ -425,6 +455,7 @@ class ResNet(nn.Module):
                 with_cp=with_cp,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
+                dcn=dcn,
                 frelu=self.frelu,
                 multi_grid=stage_multi_grid,
                 contract_dilation=contract_dilation,

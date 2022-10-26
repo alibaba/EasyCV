@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import math
-from typing import Dict, List, Optional, Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 import torch
@@ -249,3 +249,147 @@ def scale_coords(img1_shape: Tuple[int, int],
     coords[:, :4] = coords[:, :4] / gain
     clip_coords(coords, img0_shape)
     return coords
+
+
+def normalize_bbox(bboxes, pc_range):
+
+    cx = bboxes[..., 0:1]
+    cy = bboxes[..., 1:2]
+    cz = bboxes[..., 2:3]
+    w = bboxes[..., 3:4].log()
+    l = bboxes[..., 4:5].log()
+    h = bboxes[..., 5:6].log()
+
+    rot = bboxes[..., 6:7]
+    if bboxes.size(-1) > 7:
+        vx = bboxes[..., 7:8]
+        vy = bboxes[..., 8:9]
+        normalized_bboxes = torch.cat(
+            (cx, cy, w, l, cz, h, rot.sin(), rot.cos(), vx, vy), dim=-1)
+    else:
+        normalized_bboxes = torch.cat(
+            (cx, cy, w, l, cz, h, rot.sin(), rot.cos()), dim=-1)
+    return normalized_bboxes
+
+
+def denormalize_bbox(normalized_bboxes, pc_range):
+    # rotation
+    rot_sine = normalized_bboxes[..., 6:7]
+
+    rot_cosine = normalized_bboxes[..., 7:8]
+    rot = torch.atan2(rot_sine, rot_cosine)
+
+    # center in the bev
+    cx = normalized_bboxes[..., 0:1]
+    cy = normalized_bboxes[..., 1:2]
+    cz = normalized_bboxes[..., 4:5]
+
+    # size
+    w = normalized_bboxes[..., 2:3]
+    l = normalized_bboxes[..., 3:4]
+    h = normalized_bboxes[..., 5:6]
+
+    w = w.exp()
+    l = l.exp()
+    h = h.exp()
+    if normalized_bboxes.size(-1) > 8:
+        # velocity
+        vx = normalized_bboxes[:, 8:9]
+        vy = normalized_bboxes[:, 9:10]
+        denormalized_bboxes = torch.cat([cx, cy, cz, w, l, h, rot, vx, vy],
+                                        dim=-1)
+    else:
+        denormalized_bboxes = torch.cat([cx, cy, cz, w, l, h, rot], dim=-1)
+    return denormalized_bboxes
+
+
+def bbox3d_mapping_back(bboxes, scale_factor, flip_horizontal, flip_vertical):
+    """Map bboxes from testing scale to original image scale.
+
+    Args:
+        bboxes (:obj:`BaseInstance3DBoxes`): Boxes to be mapped back.
+        scale_factor (float): Scale factor.
+        flip_horizontal (bool): Whether to flip horizontally.
+        flip_vertical (bool): Whether to flip vertically.
+
+    Returns:
+        :obj:`BaseInstance3DBoxes`: Boxes mapped back.
+    """
+    new_bboxes = bboxes.clone()
+    if flip_horizontal:
+        new_bboxes.flip('horizontal')
+    if flip_vertical:
+        new_bboxes.flip('vertical')
+    new_bboxes.scale(1 / scale_factor)
+
+    return new_bboxes
+
+
+def bbox3d2result(bboxes, scores, labels, attrs=None):
+    """Convert detection results to a list of numpy arrays.
+
+    Args:
+        bboxes (torch.Tensor): Bounding boxes with shape (N, 5).
+        labels (torch.Tensor): Labels with shape (N, ).
+        scores (torch.Tensor): Scores with shape (N, ).
+        attrs (torch.Tensor, optional): Attributes with shape (N, ).
+            Defaults to None.
+
+    Returns:
+        dict[str, torch.Tensor]: Bounding box results in cpu mode.
+
+            - boxes_3d (torch.Tensor): 3D boxes.
+            - scores (torch.Tensor): Prediction scores.
+            - labels_3d (torch.Tensor): Box labels.
+            - attrs_3d (torch.Tensor, optional): Box attributes.
+    """
+    result_dict = dict(
+        boxes_3d=bboxes.to('cpu'),
+        scores_3d=scores.cpu(),
+        labels_3d=labels.cpu())
+
+    if attrs is not None:
+        result_dict['attrs_3d'] = attrs.cpu()
+
+    return result_dict
+
+
+def bbox_flip(bboxes, img_shape, direction='horizontal'):
+    """Flip bboxes horizontally or vertically.
+
+    Args:
+        bboxes (Tensor): Shape (..., 4*k)
+        img_shape (tuple): Image shape.
+        direction (str): Flip direction, options are "horizontal", "vertical",
+            "diagonal". Default: "horizontal"
+
+    Returns:
+        Tensor: Flipped bboxes.
+    """
+    assert bboxes.shape[-1] % 4 == 0
+    assert direction in ['horizontal', 'vertical', 'diagonal']
+    flipped = bboxes.clone()
+    if direction == 'horizontal':
+        flipped[..., 0::4] = img_shape[1] - bboxes[..., 2::4]
+        flipped[..., 2::4] = img_shape[1] - bboxes[..., 0::4]
+    elif direction == 'vertical':
+        flipped[..., 1::4] = img_shape[0] - bboxes[..., 3::4]
+        flipped[..., 3::4] = img_shape[0] - bboxes[..., 1::4]
+    else:
+        flipped[..., 0::4] = img_shape[1] - bboxes[..., 2::4]
+        flipped[..., 1::4] = img_shape[0] - bboxes[..., 3::4]
+        flipped[..., 2::4] = img_shape[1] - bboxes[..., 0::4]
+        flipped[..., 3::4] = img_shape[0] - bboxes[..., 1::4]
+    return flipped
+
+
+def bbox_mapping_back(bboxes,
+                      img_shape,
+                      scale_factor,
+                      flip,
+                      flip_direction='horizontal'):
+    """Map bboxes from testing scale to original image scale."""
+    new_bboxes = bbox_flip(bboxes, img_shape,
+                           flip_direction) if flip else bboxes
+    new_bboxes = new_bboxes.view(-1, 4) / new_bboxes.new_tensor(scale_factor)
+    return new_bboxes.view(bboxes.shape)

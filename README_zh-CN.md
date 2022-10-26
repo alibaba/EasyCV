@@ -101,6 +101,9 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
       <td>
         <b>分割</b>
       </td>
+      <td>
+        <b>3D目标检测</b>
+      </td>
     </tr>
     <tr valign="top">
       <td>
@@ -180,6 +183,11 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
         </ul>
       </ul>
       </td>
+      <td>
+        <ul>
+            <li><a href="configs/detection3d/bevformer">BEVFormer (ECCV'2022)</a></li>
+      </ul>
+      </td>
     </tr>
 </td>
     </tr>
@@ -191,7 +199,8 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 - [自监督模型库](docs/source/model_zoo_ssl.md)
 - [图像分类模型库](docs/source/model_zoo_cls.md)
 - [目标检测模型库](docs/source/model_zoo_det.md)
-
+- [3D目标检测模型库](docs/source/model_zoo_det3d.md)
+- [图像分割模型库](docs/source/model_zoo_seg.md)
 
 ## 开源许可证
 
