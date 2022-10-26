@@ -62,7 +62,7 @@ def load_datasource(cfg):
         map_path = DOWNLOAD.get_coco_path(name, split=args.get('split'), dataset_home=args.get('target_dir'), task=args.get('task'))
     else:
         raise KeyError('cfg.name is not in the dataset_cfg')
-    #
+
     for name, value in map_path.items():
         args.setdefault(name, value)
 
@@ -70,5 +70,4 @@ def load_datasource(cfg):
     for name in ['name', 'split', 'target_dir', 'task']:
         if name in args:
             args.pop(name)
-
     return args

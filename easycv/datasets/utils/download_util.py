@@ -125,35 +125,37 @@ class DownLoadDataFile(object):
         assert self.task in ['cls', 'detection', 'pose'], f"{self.task} is not in ['cls', 'detection', 'pose']"
 
     def voc_download(self):
-        # 开始下载
-        down_list = self.check_file()
-        # 查看此根目录路径是否存在
+
+        # Check whether the path exists
         if os.path.exists(os.path.join(self.dataset_home, self.tmp_data_path)):
             return self.return_voc_path()
-        # 开始解压
+
+        # Start the download
+        down_list = self.check_file()
+
+        # Began to unpack
         self.extract_files(down_list)
 
     def coco_dowload(self):
-        # 开始下载
-        down_list = self.check_file()
-        # 查看此根目录路径是否存在
+        # Check whether the path exists
         if os.path.exists(os.path.join(self.dataset_home, self.data_name.upper())):
             return self.return_coco_path()
-        else:
-            # 开始解压
-            self.extract_files(down_list)
-        # 规范化路径
+        # Start the download
+        down_list = self.check_file()
+        # Start the download
+        self.extract_files(down_list)
+        # Path of normalization
         self.regularization_path('coco')
 
     def itag_pai_download(self):
 
-        # 查看此根目录路径是否存在
+        # Check whether the path exists
         if os.path.exists(os.path.join(self.dataset_home, self.data_name.upper())):
             return self.return_itag_pai_path()
-
-        # 开始下载
+        # Start the download
         down_list = self.check_file()
-        # 开始解压
+
+        # Began to unpack
         self.extract_files(down_list)
 
     def check_file(self):
@@ -162,7 +164,7 @@ class DownLoadDataFile(object):
         for tmp_link in DATASETS[self.data_name][0]:
             file_name = wget.filename_from_url(tmp_link)
             download_finished.append(file_name)
-            # 查看是否有压缩包，无压缩包的话下载压缩包
+            # Check whether the compressed package exists. If no, download the compressed package
             if not os.path.exists(os.path.join(self.dataset_home, file_name)):
                 self.download_files(tmp_link, file_name)
 
