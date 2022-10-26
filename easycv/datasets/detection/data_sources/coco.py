@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import numpy as np
 from xtcocotools.coco import COCO
+
 from easycv.datasets.registry import DATASOURCES, PIPELINES
 from easycv.datasets.shared.pipelines import Compose
 from easycv.framework.errors import TypeError
@@ -20,8 +21,7 @@ class DetSourceCoco(object):
                  test_mode=False,
                  filter_empty_gt=False,
                  classes=None,
-                 iscrowd=False,
-                 ):
+                 iscrowd=False):
         """
         Args:
             ann_file: Path of annotation file.
@@ -35,7 +35,6 @@ class DetSourceCoco(object):
         """
         self.ann_file = ann_file
         self.img_prefix = img_prefix
-
         self.filter_empty_gt = filter_empty_gt
         self.CLASSES = classes
         # load annotations (and proposals)

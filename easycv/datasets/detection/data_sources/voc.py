@@ -84,7 +84,6 @@ class DetSourceVOC(DetSourceBase):
             img_root_path='/your/voc_data/images',
             img_root_path='/your/voc_data/annotations'
         )
-
     """
 
     def __init__(self,
@@ -120,7 +119,6 @@ class DetSourceVOC(DetSourceBase):
         self.label_root_path = label_root_path
         self.img_suffix = img_suffix
         self.label_suffix = label_suffix
-
         super(DetSourceVOC, self).__init__(
             classes=classes,
             cache_at_init=cache_at_init,
