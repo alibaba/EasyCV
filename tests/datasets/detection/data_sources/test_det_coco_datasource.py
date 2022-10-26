@@ -4,7 +4,7 @@ import random
 import unittest
 
 import numpy as np
-from tests.ut_config import COCO_CLASSES, DET_DATA_SMALL_COCO_LOCAL, DET_DATA_COCO2017_DOWNLOAD
+from tests.ut_config import COCO_CLASSES, DET_DATA_SMALL_COCO_LOCAL
 from easycv.datasets.detection.data_sources.coco import DetSourceCoco
 
 

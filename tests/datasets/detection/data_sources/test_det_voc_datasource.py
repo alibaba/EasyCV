@@ -4,7 +4,7 @@ import random
 import unittest
 
 import numpy as np
-from tests.ut_config import DET_DATA_SMALL_VOC_LOCAL, VOC_CLASSES, VOC_DATASET_DOWNLOAD_LOCAL
+from tests.ut_config import DET_DATA_SMALL_VOC_LOCAL, VOC_CLASSES
 
 from easycv.datasets.detection.data_sources.voc import DetSourceVOC
 from easycv.file import io
