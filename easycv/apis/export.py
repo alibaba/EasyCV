@@ -248,7 +248,6 @@ def _export_yolox(model, cfg, filename):
             # trace model
             yolox_trace = torch.jit.trace(model_export, input.to(device))
 
-
             # save export model
             if export_type == 'blade':
                 blade_config = cfg.export.get(
@@ -618,13 +617,14 @@ class ModelExportWrapper(torch.nn.Module):
         if self.trace_model:
             try:
                 self.trace_module()
-            except:
+            except Exception as e:
+                logging.warning('Error: {}'.format(e))
                 # well trained model will generate reasonable result, otherwise, we should change model.test_conf=0.0 to avoid tensor in inference to be empty
                 logging.warning(
-                    'PAI-YOLOX: set model.test_conf=0.0 to avoid tensor in inference to be empty')
-                model.test_conf=0.0
+                    'PAI-YOLOX: set model.test_conf=0.0 to avoid tensor in inference to be empty'
+                )
+                model.test_conf = 0.0
                 self.trace_module()
-
 
     def trace_module(self, **kwargs):
         trace_model = torch.jit.trace_module(
