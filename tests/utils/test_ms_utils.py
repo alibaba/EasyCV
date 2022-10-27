@@ -24,7 +24,7 @@ class MsConfigTest(unittest.TestCase):
     def test_to_ms_config(self):
 
         config_path = os.path.join(
-            os.path.dirname(os.path.dirname(easycv.__file__)),
+            os.path.dirname(easycv.__file__),
             'configs/detection/yolox/yolox_s_8xb16_300e_coco.py')
 
         ms_cfg_file = os.path.join(self.tmp_dir,

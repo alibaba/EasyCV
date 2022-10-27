@@ -5,10 +5,6 @@
 #
 #================================================================
 
-# install requirements
-# pip install oss2
-# pip install -r requirements.txt
-
 # linter test
 pip install -r requirements/tests.txt
 # use internal project for pre-commit due to the network problem
@@ -29,15 +25,19 @@ if [ ! -e $UNITTEST_OSS_CONFIG ]; then
 fi
 
 export OSS_CONFIG_FILE=$UNITTEST_OSS_CONFIG
-
-# #download test data
-# python git-lfs/git_lfs.py pull
-
-
-export PYTHONPATH=.
 export TEST_DIR="/tmp/easycv_test_${USER}_`date +%s`"
 
-# do not uncomments, casue faild in Online UT, install requirements by yourself on UT machine
-# pip install -r requirements.txt
+# build package
+python setup.py sdist bdist_wheel
+
+# get package path
+PACKAGE_PATH=$(ls package/dist/*.whl)
+
+# install easycv
+pip uninstall -y pai-easycv
+pip install $PACKAGE_PATH
+
+# move source code, ensure import easycv from site-package
+mv ./easycv ./easycv_src
 #run test
 PYTHONPATH=. python tests/run.py

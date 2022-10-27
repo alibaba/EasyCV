@@ -82,7 +82,7 @@
 6. If you want to use MSDeformAttn, you need to compiling CUDA operators
 
     ```shell
-    cd thirdparty/deformable_attention/
+    cd easycv/thirdparty/deformable_attention/
     python setup.py build install
     # unit test (should see all checking is True)
     python test.py

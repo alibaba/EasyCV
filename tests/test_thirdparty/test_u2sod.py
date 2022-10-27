@@ -4,9 +4,9 @@ import unittest
 import numpy as np
 from PIL import Image
 from tests.ut_config import TEST_IMAGES_DIR
-from thirdparty.u2sod.sodpredictor import SODPredictor
 
 from easycv.predictors.builder import build_predictor
+from easycv.thirdparty.u2sod.sodpredictor import SODPredictor
 
 bbox_res = [[0, 1077, 1, 1079], [147, 871, 148, 873], [172, 196, 197, 218],
             [266, 68, 267, 70], [676, 0, 679, 2], [104, 0, 507, 1008]]
@@ -15,7 +15,7 @@ bbox_res = [[0, 1077, 1, 1079], [147, 871, 148, 873], [172, 196, 197, 218],
 class SODPredictorTest(unittest.TestCase):
 
     def setUp(self):
-        print(("Testing %s.%s" % (type(self).__name__, self._testMethodName)))
+        print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
     def test_sodpredictor(self):
         sodpredictor = SODPredictor(model_name='u2netp')
