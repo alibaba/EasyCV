@@ -25,3 +25,4 @@ thop
 timm>=0.4.9
 xtcocotools
 yacs
+wget
