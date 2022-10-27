@@ -2,5 +2,5 @@
 # GENERATED VERSION FILE
 # TIME: Thu Nov  5 14:17:50 2020
 
-__version__ = '0.6.3.8'
-short_version = '0.6.3.8'
+__version__ = '0.6.3.9'
+short_version = '0.6.3.9'
