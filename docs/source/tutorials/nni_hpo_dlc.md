@@ -19,6 +19,9 @@ pip install https://automl-nni.oss-cn-beijing.aliyuncs.com/nni/hpo_tools/hpo_too
 dlc_tools:
 wget https://automl-nni.oss-cn-beijing.aliyuncs.com/nni/hpo_tools/scripts/install_dlc.sh
 source install_dlc.sh /mnt/data https://dlc-tools.oss-cn-zhangjiakou.aliyuncs.com/release/linux/dlc?spm=a2c4g.11186623.0.0.1b9b4a35er7EfB
+(ps: install_dlc.sh has two inputs. The first input specifies the default path where the dlc tool is installed, and the second input specifies the url link to the dlc tool.
+/mnt/data is the root directory where the EasyCV code resides.)
+
 # test
 cd /mnt/data/software
 dlc --help
