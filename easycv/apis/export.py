@@ -617,8 +617,7 @@ class ModelExportWrapper(torch.nn.Module):
         if self.trace_model:
             try:
                 self.trace_module()
-            except Exception as e:
-                logging.warning('Error: {}'.format(e))
+            except RuntimeError:
                 # well trained model will generate reasonable result, otherwise, we should change model.test_conf=0.0 to avoid tensor in inference to be empty
                 logging.warning(
                     'PAI-YOLOX: set model.test_conf=0.0 to avoid tensor in inference to be empty'
