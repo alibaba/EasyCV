@@ -4,7 +4,8 @@ import copy
 from easycv.datasets.shared.dataset_wrappers import (ConcatDataset,
                                                      RepeatDataset)
 from easycv.utils.registry import build_from_cfg
-from .registry import DALIDATASETS, DATASETS, DATASOURCES, SAMPLERS, DOWNLOAD
+from .registry import DALIDATASETS, DATASETS, DATASOURCES, SAMPLERS
+from .utils.download_util import DownLoadDataFile
 
 
 def _concat_dataset(cfg, default_args=None):
@@ -54,6 +55,8 @@ def build_sampler(cfg, default_args=None):
 
 
 def load_datasource(cfg):
+
+    DOWNLOAD = DownLoadDataFile()
     args = cfg.copy()
     name = args.pop('name')
     if name == 'voc2007' or name == 'voc2012':

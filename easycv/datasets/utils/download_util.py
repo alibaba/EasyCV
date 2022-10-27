@@ -1,9 +1,9 @@
 # coding: utf-8
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os, glob, wget
+from easycv.utils.constant import CACHE_DIR
 
 # The location where downloaded data is stored
-DATASET_HOME = os.path.expanduser("~/.cache/easycv/dataset")
 
 
 '''
@@ -20,13 +20,6 @@ DATASET_HOME = os.path.expanduser("~/.cache/easycv/dataset")
 '''
 DATASETS = {
 
-    "small_coco_itag":(
-                    ["http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/unittest/data/detection/small_coco_itag/small_coco_itag.tar.gz"],
-                    "tar -xzvf ",
-                    True,
-                    "small_coco_itag",
-                    dict(train='train2017_20_local.manifest', val='val2017_20_local.manifest')
-                ),
     "voc2007": (
                     ["http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtrainval_06-Nov-2007.tar"],
                     "tar -xvf ",
@@ -89,30 +82,24 @@ class DownLoadDataFile(object):
         '''
 
         self.data_name = None
-        self.dataset_home = DATASET_HOME
+        self.dataset_home = CACHE_DIR
         self.tmp_data_path = None
         self.split = 'train'
         self.task = 'detection'
 
-    def get_voc_path(self, data_name, dataset_home=DATASET_HOME, split='train', task='detection'):
+    def get_voc_path(self, data_name, dataset_home=CACHE_DIR, split='train', task='detection'):
         self.init_Parameters_must_be(data_name, dataset_home, split, task)
         self.is_mkdir(self.dataset_home)
         self.voc_download()
         return self.return_voc_path()
 
-    def get_coco_path(self, data_name, dataset_home=DATASET_HOME, split='train', task='detection'):
+    def get_coco_path(self, data_name, dataset_home=CACHE_DIR, split='train', task='detection'):
         self.init_Parameters_must_be(data_name, dataset_home, split, task)
         self.is_mkdir(self.dataset_home)
         self.coco_dowload()
         return self.return_coco_path()
 
-    def get_itag_path(self, data_name, dataset_home=DATASET_HOME, split='train', task='detection'):
-        self.init_Parameters_must_be(data_name, dataset_home, split, task)
-        self.is_mkdir(self.dataset_home)
-        self.itag_pai_download()
-        return self.return_itag_pai_path()
-
-    def init_Parameters_must_be(self, data_name, dataset_home=DATASET_HOME, split='train', task='detection'):
+    def init_Parameters_must_be(self, data_name, dataset_home=CACHE_DIR, split='train', task='detection'):
         self.data_name = data_name.lower()
         # Using a new path
         if dataset_home:
@@ -147,17 +134,6 @@ class DownLoadDataFile(object):
         # Path of normalization
         self.regularization_path('coco')
 
-    def itag_pai_download(self):
-
-        # Check whether the path exists
-        if os.path.exists(os.path.join(self.dataset_home, self.data_name.upper())):
-            return self.return_itag_pai_path()
-        # Start the download
-        down_list = self.check_file()
-
-        # Began to unpack
-        self.extract_files(down_list)
-
     def check_file(self):
 
         download_finished = list()
@@ -182,7 +158,7 @@ class DownLoadDataFile(object):
             assert os.path.exists(value), f"{value} is not exists"
         return map_path
 
-    def download_files(self,link, file_name):
+    def download_files(self, link, file_name):
         try:
             print(f"{file_name} is start downlaod........")
             print(link)
@@ -233,13 +209,3 @@ class DownLoadDataFile(object):
         else:
             path = os.path.join(os.path.join(self.dataset_home, self.tmp_data_path), "ImageSets/Main/val.txt")
         return self.check_path_exists({'path': path})
-
-    def return_itag_pai_path(self):
-
-        map_path = dict()
-        if self.split == "train":
-            map_path['manifest_path'] = os.path.join(self.dataset_home, self.data_name.upper(), DATASETS[self.data_name][4]['train'])
-        else:
-            map_path['manifest_path'] = os.path.join(self.dataset_home, self.data_name.upper(), DATASETS[self.data_name][4]['val'])
-
-        return self.check_path_exists(map_path)
