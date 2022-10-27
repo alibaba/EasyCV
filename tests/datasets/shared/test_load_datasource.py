@@ -4,9 +4,10 @@ import random
 import unittest
 
 import numpy as np
-from tests.ut_config import DET_DATA_SMALL_VOC_LOCAL, VOC_CLASSES, COCO_CLASSES, DET_DATA_COCO2017_DOWNLOAD
+from tests.ut_config import (COCO_CLASSES, DET_DATA_COCO2017_DOWNLOAD,
+                             DET_DATA_SMALL_VOC_LOCAL, VOC_CLASSES)
 
-from easycv.datasets.builder import load_datasource, build_datasource
+from easycv.datasets.builder import build_datasource, load_datasource
 from easycv.file import io
 
 
@@ -150,7 +151,7 @@ class Load_DataSource(unittest.TestCase):
         cache_at_init = False
         cache_on_the_fly = False
 
-        data_cfg=dict(
+        data_cfg = dict(
             type='DetSourceVOC',
             name='voc2007',
             split='train',
@@ -177,7 +178,7 @@ class Load_DataSource(unittest.TestCase):
         cache_at_init = False
         cache_on_the_fly = False
 
-        data_cfg=dict(
+        data_cfg = dict(
             type='DetSourceVOC',
             name='voc2012',
             split='train',
@@ -201,7 +202,7 @@ class Load_DataSource(unittest.TestCase):
 
     def test_coco2017_detection_load_datasource(self):
         data_root = DET_DATA_COCO2017_DOWNLOAD
-        data_cfg=dict(
+        data_cfg = dict(
             type='DetSourceCoco',
             name='coco2017',
             split='train',
@@ -220,7 +221,7 @@ class Load_DataSource(unittest.TestCase):
         data_source = build_datasource(cfg)
         self._base_test_coco_detection(data_source)
 
-    def test_coco2017_detection_load_datasource(self):
+    def test_coco2017_pose_load_datasource(self):
         data_root = DET_DATA_COCO2017_DOWNLOAD
         channel_cfg = dict(
             num_output_channels=17,
@@ -230,31 +231,29 @@ class Load_DataSource(unittest.TestCase):
             ],
             inference_channel=[
                 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
-        ])
+            ])
         data_cfg = dict(
-                image_size=[192, 256],
-                heatmap_size=[48, 64],
-                num_output_channels=channel_cfg['num_output_channels'],
-                num_joints=channel_cfg['dataset_joints'],
-                dataset_channel=channel_cfg['dataset_channel'],
-                inference_channel=channel_cfg['inference_channel'],
-                soft_nms=False,
-                nms_thr=1.0,
-                oks_thr=0.9,
-                vis_thr=0.2,
-                use_gt_bbox=True,
-                det_bbox_thr=0.0,
-                bbox_file=
-                '',
-            )
+            image_size=[192, 256],
+            heatmap_size=[48, 64],
+            num_output_channels=channel_cfg['num_output_channels'],
+            num_joints=channel_cfg['dataset_joints'],
+            dataset_channel=channel_cfg['dataset_channel'],
+            inference_channel=channel_cfg['inference_channel'],
+            soft_nms=False,
+            nms_thr=1.0,
+            oks_thr=0.9,
+            vis_thr=0.2,
+            use_gt_bbox=True,
+            det_bbox_thr=0.0,
+            bbox_file='',
+        )
         data_source_cfg = dict(type='PoseTopDownSourceCoco', data_cfg=data_cfg)
         data_cfg = dict(
             name='coco2017',
             split='train',
             target_dir=data_root,
             task='pose',
-            **data_source_cfg
-        )
+            **data_source_cfg)
 
         cfg = load_datasource(data_cfg)
 

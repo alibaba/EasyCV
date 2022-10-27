@@ -1,13 +1,14 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os
+
 from easycv.datasets.registry import DATASOURCES
 from easycv.file.image import load_image
 
 
 def generate_label_map(label_path):
     label_txt = open(label_path).readlines()
-    assert len(label_txt) > 1, f"{label_path} is None"
+    assert len(label_txt) > 1, f'{label_path} is None'
     label_map = dict()
     for line in label_txt:
         deal_line = line.strip().split()
@@ -16,9 +17,9 @@ def generate_label_map(label_path):
 
 
 def get_images_list(txt_path):
-    assert os.path.exists(txt_path), f"{txt_path} is not exists"
+    assert os.path.exists(txt_path), f'{txt_path} is not exists'
     train_txt = open(txt_path).readlines()
-    assert len(txt_path) > 1, f"{txt_path} is None"
+    assert len(txt_path) > 1, f'{txt_path} is None'
     return train_txt
 
 
@@ -29,20 +30,21 @@ class ClsSourceImageNet1k(object):
         self.root = root
         assert split in ['train', 'test']
         if split == 'train':
-            self.split = "meta/train.txt"
+            self.split = 'meta/train.txt'
         else:
-            self.split = "meta/val.txt"
+            self.split = 'meta/val.txt'
         self.txt_path = get_images_list(os.path.join(root, self.split))
-        self.label_json = generate_label_map(os.path.join(root, "meta/label_name.txt"))
+        self.label_json = generate_label_map(
+            os.path.join(root, 'meta/label_name.txt'))
 
     def read_data(self, image_path):
         img_path = os.path.join(self.root, image_path.strip())
-        assert os.path.exists(img_path), f"{img_path} is not exists"
+        assert os.path.exists(img_path), f'{img_path} is not exists'
         img = load_image(img_path)
         label_key = image_path.split('/')[1]
-        assert label_key in self.label_json, f"{label_key} label is not exists"
+        assert label_key in self.label_json, f'{label_key} label is not exists'
         label = self.label_json[label_key]
-        return {"img": img, "gt_labels": int(label[0].strip())}
+        return {'img': img, 'gt_labels': int(label[0].strip())}
 
     def __len__(self):
         return len(self.train_path)

@@ -40,7 +40,8 @@ SMALL_IMAGENET_RAW_LOCAL = os.path.join(
     BASE_LOCAL_PATH, 'data/classification/small_imagenet_raw')
 CIFAR10_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/classification/cifar10')
 CIFAR100_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/classification/cifar100')
-SAMLL_IMAGENET1K_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH, 'datasets/imagenet-1k/imagenet_raw')
+SAMLL_IMAGENET1K_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH,
+                                          'datasets/imagenet-1k/imagenet_raw')
 
 SMALL_IMAGENET_TFRECORD_LOCAL = os.path.join(
     BASE_LOCAL_PATH, 'data/classification/small_imagenet_tfrecord/')
@@ -56,7 +57,7 @@ IO_DATA_MULTI_DIRS_OSS = os.path.join(BASE_OSS_PATH,
 DET_DATA_SMALL_COCO_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                          'data/detection/small_coco')
 DET_DATA_COCO2017_DOWNLOAD = os.path.join(BASE_LOCAL_PATH, 'download_local/')
-VOC_DATASET_DOWNLOAD_LOCAL = os.path.join(BASE_LOCAL_PATH, "download_local")
+VOC_DATASET_DOWNLOAD_LOCAL = os.path.join(BASE_LOCAL_PATH, 'download_local')
 CONFIG_PATH = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
 
 DET_DATA_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/detection/raw_data')

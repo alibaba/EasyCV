@@ -60,9 +60,17 @@ def load_datasource(cfg):
     args = cfg.copy()
     name = args.pop('name')
     if name == 'voc2007' or name == 'voc2012':
-        map_path = DOWNLOAD.get_voc_path(name, split=args.get('split'), dataset_home=args.get('target_dir'), task=args.get('task'))
+        map_path = DOWNLOAD.get_voc_path(
+            name,
+            split=args.get('split'),
+            dataset_home=args.get('target_dir'),
+            task=args.get('task'))
     elif name == 'coco2017':
-        map_path = DOWNLOAD.get_coco_path(name, split=args.get('split'), dataset_home=args.get('target_dir'), task=args.get('task'))
+        map_path = DOWNLOAD.get_coco_path(
+            name,
+            split=args.get('split'),
+            dataset_home=args.get('target_dir'),
+            task=args.get('task'))
     else:
         raise KeyError('cfg.name is not in the dataset_cfg')
 
