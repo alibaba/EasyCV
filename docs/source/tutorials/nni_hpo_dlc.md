@@ -1,14 +1,8 @@
-# HPO tutorial
+# NNI HPO dlc tutorial
 
-Auto hyperparameter optimization (HPO), or auto tuning, is one of the key features of NNI. The tutorial gives examples of EasyCV using HPO.
+Auto hyperparameter optimization (HPO), or auto tuning, is one of the key features of NNI. This tutorial shows an example of EasyCV for dlc using NNI HPO.
 
 ## Create environment
-
-local:
-
-Create DSW/ECS.
-
-dlc:
 
 Create NAS disks, NAS datasets, and DSW/ECS (ps: Note that the three parts are created in the same region).
 
@@ -22,7 +16,7 @@ For details about the create environment, see https://yuque.antfin.com/pai-user/
 hpo_tools:
 pip install https://automl-nni.oss-cn-beijing.aliyuncs.com/nni/hpo_tools/hpo_tools-0.1.1-py3-none-any.whl
 
-dlc_tools(options):
+dlc_tools:
 wget https://automl-nni.oss-cn-beijing.aliyuncs.com/nni/hpo_tools/scripts/install_dlc.sh
 source install_dlc.sh /mnt/data https://dlc-tools.oss-cn-zhangjiakou.aliyuncs.com/release/linux/dlc?spm=a2c4g.11186623.0.0.1b9b4a35er7EfB
 # test
@@ -36,10 +30,6 @@ Take easycv/toolkit/hpo/search/det/ as an example
 ```shell
 cd  EasyCV/easycv/toolkit/hpo/det/
 
-local:
-nnictl create --config config_local.yml --port=8780
-
-dlc:
 nnictl create --config config_dlc.yml --port=8780
 
 
@@ -49,7 +39,7 @@ nnictl stop
 
 For more nnictl usage, see https://nni.readthedocs.io/en/v2.1/Tutorial/QuickStart.html.
 
-## *.yml file parameter meaning (using config_dlc.yml as an example)
+## config_dlc.yml file parameter meaning
 ```shell
 experimentWorkingDirectory: ./expdir
 searchSpaceFile: search_space.json
@@ -86,7 +76,7 @@ assessor:
 
 The search space can reference: https://nni.readthedocs.io/en/v2.2/Tutorial/SearchSpaceSpec.html.
 
-## *.ini file parameter meaning (using config_dlc.ini as an example)
+## config_dlc.ini file parameter meaning
 ```shell
 [cmd_config]
 cmd1="dlc config --access_id xxx --access_key xxx --endpoint 'pai-dlc.cn-shanghai.aliyuncs.com' --region cn-shanghai"
