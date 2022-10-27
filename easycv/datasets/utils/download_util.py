@@ -3,8 +3,6 @@
 import os, glob, wget
 from easycv.utils.constant import CACHE_DIR
 
-# The location where downloaded data is stored
-
 
 '''
     { key : value key: value, key: value, ..... } 
@@ -75,7 +73,7 @@ class DownLoadDataFile(object):
 
         '''
         data_name: download file of name
-        dataset_home: data root path
+        dataset_home: The location where downloaded data is stored
         split: return train or val
         tmp_data_path: Name of the data root directory
         task: Distinguish between tasks [detection, cls, pose]
