@@ -105,6 +105,7 @@ val/DetectionBoxes_Precision/mAP=100
 cmd1 specifies the area for the dlc, and cmd2 is the dlc startup command.
 
 [cmd_config]
+
 It needs to be modified according to the dlc environment(For details about the dlc command parameters, see https://yuque.antfin-inc.com/pai-user/manual/eo7doa.)
 - `access_id and access_key`: the ak information
 - `endpoint`: the port
