@@ -66,6 +66,8 @@ We have a series of technical articles on the functionalities of EasyCV.
 * [基于EasyCV复现ViTDet：单层特征超越FPN](https://zhuanlan.zhihu.com/p/528733299)
 * [基于EasyCV复现DETR和DAB-DETR，Object Query的正确打开方式](https://zhuanlan.zhihu.com/p/543129581)
 * [YOLOX-PAI: 加速YOLOX, 比YOLOv6更快更强](https://zhuanlan.zhihu.com/p/560597953)
+* [EasyCV带你复现更好更快的自监督算法-FastConvMAE](https://zhuanlan.zhihu.com/p/566988235)
+* [EasyCV DataHub 提供多领域视觉数据集下载，助力模型生产](https://zhuanlan.zhihu.com/p/572593950)
 
 ## Installation
 
@@ -78,10 +80,15 @@ Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We
 
 * [self-supervised learning](docs/source/tutorials/ssl.md)
 * [image classification](docs/source/tutorials/cls.md)
+* [metric learning](docs/source/tutorials/metric_learning.md)
 * [object detection with yolox-pai](docs/source/tutorials/yolox.md)
 * [model compression with yolox](docs/source/tutorials/compression.md)
-* [metric learning](docs/source/tutorials/metric_learning.md)
-* [torchacc](docs/source/tutorials/torchacc.md)
+* [using torchacc](docs/source/tutorials/torchacc.md)
+* [file io for local and oss files](docs/source/tutorials/file.md)
+* [using mmdetection model in EasyCV](docs/source/tutorials/mmdet_models_usage_guide.md)
+
+
+
 
 notebook
 * [self-supervised learning](docs/source/tutorials/EasyCV图像自监督训练-MAE.ipynb)
