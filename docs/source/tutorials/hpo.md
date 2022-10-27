@@ -14,6 +14,8 @@ Create NAS disks, NAS datasets, and DSW/ECS (ps: Note that the three parts are c
 
 Mount NAS disks on DSW/ECS (ps: The address where the NAS is mounted can be the same as the mount path /mnt/data where the NAS data set is created to avoid errors).
 
+For details about the create environment, see https://yuque.antfin.com/pai-user/manual/rwk4sh.
+
 ## Installation
 
 ```shell
