@@ -162,19 +162,14 @@ class Mask2formerPredictor(SegmentationPredictor):
             *args,
             **kwargs)
         self.task_mode = task_mode
+        self.class_name = self.cfg.CLASSES
+        self.PALETTE = self.cfg.PALETTE
 
     def forward(self, inputs):
         """Model forward.
         """
         with torch.no_grad():
             outputs = self.model.forward(**inputs, mode='test', encode=False)
-        if self.task_mode == 'instance':
-            outputs.pop('pan_results')
-        elif self.task_mode == 'panoptic':
-            outputs.pop('detection_masks')
-            outputs.pop('detection_boxes')
-            outputs.pop('detection_scores')
-            outputs.pop('detection_classes')
         return outputs
 
     def postprocess_single(self, inputs, *args, **kwargs):
@@ -198,6 +193,8 @@ class Mask2formerPredictor(SegmentationPredictor):
             output['bboxes'] = inputs['detection_boxes']
             output['scores'] = inputs['detection_scores']
             output['labels'] = inputs['detection_classes']
+        elif self.task_mode == 'semantic':
+            output['seg_pred'] = inputs['seg_pred']
         else:
             raise ValueError(f'Not support model {self.task_mode}')
         return output
@@ -222,6 +219,40 @@ class Mask2formerPredictor(SegmentationPredictor):
         instance_result = imshow_bboxes(
             instance_result, bboxes, class_name[labels], show=False)
         return instance_result
+
+    def show_semantic(self, img, seg_pred, alpha=0.5, palette=None):
+
+        if palette is None:
+            if self.PALETTE is None:
+                # Get random state before set seed,
+                # and restore random state later.
+                # It will prevent loss of randomness, as the palette
+                # may be different in each iteration if not specified.
+                # See: https://github.com/open-mmlab/mmdetection/issues/5844
+                state = np.random.get_state()
+                np.random.seed(42)
+                # random palette
+                palette = np.random.randint(
+                    0, 255, size=(len(self.CLASSES), 3))
+                np.random.set_state(state)
+            else:
+                palette = self.PALETTE
+        palette = np.array(palette)
+        assert palette.shape[0] == len(self.CLASSES)
+        assert palette.shape[1] == 3
+        assert len(palette.shape) == 2
+        assert 0 < alpha <= 1.0
+        color_seg = np.zeros((seg_pred.shape[0], seg_pred.shape[1], 3),
+                             dtype=np.uint8)
+        for label, color in enumerate(palette):
+            color_seg[seg_pred == label, :] = color
+        # convert to BGR
+        color_seg = color_seg[..., ::-1]
+
+        img = img * (1 - alpha) + color_seg * alpha
+        img = img.astype(np.uint8)
+
+        return img
 
 
 def _get_bias_color(base, max_dist=30):

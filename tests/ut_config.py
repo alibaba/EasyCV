@@ -166,3 +166,5 @@ MODEL_CONFIG_MASK2FORMER_PAN = (
     './configs/segmentation/mask2former/mask2former_r50_8xb2_e50_panoptic.py')
 MODEL_CONFIG_MASK2FORMER_INS = (
     './configs/segmentation/mask2former/mask2former_r50_8xb2_e50_instance.py')
+MODEL_CONFIG_MASK2FORMER_SEM = (
+    './configs/segmentation/mask2former/mask2former_r50_8xb2_e127_semantic.py')
