@@ -23,6 +23,6 @@ sklearn
 tensorboard
 thop
 timm>=0.4.9
+wget
 xtcocotools
 yacs
-wget
