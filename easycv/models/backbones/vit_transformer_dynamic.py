@@ -37,10 +37,23 @@ class DynamicVisionTransformer(VisionTransformer):
             x.item()
             for x in torch.linspace(0, self.drop_path_rate, self.depth)
         ]
+        if self.hydra_attention:
+            hy = [
+                x >= (self.depth - self.hydra_attention_layers)
+                for x in range(self.depth)
+            ]
+            head = [
+                self.embed_dim if x >=
+                (self.depth - self.hydra_attention_layers) else self.num_heads
+                for x in range(self.depth)
+            ]
+        else:
+            hy = [False for x in range(self.depth)]
+            head = [self.num_heads for x in range(self.depth)]
         self.blocks = nn.ModuleList([
             Block(
                 dim=self.embed_dim,
-                num_heads=self.num_heads,
+                num_heads=head[i],
                 mlp_ratio=self.mlp_ratio,
                 qkv_bias=self.qkv_bias,
                 qk_scale=self.qk_scale,
@@ -49,7 +62,8 @@ class DynamicVisionTransformer(VisionTransformer):
                 drop_path=dpr[i],
                 norm_layer=self.norm_layer,
                 use_layer_scale=self.use_layer_scale,
-                init_values=self.init_scale) for i in range(self.depth)
+                init_values=self.init_scale,
+                hydra_attention=hy[i]) for i in range(self.depth)
         ])
 
         # Dense prediction head
