@@ -1,9 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import os
+
 import numpy as np
 from xtcocotools.coco import COCO
 
 from easycv.datasets.registry import DATASOURCES, PIPELINES
 from easycv.datasets.shared.pipelines import Compose
+from easycv.datasets.utils.download_util import download_coco
 from easycv.framework.errors import TypeError
 from easycv.utils.registry import build_from_cfg
 
@@ -317,3 +320,46 @@ class DetSourceCoco(object):
         """Get another random index from the same group as the given index."""
         pool = np.where(self.flag == self.flag[idx])[0]
         return np.random.choice(pool)
+
+
+@DATASOURCES.register_module
+class DetSourceCoco2017(DetSourceCoco):
+    """
+    coco2017 data source
+    """
+
+    def __init__(self,
+                 pipeline,
+                 path='',
+                 download=True,
+                 split='train',
+                 test_mode=False,
+                 filter_empty_gt=False,
+                 classes=None,
+                 iscrowd=False):
+        """
+        Args:
+            path: target dir
+            download: whether download
+            split: train or val
+            test_mode (bool, optional): If set True, `self._filter_imgs` will not works.
+            filter_empty_gt (bool, optional): If set true, images without bounding
+                boxes of the dataset's classes will be filtered out. This option
+                only works when `test_mode=False`, i.e., we never filter images
+                during tests.
+            iscrowd: when traing setted as False, when val setted as True
+        """
+        if os.path.isdir(path):
+            path = download_coco(
+                'coco2017', split=split, target_dir=path, task='detection')
+        else:
+            path = download_coco('coco2017', split=split, task='detection')
+
+        super(DetSourceCoco2017, self).__init__(
+            ann_file=path['ann_file'],
+            img_prefix=path['img_prefix'],
+            pipeline=pipeline,
+            test_mode=test_mode,
+            filter_empty_gt=filter_empty_gt,
+            classes=classes,
+            iscrowd=iscrowd)
