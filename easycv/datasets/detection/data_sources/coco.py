@@ -349,11 +349,18 @@ class DetSourceCoco2017(DetSourceCoco):
                 during tests.
             iscrowd: when traing setted as False, when val setted as True
         """
-        if os.path.isdir(path):
-            path = download_coco(
-                'coco2017', split=split, target_dir=path, task='detection')
+        if download:
+            if os.path.isdir(path):
+                path = download_coco(
+                    'coco2017', split=split, target_dir=path, task='detection')
+            else:
+                path = download_coco('coco2017', split=split, task='detection')
         else:
-            path = download_coco('coco2017', split=split, task='detection')
+            if os.path.isdir(path):
+                path = download_coco(
+                    'coco2017', split=split, target_dir=path, task='detection')
+            else:
+                raise KeyError('your path is None')
 
         super(DetSourceCoco2017, self).__init__(
             ann_file=path['ann_file'],

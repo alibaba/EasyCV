@@ -7,6 +7,7 @@ import json_tricks as json
 import numpy as np
 
 from easycv.datasets.registry import DATASOURCES
+from easycv.datasets.utils.download_util import download_coco
 from easycv.framework.errors import ValueError
 from .top_down import PoseTopDownSource
 
@@ -310,3 +311,44 @@ class PoseTopDownSourceCoco(PoseTopDownSource):
         print(f'=> Total boxes after filter '
               f'low score@{self.det_bbox_thr}: {bbox_id}')
         return kpt_db
+
+
+@DATASOURCES.register_module()
+class PoseTopDownSourceCoco2017(PoseTopDownSourceCoco):
+    """
+    Args:
+        path: target dir
+        download: whether download
+        split: train or val
+        data_cfg (dict): config
+        dataset_info (DatasetInfo): A class containing all dataset info.
+        test_mode (bool): Store True when building test or
+        validation dataset. Default: False.
+    """
+
+    def __init__(self,
+                 data_cfg,
+                 path='',
+                 download=True,
+                 split='train',
+                 dataset_info=None,
+                 test_mode=False):
+        if download:
+            if os.path.isdir(path):
+                path = download_coco(
+                    'coco2017', split=split, target_dir=path, task='pose')
+            else:
+                path = download_coco('coco2017', split=split, task='detection')
+        else:
+            if os.path.isdir(path):
+                path = download_coco(
+                    'coco2017', split=split, target_dir=path, task='pose')
+            else:
+                raise KeyError('your path is None')
+
+        super().__init__(
+            ann_file=path['ann_file'],
+            img_prefix=path['img_prefix'],
+            data_cfg=data_cfg,
+            dataset_info=dataset_info,
+            test_mode=test_mode)
