@@ -99,10 +99,14 @@ PRETRAINED_MODEL_YOLOXS_EXPORT_OLD = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/detection/infer_yolox/old.pt')
 PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_JIT = os.path.join(
     BASE_LOCAL_PATH,
-    'pretrained_models/detection/infer_yolox/epoch_300_nopre_notrt.pt.jit')
+    'pretrained_models/detection/infer_yolox/epoch_300_nopre_notrt_e2e.pt.jit')
 PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT = os.path.join(
     BASE_LOCAL_PATH,
-    'pretrained_models/detection/infer_yolox/epoch_300_pre_notrt.pt.jit')
+    'pretrained_models/detection/infer_yolox/epoch_300_pre_notrt_e2e.pt.jit')
+PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT_B2 = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/detection/infer_yolox/epoch_300_pre_notrt_e2e_b2.pt.jit'
+)
 PRETRAINED_MODEL_YOLOXS_NOPRE_TRT_JIT = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/detection/infer_yolox/epoch_300_nopre_trt.pt.jit')
@@ -159,3 +163,5 @@ MODEL_CONFIG_MASK2FORMER_PAN = (
     './configs/segmentation/mask2former/mask2former_r50_8xb2_e50_panoptic.py')
 MODEL_CONFIG_MASK2FORMER_INS = (
     './configs/segmentation/mask2former/mask2former_r50_8xb2_e50_instance.py')
+MODEL_CONFIG_MASK2FORMER_SEM = (
+    './configs/segmentation/mask2former/mask2former_r50_8xb2_e127_semantic.py')
