@@ -1,11 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import random
 import unittest
 
-import numpy as np
-import torch
-
-from easycv.predictors.classifier import ClassificationPredictor
+from easycv.predictors.builder import build_predictor
+from easycv.utils.config_tools import mmcv_config_fromfile
 
 
 class HydraAttentionTest(unittest.TestCase):
@@ -14,39 +11,23 @@ class HydraAttentionTest(unittest.TestCase):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
     def test_hydraAttention(self):
-        model_path = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/hydra_attention/deit_base_patch16_224%20(Hydra%20Attention%20%5B12%20layers%5D).pth'
-        config_path = 'configs/classification/imagenet/vit/deit_base_hydraAtt_patch16_224.py'
+        checkpoint = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/hydra_attention/deit_base_patch16_224%20(Hydra%20Attention%20%5B12%20layers%5D).pth'
+        config_file = 'configs/classification/imagenet/vit/imagenet_deit_base_hydraAtt_patch16_224_jpg.py'
+        img_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/imagenet_demo.JPEG'
+        cfg = mmcv_config_fromfile(config_file)
+        predict_op = build_predictor(
+            dict(
+                **cfg.predict,
+                model_path=checkpoint,
+                config_file=config_file,
+                label_map_path=None,
+                pil_input=False))
 
-        img_norm_cfg = dict(
-            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        pipelines = [
-            dict(type='ToPILImage'),
-            dict(type='Resize', size=256, interpolation=3),
-            dict(type='CenterCrop', size=224),
-            dict(type='ToTensor'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Collect', keys=['img'])
-        ]
+        results = predict_op([img_path])[0]
 
-        torch.manual_seed(0)
-        np.random.seed(0)
-        random.seed(0)
-        img = np.array([[[np.random.random() for k in range(3)]
-                         for j in range(256)] for i in range(256)])
-        img = np.uint8(img * 255)
-
-        hydraAttention = ClassificationPredictor(
-            model_path,
-            config_path,
-            label_map_path=None,
-            pil_input=False,
-            pipelines=pipelines)
-
-        output = hydraAttention([img])[0]
-
-        self.assertIn('class', output)
-        self.assertEqual(len(output['class']), 1)
-        self.assertEqual(int(output['class'][0]), 284)
+        self.assertIn('class', results)
+        self.assertEqual(len(results['class']), 1)
+        self.assertEqual(int(results['class'][0]), 234)
 
 
 if __name__ == '__main__':

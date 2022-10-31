@@ -1,46 +1,16 @@
-# from PIL import Image
-
-_base_ = 'configs/base.py'
-
-log_config = dict(
-    interval=10,
-    hooks=[dict(type='TextLoggerHook'),
-           dict(type='TensorboardLoggerHook')])
+_base_ = './deitiii_base_patch16_192.py'
 
 # model settings
 model = dict(
-    type='Classification',
-    train_preprocess=['mixUp'],
-    pretrained=False,
-    mixup_cfg=dict(
-        mixup_alpha=0.8,
-        cutmix_alpha=1.0,
-        cutmix_minmax=None,
-        prob=1.0,
-        switch_prob=0.5,
-        mode='batch',
-        label_smoothing=0.1,
-        num_classes=1000),
     backbone=dict(
-        type='VisionTransformer',
         img_size=[224],
-        num_classes=1000,
-        patch_size=16,
-        embed_dim=768,
-        depth=12,
-        num_heads=12,
-        mlp_ratio=4,
-        qkv_bias=True,
-        drop_rate=0.,
         drop_path_rate=0.1,
+        use_layer_scale=False,
         hydra_attention=True,
         hydra_attention_layers=12),
-    head=dict(
-        type='ClsHead',
-        loss_config={
-            'type': 'SoftTargetCrossEntropy',
-        },
-        with_fc=False))
+    head=dict(loss_config={
+        'type': 'SoftTargetCrossEntropy',
+    }))
 
 data_train_list = 'data/imagenet1k/train.txt'
 data_train_root = 'data/imagenet1k/train/'
@@ -48,6 +18,7 @@ data_test_list = 'data/imagenet1k/val.txt'
 data_test_root = 'data/imagenet1k/val/'
 
 dataset_type = 'ClsDataset'
+
 img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 train_pipeline = [
     dict(
@@ -86,8 +57,6 @@ test_pipeline = [
 
 data = dict(
     imgs_per_gpu=128,
-    workers_per_gpu=8,
-    use_repeated_augment_sampler=True,
     train=dict(
         type=dataset_type,
         data_source=dict(
@@ -103,7 +72,6 @@ data = dict(
             type='ClsSourceImageList'),
         pipeline=test_pipeline))
 
-eval_config = dict(initial=True, interval=1, gpu_collect=True)
 eval_pipelines = [
     dict(
         mode='test',
@@ -113,35 +81,25 @@ eval_pipelines = [
     )
 ]
 
-# additional hooks
-custom_hooks = []
-
 # optimizer
-optimizer = dict(
-    type='AdamW',
-    lr=0.001,
-    weight_decay=0.05,
-    eps=1e-8,
-    paramwise_options={
-        'cls_token': dict(weight_decay=0.),
-        'pos_embed': dict(weight_decay=0.),
-        'bias': dict(weight_decay=0.),
-        'norm': dict(weight_decay=0.),
-    })
-optimizer_config = dict(grad_clip=None, update_interval=1)
+optimizer = dict(type='AdamW', lr=0.001)
 
 lr_config = dict(
-    policy='CosineAnnealingWarmupByEpoch',
-    by_epoch=True,
     min_lr_ratio=0.00001 / 0.001,
-    warmup='linear',
-    warmup_by_epoch=True,
-    warmup_iters=5,
     warmup_ratio=0.000001 / 0.001,
 )
-checkpoint_config = dict(interval=1)
 
 # runtime settings
 total_epochs = 300
 
-ema = dict(decay=0.99996)
+# used for unittest
+predict = dict(
+    type='ClassificationPredictor',
+    pipelines=[
+        dict(type='ToPILImage'),
+        dict(type='Resize', size=256, interpolation=3),
+        dict(type='CenterCrop', size=224),
+        dict(type='ToTensor'),
+        dict(type='Normalize', **img_norm_cfg),
+        dict(type='Collect', keys=['img'])
+    ])
