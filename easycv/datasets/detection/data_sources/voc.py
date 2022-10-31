@@ -7,8 +7,8 @@ from multiprocessing import cpu_count
 import numpy as np
 
 from easycv.datasets.detection.data_sources.base import DetSourceBase
+from easycv.datasets.download_data.download_voc import download_voc
 from easycv.datasets.registry import DATASOURCES
-from easycv.datasets.utils.download_util import download_voc
 from easycv.file import io
 
 img_formats = ['.bmp', '.jpg', '.jpeg', '.png', '.tif', '.tiff', '.dng']

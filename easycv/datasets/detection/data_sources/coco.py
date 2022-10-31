@@ -4,9 +4,9 @@ import os
 import numpy as np
 from xtcocotools.coco import COCO
 
+from easycv.datasets.download_data.download_coco import download_coco
 from easycv.datasets.registry import DATASOURCES, PIPELINES
 from easycv.datasets.shared.pipelines import Compose
-from easycv.datasets.utils.download_util import download_coco
 from easycv.framework.errors import TypeError
 from easycv.utils.registry import build_from_cfg
 

@@ -6,8 +6,8 @@ import os
 import json_tricks as json
 import numpy as np
 
+from easycv.datasets.download_data.download_coco import download_coco
 from easycv.datasets.registry import DATASOURCES
-from easycv.datasets.utils.download_util import download_coco
 from easycv.framework.errors import ValueError
 from .top_down import PoseTopDownSource
 
