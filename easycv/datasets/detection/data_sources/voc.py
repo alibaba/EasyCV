@@ -249,11 +249,18 @@ class DetSourceVOC2007(DetSourceVOC):
         """
 
         # Check to see if you need to download it
-        if os.path.isdir(path):
-            path = download_voc(
-                'voc2007', split=split, target_dir=path)['path']
+        if download:
+            if os.path.isdir(path):
+                path = download_voc(
+                    'voc2007', split=split, target_dir=path)['path']
+            else:
+                path = download_voc('voc2007', split=split)['path']
         else:
-            path = download_voc('voc2007', split=split)['path']
+            if os.path.isdir(path):
+                path = download_voc(
+                    'voc2007', split=split, target_dir=path)['path']
+            else:
+                raise KeyError('your path is None')
 
         super(DetSourceVOC2007, self).__init__(
             path=path,

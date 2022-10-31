@@ -338,7 +338,7 @@ class PoseTopDownSourceCoco2017(PoseTopDownSourceCoco):
                 path = download_coco(
                     'coco2017', split=split, target_dir=path, task='pose')
             else:
-                path = download_coco('coco2017', split=split, task='detection')
+                path = download_coco('coco2017', split=split, task='pose')
         else:
             if os.path.isdir(path):
                 path = download_coco(
