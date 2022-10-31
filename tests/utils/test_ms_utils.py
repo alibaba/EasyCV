@@ -22,10 +22,13 @@ class MsConfigTest(unittest.TestCase):
         shutil.rmtree(self.tmp_dir)
 
     def test_to_ms_config(self):
-
+        easycv_dir = os.path.dirname(easycv.__file__)
+        if os.path.exists(os.path.join(easycv_dir, 'configs')):
+            config_dir = os.path.join(easycv_dir, 'configs')
+        else:
+            config_dir = os.path.join(os.path.dirname(easycv_dir), 'configs')
         config_path = os.path.join(
-            os.path.dirname(easycv.__file__),
-            'configs/detection/yolox/yolox_s_8xb16_300e_coco.py')
+            config_dir, 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py')
 
         ms_cfg_file = os.path.join(self.tmp_dir,
                                    'ms_yolox_s_8xb16_300e_coco.json')
