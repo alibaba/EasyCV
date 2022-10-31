@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 import torch
 from mmcv.parallel import collate, scatter_kwargs
-from PIL import Image
+from PIL import Image, ImageFile
 from torch.hub import load_state_dict_from_url
 from torchvision.transforms import Compose
 
@@ -325,7 +325,7 @@ class PredictorV2(object):
     def __call__(self, inputs, keep_inputs=False):
         # TODO: fault tolerance
 
-        if isinstance(inputs, (str, np.ndarray)):
+        if isinstance(inputs, (str, np.ndarray, ImageFile.ImageFile)):
             inputs = [inputs]
 
         results_list = []
