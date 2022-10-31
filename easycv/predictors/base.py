@@ -325,7 +325,7 @@ class PredictorV2(object):
     def __call__(self, inputs, keep_inputs=False):
         # TODO: fault tolerance
 
-        if isinstance(inputs, str):
+        if isinstance(inputs, (str, np.ndarray)):
             inputs = [inputs]
 
         results_list = []
