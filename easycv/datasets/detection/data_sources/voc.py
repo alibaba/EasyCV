@@ -155,7 +155,7 @@ class DetSourceVOC(DetSourceBase):
 class DetSourceVOC2012(DetSourceVOC):
 
     def __init__(self,
-                 path='',
+                 path=None,
                  download=True,
                  split='train',
                  classes=[],
@@ -170,8 +170,10 @@ class DetSourceVOC2012(DetSourceVOC):
                  **kwargs):
         """
         Args:
-            path: path of img id list file in ImageSets/Main/
-            download: whether download
+            path: This parameter is optional. If download is True and path is not provided,
+                    a temporary directory is automatically created for downloading
+            download: If the value is True, the file is automatically downloaded to the path directory.
+                      If False, automatic download is not supported and data in the path is used
             split: train or val
             classes: classes list
             img_root_path: image dir path, if None, default to detect the image dir by the relative path of the `path`
@@ -188,13 +190,15 @@ class DetSourceVOC2012(DetSourceVOC):
 
         # Check to see if you need to download it
         if download:
-            if os.path.isdir(path):
+            if path:
+                assert os.path.isdir(path), f'{path} is not dir'
                 path = download_voc(
                     'voc2012', split=split, target_dir=path)['path']
             else:
                 path = download_voc('voc2012', split=split)['path']
         else:
-            if os.path.isdir(path):
+            if path:
+                assert os.path.isdir(path), f'{path} is not dir'
                 path = download_voc(
                     'voc2012', split=split, target_dir=path)['path']
             else:
@@ -217,7 +221,7 @@ class DetSourceVOC2012(DetSourceVOC):
 class DetSourceVOC2007(DetSourceVOC):
 
     def __init__(self,
-                 path='',
+                 path=None,
                  download=True,
                  split='train',
                  classes=[],
@@ -232,8 +236,10 @@ class DetSourceVOC2007(DetSourceVOC):
                  **kwargs):
         """
         Args:
-            path: path of img id list file in ImageSets/Main/
-            download: whether download
+            path: This parameter is optional. If download is True and path is not provided,
+                    a temporary directory is automatically created for downloading
+            download: If the value is True, the file is automatically downloaded to the path directory.
+                      If False, automatic download is not supported and data in the path is used
             split: train or val
             classes: classes list
             img_root_path: image dir path, if None, default to detect the image dir by the relative path of the `path`
@@ -250,13 +256,15 @@ class DetSourceVOC2007(DetSourceVOC):
 
         # Check to see if you need to download it
         if download:
-            if os.path.isdir(path):
+            if path:
+                assert os.path.isdir(path), f'{path} is not dir'
                 path = download_voc(
                     'voc2007', split=split, target_dir=path)['path']
             else:
                 path = download_voc('voc2007', split=split)['path']
         else:
-            if os.path.isdir(path):
+            if path:
+                assert os.path.isdir(path), f'{path} is not dir'
                 path = download_voc(
                     'voc2007', split=split, target_dir=path)['path']
             else:

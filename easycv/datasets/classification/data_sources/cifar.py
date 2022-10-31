@@ -13,10 +13,10 @@ class ClsSourceCifar10(object):
         'horse', 'ship', 'truck'
     ]
 
-    def __init__(self, root, split):
+    def __init__(self, root, split, download=True):
         assert split in ['train', 'test']
         self.cifar = CIFAR10(
-            root=root, train=(split == 'train'), download=True)
+            root=root, train=(split == 'train'), download=download)
         self.labels = self.cifar.targets
 
     def __len__(self):
@@ -34,11 +34,11 @@ class ClsSourceCifar100(object):
 
     CLASSES = None
 
-    def __init__(self, root, split):
+    def __init__(self, root, split, download=True):
         assert split in ['train', 'test']
 
         self.cifar = CIFAR100(
-            root=root, train=(split == 'train'), download=True)
+            root=root, train=(split == 'train'), download=download)
 
         self.labels = self.cifar.targets
 

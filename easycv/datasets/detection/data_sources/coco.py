@@ -330,7 +330,7 @@ class DetSourceCoco2017(DetSourceCoco):
 
     def __init__(self,
                  pipeline,
-                 path='',
+                 path=None,
                  download=True,
                  split='train',
                  test_mode=False,
@@ -339,8 +339,10 @@ class DetSourceCoco2017(DetSourceCoco):
                  iscrowd=False):
         """
         Args:
-            path: target dir
-            download: whether download
+            path: This parameter is optional. If download is True and path is not provided,
+                    a temporary directory is automatically created for downloading
+            download: If the value is True, the file is automatically downloaded to the path directory.
+                      If False, automatic download is not supported and data in the path is used
             split: train or val
             test_mode (bool, optional): If set True, `self._filter_imgs` will not works.
             filter_empty_gt (bool, optional): If set true, images without bounding
@@ -350,13 +352,15 @@ class DetSourceCoco2017(DetSourceCoco):
             iscrowd: when traing setted as False, when val setted as True
         """
         if download:
-            if os.path.isdir(path):
+            if path:
+                assert os.path.isdir(path), f'{path} is not dir'
                 path = download_coco(
                     'coco2017', split=split, target_dir=path, task='detection')
             else:
                 path = download_coco('coco2017', split=split, task='detection')
         else:
-            if os.path.isdir(path):
+            if path:
+                assert os.path.isdir(path), f'{path} is not dir'
                 path = download_coco(
                     'coco2017', split=split, target_dir=path, task='detection')
             else:
