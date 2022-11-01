@@ -234,7 +234,7 @@ class TemporalSelfAttention(BaseModule):
                 f'Last dim of reference_points must be'
                 f' 2 or 4, but get {reference_points.shape[-1]} instead.')
         if torch.cuda.is_available() and value.is_cuda:
-            from thirdparty.deformable_attention.functions import MSDeformAttnFunction
+            from easycv.thirdparty.deformable_attention.functions import MSDeformAttnFunction
 
             if value.dtype == torch.float16:
                 output = MSDeformAttnFunction.apply(

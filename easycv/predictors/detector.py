@@ -14,6 +14,7 @@ from easycv.datasets.utils import replace_ImageToTensor
 from easycv.file import io
 from easycv.models import build_model
 from easycv.models.detection.utils import postprocess
+from easycv.thirdparty.mtcnn import FaceDetector
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
@@ -27,11 +28,6 @@ try:
     from easy_vision.python.inference.predictor import PredictorInterface
 except Exception:
     from .interface import PredictorInterface
-
-try:
-    from thirdparty.mtcnn import FaceDetector
-except Exception:
-    from easycv.thirdparty.mtcnn import FaceDetector
 
 
 @PREDICTORS.register_module()

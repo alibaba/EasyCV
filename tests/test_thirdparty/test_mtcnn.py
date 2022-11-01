@@ -4,7 +4,8 @@ import unittest
 import numpy as np
 from PIL import Image
 from tests.ut_config import TEST_IMAGES_DIR
-from thirdparty.mtcnn import FaceDetector
+
+from easycv.thirdparty.mtcnn import FaceDetector
 
 bbox_res = [[
     1.06963833e+03, 5.70454030e+02, 1.53262074e+03, 1.17753027e+03,
@@ -23,7 +24,7 @@ bbox_res = [[
 class DetDatasetTest(unittest.TestCase):
 
     def setUp(self):
-        print(("Testing %s.%s" % (type(self).__name__, self._testMethodName)))
+        print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
     def test_facedetector(self):
         detector = FaceDetector()
