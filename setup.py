@@ -155,10 +155,6 @@ def pack_resource():
     shutil.copytree('./easycv', proj_dir)
     shutil.copytree('./configs', proj_dir + 'configs')
     shutil.copytree('./tools', proj_dir + 'tools')
-    shutil.copytree(
-        './thirdparty',
-        proj_dir + 'thirdparty',
-        ignore=shutil.ignore_patterns('*.pyc'))
     shutil.copytree('./resource', proj_dir + 'resource')
     shutil.copytree('./requirements', 'package/requirements')
     shutil.copy('./requirements.txt', 'package/requirements.txt')

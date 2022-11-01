@@ -1,3 +1,4 @@
 recursive-include easycv/configs *.py
 recursive-include easycv/tools *.py
 recursive-include easycv/resource/ *.ttf
+recursive-include easycv/thirdparty/deformable_attention/src/ *.*

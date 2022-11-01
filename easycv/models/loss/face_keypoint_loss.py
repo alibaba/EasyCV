@@ -60,7 +60,7 @@ class WingLossWithPose(nn.Module):
         weight = 5.0 * (1.0 - torch.cos(pose * np.pi / 180.0)) + 1.0
         weight = torch.sum(weight, dim=1) / 3.0
         weight = weight.view((weight.shape[0], 1))
-
+        self.part_weight = self.part_weight.to(weight.device)
         if self.part_weight is not None:
             weight = weight * self.part_weight
 
