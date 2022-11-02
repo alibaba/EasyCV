@@ -391,6 +391,12 @@ class NuScenesDataset(BaseDataset):
             else:
                 data_dict = self.data_source[idx]
                 data_dict = self.pipeline(data_dict)
+                data_dict['can_bus'] = DC(
+                    to_tensor(data_dict['img_metas'][0]._data['can_bus']),
+                    cpu_only=False)
+                data_dict['lidar2img'] = DC(
+                    to_tensor(data_dict['img_metas'][0]._data['lidar2img']),
+                    cpu_only=False)
 
             if data_dict is None:
                 idx = self._rand_another(idx)

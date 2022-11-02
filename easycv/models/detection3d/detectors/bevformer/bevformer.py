@@ -240,6 +240,12 @@ class BEVFormer(MVXTwoStageDetector):
         return losses
 
     def forward_test(self, img_metas, img=None, rescale=True, **kwargs):
+        for i in range(len(img_metas[0])):
+            img_metas[0][i]['can_bus'] = kwargs['can_bus'][i]
+            img_metas[0][i]['lidar2img'] = kwargs['lidar2img'][i]
+        kwargs.pop('can_bus', None)
+        kwargs.pop('lidar2img', None)
+
         for var, name in [(img_metas, 'img_metas')]:
             if not isinstance(var, list):
                 raise TypeError('{} must be a list, but got {}'.format(

@@ -3,13 +3,15 @@ import os
 
 import mmcv
 import numpy as np
+from mmcv.parallel import DataContainer as DC
 
 from easycv.core.bbox import get_box_type
 from easycv.datasets.registry import PIPELINES
+from easycv.datasets.shared.pipelines.format import to_tensor
 from easycv.datasets.shared.pipelines.transforms import Compose
+from easycv.predictors.base import PredictorV2
+from easycv.predictors.builder import PREDICTORS
 from easycv.utils.registry import build_from_cfg
-from .base import PredictorV2
-from .builder import PREDICTORS
 
 
 @PREDICTORS.register_module()
@@ -135,7 +137,13 @@ class BEVFormerPredictor(PredictorV2):
         """
         data_info = mmcv.load(input)
         result = self._prepare_input_dict(data_info)
-        return self.processor(result)
+        result = self.processor(result)
+        result['can_bus'] = DC(
+            to_tensor(result['img_metas'][0]._data['can_bus']), cpu_only=False)
+        result['lidar2img'] = DC(
+            to_tensor(result['img_metas'][0]._data['lidar2img']),
+            cpu_only=False)
+        return result
 
     def postprocess_single(self, inputs, *args, **kwargs):
         # TODO: filter results by score_threshold
