@@ -16,6 +16,8 @@ class BEVFormer(MVXTwoStageDetector):
     """BEVFormer.
     Args:
         video_test_mode (bool): Decide whether to use temporal information during inference.
+        extract_feat_serially (bool): Whether extract history features one by one,
+            to solve the problem of batchnorm corrupt when shape N is too large.
     """
 
     def __init__(self,
@@ -34,7 +36,8 @@ class BEVFormer(MVXTwoStageDetector):
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None,
-                 video_test_mode=False):
+                 video_test_mode=False,
+                 extract_feat_serially=False):
 
         super(BEVFormer,
               self).__init__(pts_voxel_layer, pts_voxel_encoder,
@@ -45,6 +48,7 @@ class BEVFormer(MVXTwoStageDetector):
         self.grid_mask = GridMask(
             True, True, rotate=1, offset=False, ratio=0.5, mode=1, prob=0.7)
         self.use_grid_mask = use_grid_mask
+        self.extract_feat_serially = extract_feat_serially
 
         # temporal
         self.video_test_mode = video_test_mode
@@ -131,6 +135,27 @@ class BEVFormer(MVXTwoStageDetector):
         dummy_metas = None
         return self.forward_test(img=img, img_metas=[[dummy_metas]])
 
+    def obtain_history_bev_serially(self, imgs_queue, img_metas_list):
+        """Obtain history BEV features iteratively.
+        Extract feature one by one to solve the problem of batchnorm corrupt when shape N is too large.
+        """
+        self.eval()
+
+        with torch.no_grad():
+            prev_bev = None
+            bs, len_queue, num_cams, C, H, W = imgs_queue.shape
+            for i in range(len_queue):
+                img_feats = self.extract_feat(
+                    img=imgs_queue[:, i, ...], len_queue=None)
+                img_metas = [each[i] for each in img_metas_list]
+                if not img_metas[0]['prev_bev_exists']:
+                    prev_bev = None
+                prev_bev = self.pts_bbox_head(
+                    img_feats, img_metas, prev_bev, only_bev=True)
+            self.train()
+
+            return prev_bev
+
     def obtain_history_bev(self, imgs_queue, img_metas_list):
         """Obtain history BEV features iteratively. To save GPU memory, gradients are not calculated.
         """
@@ -153,14 +178,13 @@ class BEVFormer(MVXTwoStageDetector):
             self.train()
             return prev_bev
 
-    def forward_train(
-        self,
-        img_metas=None,
-        gt_bboxes_3d=None,
-        gt_labels_3d=None,
-        img=None,
-        gt_bboxes_ignore=None,
-    ):
+    def forward_train(self,
+                      img_metas=None,
+                      gt_bboxes_3d=None,
+                      gt_labels_3d=None,
+                      img=None,
+                      gt_bboxes_ignore=None,
+                      **kwargs):
         """Forward training function.
         Args:
             points (list[torch.Tensor], optional): Points of each sample.
@@ -184,13 +208,24 @@ class BEVFormer(MVXTwoStageDetector):
         Returns:
             dict: Losses of different branches.
         """
-
+        for batch_i in range(len(img_metas)):
+            for i in range(len(img_metas[batch_i])):
+                img_metas[batch_i][i]['can_bus'] = kwargs['can_bus'][batch_i][
+                    i]
+                img_metas[batch_i][i]['lidar2img'] = kwargs['lidar2img'][
+                    batch_i][i]
+        del kwargs
         len_queue = img.size(1)
         prev_img = img[:, :-1, ...]
         img = img[:, -1, ...]
 
         prev_img_metas = copy.deepcopy(img_metas)
-        prev_bev = self.obtain_history_bev(prev_img, prev_img_metas)
+
+        if self.extract_feat_serially:
+            prev_bev = self.obtain_history_bev_serially(
+                prev_img, prev_img_metas)
+        else:
+            prev_bev = self.obtain_history_bev(prev_img, prev_img_metas)
 
         img_metas = [each[len_queue - 1] for each in img_metas]
         if not img_metas[0]['prev_bev_exists']:

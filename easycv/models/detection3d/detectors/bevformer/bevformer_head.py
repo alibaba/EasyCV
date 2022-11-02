@@ -394,7 +394,8 @@ class BEVFormerHead(AnchorFreeHead):
         bbox_weights[pos_inds] = 1.0
 
         # DETR
-        sampling_result.pos_gt_bboxes = sampling_result.pos_gt_bboxes.type_as(bbox_targets)
+        sampling_result.pos_gt_bboxes = sampling_result.pos_gt_bboxes.type_as(
+            bbox_targets)
         bbox_targets[pos_inds] = sampling_result.pos_gt_bboxes
         return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
                 neg_inds)

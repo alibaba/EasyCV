@@ -265,7 +265,10 @@ class BEVFormerLayer(BaseModule):
                 identity = query
 
             elif layer == 'norm':
+                # fix fp16
+                dtype = query.dtype
                 query = self.norms[norm_index](query)
+                query = query.to(dtype)
                 norm_index += 1
 
             # spaital cross attention
@@ -453,12 +456,9 @@ class BEVFormerEncoder(TransformerLayerSequence):
     # This function must use fp32!!!
     @force_fp32(apply_to=('reference_points', 'img_metas'))
     def point_sampling(self, reference_points, pc_range, img_metas):
+        lidar2img = torch.stack([meta['lidar2img'] for meta in img_metas
+                                 ]).to(reference_points.dtype)  # (B, N, 4, 4)
 
-        lidar2img = []
-        for img_meta in img_metas:
-            lidar2img.append(img_meta['lidar2img'])
-        lidar2img = np.asarray(lidar2img)
-        lidar2img = reference_points.new_tensor(lidar2img)  # (B, N, 4, 4)
         reference_points = reference_points.clone()
 
         reference_points[..., 0:1] = reference_points[..., 0:1] * \
@@ -707,26 +707,27 @@ class PerceptionTransformer(BaseModule):
         bev_pos = bev_pos.flatten(2).permute(2, 0, 1)
 
         # obtain rotation angle and shift with ego motion
-        delta_x = np.array(
+        delta_x = torch.stack(
             [each['can_bus'][0] for each in kwargs['img_metas']])
-        delta_y = np.array(
+        delta_y = torch.stack(
             [each['can_bus'][1] for each in kwargs['img_metas']])
-        ego_angle = np.array([
+        ego_angle = torch.stack([
             each['can_bus'][-2] / np.pi * 180 for each in kwargs['img_metas']
         ])
         grid_length_y = grid_length[0]
         grid_length_x = grid_length[1]
-        translation_length = np.sqrt(delta_x**2 + delta_y**2)
-        translation_angle = np.arctan2(delta_y, delta_x) / np.pi * 180
+        translation_length = torch.sqrt(delta_x**2 + delta_y**2)
+        translation_angle = torch.atan2(delta_y, delta_x) / np.pi * 180
         bev_angle = ego_angle - translation_angle
         shift_y = translation_length * \
-            np.cos(bev_angle / 180 * np.pi) / grid_length_y / bev_h
+            torch.cos(bev_angle / 180 * np.pi) / grid_length_y / bev_h
         shift_x = translation_length * \
-            np.sin(bev_angle / 180 * np.pi) / grid_length_x / bev_w
+            torch.sin(bev_angle / 180 * np.pi) / grid_length_x / bev_w
+
         shift_y = shift_y * self.use_shift
         shift_x = shift_x * self.use_shift
-        shift = bev_queries.new_tensor([shift_x, shift_y
-                                        ]).permute(1, 0)  # xy, bs -> bs, xy
+        shift = torch.stack([shift_x,
+                             shift_y]).permute(1, 0).to(bev_queries.dtype)
 
         if prev_bev is not None:
             if prev_bev.shape[1] == bev_h * bev_w:
@@ -735,6 +736,8 @@ class PerceptionTransformer(BaseModule):
                 for i in range(bs):
                     # num_prev_bev = prev_bev.size(1)
                     rotation_angle = kwargs['img_metas'][i]['can_bus'][-1]
+                    rotation_angle = float(
+                        rotation_angle.detach().cpu().numpy())
                     tmp_prev_bev = prev_bev[:, i].reshape(bev_h, bev_w,
                                                           -1).permute(2, 0, 1)
                     tmp_prev_bev = rotate(
@@ -746,9 +749,12 @@ class PerceptionTransformer(BaseModule):
                     prev_bev[:, i] = tmp_prev_bev[:, 0]
 
         # add can bus signals
-        can_bus = bev_queries.new_tensor(
-            [each['can_bus'] for each in kwargs['img_metas']])  # [:, :]
+        can_bus = torch.stack([
+            each['can_bus'] for each in kwargs['img_metas']
+        ]).to(bev_queries.dtype)
         can_bus = self.can_bus_mlp(can_bus)[None, :, :]
+        # fix fp16
+        can_bus = can_bus.to(bev_queries.dtype)
         bev_queries = bev_queries + can_bus * self.use_can_bus
 
         feat_flatten = []

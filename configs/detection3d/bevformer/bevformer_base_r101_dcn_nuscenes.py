@@ -217,6 +217,7 @@ test_pipeline = [
 data = dict(
     imgs_per_gpu=1,  # 8gpus, total batch size=8
     workers_per_gpu=4,
+    pin_memory=True,
     # shuffler_sampler=dict(type='DistributedGroupSampler'),
     # nonshuffler_sampler=dict(type='DistributedSampler'),
     train=dict(
@@ -226,7 +227,10 @@ data = dict(
             data_root=data_root,
             ann_file=data_root + 'nuscenes_infos_temporal_train.pkl',
             pipeline=[
-                dict(type='LoadMultiViewImageFromFiles', to_float32=True),
+                dict(
+                    type='LoadMultiViewImageFromFiles',
+                    to_float32=True,
+                    backend='turbojpeg'),
                 dict(
                     type='LoadAnnotations3D',
                     with_bbox_3d=True,
@@ -251,7 +255,10 @@ data = dict(
             data_root=data_root,
             ann_file=data_root + 'nuscenes_infos_temporal_val.pkl',
             pipeline=[
-                dict(type='LoadMultiViewImageFromFiles', to_float32=True)
+                dict(
+                    type='LoadMultiViewImageFromFiles',
+                    to_float32=True,
+                    backend='turbojpeg')
             ],
             classes=CLASSES,
             modality=input_modality,

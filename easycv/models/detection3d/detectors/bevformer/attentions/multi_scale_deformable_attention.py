@@ -216,25 +216,23 @@ class CustomMSDeformableAttention(BaseModule):
             if not torch.jit.is_scripting() and not torch.jit.is_tracing():
                 if value.dtype == torch.float16:
                     # for mixed precision
+                    assert value.size(0) % min(
+                        value.size(0), self.im2col_step) == 0
                     output = MSDeformAttnFunction.apply(
-                        value.to(torch.float32), spatial_shapes, level_start_index,
-                        sampling_locations.to(torch.float32), attention_weights,
-                        self.im2col_step)
+                        value.to(torch.float32),
+                        spatial_shapes, level_start_index,
+                        sampling_locations.to(torch.float32),
+                        attention_weights, self.im2col_step)
                     output = output.to(torch.float16)
                 else:
-                    output = MSDeformAttnFunction.apply(value, spatial_shapes,
-                                                        level_start_index,
-                                                        sampling_locations,
-                                                        attention_weights,
-                                                        self.im2col_step)
+                    output = MSDeformAttnFunction.apply(
+                        value, spatial_shapes, level_start_index,
+                        sampling_locations, attention_weights,
+                        self.im2col_step)
             else:
                 output = torch.ops.custom.ms_deform_attn(
-                    value, spatial_shapes,
-                    level_start_index,
-                    sampling_locations,
-                    attention_weights,
-                    self.im2col_step
-                )
+                    value, spatial_shapes, level_start_index,
+                    sampling_locations, attention_weights, self.im2col_step)
         else:
             output = multi_scale_deformable_attn_pytorch(
                 value, spatial_shapes, sampling_locations, attention_weights)

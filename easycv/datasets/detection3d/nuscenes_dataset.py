@@ -1,6 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import concurrent.futures
 import copy
+import logging
 import random
 import tempfile
 from os import path as osp
@@ -14,6 +16,7 @@ from easycv.core.bbox import Box3DMode, Coord3DMode
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
 from easycv.datasets.shared.pipelines import Compose
+from easycv.datasets.shared.pipelines.format import to_tensor
 from .utils import extract_result_dict
 
 
@@ -309,6 +312,9 @@ class NuScenesDataset(BaseDataset):
         prev_scene_token = None
         prev_pos = None
         prev_angle = None
+
+        can_bus_list = []
+        lidar2img_list = []
         for i, each in enumerate(queue):
             metas_map[i] = each['img_metas'].data
             if metas_map[i]['scene_token'] != prev_scene_token:
@@ -326,11 +332,31 @@ class NuScenesDataset(BaseDataset):
                 metas_map[i]['can_bus'][-1] -= prev_angle
                 prev_pos = copy.deepcopy(tmp_pos)
                 prev_angle = copy.deepcopy(tmp_angle)
+
+            can_bus_list.append(to_tensor(metas_map[i]['can_bus']))
+            lidar2img_list.append(to_tensor(metas_map[i]['lidar2img']))
+
         queue[-1]['img'] = DC(
             torch.stack(imgs_list), cpu_only=False, stack=True)
         queue[-1]['img_metas'] = DC(metas_map, cpu_only=True)
+        queue[-1]['can_bus'] = DC(torch.stack(can_bus_list), cpu_only=False)
+        queue[-1]['lidar2img'] = DC(
+            torch.stack(lidar2img_list), cpu_only=False)
         queue = queue[-1]
         return queue
+
+    @staticmethod
+    def _get_single_data(i, data_source, pipeline):
+        i = max(0, i)
+        try:
+            data = data_source[i]
+            data = pipeline(data)
+            if data is None or ~(data['gt_labels_3d']._data != -1).any():
+                return None
+        except Exception as e:
+            logging.error(e)
+            return None
+        return i, data
 
     def _get_queue_data(self, idx):
         queue = []
@@ -338,16 +364,24 @@ class NuScenesDataset(BaseDataset):
         random.shuffle(idx_list)
         idx_list = sorted(idx_list[1:])
         idx_list.append(idx)
-        for i in idx_list:
-            i = max(0, i)
-            try:
-                data = self.data_source[i]
-                data = self.pipeline(data)
-                if data is None or ~(data['gt_labels_3d']._data != -1).any():
-                    return None
-            except Exception as e:
-                return None
-            queue.append(data)
+
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=len(idx_list)) as executor:
+            threads = []
+            for i in idx_list:
+                future = executor.submit(self._get_single_data, i,
+                                         self.data_source, self.pipeline)
+                threads.append(future)
+
+            for future in concurrent.futures.as_completed(threads):
+                queue.append(future.result())
+
+        if None in queue:
+            return None
+
+        queue = sorted(queue, key=lambda item: item[0])
+        queue = [item[1] for item in queue]
+
         return self.union2one(queue)
 
     def __getitem__(self, idx):

@@ -41,6 +41,7 @@ model = dict(
     type='BEVFormer',
     use_grid_mask=True,
     video_test_mode=True,
+    extract_feat_serially=True,
     pretrained=dict(img='torchvision://resnet50'),
     img_backbone=dict(
         type='ResNet',
@@ -179,11 +180,12 @@ dataset_type = 'NuScenesDataset'
 data_root = 'data/nuScenes/nuscenes-v1.0/'
 
 train_pipeline = [
+    dict(type='RandomScaleImageMultiViewImage', scales=[0.5]),
     dict(type='PhotoMetricDistortionMultiViewImage'),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=CLASSES),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
-    dict(type='RandomScaleImageMultiViewImage', scales=[0.5]),
+    # dict(type='RandomScaleImageMultiViewImage', scales=[0.5]),
     dict(type='PadMultiViewImage', size_divisor=32),
     dict(type='DefaultFormatBundle3D', class_names=CLASSES),
     dict(
@@ -228,6 +230,7 @@ test_pipeline = [
 data = dict(
     imgs_per_gpu=1,  # 8gpus, total batch size=8
     workers_per_gpu=4,
+    pin_memory=True,
     # shuffler_sampler=dict(type='DistributedGroupSampler'),
     # nonshuffler_sampler=dict(type='DistributedSampler'),
     train=dict(
@@ -237,7 +240,10 @@ data = dict(
             data_root=data_root,
             ann_file=data_root + 'nuscenes_infos_temporal_train.pkl',
             pipeline=[
-                dict(type='LoadMultiViewImageFromFiles', to_float32=True),
+                dict(
+                    type='LoadMultiViewImageFromFiles',
+                    to_float32=True,
+                    backend='turbojpeg'),
                 dict(
                     type='LoadAnnotations3D',
                     with_bbox_3d=True,
@@ -262,7 +268,10 @@ data = dict(
             data_root=data_root,
             ann_file=data_root + 'nuscenes_infos_temporal_val.pkl',
             pipeline=[
-                dict(type='LoadMultiViewImageFromFiles', to_float32=True)
+                dict(
+                    type='LoadMultiViewImageFromFiles',
+                    to_float32=True,
+                    backend='turbojpeg')
             ],
             classes=CLASSES,
             modality=input_modality,
