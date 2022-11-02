@@ -7,8 +7,9 @@ from multiprocessing import cpu_count
 import numpy as np
 
 from easycv.datasets.detection.data_sources.base import DetSourceBase
-from easycv.datasets.download_data.download_voc import download_voc
 from easycv.datasets.registry import DATASOURCES
+from easycv.datasets.utils.download_data.download_voc import (
+    check_data_exists, download_voc)
 from easycv.file import io
 
 img_formats = ['.bmp', '.jpg', '.jpeg', '.png', '.tif', '.tiff', '.dng']
@@ -199,8 +200,7 @@ class DetSourceVOC2012(DetSourceVOC):
         else:
             if path:
                 assert os.path.isdir(path), f'{path} is not dir'
-                path = download_voc(
-                    'voc2012', split=split, target_dir=path)['path']
+                path = check_data_exists('voc2012', path, split)['path']
             else:
                 raise KeyError('your path is None')
 
@@ -265,8 +265,7 @@ class DetSourceVOC2007(DetSourceVOC):
         else:
             if path:
                 assert os.path.isdir(path), f'{path} is not dir'
-                path = download_voc(
-                    'voc2007', split=split, target_dir=path)['path']
+                path = check_data_exists('voc2007', path, split)['path']
             else:
                 raise KeyError('your path is None')
 

@@ -4,9 +4,10 @@ import os
 import numpy as np
 from xtcocotools.coco import COCO
 
-from easycv.datasets.download_data.download_coco import download_coco
 from easycv.datasets.registry import DATASOURCES, PIPELINES
 from easycv.datasets.shared.pipelines import Compose
+from easycv.datasets.utils.download_data.download_coco import (
+    check_data_exists, download_coco)
 from easycv.framework.errors import TypeError
 from easycv.utils.registry import build_from_cfg
 
@@ -361,8 +362,8 @@ class DetSourceCoco2017(DetSourceCoco):
         else:
             if path:
                 assert os.path.isdir(path), f'{path} is not dir'
-                path = download_coco(
-                    'coco2017', split=split, target_dir=path, task='detection')
+                path = check_data_exists(
+                    target_dir=path, split=split, task='detection')
             else:
                 raise KeyError('your path is None')
 

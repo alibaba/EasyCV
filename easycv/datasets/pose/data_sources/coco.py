@@ -6,8 +6,9 @@ import os
 import json_tricks as json
 import numpy as np
 
-from easycv.datasets.download_data.download_coco import download_coco
 from easycv.datasets.registry import DATASOURCES
+from easycv.datasets.utils.download_data.download_coco import (
+    check_data_exists, download_coco)
 from easycv.framework.errors import ValueError
 from .top_down import PoseTopDownSource
 
@@ -341,8 +342,7 @@ class PoseTopDownSourceCoco2017(PoseTopDownSourceCoco):
                 path = download_coco('coco2017', split=split, task='pose')
         else:
             if os.path.isdir(path):
-                path = download_coco(
-                    'coco2017', split=split, target_dir=path, task='pose')
+                path = check_data_exists(path, split, 'pose')
             else:
                 raise KeyError('your path is None')
 
