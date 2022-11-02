@@ -60,18 +60,20 @@ jobs:
           export OSS_CONFIG_FILE=$UNITTEST_OSS_CONFIG
           export TEST_DIR="/tmp/easycv_test_${USER}_`date +%s`"
 
-          pip uninstall -y pai-easycv
-          python setup.py install
-          # move source code, ensure import easycv from site-package
-          mv ./easycv ./easycv_src
-
           # do not uncomments, casue faild in Online UT, install requirements by yourself on UT machine
           # pip install -r requirements.txt
           #run test
           export CUDA_VISIBLE_DEVICES=7
           source ~/workspace/anaconda2/etc/profile.d/conda.sh
           conda activate evtorch_torch1.8.0
-          PYTHONPATH=. python tests/run.py
+
+          # pip install pai-easycv
+          pip uninstall -y pai-easycv
+          python setup.py install
+          # move source code, ensure import easycv from site-package
+          mv ./easycv ./easycv_src
+
+          python tests/run.py
 
 
 # blade test env will be updated! we do not support test with trt_efficient_nms
