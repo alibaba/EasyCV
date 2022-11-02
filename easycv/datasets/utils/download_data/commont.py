@@ -10,7 +10,7 @@ from easycv.utils.constant import CACHE_DIR
 
 def download(link, target_dir=CACHE_DIR):
     file_name = wget.filename_from_url(link)
-    # 查看是否有压缩包，无压缩包的话下载压缩包
+    # Check whether the compressed package exists. If no, download the compressed package
     if not os.path.exists(os.path.join(target_dir, file_name)):
         try:
             print(f'{file_name} is start downlaod........')
