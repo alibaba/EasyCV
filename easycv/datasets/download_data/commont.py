@@ -25,18 +25,6 @@ def download(link, target_dir=CACHE_DIR):
     return os.path.join(target_dir, file_name)
 
 
-def extract(name, file, target_dir=CACHE_DIR):
-    if name == 'coco2017':
-        save_dir = os.path.join(target_dir, name.upper())
-        os.makedirs(save_dir, exist_ok=True)
-        cmd = f'unzip -d {save_dir} {file}'
-    else:
-        cmd = f'tar -xvf {file} -C {target_dir}'
-    print('begin Unpack.....................')
-    os.system(cmd)
-    print('Unpack is finished.....................')
-
-
 def check_path_exists(map_path):
     for value in map_path.values():
         assert os.path.exists(value), f'{value} is not exists'

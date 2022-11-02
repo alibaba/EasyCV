@@ -27,6 +27,25 @@ def get_images_list(txt_path):
 class ClsSourceImageNet1k(object):
 
     def __init__(self, root, split):
+        """
+        Args:
+            root: The root directory of the data
+                    example：if data/imagenet
+                                └── train
+                                    └── n01440764
+                                    └── n01443537
+                                    └── ...
+                                └── val
+                                    └── n01440764
+                                    └── n01443537
+                                    └── ...
+                                └── meta
+                                    ├── train.txt
+                                    ├── val.txt
+                                    ├── ...
+                                has input root = data/imagenet
+            split : train  or val
+        """
         self.root = root
         assert split in ['train', 'test']
         if split == 'train':

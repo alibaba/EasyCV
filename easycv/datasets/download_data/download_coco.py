@@ -4,7 +4,7 @@ import glob
 import os
 
 from easycv.utils.constant import CACHE_DIR
-from .commont import check_path_exists, download, extract
+from .commont import check_path_exists, download
 
 cfg = dict(
     coco2017=[
@@ -21,6 +21,17 @@ cfg = dict(
     pose=dict(
         train='person_keypoints_train2017.json',
         val='person_keypoints_val2017.json'))
+
+
+# xtract the data
+def extract(file, target_dir=CACHE_DIR):
+
+    save_dir = os.path.join(target_dir, 'COCO2017')
+    os.makedirs(save_dir, exist_ok=True)
+    cmd = f'unzip -d {save_dir} {file}'
+    print('begin Unpack.....................')
+    os.system(cmd)
+    print('Unpack is finished.....................')
 
 
 # return output dir
@@ -42,21 +53,27 @@ def regularization_path(name, target_dir=CACHE_DIR):
     return os.path.join(target_dir, name.upper())
 
 
-def download_coco(name, split='train', target_dir=CACHE_DIR, task='detection'):
-
-    root_path = os.path.join(target_dir, name.upper())
-    # 查看此根目录路径是否存在
+# Check whether the data exists
+def check_data_exists(target_dir, split, task):
+    root_path = os.path.join(target_dir, 'COCO2017')
     if os.path.exists(root_path):
         return process_coco(root_path, split=split, task=task)
+    else:
+        return False
+
+
+def download_coco(name, split='train', target_dir=CACHE_DIR, task='detection'):
+    if check_data_exists(target_dir, split, task):
+        return check_data_exists(target_dir, split, task)
 
     download_finished = list()
     for link in cfg.get(name):
         download_finished.append(download(link, target_dir=target_dir))
 
     for file_path in download_finished:
-        extract(name, file_path, target_dir=target_dir)
+        extract(file_path, target_dir=target_dir)
 
-    # 规范化路径
+    # Path of regularization
     path = regularization_path(name, target_dir=target_dir)
 
     return process_coco(path, split=split, task=task)
