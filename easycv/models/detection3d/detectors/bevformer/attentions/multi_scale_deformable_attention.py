@@ -212,7 +212,7 @@ class CustomMSDeformableAttention(BaseModule):
             reference_points, spatial_shapes, sampling_offsets)
 
         if torch.cuda.is_available() and value.is_cuda:
-            from thirdparty.deformable_attention.functions import MSDeformAttnFunction
+            from easycv.thirdparty.deformable_attention.functions import MSDeformAttnFunction
             if not torch.jit.is_scripting() and not torch.jit.is_tracing():
                 if value.dtype == torch.float16:
                     # for mixed precision

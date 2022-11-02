@@ -89,6 +89,7 @@ class YOLOX(BaseModel):
         self.nms_thre = nms_thre
         self.use_trt_efficientnms = False  # TRT NMS only will be convert during export
         self.trt_efficientnms = None
+        self.export_type = 'raw'  # export type will be convert during export
 
     def get_nmsboxes_num(self, img_scale=(640, 640)):
         """ Detection neck or head should provide nms box count information
@@ -212,8 +213,13 @@ class YOLOX(BaseModel):
                         logging.error(
                             'PAI-YOLOX : using trt_efficientnms set to be True, but model has not attr(trt_efficientnms)'
                         )
-                # else:
-                #     outputs = postprocess(outputs, self.num_classes,
-                #                           self.test_conf, self.nms_thre)
+                else:
+                    if self.export_type == 'jit':
+                        outputs = postprocess(outputs, self.num_classes,
+                                              self.test_conf, self.nms_thre)
+                    else:
+                        logging.warning(
+                            'PAI-YOLOX : export Blade model is not allowed to wrap the postprocess into jit script model'
+                        )
 
         return outputs
