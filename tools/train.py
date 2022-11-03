@@ -25,6 +25,7 @@ import requests
 import torch
 import torch.distributed as dist
 from mmcv.runner import init_dist
+from mmcv import DictAction
 
 from easycv import __version__
 from easycv.apis import init_random_seed, set_random_seed, train_model
@@ -36,8 +37,7 @@ from easycv.utils.collect_env import collect_env
 from easycv.utils.logger import get_root_logger
 from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
 from easycv.utils.config_tools import (traverse_replace, CONFIG_TEMPLATE_ZOO,
-                                       mmcv_config_fromfile, rebuild_config,
-                                       DictAction)
+                                       mmcv_config_fromfile, rebuild_config)
 from easycv.utils.dist_utils import get_device
 from easycv.utils.setup_env import setup_multi_processes
 
