@@ -197,8 +197,11 @@ def grouping_params(user_config_params):
 # gen mmcv.Config
 def mmcv_config_fromfile(ori_filename, user_config_params=None):
     # grouping params
-    first_order_params, multi_order_params = grouping_params(
-        user_config_params)
+    if user_config_params:
+        first_order_params, multi_order_params = grouping_params(
+            user_config_params)
+    else:
+        first_order_params, multi_order_params = None, None
 
     # replace first-order parameters
     cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename, first_order_params)
@@ -209,7 +212,8 @@ def mmcv_config_fromfile(ori_filename, user_config_params=None):
     cfg = Config(cfg_dict, cfg_text=cfg_text, filename=ori_filename)
 
     # replace multi-order parameters
-    cfg.merge_from_dict(multi_order_params)
+    if multi_order_params:
+        cfg.merge_from_dict(multi_order_params)
     return cfg
 
 
