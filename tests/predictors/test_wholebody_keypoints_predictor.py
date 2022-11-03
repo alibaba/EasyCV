@@ -2,11 +2,13 @@
 
 import unittest
 
+from ut_config import (PRETRAINED_MODEL_WHOLEBODY,
+                       PRETRAINED_MODEL_WHOLEBODY_DETECTION)
+
 from easycv.predictors.wholebody_keypoints_predictor import \
     WholeBodyKeypointsPredictor
-from easycv.utils.config_tools import mmcv_config_fromfile
 
-DEFAULT_WHOLEBODY_DETECTION_MODEL_PATH = 'data/test/pose/wholebody/models/epoch_290.pth'
+DEFAULT_WHOLEBODY_DETECTION_MODEL_PATH = PRETRAINED_MODEL_WHOLEBODY_DETECTION
 DEFAULT_WHOLEBODY_DETECTION_CONFIG_FILE = 'configs/detection/yolox/yolox_x_8xb8_300e_coco.py'
 
 
@@ -16,7 +18,7 @@ class WholeBodyKeypointsPredictorTest(unittest.TestCase):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
         self.image_path = 'data/test/pose/wholebody/data/img_test_wholebody.jpg'
         self.save_image_path = 'img_test_wholebody_ret.jpg'
-        self.model_path = 'data/test/pose/wholebody/models/hrnet_w48_coco_wholebody_384x288_dark-f5726563_20200918.pth'
+        self.model_path = PRETRAINED_MODEL_WHOLEBODY
         self.model_config_path = 'configs/pose/wholebody/hrnet_w48_coco_wholebody_384x288_dark_plus.py'
 
     def test_single(self):
