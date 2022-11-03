@@ -7,8 +7,7 @@ from ut_config import PRETRAINED_MODEL_HAND_KEYPOINTS
 from easycv.predictors.hand_keypoints_predictor import HandKeypointsPredictor
 from easycv.utils.config_tools import mmcv_config_fromfile
 
-MM_DEFAULT_HAND_DETECTION_SSDLITE_MODEL_PATH = 'https://download.openmmlab.com/mmpose/mmdet_pretrained/' \
-                                               'ssdlite_mobilenetv2_scratch_600e_onehand-4f9f8686_20220523.pth'
+MM_DEFAULT_HAND_DETECTION_SSDLITE_MODEL_PATH = 'https://download.openmmlab.com/mmpose/mmdet_pretrained/ssdlite_mobilenetv2_scratch_600e_onehand-4f9f8686_20220523.pth'
 MM_DEFAULT_HAND_DETECTION_SSDLITE_CONFIG_FILE = 'data/test/pose/hand/configs/hand_keypoints_predictor.py'
 
 
