@@ -53,10 +53,10 @@ class EasyCVConfig(Config):
                 if first_order_params and key in first_order_params:
                     value = first_order_params[key]
                     # repr() is used to convert the data into a string form (in the form of a Python expression) suitable for the interpreter to read
-                    line = ' '.join([key, '=', repr(value)])
+                    line = ' '.join([key, '=', repr(value)]) + '\n'
 
                 line_list.append(line)
-            config_file = '\n'.join(line_list)
+            config_file = ''.join(line_list)
 
         for key, value in support_templates.items():
             regexp = r'\{\{\s*' + str(key) + r'\s*\}\}'
