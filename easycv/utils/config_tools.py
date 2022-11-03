@@ -3,6 +3,7 @@ import os.path as osp
 import platform
 import sys
 import tempfile
+from argparse import Action
 from importlib import import_module
 
 from mmcv import Config, import_modules_from_strings
@@ -14,6 +15,102 @@ if platform.system() == 'Windows':
     import regex as re
 else:
     import re
+
+
+class DictAction(Action):
+    """
+    argparse action to split an argument into KEY=VALUE form
+    on the first = and append to a dictionary. List options can
+    be passed as comma separated values, i.e 'KEY=V1,V2,V3', or with explicit
+    brackets, i.e. 'KEY=[V1,V2,V3]'. It also support nested brackets to build
+    list/tuple values. e.g. 'KEY=[(V1,V2),(V3,V4)]'
+    """
+
+    @staticmethod
+    def _parse_int_float_bool(val):
+        try:
+            return int(val)
+        except ValueError:
+            pass
+        try:
+            return float(val)
+        except ValueError:
+            pass
+        if val.lower() in ['true', 'false']:
+            return True if val.lower() == 'true' else False
+        if val == 'None':
+            return None
+        return val
+
+    @staticmethod
+    def _parse_iterable(val):
+        """Parse iterable values in the string.
+
+        All elements inside '()' or '[]' are treated as iterable values.
+
+        Args:
+            val (str): Value string.
+
+        Returns:
+            list | tuple: The expanded list or tuple from the string.
+
+        Examples:
+            >>> DictAction._parse_iterable('1,2,3')
+            [1, 2, 3]
+            >>> DictAction._parse_iterable('[a, b, c]')
+            ['a', 'b', 'c']
+            >>> DictAction._parse_iterable('[(1, 2, 3), [a, b], c]')
+            [(1, 2, 3), ['a', 'b'], 'c']
+        """
+
+        def find_next_comma(string):
+            """Find the position of next comma in the string.
+
+            If no ',' is found in the string, return the string length. All
+            chars inside '()' and '[]' are treated as one element and thus ','
+            inside these brackets are ignored.
+            """
+            assert (string.count('(') == string.count(')')) and (
+                    string.count('[') == string.count(']')), \
+                f'Imbalanced brackets exist in {string}'
+            end = len(string)
+            for idx, char in enumerate(string):
+                pre = string[:idx]
+                # The string before this ',' is balanced
+                if ((char == ',') and (pre.count('(') == pre.count(')'))
+                        and (pre.count('[') == pre.count(']'))):
+                    end = idx
+                    break
+            return end
+
+        # Strip ' and " characters and replace whitespace.
+        val = val.strip('\'\"').replace(' ', '')
+        is_tuple = False
+        if val.startswith('(') and val.endswith(')'):
+            is_tuple = True
+            val = val[1:-1]
+        elif val.startswith('[') and val.endswith(']'):
+            val = val[1:-1]
+        elif ',' not in val:
+            # val is a single value
+            return DictAction._parse_int_float_bool(val)
+
+        values = []
+        while len(val) > 0:
+            comma_idx = find_next_comma(val)
+            element = DictAction._parse_iterable(val[:comma_idx])
+            values.append(element)
+            val = val[comma_idx + 1:]
+        if is_tuple:
+            values = tuple(values)
+        return values
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        options = {}
+        for kv in values:
+            key, val = kv.split('=', maxsplit=1)
+            options[key] = self._parse_iterable(val)
+        setattr(namespace, self.dest, options)
 
 
 def traverse_replace(d, key, value):
@@ -28,7 +125,61 @@ def traverse_replace(d, key, value):
             traverse_replace(v, key, value)
 
 
-BASE_KEY = '_base_'
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        pass
+
+    try:
+        import unicodedata
+        unicodedata.numeric(s)
+        return True
+    except (TypeError, ValueError):
+        pass
+
+    return False
+
+
+class EasyCVConfig(Config):
+
+    @staticmethod
+    def _substitute_predefined_vars(filename,
+                                    temp_config_name,
+                                    first_order_params=None):
+        file_dirname = osp.dirname(filename)
+        file_basename = osp.basename(filename)
+        file_basename_no_extension = osp.splitext(file_basename)[0]
+        file_extname = osp.splitext(filename)[1]
+        support_templates = dict(
+            fileDirname=file_dirname,
+            fileBasename=file_basename,
+            fileBasenameNoExtension=file_basename_no_extension,
+            fileExtname=file_extname)
+        with open(filename, encoding='utf-8') as f:
+            # Setting encoding explicitly to resolve coding issue on windows
+            line_list = []
+            for line in f:
+                key = line.split('=')[0].strip()
+
+                # replace first order params
+                if first_order_params and key in first_order_params:
+                    value = first_order_params[key]
+                    if is_number(value):
+                        line = ' '.join([key, '=', value])
+                    else:
+                        line = ' '.join([key, '=', repr(value)])
+
+                line_list.append(line)
+            config_file = '\n'.join(line_list)
+
+        for key, value in support_templates.items():
+            regexp = r'\{\{\s*' + str(key) + r'\s*\}\}'
+            value = value.replace('\\', '/')
+            config_file = re.sub(regexp, value, config_file)
+        with open(temp_config_name, 'w', encoding='utf-8') as tmp_config_file:
+            tmp_config_file.write(config_file)
 
 
 # To find base cfg in 'easycv/configs/', base_cfg_name should be 'configs/xx/xx.py'
@@ -63,7 +214,7 @@ def check_base_cfg_path(base_cfg_name='configs/base.py', ori_filename=None):
 
 
 # Read config without __base__
-def mmcv_file2dict_raw(ori_filename):
+def mmcv_file2dict_raw(ori_filename, first_order_params=None):
     filename = osp.abspath(osp.expanduser(ori_filename))
     if not osp.isfile(filename):
         if ori_filename.startswith('configs/'):
@@ -82,7 +233,9 @@ def mmcv_file2dict_raw(ori_filename):
         if platform.system() == 'Windows':
             temp_config_file.close()
         temp_config_name = osp.basename(temp_config_file.name)
-        Config._substitute_predefined_vars(filename, temp_config_file.name)
+        EasyCVConfig._substitute_predefined_vars(filename,
+                                                 temp_config_file.name,
+                                                 first_order_params)
         if filename.endswith('.py'):
             temp_module_name = osp.splitext(temp_config_name)[0]
             sys.path.insert(0, temp_config_dir)
@@ -110,9 +263,10 @@ def mmcv_file2dict_raw(ori_filename):
 
 
 # Reac config with __base__
-def mmcv_file2dict_base(ori_filename):
-    cfg_dict, cfg_text = mmcv_file2dict_raw(ori_filename)
+def mmcv_file2dict_base(ori_filename, first_order_params=None):
+    cfg_dict, cfg_text = mmcv_file2dict_raw(ori_filename, first_order_params)
 
+    BASE_KEY = '_base_'
     if BASE_KEY in cfg_dict:
         # cfg_dir = osp.dirname(filename)
         base_filename = cfg_dict.pop(BASE_KEY)
@@ -123,7 +277,8 @@ def mmcv_file2dict_base(ori_filename):
         cfg_text_list = list()
         for f in base_filename:
             base_cfg_path = check_base_cfg_path(f, ori_filename)
-            _cfg_dict, _cfg_text = mmcv_file2dict_base(base_cfg_path)
+            _cfg_dict, _cfg_text = mmcv_file2dict_base(base_cfg_path,
+                                                       first_order_params)
             cfg_dict_list.append(_cfg_dict)
             cfg_text_list.append(_cfg_text)
 
@@ -143,15 +298,35 @@ def mmcv_file2dict_base(ori_filename):
     return cfg_dict, cfg_text
 
 
-# gen mmcv.Config
-def mmcv_config_fromfile(ori_filename):
+def grouping_params(user_config_params):
+    first_order_params, multi_order_params = {}, {}
+    for full_key, v in user_config_params.items():
+        key_list = full_key.split('.')
+        if len(key_list) == 1:
+            first_order_params[full_key] = v
+        else:
+            multi_order_params[full_key] = v
 
-    cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename)
+    return first_order_params, multi_order_params
+
+
+# gen mmcv.Config
+def mmcv_config_fromfile(ori_filename, user_config_params=None):
+    # grouping params
+    first_order_params, multi_order_params = grouping_params(
+        user_config_params)
+
+    # replace first-order parameters
+    cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename, first_order_params)
 
     if cfg_dict.get('custom_imports', None):
         import_modules_from_strings(**cfg_dict['custom_imports'])
 
-    return Config(cfg_dict, cfg_text=cfg_text, filename=ori_filename)
+    cfg = Config(cfg_dict, cfg_text=cfg_text, filename=ori_filename)
+
+    # replace multi-order parameters
+    cfg.merge_from_dict(multi_order_params)
+    return cfg
 
 
 # get the true value for ori_key in cfg_dict
