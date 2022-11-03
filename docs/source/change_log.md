@@ -11,6 +11,10 @@
 - Support face 2d keypoint detection ([#191](https://github.com/alibaba/EasyCV/pull/191))
 - Support hand keypoints detection ([#191](https://github.com/alibaba/EasyCV/pull/191))
 - Support wholebody keypoint detection ([#207](https://github.com/alibaba/EasyCV/pull/207))
+- Support auto hyperparameter optimization of NNI ([#211](https://github.com/alibaba/EasyCV/pull/211))
+- Add DeiT III ([#171](https://github.com/alibaba/EasyCV/pull/171))
+- Add semantic segmentation model SegFormer ([#191](https://github.com/alibaba/EasyCV/pull/191))
+- Add 3d detection model BEVFormer ([#203](https://github.com/alibaba/EasyCV/pull/203))
 
 ## Improvements
 - Optimze predcitor apis, support cpu and batch inference ([#195](https://github.com/alibaba/EasyCV/pull/195))
