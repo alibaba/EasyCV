@@ -125,23 +125,6 @@ def traverse_replace(d, key, value):
             traverse_replace(v, key, value)
 
 
-def is_number(s):
-    try:
-        float(s)
-        return True
-    except ValueError:
-        pass
-
-    try:
-        import unicodedata
-        unicodedata.numeric(s)
-        return True
-    except (TypeError, ValueError):
-        pass
-
-    return False
-
-
 class EasyCVConfig(Config):
 
     @staticmethod
@@ -166,10 +149,8 @@ class EasyCVConfig(Config):
                 # replace first order params
                 if first_order_params and key in first_order_params:
                     value = first_order_params[key]
-                    if is_number(value):
-                        line = ' '.join([key, '=', value])
-                    else:
-                        line = ' '.join([key, '=', repr(value)])
+                    # repr() is used to convert the data into a string form (in the form of a Python expression) suitable for the interpreter to read
+                    line = ' '.join([key, '=', repr(value)])
 
                 line_list.append(line)
             config_file = '\n'.join(line_list)

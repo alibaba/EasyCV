@@ -100,7 +100,7 @@ def parse_args():
         'be overwritten is a list, it should be like key="[a,b]" or key=a,b '
         'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
         'Note that the quotation marks are necessary and that no white space '
-        'is allowed.')
+        'is allowed. Single quote double quote equivalent.')
 
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
