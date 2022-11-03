@@ -236,7 +236,7 @@ class VisionTransformer(nn.Module):
                 hydra_attention_layers = depth
             elif hydra_attention_layers > depth:
                 raise ValueError(
-                    'When using Hydra Attention, hydra_attention_Layers must be smaller than depth.'
+                    'When using Hydra Attention, hydra_attention_Layers must be smaller than or equal to depth.'
                 )
 
         self.num_features = self.embed_dim = embed_dim
