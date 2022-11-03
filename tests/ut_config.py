@@ -58,6 +58,10 @@ DET_DATA_SMALL_COCO_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                          'data/detection/small_coco')
 DET_DATA_COCO2017_DOWNLOAD = os.path.join(BASE_LOCAL_PATH, 'download_local/')
 VOC_DATASET_DOWNLOAD_LOCAL = os.path.join(BASE_LOCAL_PATH, 'download_local')
+VOC_DATASET_DOWNLOAD_SMALL = os.path.join(BASE_LOCAL_PATH,
+                                          'download_local/small_download')
+COCO_DATASET_DOWNLOAD_SMALL = os.path.join(BASE_LOCAL_PATH,
+                                           'download_local/small_download')
 CONFIG_PATH = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
 
 DET_DATA_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/detection/raw_data')

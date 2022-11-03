@@ -5,11 +5,13 @@ import unittest
 
 import numpy as np
 from tests.ut_config import (DET_DATA_SMALL_VOC_LOCAL, VOC_CLASSES,
-                             VOC_DATASET_DOWNLOAD_LOCAL)
+                             VOC_DATASET_DOWNLOAD_LOCAL,
+                             VOC_DATASET_DOWNLOAD_SMALL)
 
 from easycv.datasets.detection.data_sources.voc import (DetSourceVOC,
                                                         DetSourceVOC2007,
                                                         DetSourceVOC2012)
+from easycv.datasets.utils.download_data.download_voc import download_voc
 from easycv.file import io
 from easycv.framework.errors import ValueError
 
@@ -155,55 +157,7 @@ class DetSourceVOCTest(unittest.TestCase):
             cache_on_the_fly=cache_on_the_fly,
             dataset_home=data_root)
 
-        # self._base_test(data_source, cache_at_init, cache_on_the_fly)
-        index_list = random.choices(list(range(20)), k=3)
-        exclude_list = [i for i in range(20) if i not in index_list]
-        for idx in index_list:
-            data = data_source[idx]
-            self.assertIn('img_shape', data)
-            self.assertIn('ori_img_shape', data)
-            self.assertIn('filename', data)
-            self.assertEqual(len(data['img_shape']), 3)
-            self.assertEqual(data['img_fields'], ['img'])
-            self.assertEqual(data['bbox_fields'], ['gt_bboxes'])
-            self.assertEqual(data['gt_bboxes'].shape[-1], 4)
-            self.assertGreaterEqual(len(data['gt_labels']), 1)
-            self.assertEqual(data['img'].shape[-1], 3)
-
-        if cache_at_init:
-            for i in range(20):
-                self.assertIn('img', data_source.samples_list[i])
-
-        if not cache_at_init and cache_on_the_fly:
-            for i in index_list:
-                self.assertIn('img', data_source.samples_list[i])
-            for j in exclude_list:
-                self.assertNotIn('img', data_source.samples_list[j])
-
-        if not cache_at_init and not cache_on_the_fly:
-            for i in range(20):
-                self.assertNotIn('img', data_source.samples_list[i])
-
-        length = len(data_source)
-        self.assertEqual(length, 20)
-
-        exists = False
-        for idx in range(length):
-            result = data_source[idx]
-            file_name = result.get('filename', '')
-            if file_name.endswith('000032.jpg'):
-                exists = True
-                self.assertEqual(result['img_shape'], (281, 500, 3))
-                self.assertEqual(
-                    result['gt_labels'].tolist(),
-                    np.array([0, 0, 14, 14], dtype=np.int32).tolist())
-                self.assertEqual(
-                    result['gt_bboxes'].astype(np.int32).tolist(),
-                    np.array(
-                        [[104., 78., 375., 183.], [133., 88., 197., 123.],
-                         [195., 180., 213., 229.], [26., 189., 44., 238.]],
-                        dtype=np.int32).tolist())
-        self.assertTrue(exists)
+        self._base_test(data_source, cache_at_init, cache_on_the_fly)
 
     def test_download_voc2012(self):
         data_root = VOC_DATASET_DOWNLOAD_LOCAL
@@ -217,54 +171,36 @@ class DetSourceVOCTest(unittest.TestCase):
             classes=VOC_CLASSES,
             cache_at_init=cache_at_init,
             cache_on_the_fly=cache_on_the_fly)
-        index_list = random.choices(list(range(20)), k=3)
-        exclude_list = [i for i in range(20) if i not in index_list]
-        for idx in index_list:
-            data = data_source[idx]
-            self.assertIn('img_shape', data)
-            self.assertIn('ori_img_shape', data)
-            self.assertIn('filename', data)
-            self.assertEqual(len(data['img_shape']), 3)
-            self.assertEqual(data['img_fields'], ['img'])
-            self.assertEqual(data['bbox_fields'], ['gt_bboxes'])
-            self.assertEqual(data['gt_bboxes'].shape[-1], 4)
-            self.assertGreaterEqual(len(data['gt_labels']), 1)
-            self.assertEqual(data['img'].shape[-1], 3)
+        self._base_test(data_source, cache_at_init, cache_on_the_fly)
 
-        if cache_at_init:
-            for i in range(20):
-                self.assertIn('img', data_source.samples_list[i])
+    def test_download_voc(self):
+        cfg = dict(
+            voc2007=
+            'https://easycv.oss-cn-hangzhou.aliyuncs.com/data/voc2007_small.tar',
+            voc2012=
+            'https://easycv.oss-cn-hangzhou.aliyuncs.com/data/voc2012_small.tar'
+        )
 
-        if not cache_at_init and cache_on_the_fly:
-            for i in index_list:
-                self.assertIn('img', data_source.samples_list[i])
-            for j in exclude_list:
-                self.assertNotIn('img', data_source.samples_list[j])
+        cache_at_init = False
+        cache_on_the_fly = False
 
-        if not cache_at_init and not cache_on_the_fly:
-            for i in range(20):
-                self.assertNotIn('img', data_source.samples_list[i])
+        voc2007 = download_voc(
+            'voc2007', 'train', target_dir=VOC_DATASET_DOWNLOAD_SMALL, cfg=cfg)
+        data_source_2007 = DetSourceVOC(
+            path=os.path.join(voc2007['path']),
+            classes=VOC_CLASSES,
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly)
+        self._base_test(data_source_2007, cache_at_init, cache_on_the_fly)
 
-        length = len(data_source)
-        self.assertEqual(length, 20)
-
-        exists = False
-        for idx in range(length):
-            result = data_source[idx]
-            file_name = result.get('filename', '')
-            if file_name.endswith('000032.jpg'):
-                exists = True
-                self.assertEqual(result['img_shape'], (281, 500, 3))
-                self.assertEqual(
-                    result['gt_labels'].tolist(),
-                    np.array([0, 0, 14, 14], dtype=np.int32).tolist())
-                self.assertEqual(
-                    result['gt_bboxes'].astype(np.int32).tolist(),
-                    np.array(
-                        [[104., 78., 375., 183.], [133., 88., 197., 123.],
-                         [195., 180., 213., 229.], [26., 189., 44., 238.]],
-                        dtype=np.int32).tolist())
-        self.assertTrue(exists)
+        voc2012 = download_voc(
+            'voc2012', 'train', target_dir=VOC_DATASET_DOWNLOAD_SMALL, cfg=cfg)
+        data_source_2012 = DetSourceVOC(
+            path=os.path.join(voc2012['path']),
+            classes=VOC_CLASSES,
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly)
+        self._base_test(data_source_2012, cache_at_init, cache_on_the_fly)
 
 
 if __name__ == '__main__':

@@ -37,7 +37,11 @@ def extract(name, file, target_dir=CACHE_DIR):
     print('Unpack is finished.....................')
 
 
-def download_voc(name, split='train', target_dir=CACHE_DIR):
+def download_voc(name, split='train', target_dir=CACHE_DIR, **kwargs):
+    # Use it for testing
+    if kwargs.get('cfg'):
+        global cfg
+        cfg = kwargs.get('cfg')
 
     if check_data_exists(name, target_dir, split):
         return check_data_exists(name, target_dir, split)

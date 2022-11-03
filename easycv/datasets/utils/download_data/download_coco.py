@@ -62,7 +62,15 @@ def check_data_exists(target_dir, split, task):
         return False
 
 
-def download_coco(name, split='train', target_dir=CACHE_DIR, task='detection'):
+def download_coco(name,
+                  split='train',
+                  target_dir=CACHE_DIR,
+                  task='detection',
+                  **kwargs):
+    # Use it for testing
+    if kwargs.get('cfg'):
+        global cfg
+        cfg = kwargs.get('cfg')
     if check_data_exists(target_dir, split, task):
         return check_data_exists(target_dir, split, task)
 
