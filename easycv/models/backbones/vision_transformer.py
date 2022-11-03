@@ -204,7 +204,8 @@ class VisionTransformer(nn.Module):
         hydra_attention (bool): If hydra_attention is True, it will use Hydra
             Attention. Default: False
         hydra_attention_layers (int | None): The number of layers that use Hydra Attention.
-            If it is None, it will be equal to depth. Default: None
+            If it is None and hydra_attention is True, it will be equal to depth.
+            Default: None
 
     """
 
