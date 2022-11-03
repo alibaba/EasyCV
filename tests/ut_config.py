@@ -157,6 +157,16 @@ PRETRAINED_MODEL_SEGFORMER = os.path.join(
 PRETRAINED_MODEL_BEVFORMER_BASE = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/detection3d/bevformer/bevformer_base_epoch_24.pth')
+PRETRAINED_MODEL_FACE_2D_KEYPOINTS = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/face_2d_keypoints/epoch_400.pth')
+PRETRAINED_MODEL_HAND_KEYPOINTS = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/pose/hand/hrnet/hrnet_w18_256x256.pth')
+PRETRAINED_MODEL_WHOLEBODY_DETECTION = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/pose/wholebody/epoch_290.pth')
+PRETRAINED_MODEL_WHOLEBODY = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/pose/wholebody/hrnet_w48_coco_wholebody_384x288_dark-f5726563_20200918.pth'
+)
 MODEL_CONFIG_SEGFORMER = (
     './configs/segmentation/segformer/segformer_b0_coco.py')
 SMALL_COCO_WHOLE_BODY_HAND_ROOT = 'data/test/pose/hand/small_whole_body_hand_coco'

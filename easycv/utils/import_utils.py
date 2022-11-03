@@ -6,6 +6,18 @@ import numpy as np
 
 
 def check_numpy():
+    # if use xtcocotools which support lower version of numpy
+    # skip check
+    try:
+        import xtcocotools
+    except ModuleNotFoundError:
+        return
+
+    try:
+        from xtcocotools.coco import COCO
+        return
+    except ValueError as e:
+        pass
 
     def require(version):
         if LooseVersion(np.__version__) < LooseVersion(version):
