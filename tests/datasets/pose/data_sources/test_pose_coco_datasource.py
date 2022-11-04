@@ -3,9 +3,13 @@ import random
 import unittest
 
 import numpy as np
-from tests.ut_config import POSE_DATA_SMALL_COCO_LOCAL
+from tests.ut_config import (COCO_DATASET_DOWNLOAD_SMALL,
+                             DET_DATA_COCO2017_DOWNLOAD,
+                             POSE_DATA_SMALL_COCO_LOCAL)
 
-from easycv.datasets.pose.data_sources.coco import PoseTopDownSourceCoco
+from easycv.datasets.pose.data_sources.coco import (PoseTopDownSourceCoco,
+                                                    PoseTopDownSourceCoco2017)
+from easycv.datasets.utils.download_data.download_coco import download_coco
 
 _DATA_CFG = dict(
     image_size=[288, 384],
@@ -27,11 +31,7 @@ class PoseTopDownSourceCocoTest(unittest.TestCase):
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
-    def test_top_down_source_coco(self):
-        data_source = PoseTopDownSourceCoco(
-            data_cfg=_DATA_CFG,
-            ann_file=f'{POSE_DATA_SMALL_COCO_LOCAL}/train_200.json',
-            img_prefix=f'{POSE_DATA_SMALL_COCO_LOCAL}/images/')
+    def _base_test(self, data_source):
 
         index_list = random.choices(list(range(20)), k=3)
         for idx in index_list:
@@ -67,6 +67,53 @@ class PoseTopDownSourceCocoTest(unittest.TestCase):
             break
 
         self.assertEqual(len(data_source), 420)
+
+    def test_top_down_source_coco(self):
+        data_source = PoseTopDownSourceCoco(
+            data_cfg=_DATA_CFG,
+            ann_file=f'{POSE_DATA_SMALL_COCO_LOCAL}/train_200.json',
+            img_prefix=f'{POSE_DATA_SMALL_COCO_LOCAL}/images/')
+
+        self._base_test(data_source)
+
+    def test_top_down_source_coco_2017(self):
+        data_source = PoseTopDownSourceCoco2017(
+            data_cfg=_DATA_CFG,
+            path=DET_DATA_COCO2017_DOWNLOAD,
+            download=True,
+            split='train')
+
+        self._base_test(data_source)
+
+    def test_download_coco(self):
+        cfg = dict(
+            coco2017=[
+                'https://easycv.oss-cn-hangzhou.aliyuncs.com/data/annotations.zip',
+                'https://easycv.oss-cn-hangzhou.aliyuncs.com/data/train2017_small.zip',
+                'https://easycv.oss-cn-hangzhou.aliyuncs.com/data/val2017_small.zip',
+            ],
+            detection=dict(
+                train='instances_train2017.json',
+                val='instances_val2017.json',
+            ),
+            train_dataset='train2017',
+            val_dataset='val2017',
+            pose=dict(
+                train='person_keypoints_train2017.json',
+                val='person_keypoints_val2017.json'))
+
+        coco_path = download_coco(
+            'coco2017',
+            'train',
+            target_dir=COCO_DATASET_DOWNLOAD_SMALL,
+            task='pose',
+            cfg=cfg)
+        data_source = PoseTopDownSourceCoco(
+            data_cfg=_DATA_CFG,
+            ann_file=coco_path['ann_file'],
+            img_prefix=coco_path['img_prefix'])
+
+        self._base_test(data_source)
 
 
 if __name__ == '__main__':
