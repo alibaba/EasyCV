@@ -172,9 +172,11 @@ def _export_yolox(model, cfg, filename):
         default_export_type_list = ['raw', 'jit', 'blade']
         if export_type not in default_export_type_list:
             logging.warning(
-                'YOLOX-PAI only supports the export type as  [raw,jit,blade], otherwise we use ori as default'
+                'YOLOX-PAI only supports the export type as  [raw,jit,blade], otherwise we use raw as default'
             )
             export_type = 'raw'
+
+        model.export_type = export_type
 
         if export_type != 'raw':
             # only when we use jit or blade, we need to reparameterize_models before export
@@ -203,7 +205,7 @@ def _export_yolox(model, cfg, filename):
                     use_trt_efficientnms == False
                 ), 'Export YoloX predictor use_trt_efficientnms=True only when use static_opt=True!'
 
-            # preprocess can not be optimized blade, to accelerate the inference, a preprocess jit model should be saved!
+            # allow to save a preprocess jit model with exported model
             save_preprocess_jit = False
 
             if preprocess_jit:
@@ -611,8 +613,17 @@ class ModelExportWrapper(torch.nn.Module):
         self.example_inputs = example_inputs
 
         self.trace_model = trace_model
+
         if self.trace_model:
-            self.trace_module()
+            try:
+                self.trace_module()
+            except RuntimeError:
+                # well trained model will generate reasonable result, otherwise, we should change model.test_conf=0.0 to avoid tensor in inference to be empty
+                logging.warning(
+                    'PAI-YOLOX: set model.test_conf=0.0 to avoid tensor in inference to be empty'
+                )
+                model.test_conf = 0.0
+                self.trace_module()
 
     def trace_module(self, **kwargs):
         trace_model = torch.jit.trace_module(

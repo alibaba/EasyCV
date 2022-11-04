@@ -162,34 +162,46 @@ class Mask2formerPredictor(SegmentationPredictor):
             *args,
             **kwargs)
         self.task_mode = task_mode
+        self.class_name = self.cfg.CLASSES
+        self.PALETTE = self.cfg.PALETTE
 
     def forward(self, inputs):
         """Model forward.
         """
         with torch.no_grad():
-            outputs = self.model(**inputs, mode='test', encode=False)
+            outputs = self.model.forward(**inputs, mode='test', encode=False)
         return outputs
 
-    def postprocess(self, inputs):
+    def postprocess_single(self, inputs, *args, **kwargs):
         output = {}
         if self.task_mode == 'panoptic':
-            output['pan'] = inputs['pan_results'][0]
+            pan_results = inputs['pan_results']
+            # keep objects ahead
+            ids = np.unique(pan_results)[::-1]
+            legal_indices = ids != len(self.CLASSES)  # for VOID label
+            ids = ids[legal_indices]
+            labels = np.array([id % 1000 for id in ids], dtype=np.int64)
+            segms = (pan_results[None] == ids[:, None, None])
+            masks = [it.astype(np.int) for it in segms]
+            labels_txt = np.array(self.CLASSES)[labels].tolist()
+
+            output['masks'] = masks
+            output['labels'] = labels_txt
+            output['labels_ids'] = labels
         elif self.task_mode == 'instance':
-            output['segms'] = inputs['detection_masks'][0]
-            output['bboxes'] = inputs['detection_boxes'][0]
-            output['scores'] = inputs['detection_scores'][0]
-            output['labels'] = inputs['detection_classes'][0]
+            output['segms'] = inputs['detection_masks']
+            output['bboxes'] = inputs['detection_boxes']
+            output['scores'] = inputs['detection_scores']
+            output['labels'] = inputs['detection_classes']
+        elif self.task_mode == 'semantic':
+            output['seg_pred'] = inputs['seg_pred']
         else:
             raise ValueError(f'Not support model {self.task_mode}')
         return output
 
-    def show_panoptic(self, img, pan_mask):
-        pan_label = np.unique(pan_mask)
-        pan_label = pan_label[pan_label % 1000 != self.classes]
-        masks = np.array([pan_mask == num for num in pan_label])
-
+    def show_panoptic(self, img, masks, labels):
         palette = np.asarray(self.cfg.PALETTE)
-        palette = palette[pan_label % 1000]
+        palette = palette[labels % 1000]
         panoptic_result = draw_masks(img, masks, palette)
         return panoptic_result
 
@@ -199,13 +211,48 @@ class Mask2formerPredictor(SegmentationPredictor):
             bboxes = bboxes[inds, :]
             segms = segms[inds, ...]
             labels = labels[inds]
-        palette = np.asarray(self.cfg.PALETTE)
+        palette = np.asarray(self.PALETTE)
         palette = palette[labels]
+
         instance_result = draw_masks(img, segms, palette)
-        class_name = np.array(self.class_name)
+        class_name = np.array(self.CLASSES)
         instance_result = imshow_bboxes(
             instance_result, bboxes, class_name[labels], show=False)
         return instance_result
+
+    def show_semantic(self, img, seg_pred, alpha=0.5, palette=None):
+
+        if palette is None:
+            if self.PALETTE is None:
+                # Get random state before set seed,
+                # and restore random state later.
+                # It will prevent loss of randomness, as the palette
+                # may be different in each iteration if not specified.
+                # See: https://github.com/open-mmlab/mmdetection/issues/5844
+                state = np.random.get_state()
+                np.random.seed(42)
+                # random palette
+                palette = np.random.randint(
+                    0, 255, size=(len(self.CLASSES), 3))
+                np.random.set_state(state)
+            else:
+                palette = self.PALETTE
+        palette = np.array(palette)
+        assert palette.shape[0] == len(self.CLASSES)
+        assert palette.shape[1] == 3
+        assert len(palette.shape) == 2
+        assert 0 < alpha <= 1.0
+        color_seg = np.zeros((seg_pred.shape[0], seg_pred.shape[1], 3),
+                             dtype=np.uint8)
+        for label, color in enumerate(palette):
+            color_seg[seg_pred == label, :] = color
+        # convert to BGR
+        color_seg = color_seg[..., ::-1]
+
+        img = img * (1 - alpha) + color_seg * alpha
+        img = img.astype(np.uint8)
+
+        return img
 
 
 def _get_bias_color(base, max_dist=30):

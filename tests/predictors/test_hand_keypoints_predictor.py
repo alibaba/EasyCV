@@ -2,6 +2,8 @@
 
 import unittest
 
+from ut_config import PRETRAINED_MODEL_HAND_KEYPOINTS
+
 from easycv.predictors.hand_keypoints_predictor import HandKeypointsPredictor
 from easycv.utils.config_tools import mmcv_config_fromfile
 
@@ -16,7 +18,7 @@ class HandKeypointsPredictorTest(unittest.TestCase):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
         self.image_path = 'data/test/pose/hand/data/hand.jpg'
         self.save_image_path = 'data/test/pose/hand/data/hand_result.jpg'
-        self.model_path = 'data/test/pose/hand/hrnet_w18_256x256.pth'
+        self.model_path = PRETRAINED_MODEL_HAND_KEYPOINTS
         self.model_config_path = 'configs/pose/hand/hrnet_w18_coco_wholebody_hand_256x256_dark.py'
 
     def test_single(self):

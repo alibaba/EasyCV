@@ -18,7 +18,11 @@ _ALLOWED_METRICS = ['mIoU', 'mDice', 'mFscore']
 @EVALUATORS.register_module
 class SegmentationEvaluator(Evaluator):
 
-    def __init__(self, classes, dataset_name=None, metric_names=['mIoU']):
+    def __init__(self,
+                 classes,
+                 dataset_name=None,
+                 ignore_index=None,
+                 metric_names=['mIoU']):
         """
         Args:
             classes (tuple | list): classes name list
@@ -28,6 +32,7 @@ class SegmentationEvaluator(Evaluator):
         super().__init__(dataset_name, metric_names)
 
         self.classes = classes
+        self.ignore_index = ignore_index
         if isinstance(self._metric_names, str):
             self._metric_names = [self._metric_names]
         if not set(self._metric_names).issubset(set(_ALLOWED_METRICS)):
@@ -55,13 +60,13 @@ class SegmentationEvaluator(Evaluator):
             results,
             gt_seg_maps,
             len(self.classes),
-            self._metric_names,
+            ignore_index=self.ignore_index,
+            metrics=self._metric_names,
         )
         return self._format_results(ret_metrics)
 
     def _format_results(self, ret_metrics):
         eval_results = {}
-
         # summary table
         ret_metrics_summary = OrderedDict({
             ret_metric: np.round(np.nanmean(ret_metric_value) * 100, 2)
@@ -114,18 +119,24 @@ class SegmentationEvaluator(Evaluator):
 METRICS.register_default_best_metric(SegmentationEvaluator, 'mIoU', 'max')
 
 
-def intersect_and_union(
-    pred_label,
-    label,
-    num_classes,
-):
+def intersect_and_union(pred_label,
+                        label,
+                        num_classes,
+                        ignore_index,
+                        label_map=dict(),
+                        reduce_zero_label=False):
     """Calculate intersection and Union.
-
     Args:
-        pred_label (ndarray): Prediction segmentation map.
-        label (ndarray): Ground truth segmentation map.
+        pred_label (ndarray | str): Prediction segmentation map
+            or predict result filename.
+        label (ndarray | str): Ground truth segmentation map
+            or label filename.
         num_classes (int): Number of categories.
-
+        ignore_index (int): Index that will be ignored in evaluation.
+        label_map (dict): Mapping old labels to new labels. The parameter will
+            work only when label is str. Default: dict().
+        reduce_zero_label (bool): Whether ignore zero label. The parameter will
+            work only when label is str. Default: False.
      Returns:
          torch.Tensor: The intersection of prediction and ground truth
             histogram on all classes.
@@ -134,8 +145,24 @@ def intersect_and_union(
          torch.Tensor: The prediction histogram on all classes.
          torch.Tensor: The ground truth histogram on all classes.
     """
+
     pred_label = torch.from_numpy((pred_label))
+
     label = torch.from_numpy(label)
+
+    if label_map is not None:
+        label_copy = label.clone()
+        for old_id, new_id in label_map.items():
+            label[label_copy == old_id] = new_id
+    if reduce_zero_label:
+        label[label == 0] = 255
+        label = label - 1
+        label[label == 254] = 255
+
+    if ignore_index != None:
+        mask = (label != ignore_index)
+        pred_label = pred_label[mask]
+        label = label[mask]
 
     intersect = pred_label[pred_label == label]
     area_intersect = torch.histc(
@@ -151,6 +178,7 @@ def intersect_and_union(
 def eval_metrics(results,
                  gt_seg_maps,
                  num_classes,
+                 ignore_index=None,
                  metrics=['mIoU'],
                  nan_to_num=None,
                  beta=1):
@@ -174,7 +202,7 @@ def eval_metrics(results,
     for result, gt_seg_map in zip(results, gt_seg_maps):
         area_intersect, area_union, area_pred_label, area_label = \
             intersect_and_union(
-                result, gt_seg_map, num_classes)
+                result, gt_seg_map, num_classes, ignore_index=ignore_index)
         total_area_intersect += area_intersect
         total_area_union += area_union
         total_area_pred_label += area_pred_label

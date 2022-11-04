@@ -7,6 +7,8 @@ import torch
 from PIL import Image
 
 from easycv.framework.errors import ValueError
+from easycv.thirdparty.face_align import glint360k_align
+from easycv.thirdparty.mtcnn import FaceDetector
 from .base import Predictor
 from .builder import PREDICTORS
 
@@ -14,13 +16,6 @@ try:
     from easy_vision.python.inference.predictor import PredictorInterface
 except:
     from .interface import PredictorInterface
-
-try:
-    from thirdparty.mtcnn import FaceDetector
-    from thirdparty.face_align import glint360k_align
-except:
-    from easycv.thirdparty.mtcnn import FaceDetector
-    from easycv.thirdparty.face_align import glint360k_align
 
 
 @PREDICTORS.register_module()

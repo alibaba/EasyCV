@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 import torch
 from mmcv.parallel import collate, scatter_kwargs
-from PIL import Image
+from PIL import Image, ImageFile
 from torch.hub import load_state_dict_from_url
 from torchvision.transforms import Compose
 
@@ -108,7 +108,7 @@ class PredictorV2(object):
             model_path (str): Path of model path.
             config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
             batch_size (int): batch size for forward.
-            device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
+            device (str | torch.device): Support str('cuda' or 'cpu') or torch.device, if is None, detect device automatically.
             save_results (bool): Whether to save predict results.
             save_path (str): File path for saving results, only valid when `save_results` is True.
             pipelines (list[dict]): Data pipeline configs.
@@ -146,6 +146,10 @@ class PredictorV2(object):
 
         if self.cfg is None:
             raise ValueError('Please provide "config_file"!')
+
+        # avoid unnecessarily loading backbone weights from url
+        if 'model' in self.cfg and 'pretrained' in self.cfg.model:
+            self.cfg.model.pretrained = None
 
         self.model = self.prepare_model()
         self.pipelines = pipelines
@@ -255,23 +259,42 @@ class PredictorV2(object):
             outputs = self.model(**inputs, mode='test')
         return outputs
 
-    def postprocess(self, inputs, *args, **kwargs):
-        """Process model batch outputs.
-        """
-        outputs = []
-        batch_size = 1
-        # get current batch size
+    def _get_batch_size(self, inputs):
         for k, batch_v in inputs.items():
-            if batch_v is not None:
+            if isinstance(batch_v, dict):
+                batch_size = self._get_batch_size(batch_v)
+            elif batch_v is not None:
                 batch_size = len(batch_v)
                 break
+            else:
+                batch_size = 1
+
+        return batch_size
+
+    def _extract_ith_result(self, inputs, i, out_i):
+        for k, batch_v in inputs.items():
+            if isinstance(batch_v, dict):
+                out_i[k] = {}
+                self._extract_ith_result(batch_v, i, out_i[k])
+            elif batch_v is not None:
+                out_i[k] = batch_v[i]
+            else:
+                out_i[k] = None
+        return out_i
+
+    def postprocess(self, inputs, *args, **kwargs):
+        """Process model batch outputs.
+        The "inputs" should be dict format as follows:
+            {
+                "key1": torch.Tensor or list, the first dimension should be batch_size,
+                "key2": torch.Tensor or list, the first dimension should be batch_size,
+                ...
+            }
+        """
+        outputs = []
+        batch_size = self._get_batch_size(inputs)
         for i in range(batch_size):
-            out_i = {}
-            for k, batch_v in inputs.items():
-                if batch_v is not None:
-                    out_i[k] = batch_v[i]
-                else:
-                    out_i[k] = None
+            out_i = self._extract_ith_result(inputs, i, {})
             out_i = self.postprocess_single(out_i, *args, **kwargs)
             outputs.append(out_i)
         return outputs
@@ -289,9 +312,8 @@ class PredictorV2(object):
         return collate(inputs, samples_per_gpu=self.batch_size)
 
     def _to_device(self, inputs):
-        target_gpus = [-1] if self.device == 'cpu' else [
-            torch.cuda.current_device()
-        ]
+        target_gpus = [-1] if str(
+            self.device) == 'cpu' else [torch.cuda.current_device()]
         _, kwargs = scatter_kwargs(None, inputs, target_gpus=target_gpus)
         return kwargs[0]
 
@@ -303,7 +325,7 @@ class PredictorV2(object):
     def __call__(self, inputs, keep_inputs=False):
         # TODO: fault tolerance
 
-        if isinstance(inputs, str):
+        if isinstance(inputs, (str, np.ndarray, ImageFile.ImageFile)):
             inputs = [inputs]
 
         results_list = []
@@ -312,8 +334,8 @@ class PredictorV2(object):
             batch_outputs = self.preprocess(batch)
             batch_outputs = self.forward(batch_outputs)
             results = self.postprocess(batch_outputs)
-            assert len(results) == len(
-                batch), f'Mismatch size {len(results)} != {len(batch)}'
+            # assert len(results) == len(
+            #     batch), f'Mismatch size {len(results)} != {len(batch)}'
             if keep_inputs:
                 for i in range(len(batch)):
                     results[i].update({'inputs': batch[i]})

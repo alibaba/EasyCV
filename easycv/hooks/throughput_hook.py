@@ -5,6 +5,7 @@ from mmcv.runner.hooks import Hook
 from torch import distributed as dist
 
 from easycv.hooks.registry import HOOKS
+from easycv.utils.dist_utils import get_dist_info
 
 
 @HOOKS.register_module()
@@ -39,8 +40,8 @@ class ThroughputHook(Hook):
         key = 'avg throughput'
 
         batch_size = runner.data_loader.batch_size
-        num_gpus = dist.get_world_size()
-        total_batch_size = batch_size * num_gpus
+        _, world_size = get_dist_info()
+        total_batch_size = batch_size * world_size
 
         # The LoggerHook will average the log_buffer of the latest interval,
         # but we want to use the total time to calculate the throughput,
