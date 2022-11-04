@@ -1,21 +1,3 @@
-_base_ = './deitiii_base_patch16_192.py'
-# model settings
-model = dict(
-    type='Classification',
-    backbone=dict(
-        type='VisionTransformer',
-        img_size=[224],
-        num_classes=1000,
-        patch_size=16,
-        embed_dim=384,
-        depth=12,
-        num_heads=6,
-        mlp_ratio=4,
-        qkv_bias=True,
-        drop_rate=0.,
-        drop_path_rate=0.05,
-        use_layer_scale=True))
-
 data_train_list = 'data/imagenet1k/train.txt'
 data_train_root = 'data/imagenet1k/train/'
 data_test_list = 'data/imagenet1k/val.txt'
@@ -32,7 +14,7 @@ three_augment_policies = [[
 ]]
 train_pipeline = [
     dict(
-        type='RandomResizedCrop', size=224, scale=(0.08, 1.0),
+        type='RandomResizedCrop', size=192, scale=(0.08, 1.0),
         interpolation=3),  # interpolation='bicubic'
     dict(type='RandomHorizontalFlip'),
     dict(type='MMAutoAugment', policies=three_augment_policies),
@@ -41,9 +23,10 @@ train_pipeline = [
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Collect', keys=['img', 'gt_labels'])
 ]
+size = int((256 / 224) * 192)
 test_pipeline = [
-    dict(type='Resize', size=256, interpolation=3),
-    dict(type='CenterCrop', size=224),
+    dict(type='Resize', size=size, interpolation=3),
+    dict(type='CenterCrop', size=192),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Collect', keys=['img', 'gt_labels'])
@@ -68,6 +51,7 @@ data = dict(
             type='ClsSourceImageList'),
         pipeline=test_pipeline))
 
+eval_config = dict(initial=True, interval=1, gpu_collect=True)
 eval_pipelines = [
     dict(
         mode='test',
@@ -76,11 +60,3 @@ eval_pipelines = [
         evaluators=[dict(type='ClsEvaluator', topk=(1, 5))],
     )
 ]
-
-# optimizer
-optimizer = dict(lr=0.004)
-
-lr_config = dict(
-    min_lr_ratio=0.00001 / 0.004,
-    warmup_ratio=0.000001 / 0.004,
-)
