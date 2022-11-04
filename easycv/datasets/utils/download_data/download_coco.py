@@ -4,26 +4,10 @@ import glob
 import os
 
 from easycv.utils.constant import CACHE_DIR
-from .commont import check_path_exists, download
-
-cfg = dict(
-    coco2017=[
-        'http://images.cocodataset.org/zips/train2017.zip',
-        'http://images.cocodataset.org/zips/val2017.zip',
-        'http://images.cocodataset.org/annotations/annotations_trainval2017.zip',
-    ],
-    detection=dict(
-        train='instances_train2017.json',
-        val='instances_val2017.json',
-    ),
-    train_dataset='train2017',
-    val_dataset='val2017',
-    pose=dict(
-        train='person_keypoints_train2017.json',
-        val='person_keypoints_val2017.json'))
+from .commont import COCO_CFG, check_path_exists, download
 
 
-# xtract the data
+# extract the data
 def extract(file, target_dir=CACHE_DIR):
 
     save_dir = os.path.join(target_dir, 'COCO2017')
@@ -67,10 +51,14 @@ def download_coco(name,
                   target_dir=CACHE_DIR,
                   task='detection',
                   **kwargs):
+    # Declare a global
+    global cfg
     # Use it for testing
     if kwargs.get('cfg'):
-        global cfg
         cfg = kwargs.get('cfg')
+    else:
+        cfg = COCO_CFG
+
     if check_data_exists(target_dir, split, task):
         return check_data_exists(target_dir, split, task)
 

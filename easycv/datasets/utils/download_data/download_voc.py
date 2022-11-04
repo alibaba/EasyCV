@@ -2,14 +2,7 @@
 import os
 
 from easycv.utils.constant import CACHE_DIR
-from .commont import check_path_exists, download
-
-cfg = dict(
-    voc2007=
-    'http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtrainval_06-Nov-2007.tar',
-    voc2012=
-    'http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar'
-)
+from .commont import VOC_CFG, check_path_exists, download
 
 
 # Check whether the data exists
@@ -38,10 +31,14 @@ def extract(name, file, target_dir=CACHE_DIR):
 
 
 def download_voc(name, split='train', target_dir=CACHE_DIR, **kwargs):
+
+    # Declare a global
+    global cfg
     # Use it for testing
     if kwargs.get('cfg'):
-        global cfg
         cfg = kwargs.get('cfg')
+    else:
+        cfg = VOC_CFG
 
     if check_data_exists(name, target_dir, split):
         return check_data_exists(name, target_dir, split)
