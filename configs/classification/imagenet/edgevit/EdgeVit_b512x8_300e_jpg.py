@@ -8,16 +8,6 @@ log_config = dict(
 # model settings
 model = dict(
     type='Classification',
-    # train_preprocess=['mixUp'],
-    # mixup_cfg=dict(
-    #     mixup_alpha=0.8,
-    #     cutmix_alpha=1.0,
-    #     cutmix_minmax=None,
-    #     prob=1.0,
-    #     switch_prob=0.5,
-    #     mode='batch',
-    #     label_smoothing=0.1,
-    #     num_classes=1000),
     backbone=dict(
         type='EdgeVit',
         depth=[1, 1, 3, 2],
@@ -33,25 +23,13 @@ model = dict(
         with_avg_pool=True,
         in_channels=288,
         loss_config=dict(
-            type='CrossEntropyLossWithLabelSmooth',
-
-            label_smooth=0),))
-    # head=dict(
-    #     type='ClsHead',
-    #     with_avg_pool=True,
-    #     in_channels=288,
-    #     loss_config={
-    #         'type': 'SoftTargetCrossEntropy',
-    #     },
-    #     with_fc=True))
-
+            type='CrossEntropyLossWithLabelSmooth', label_smooth=0),
+    ))
 
 data_train_list = 'data/imagenet_raw/meta/train_labeled.txt'
 data_train_root = 'data/imagenet_raw/train/'
 data_test_list = 'data/imagenet_raw/meta/val_labeled.txt'
 data_test_root = 'data/imagenet_raw/validation/'
-data_all_list = 'data/imagenet_raw/meta/all_labeled.txt'
-data_root = 'data/imagenet_raw/'
 
 dataset_type = 'ClsDataset'
 img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -80,7 +58,7 @@ test_pipeline = [
 ]
 
 data = dict(
-    imgs_per_gpu=1024,  # total 256
+    imgs_per_gpu=512,
     workers_per_gpu=10,
     use_repeated_augment_sampler=True,
     train=dict(
@@ -124,7 +102,6 @@ lr_config = dict(
     # warmup_lr=1e-6,
     warmup_by_epoch=True,
     by_epoch=True)
-
 
 checkpoint_config = dict(interval=10)
 
