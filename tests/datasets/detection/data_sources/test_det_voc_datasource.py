@@ -185,18 +185,22 @@ class DetSourceVOCTest(unittest.TestCase):
         cache_on_the_fly = False
 
         voc2007 = download_voc(
-            'voc2007', 'train', target_dir=VOC_DATASET_DOWNLOAD_SMALL, cfg=cfg)
+            'voc2007', 'train', target_dir=VOC_DATASET_DOWNLOAD_SMALL,
+            cfg=cfg)['path']
+        print('voc2012 path is ', voc2007)
         data_source_2007 = DetSourceVOC(
-            path=os.path.join(voc2007['path']),
+            path=voc2007,
             classes=VOC_CLASSES,
             cache_at_init=cache_at_init,
             cache_on_the_fly=cache_on_the_fly)
         self._base_test(data_source_2007, cache_at_init, cache_on_the_fly)
 
         voc2012 = download_voc(
-            'voc2012', 'train', target_dir=VOC_DATASET_DOWNLOAD_SMALL, cfg=cfg)
+            'voc2012', 'train', target_dir=VOC_DATASET_DOWNLOAD_SMALL,
+            cfg=cfg)['path']
+        print('voc2012 path is ', voc2012)
         data_source_2012 = DetSourceVOC(
-            path=os.path.join(voc2012['path']),
+            path=voc2012,
             classes=VOC_CLASSES,
             cache_at_init=cache_at_init,
             cache_on_the_fly=cache_on_the_fly)
