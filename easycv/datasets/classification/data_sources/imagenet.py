@@ -66,7 +66,7 @@ class ClsSourceImageNet1k(object):
         return {'img': img, 'gt_labels': int(label[0].strip())}
 
     def __len__(self):
-        return len(self.train_path)
+        return len(self.txt_path)
 
     def __getitem__(self, idx):
         return self.read_data(self.txt_path[idx])
