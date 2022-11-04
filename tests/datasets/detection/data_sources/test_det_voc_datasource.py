@@ -187,7 +187,7 @@ class DetSourceVOCTest(unittest.TestCase):
         voc2007 = download_voc(
             'voc2007', 'train', target_dir=VOC_DATASET_DOWNLOAD_SMALL,
             cfg=cfg)['path']
-        print('voc2012 path is ', voc2007)
+        print('voc2007 path is ', voc2007)
         data_source_2007 = DetSourceVOC(
             path=voc2007,
             classes=VOC_CLASSES,
