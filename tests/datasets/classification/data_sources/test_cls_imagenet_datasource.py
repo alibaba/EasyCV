@@ -25,7 +25,6 @@ class ClsSourceImageNet1kTest(unittest.TestCase):
             img = results['img']
             label = results['gt_labels']
             self.assertIn(label, list(range(200)))
-            img.close()
 
         length = len(data_source)
 
