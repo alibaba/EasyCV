@@ -6,9 +6,9 @@ from multiprocessing import cpu_count
 
 import numpy as np
 
+from easycv.core.bbox.bbox_util import batched_cxcywh2xyxy_with_shape
 from easycv.datasets.registry import DATASOURCES
 from easycv.file import io
-from easycv.utils.bbox_util import batched_cxcywh2xyxy_with_shape
 from .base import DetSourceBase
 
 img_formats = ['.bmp', '.jpg', '.jpeg', '.png', '.tif', '.tiff', '.dng']

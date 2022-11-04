@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+from .bevformer_predictor import BEVFormerPredictor
 from .classifier import TorchClassifier
 from .detector import (DetectionPredictor, TorchFaceDetector,
                        TorchYoloXClassifierPredictor, TorchYoloXPredictor,
@@ -11,3 +12,4 @@ from .hand_keypoints_predictor import HandKeypointsPredictor
 from .pose_predictor import (TorchPoseTopDownPredictor,
                              TorchPoseTopDownPredictorWithDetector)
 from .segmentation import Mask2formerPredictor, SegmentationPredictor
+from .wholebody_keypoints_predictor import WholeBodyKeypointsPredictor

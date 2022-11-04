@@ -6,7 +6,9 @@ h5py
 imgaug
 json_tricks
 lmdb
+numba
 numpy
+nuscenes-devkit
 opencv-python
 oss2
 packaging

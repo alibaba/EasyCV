@@ -1,29 +1,4 @@
-from functools import partial
-
 import torch
-from six.moves import map, zip
-
-
-def multi_apply(func, *args, **kwargs):
-    """Apply function to a list of arguments.
-
-    Note:
-        This function applies the ``func`` to multiple inputs and
-        map the multiple outputs of the ``func`` into different
-        list. Each list contains the same type of outputs corresponding
-        to different inputs.
-
-    Args:
-        func (Function): A function that will be applied to a list of
-            arguments
-
-    Returns:
-        tuple(list): A tuple containing multiple list, each list contains \
-            a kind of returned results by the function
-    """
-    pfunc = partial(func, **kwargs) if kwargs else func
-    map_results = map(pfunc, *args)
-    return tuple(map(list, zip(*map_results)))
 
 
 def preprocess_panoptic_gt(gt_labels, gt_masks, gt_semantic_seg, num_things,
@@ -88,4 +63,28 @@ def preprocess_panoptic_gt(gt_labels, gt_masks, gt_semantic_seg, num_things,
         masks = things_masks
 
     masks = masks.long()
+    return labels, masks
+
+
+def preprocess_semantic_gt(gt_semantic_seg):
+
+    gt_semantic_seg = gt_semantic_seg.squeeze(0)
+
+    semantic_labels = torch.unique(
+        gt_semantic_seg,
+        sorted=False,
+        return_inverse=False,
+        return_counts=False)
+
+    masks_list = []
+    labels_list = []
+    for label in semantic_labels:
+        if label == 255:
+            continue
+        mask = gt_semantic_seg == label
+        masks_list.append(mask)
+        labels_list.append(label)
+
+    masks = torch.stack(masks_list, dim=0)
+    labels = torch.stack(labels_list, dim=0)
     return labels, masks
