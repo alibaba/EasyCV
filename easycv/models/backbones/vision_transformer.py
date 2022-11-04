@@ -206,6 +206,9 @@ class VisionTransformer(nn.Module):
         hydra_attention_layers (int | None): The number of layers that use Hydra Attention.
             If it is None and hydra_attention is True, it will be equal to depth.
             Default: None
+        use_dpr_linspace (bool): If use_dpr_linspace is False, all block's drop_path_rate
+            are the same. Otherwise, it will use "torch.linspace" on drop_path_rate.
+            Default: True
 
     """
 
@@ -229,6 +232,7 @@ class VisionTransformer(nn.Module):
                  init_scale=1e-4,
                  hydra_attention=False,
                  hydra_attention_layers=None,
+                 use_dpr_linspace=True,
                  **kwargs):
         super().__init__()
 
@@ -252,6 +256,8 @@ class VisionTransformer(nn.Module):
         self.init_scale = init_scale
         self.hydra_attention = hydra_attention
         self.hydra_attention_layers = hydra_attention_layers
+        self.drop_path_rate = drop_path_rate
+        self.depth = depth
 
         self.patch_embed = PatchEmbed(
             img_size=img_size[0],
@@ -264,13 +270,16 @@ class VisionTransformer(nn.Module):
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, embed_dim))
         self.pos_drop = nn.Dropout(p=drop_rate)
 
-        self.drop_path_rate = drop_path_rate
-        self.depth = depth
-        if self.hydra_attention:
+        if use_dpr_linspace:
             dpr = [
                 x.item()
                 for x in torch.linspace(0, self.drop_path_rate, self.depth)
             ]
+        else:
+            dpr = [drop_path_rate for x in range(self.depth)]
+        self.dpr = dpr
+
+        if self.hydra_attention:
             hy = [
                 x >= (self.depth - self.hydra_attention_layers)
                 for x in range(self.depth)
@@ -281,7 +290,6 @@ class VisionTransformer(nn.Module):
                 for x in range(self.depth)
             ]
         else:
-            dpr = [drop_path_rate for x in range(self.depth)]
             hy = [False for x in range(self.depth)]
             head = [self.num_heads for x in range(self.depth)]
         self.blocks = nn.ModuleList([

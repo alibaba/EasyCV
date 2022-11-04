@@ -1,24 +1,9 @@
-_base_ = './deitiii_base_patch16_192.py'
-
-# model settings
-model = dict(
-    backbone=dict(
-        img_size=[224],
-        drop_path_rate=0.1,
-        use_layer_scale=False,
-        hydra_attention=True,
-        hydra_attention_layers=12),
-    head=dict(loss_config={
-        'type': 'SoftTargetCrossEntropy',
-    }))
-
 data_train_list = 'data/imagenet1k/train.txt'
 data_train_root = 'data/imagenet1k/train/'
 data_test_list = 'data/imagenet1k/val.txt'
 data_test_root = 'data/imagenet1k/val/'
 
 dataset_type = 'ClsDataset'
-
 img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 train_pipeline = [
     dict(
@@ -57,6 +42,8 @@ test_pipeline = [
 
 data = dict(
     imgs_per_gpu=128,
+    workers_per_gpu=8,
+    use_repeated_augment_sampler=True,
     train=dict(
         type=dataset_type,
         data_source=dict(
@@ -72,6 +59,7 @@ data = dict(
             type='ClsSourceImageList'),
         pipeline=test_pipeline))
 
+eval_config = dict(initial=True, interval=1, gpu_collect=True)
 eval_pipelines = [
     dict(
         mode='test',
@@ -80,17 +68,6 @@ eval_pipelines = [
         evaluators=[dict(type='ClsEvaluator', topk=(1, 5))],
     )
 ]
-
-# optimizer
-optimizer = dict(type='AdamW', lr=0.001)
-
-lr_config = dict(
-    min_lr_ratio=0.00001 / 0.001,
-    warmup_ratio=0.000001 / 0.001,
-)
-
-# runtime settings
-total_epochs = 300
 
 # used for unittest
 predict = dict(

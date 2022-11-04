@@ -33,10 +33,6 @@ class DynamicVisionTransformer(VisionTransformer):
         self.pos_embed = nn.Parameter(
             torch.zeros(1, num_patches + 1, self.embed_dim))
 
-        dpr = [
-            x.item()
-            for x in torch.linspace(0, self.drop_path_rate, self.depth)
-        ]
         if self.hydra_attention:
             hy = [
                 x >= (self.depth - self.hydra_attention_layers)
@@ -59,7 +55,7 @@ class DynamicVisionTransformer(VisionTransformer):
                 qk_scale=self.qk_scale,
                 drop=self.drop_rate,
                 attn_drop=self.attn_drop_rate,
-                drop_path=dpr[i],
+                drop_path=self.dpr[i],
                 norm_layer=self.norm_layer,
                 use_layer_scale=self.use_layer_scale,
                 init_values=self.init_scale,
