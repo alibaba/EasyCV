@@ -149,7 +149,8 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
           <li><a href="configs/classification/imagenet/timm/pit">PiT (ArXiv'2021)</a></li>
           <li><a href="configs/classification/imagenet/timm/twins">Twins (NeurIPS'2021)</a></li>
           <li><a href="configs/classification/imagenet/timm/shuffle_transformer">Shuffle Transformer (ArXiv'2021)</a></li>
-          <li><a href="configs/classification/imagenet/vit">DeiT III (ECCV'2022)</a></li>
+          <li><a href="configs/classification/imagenet/deitiii">DeiT III (ECCV'2022)</a></li>
+          <li><a href="configs/classification/imagenet/deit">Hydra Attention (2022)</a></li>
         </ul>
       </td>
       <td>
