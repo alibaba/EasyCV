@@ -95,9 +95,10 @@ class ClsSourceCaltech256(object):
         return result_dict
 
     def download(self, root):
+        caltech256_path = os.path.join(root, 'caltech256')
         download_and_extract_archive(
             'https://data.caltech.edu/records/nyy15-4j048/files/256_ObjectCategories.tar?download=1',
-            root,
+            caltech256_path,
             filename='256_ObjectCategories.tar',
             md5='67b4f42ca05d46448c6bb8ecd2220f6d',
             remove_finished=True)
