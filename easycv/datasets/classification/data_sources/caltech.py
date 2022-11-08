@@ -11,9 +11,8 @@ from easycv.datasets.registry import DATASOURCES
 @DATASOURCES.register_module
 class ClsSourceCaltech101(object):
 
-    def __init__(self, root, split, download=True):
+    def __init__(self, root, download=True):
 
-        assert split in ['train', 'test']
         if download:
             root = self.download(root)
             self.caltech101 = Caltech101(root, 'category', download=False)
@@ -95,7 +94,12 @@ class ClsSourceCaltech256(object):
         return result_dict
 
     def download(self, root):
+
         caltech256_path = os.path.join(root, 'caltech256')
+
+        if os.path.exists(caltech256_path):
+            return
+
         download_and_extract_archive(
             'https://data.caltech.edu/records/nyy15-4j048/files/256_ObjectCategories.tar?download=1',
             caltech256_path,
