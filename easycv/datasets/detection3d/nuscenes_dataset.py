@@ -53,6 +53,7 @@ class NuScenesDataset(BaseDataset):
         self.eval_detection_configs = config_factory(self.eval_version)
         self.flag = np.zeros(
             len(self), dtype=np.uint8)  # for DistributedGroupSampler
+        self.pipeline_cfg = pipeline
 
     def _format_bbox(self, results, jsonfile_prefix=None):
         """Convert the results to the standard format.
@@ -346,10 +347,12 @@ class NuScenesDataset(BaseDataset):
         return queue
 
     @staticmethod
-    def _get_single_data(i, data_source, pipeline):
+    def _get_single_data(i, data_source, pipeline, flip_flag=False, scale=None):
         i = max(0, i)
         try:
             data = data_source[i]
+            data['flip_flag'] = flip_flag
+            if scale: data['resize_scale'] = scale
             data = pipeline(data)
             if data is None or ~(data['gt_labels_3d']._data != -1).any():
                 return None
@@ -365,12 +368,24 @@ class NuScenesDataset(BaseDataset):
         idx_list = sorted(idx_list[1:])
         idx_list.append(idx)
 
+        
+        flip_flag = False
+        scale = None
+        for member in self.pipeline_cfg:
+            
+            if member['type'] == 'RandomScaleImageMultiViewImage':
+                scales = member['scales']
+                rand_ind = np.random.permutation(range(len(scales)))[0]
+                scale = scales[rand_ind]
+            if member['type'] == 'RandomHorizontalFlipMultiViewImage':
+                flip_flag = np.random.rand() >= 0.5
+                
         with concurrent.futures.ThreadPoolExecutor(
                 max_workers=len(idx_list)) as executor:
             threads = []
             for i in idx_list:
                 future = executor.submit(self._get_single_data, i,
-                                         self.data_source, self.pipeline)
+                                        self.data_source, self.pipeline, flip_flag, scale)
                 threads.append(future)
 
             for future in concurrent.futures.as_completed(threads):
@@ -378,6 +393,7 @@ class NuScenesDataset(BaseDataset):
 
         if None in queue:
             return None
+        
 
         queue = sorted(queue, key=lambda item: item[0])
         queue = [item[1] for item in queue]

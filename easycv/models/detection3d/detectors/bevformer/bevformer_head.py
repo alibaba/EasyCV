@@ -36,6 +36,8 @@ class BEVFormerHead(AnchorFreeHead):
                  num_classes,
                  in_channels,
                  num_query=100,
+                 num_query_one2many=0,
+                 one2many_gt_mul=None,
                  num_reg_fcs=2,
                  with_box_refine=False,
                  as_two_stage=False,
@@ -131,8 +133,13 @@ class BEVFormerHead(AnchorFreeHead):
             # sampling=False, so use PseudoBBoxSampler
             sampler_cfg = dict(type='PseudoBBoxSampler')
             self.sampler = build_bbox_sampler(sampler_cfg, context=self)
-
-        self.num_query = num_query
+        
+        # for one2many task
+        self.num_query_one2many = num_query_one2many
+        self.num_query_one2one = num_query
+        self.one2many_gt_mul = one2many_gt_mul
+        
+        self.num_query = num_query+num_query_one2many if num_query_one2many>0 else num_query
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.num_reg_fcs = num_reg_fcs
@@ -277,6 +284,11 @@ class BEVFormerHead(AnchorFreeHead):
                 prev_bev=prev_bev,
             )
         else:
+            # make attn mask for one2many task
+            self_attn_mask = torch.zeros([self.num_query, self.num_query,]).bool().to(bev_queries.device)
+            self_attn_mask[self.num_query_one2one :, 0 : self.num_query_one2one,] = True
+            self_attn_mask[0 : self.num_query_one2one, self.num_query_one2one :,] = True
+            
             outputs = self.transformer(
                 mlvl_feats,
                 bev_queries,
@@ -331,12 +343,16 @@ class BEVFormerHead(AnchorFreeHead):
 
         outs = {
             'bev_embed': bev_embed,
-            'all_cls_scores': outputs_classes,
-            'all_bbox_preds': outputs_coords,
+            'all_cls_scores': outputs_classes[:,:,:self.num_query_one2one,:],
+            'all_bbox_preds': outputs_coords[:,:,:self.num_query_one2one,:],
             'enc_cls_scores': None,
             'enc_bbox_preds': None,
         }
 
+        if self.num_query_one2many > 0:
+            outs['all_cls_scores_aux'] = outputs_classes[:,:,self.num_query_one2one:,:]
+            outs['all_bbox_preds_aux'] = outputs_coords[:,:,self.num_query_one2one:,:]
+            
         return outs
 
     def _get_target_single(self,
@@ -586,6 +602,42 @@ class BEVFormerHead(AnchorFreeHead):
                                               all_gt_bboxes_ignore_list)
 
         loss_dict = dict()
+        
+        # for one2many task
+        if 'all_cls_scores_aux' in preds_dicts and self.one2many_gt_mul:
+            all_cls_scores_aux = preds_dicts['all_cls_scores_aux']
+            all_bbox_preds_aux = preds_dicts['all_bbox_preds_aux']
+            
+            gt_bboxes_list_aux = []
+            gt_labels_list_aux = []
+            # for gt_bboxes, gt_labels in zip(gt_bboxes_list,gt_labels_list):
+            #     gt_bboxes_list_aux.append(gt_bboxes.repeat(self.one2many_gt_mul,1))
+            #     gt_labels_list_aux.append(gt_labels.repeat(self.one2many_gt_mul))
+            for gt_bboxes, gt_labels in zip(gt_bboxes_list,gt_labels_list):
+                gt_bboxes_aux = []
+                gt_labels_aux = []
+                for gt_bbox, gt_label in zip(gt_bboxes, gt_labels):
+                    gt_bboxes_aux += [gt_bbox]*self.one2many_gt_mul[gt_label]
+                    gt_labels_aux += [gt_label]*self.one2many_gt_mul[gt_label]
+                gt_bboxes_list_aux.append(torch.cat(gt_bboxes_aux,0))
+                gt_labels_list_aux.append(torch.cat(gt_labels_aux,0))
+            all_gt_bboxes_list_aux = [gt_bboxes_list_aux for _ in range(num_dec_layers)]
+            all_gt_labels_list_aux = [gt_labels_list_aux for _ in range(num_dec_layers)]
+            # all_gt_bboxes_list_aux = [[torch.cat(gt_bboxes_list*mul,0)] for mul in self.one2many_gt_mul]
+            # all_gt_labels_list_aux = [[torch.cat(gt_labels_list*mul,0)] for mul in self.one2many_gt_mul]
+            losses_cls_aux, losses_bbox_aux = multi_apply(
+                self.loss_single, all_cls_scores_aux, all_bbox_preds_aux,
+                all_gt_bboxes_list_aux, all_gt_labels_list_aux,
+                all_gt_bboxes_ignore_list)
+            loss_dict['loss_cls_aux'] = losses_cls_aux[-1]
+            loss_dict['loss_bbox_aux'] = losses_bbox_aux[-1]
+            num_dec_layer = 0
+            for loss_cls_i, loss_bbox_i in zip(losses_cls_aux[:-1],
+                                            losses_bbox_aux[:-1]):
+                loss_dict[f'd{num_dec_layer}.loss_cls_aux'] = loss_cls_i
+                loss_dict[f'd{num_dec_layer}.loss_bbox_aux'] = loss_bbox_i
+                num_dec_layer += 1
+        
         # loss of proposal generated from encode feature map.
         if enc_cls_scores is not None:
             binary_labels_list = [
