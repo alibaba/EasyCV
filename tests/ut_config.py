@@ -57,6 +57,8 @@ IO_DATA_MULTI_DIRS_OSS = os.path.join(BASE_OSS_PATH,
 DET_DATA_SMALL_COCO_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                          'data/detection/small_coco')
 CLS_DATA_COMMON_LOCAL = os.path.join(BASE_LOCAL_PATH, 'download_local/cls')
+DET_DATASET_DOWNLOAD_SMALL = os.path.join(
+    BASE_LOCAL_PATH, 'download_local/small_download/detection')
 DET_DATA_COCO2017_DOWNLOAD = os.path.join(BASE_LOCAL_PATH, 'download_local/')
 VOC_DATASET_DOWNLOAD_LOCAL = os.path.join(BASE_LOCAL_PATH, 'download_local')
 VOC_DATASET_DOWNLOAD_SMALL = os.path.join(BASE_LOCAL_PATH,
