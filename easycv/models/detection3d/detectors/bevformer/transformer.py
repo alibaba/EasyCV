@@ -24,6 +24,7 @@ from easycv.models.utils.transformer import (BaseTransformerLayer,
                                              TransformerLayerSequence)
 from . import (CustomMSDeformableAttention, MSDeformableAttention3D,
                TemporalSelfAttention)
+from .attentions.spatial_cross_attention import SpatialCrossAttention
 
 
 @TRANSFORMER_LAYER.register_module()
@@ -107,6 +108,7 @@ class BEVFormerLayer(BaseModule):
                  ),
                  batch_first=True,
                  init_cfg=None,
+                 adapt_jit=False,
                  **kwargs):
         super(BEVFormerLayer, self).__init__(init_cfg)
 
@@ -135,6 +137,7 @@ class BEVFormerLayer(BaseModule):
         self.attentions = ModuleList()
 
         index = 0
+        self.adapt_jit = adapt_jit
         for operation_name in operation_order:
             if operation_name in ['self_attn', 'cross_attn']:
                 if 'batch_first' in attn_cfgs[index]:
@@ -142,6 +145,10 @@ class BEVFormerLayer(BaseModule):
                 else:
                     attn_cfgs[index]['batch_first'] = self.batch_first
                 attention = build_attention(attn_cfgs[index])
+                # for export jit model
+                if self.adapt_jit and isinstance(attention,
+                                                 SpatialCrossAttention):
+                    attention = torch.jit.script(attention)
                 # Some custom attentions used as `self_attn`
                 # or `cross_attn` can have different behavior.
                 attention.operation_name = operation_name
@@ -248,19 +255,17 @@ class BEVFormerLayer(BaseModule):
             if layer == 'self_attn':
 
                 query = self.attentions[attn_index](
-                    query,
-                    prev_bev,
-                    prev_bev,
-                    identity if self.pre_norm else None,
+                    query=query,
+                    key=prev_bev,
+                    value=prev_bev,
+                    identity=identity if self.pre_norm else None,
                     query_pos=bev_pos,
-                    key_pos=bev_pos,
-                    attn_mask=attn_masks[attn_index],
                     key_padding_mask=query_key_padding_mask,
                     reference_points=ref_2d,
                     spatial_shapes=torch.tensor([[bev_h, bev_w]],
                                                 device=query.device),
                     level_start_index=torch.tensor([0], device=query.device),
-                    **kwargs)
+                )
                 attn_index += 1
                 identity = query
 
@@ -274,20 +279,18 @@ class BEVFormerLayer(BaseModule):
             # spaital cross attention
             elif layer == 'cross_attn':
                 query = self.attentions[attn_index](
-                    query,
-                    key,
-                    value,
-                    identity if self.pre_norm else None,
+                    query=query,
+                    key=key,
+                    value=value,
+                    # residual=identity if self.pre_norm else None,
                     query_pos=query_pos,
-                    key_pos=key_pos,
                     reference_points=ref_3d,
                     reference_points_cam=reference_points_cam,
-                    mask=mask,
-                    attn_mask=attn_masks[attn_index],
+                    bev_mask=kwargs.get('bev_mask'),
                     key_padding_mask=key_padding_mask,
                     spatial_shapes=spatial_shapes,
                     level_start_index=level_start_index,
-                    **kwargs)
+                )
                 attn_index += 1
                 identity = query
 
@@ -724,8 +727,9 @@ class PerceptionTransformer(BaseModule):
         shift_x = translation_length * \
             torch.sin(bev_angle / 180 * np.pi) / grid_length_x / bev_w
 
-        shift_y = shift_y * self.use_shift
-        shift_x = shift_x * self.use_shift
+        if not self.use_shift:
+            shift_y = shift_y.new_zeros(shift_y.size())
+            shift_x = shift_x.new_zeros(shift_y.size())
         shift = torch.stack([shift_x,
                              shift_y]).permute(1, 0).to(bev_queries.dtype)
 
@@ -755,7 +759,8 @@ class PerceptionTransformer(BaseModule):
         can_bus = self.can_bus_mlp(can_bus)[None, :, :]
         # fix fp16
         can_bus = can_bus.to(bev_queries.dtype)
-        bev_queries = bev_queries + can_bus * self.use_can_bus
+        if self.use_can_bus:
+            bev_queries = bev_queries + can_bus
 
         feat_flatten = []
         spatial_shapes = []

@@ -1,9 +1,12 @@
 # Modified from https://github.com/fundamentalvision/BEVFormer.
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import copy
+import pickle
 
+import numpy as np
 import torch
 
+from easycv.core.bbox import get_box_type
 from easycv.core.bbox.bbox_util import bbox3d2result
 from easycv.models.detection3d.detectors.mvx_two_stage import \
     MVXTwoStageDetector
@@ -59,7 +62,7 @@ class BEVFormer(MVXTwoStageDetector):
             'prev_angle': 0,
         }
 
-    def extract_img_feat(self, img, img_metas, len_queue=None):
+    def extract_img_feat(self, img, len_queue=None):
         """Extract features of images."""
         B = img.size(0)
         if img is not None:
@@ -97,10 +100,10 @@ class BEVFormer(MVXTwoStageDetector):
                     img_feat.view(B, int(BN / B), C, H, W))
         return img_feats_reshaped
 
-    def extract_feat(self, img, img_metas=None, len_queue=None):
+    def extract_feat(self, img, len_queue=None):
         """Extract features from images and points."""
 
-        img_feats = self.extract_img_feat(img, img_metas, len_queue=len_queue)
+        img_feats = self.extract_img_feat(img, len_queue=len_queue)
 
         return img_feats
 
@@ -171,7 +174,6 @@ class BEVFormer(MVXTwoStageDetector):
                 img_metas = [each[i] for each in img_metas_list]
                 if not img_metas[0]['prev_bev_exists']:
                     prev_bev = None
-                # img_feats = self.extract_feat(img=img, img_metas=img_metas)
                 img_feats = [each_scale[:, i] for each_scale in img_feats_list]
                 prev_bev = self.pts_bbox_head(
                     img_feats, img_metas, prev_bev, only_bev=True)
@@ -208,13 +210,8 @@ class BEVFormer(MVXTwoStageDetector):
         Returns:
             dict: Losses of different branches.
         """
-        for batch_i in range(len(img_metas)):
-            for i in range(len(img_metas[batch_i])):
-                img_metas[batch_i][i]['can_bus'] = kwargs['can_bus'][batch_i][
-                    i]
-                img_metas[batch_i][i]['lidar2img'] = kwargs['lidar2img'][
-                    batch_i][i]
-        del kwargs
+        self._check_inputs(img_metas, img, **kwargs)
+
         len_queue = img.size(1)
         prev_img = img[:, :-1, ...]
         img = img[:, -1, ...]
@@ -230,7 +227,7 @@ class BEVFormer(MVXTwoStageDetector):
         img_metas = [each[len_queue - 1] for each in img_metas]
         if not img_metas[0]['prev_bev_exists']:
             prev_bev = None
-        img_feats = self.extract_feat(img=img, img_metas=img_metas)
+        img_feats = self.extract_feat(img=img)
         losses = dict()
         losses_pts = self.forward_pts_train(img_feats, gt_bboxes_3d,
                                             gt_labels_3d, img_metas,
@@ -239,12 +236,29 @@ class BEVFormer(MVXTwoStageDetector):
         losses.update(losses_pts)
         return losses
 
-    def forward_test(self, img_metas, img=None, rescale=True, **kwargs):
-        for i in range(len(img_metas[0])):
-            img_metas[0][i]['can_bus'] = kwargs['can_bus'][i]
-            img_metas[0][i]['lidar2img'] = kwargs['lidar2img'][i]
+    def _check_inputs(self, img_metas, img, **kwargs):
+        can_bus_in_kwargs = kwargs.get('can_bus', None) is not None
+        lidar2img_in_kwargs = kwargs.get('lidar2img', None) is not None
+        for batch_i in range(len(img_metas)):
+            for i in range(len(img_metas[batch_i])):
+                if can_bus_in_kwargs:
+                    img_metas[batch_i][i]['can_bus'] = kwargs['can_bus'][
+                        batch_i][i]
+                else:
+                    img_metas[batch_i][i]['can_bus'] = torch.from_numpy(
+                        img_metas[batch_i][i]['can_bus']).to(img.device)
+                if lidar2img_in_kwargs:
+                    img_metas[batch_i][i]['lidar2img'] = kwargs['lidar2img'][
+                        batch_i][i]
+                else:
+                    img_metas[batch_i][i]['lidar2img'] = torch.from_numpy(
+                        np.array(img_metas[batch_i][i]['lidar2img'])).to(
+                            img.device)
         kwargs.pop('can_bus', None)
         kwargs.pop('lidar2img', None)
+
+    def forward_test(self, img_metas, img=None, rescale=True, **kwargs):
+        self._check_inputs(img_metas, img, **kwargs)
 
         for var, name in [(img_metas, 'img_metas')]:
             if not isinstance(var, list):
@@ -308,7 +322,7 @@ class BEVFormer(MVXTwoStageDetector):
 
     def simple_test(self, img_metas, img=None, prev_bev=None, rescale=False):
         """Test function without augmentaiton."""
-        img_feats = self.extract_feat(img=img, img_metas=img_metas)
+        img_feats = self.extract_feat(img=img)
 
         bbox_list = [dict() for i in range(len(img_metas))]
         new_prev_bev, bbox_pts = self.simple_test_pts(
@@ -316,3 +330,74 @@ class BEVFormer(MVXTwoStageDetector):
         for result_dict, pts_bbox in zip(bbox_list, bbox_pts):
             result_dict['pts_bbox'] = pts_bbox
         return new_prev_bev, bbox_list
+
+    def forward_export(self,
+                       img,
+                       can_bus,
+                       lidar2img,
+                       img_shape,
+                       scene_token,
+                       box_type_3d='LiDAR'):
+        if isinstance(box_type_3d, torch.Tensor):
+            box_type_3d = pickle.loads(box_type_3d.cpu().numpy().tobytes())
+
+        scene_token_str = pickle.loads(scene_token.cpu().numpy().tobytes())
+        img_metas = [[{
+            'scene_token': scene_token_str,
+            'can_bus': can_bus,
+            'lidar2img': lidar2img,
+            'img_shape': img_shape,
+            'box_type_3d': get_box_type(box_type_3d)[0]
+        }]]
+        outputs = self.forward_test(img_metas, img=img)
+        scores_3d = outputs['pts_bbox'][0]['scores_3d']
+        labels_3d = outputs['pts_bbox'][0]['labels_3d']
+        boxes_3d = outputs['pts_bbox'][0]['boxes_3d'].tensor
+
+        return scores_3d, labels_3d, boxes_3d
+
+    def forward_history_bev(self,
+                            img,
+                            can_bus,
+                            lidar2img,
+                            img_shape,
+                            scene_token,
+                            box_type_3d='LiDAR'):
+        """Experimental api, for export jit model to obtain history bev.
+        """
+        if isinstance(box_type_3d, torch.Tensor):
+            box_type_3d = pickle.loads(box_type_3d.cpu().numpy().tobytes())
+
+        batch_size, len_queue = img.size()[:2]
+        img_metas = []
+        for b_i in range(batch_size):
+            img_metas.append([])
+            for i in range(len_queue):
+                scene_token_str = pickle.loads(
+                    scene_token[b_i][i].cpu().numpy().tobytes())
+                img_metas[b_i].append({
+                    'scene_token':
+                    scene_token_str,
+                    'can_bus':
+                    can_bus[b_i][i],
+                    'lidar2img':
+                    lidar2img[b_i][i],
+                    'img_shape':
+                    img_shape[b_i][i],
+                    'box_type_3d':
+                    get_box_type(box_type_3d)[0],
+                    'prev_bev_exists':
+                    False
+                })
+
+        prev_img = img[:, :-1, ...]
+        img = img[:, -1, ...]
+
+        prev_img_metas = copy.deepcopy(img_metas)
+
+        if self.extract_feat_serially:
+            prev_bev = self.obtain_history_bev_serially(
+                prev_img, prev_img_metas)
+        else:
+            prev_bev = self.obtain_history_bev(prev_img, prev_img_metas)
+        return prev_bev
