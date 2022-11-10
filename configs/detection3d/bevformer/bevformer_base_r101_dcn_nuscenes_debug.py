@@ -58,8 +58,8 @@ model = dict(
         bev_w=bev_w_,
         num_query=900,
         num_query_one2many=1800,
-        one2many_gt_mul = 4,
-        # one2many_gt_mul = [2, 3, 7, 7, 9, 6, 7, 6, 2, 5],
+        # one2many_gt_mul = 4,
+        one2many_gt_mul = [2, 3, 7, 7, 9, 6, 7, 6, 2, 5],
         num_classes=10,
         in_channels=_dim_,
         sync_cls_avg_factor=True,
@@ -304,7 +304,7 @@ eval_pipelines = [
 
 load_from = 'r101_dcn_fcos3d_pretrain.pth'
 log_config = dict(
-    interval=50,
+    interval=10,
     hooks=[dict(type='TextLoggerHook'),
            dict(type='TensorboardLoggerHook')])
 
