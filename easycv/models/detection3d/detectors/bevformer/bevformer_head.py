@@ -619,9 +619,8 @@ class BEVFormerHead(AnchorFreeHead):
                 for gt_bbox, gt_label in zip(gt_bboxes, gt_labels):
                     gt_bboxes_aux += [gt_bbox]*self.one2many_gt_mul[gt_label]
                     gt_labels_aux += [gt_label]*self.one2many_gt_mul[gt_label]
-                if len(gt_bboxes_aux) > 0:
-                    gt_bboxes_list_aux.append(torch.cat(gt_bboxes_aux,0))
-                    gt_labels_list_aux.append(torch.stack(gt_labels_aux))
+                gt_bboxes_list_aux.append(torch.stack(gt_bboxes_aux))
+                gt_labels_list_aux.append(torch.stack(gt_labels_aux))
             all_gt_bboxes_list_aux = [gt_bboxes_list_aux for _ in range(num_dec_layers)]
             all_gt_labels_list_aux = [gt_labels_list_aux for _ in range(num_dec_layers)]
             # all_gt_bboxes_list_aux = [[torch.cat(gt_bboxes_list*mul,0)] for mul in self.one2many_gt_mul]

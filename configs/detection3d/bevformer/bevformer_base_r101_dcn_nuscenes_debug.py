@@ -177,7 +177,7 @@ data_root = 'data/nuscenes/train-val/'
 train_pipeline = [
     dict(type='PhotoMetricDistortionMultiViewImage'),
 
-    # dict(type='RandomScaleImageMultiViewImage', scales=[0.8,0.9,1.0]),
+    # dict(type='RandomScaleImageMultiViewImage', scales=[0.25]),
     dict(type='RandomHorizontalFlipMultiViewImage'),
     
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
