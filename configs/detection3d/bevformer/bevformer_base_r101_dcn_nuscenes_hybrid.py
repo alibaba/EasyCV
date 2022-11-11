@@ -58,8 +58,7 @@ model = dict(
         bev_w=bev_w_,
         num_query=900,
         num_query_one2many=1800,
-        # one2many_gt_mul = 4,
-        one2many_gt_mul = [2, 3, 7, 7, 9, 6, 7, 6, 2, 5],
+        one2many_gt_mul = 4,
         num_classes=10,
         in_channels=_dim_,
         sync_cls_avg_factor=True,
@@ -171,13 +170,12 @@ model = dict(
                 pc_range=point_cloud_range))))
 
 dataset_type = 'NuScenesDataset'
-# data_root = 'data/nuScenes/nuscenes-v1.0/'
 data_root = 'data/nuscenes/train-val/'
 
 train_pipeline = [
     dict(type='PhotoMetricDistortionMultiViewImage'),
 
-    # dict(type='RandomScaleImageMultiViewImage', scales=[0.25]),
+    # dict(type='RandomScaleImageMultiViewImage', scales=[0.8,0.9,1.0,1.1,1.2]),
     dict(type='RandomHorizontalFlipMultiViewImage'),
     
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
@@ -275,8 +273,6 @@ data = dict(
 paramwise_cfg = {'img_backbone': dict(lr_mult=0.1)}
 optimizer = dict(
     type='AdamW', lr=2e-4, paramwise_options=paramwise_cfg, weight_decay=0.01)
-# optimizer = dict(
-#     type='Adan', lr=2e-4, paramwise_options=paramwise_cfg, weight_decay=0.02)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -311,4 +307,3 @@ log_config = dict(
 checkpoint_config = dict(interval=1)
 cudnn_benchmark = False
 find_unused_parameters = True
-# resume_from = 'experiments/bevformer_hybrid/epoch_1.pth'
