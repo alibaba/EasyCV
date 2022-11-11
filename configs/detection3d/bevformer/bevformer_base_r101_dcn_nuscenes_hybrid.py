@@ -151,7 +151,8 @@ model = dict(
             alpha=0.25,
             loss_weight=2.0),
         # loss_bbox=dict(type='L1Loss', loss_weight=0.25),
-        loss_bbox=dict(type='SmoothL1Loss', loss_weight=0.25),
+        # loss_bbox=dict(type='SmoothL1Loss', loss_weight=0.25),
+        loss_bbox=dict(type='BalancedL1Loss', loss_weight=0.25),
         loss_iou=dict(type='GIoULoss', loss_weight=0.0)),
     # model training and testing settings
     train_cfg=dict(
@@ -306,4 +307,4 @@ checkpoint_config = dict(interval=1)
 cudnn_benchmark = False
 find_unused_parameters = True
 
-resume_from = 'experiments/bevformer_hybrid/epoch_20.pth'
+# resume_from = 'experiments/bevformer_hybrid/epoch_20.pth'
