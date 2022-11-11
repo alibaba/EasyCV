@@ -37,7 +37,7 @@ model = dict(
         depth=101,
         num_stages=4,
         out_indices=(2, 3, 4),
-        frozen_stages=1,
+        frozen_stages=-1,
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
         style='caffe',
@@ -58,7 +58,7 @@ model = dict(
         bev_w=bev_w_,
         num_query=900,
         num_query_one2many=1800,
-        one2many_gt_mul = 4,
+        one2many_gt_mul=4,
         num_classes=10,
         in_channels=_dim_,
         sync_cls_avg_factor=True,
@@ -151,7 +151,7 @@ model = dict(
             alpha=0.25,
             loss_weight=2.0),
         # loss_bbox=dict(type='L1Loss', loss_weight=0.25),
-        loss_bbox = dict(type='SmoothL1Loss', loss_weight=0.25),
+        loss_bbox=dict(type='SmoothL1Loss', loss_weight=0.25),
         loss_iou=dict(type='GIoULoss', loss_weight=0.0)),
     # model training and testing settings
     train_cfg=dict(
@@ -177,7 +177,6 @@ train_pipeline = [
 
     # dict(type='RandomScaleImageMultiViewImage', scales=[0.8,0.9,1.0,1.1,1.2]),
     dict(type='RandomHorizontalFlipMultiViewImage'),
-    
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=CLASSES),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
@@ -234,9 +233,7 @@ data = dict(
             data_root=data_root,
             ann_file=data_root + 'nuscenes_infos_temporal_train.pkl',
             pipeline=[
-                dict(
-                    type='LoadMultiViewImageFromFiles',
-                    to_float32=True),
+                dict(type='LoadMultiViewImageFromFiles', to_float32=True),
                 dict(
                     type='LoadAnnotations3D',
                     with_bbox_3d=True,
@@ -263,7 +260,8 @@ data = dict(
             pipeline=[
                 dict(
                     type='LoadMultiViewImageFromFiles',
-                    to_float32=True,)
+                    to_float32=True,
+                )
             ],
             classes=CLASSES,
             modality=input_modality,
@@ -300,10 +298,12 @@ eval_pipelines = [
 
 load_from = 'r101_dcn_fcos3d_pretrain.pth'
 log_config = dict(
-    interval=10,
+    interval=50,
     hooks=[dict(type='TextLoggerHook'),
            dict(type='TensorboardLoggerHook')])
 
 checkpoint_config = dict(interval=1)
 cudnn_benchmark = False
 find_unused_parameters = True
+
+resume_from = 'experiments/bevformer_hybrid/epoch_20.pth'
