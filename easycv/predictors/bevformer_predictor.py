@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
-
+import torch
+import pickle
 import mmcv
 import numpy as np
 from mmcv.parallel import DataContainer as DC
@@ -42,8 +43,11 @@ class BEVFormerPredictor(PredictorV2):
                  box_type_3d='LiDAR',
                  use_camera=True,
                  score_threshold=0.1,
+                 model_type=None,
                  *arg,
                  **kwargs):
+        self.model_type = model_type
+        self.is_jit_model = self.model_type in ['jit', 'blade']
         super(BEVFormerPredictor, self).__init__(
             model_path,
             config_file=config_file,
@@ -139,15 +143,46 @@ class BEVFormerPredictor(PredictorV2):
         result = self._prepare_input_dict(data_info)
         result = self.processor(result)
         result['can_bus'] = DC(
-            to_tensor(result['img_metas'][0]._data['can_bus']), cpu_only=False)
+            torch.stack([to_tensor(result['img_metas'][0]._data['can_bus'])]), cpu_only=False)
         result['lidar2img'] = DC(
-            to_tensor(result['img_metas'][0]._data['lidar2img']),
+            torch.stack([to_tensor(result['img_metas'][0]._data['lidar2img'])]),
             cpu_only=False)
+        if self.is_jit_model:
+            result['scene_token'] = DC(
+                torch.stack([torch.tensor(
+                    bytearray(pickle.dumps(result['img_metas'][0]._data['scene_token'])),
+                    dtype=torch.uint8)]),
+                cpu_only=False)
+            result['img_shape'] = DC(
+                torch.stack([to_tensor(result['img_metas'][0]._data['img_shape'])]),
+                cpu_only=False)
         return result
 
     def postprocess_single(self, inputs, *args, **kwargs):
         # TODO: filter results by score_threshold
         return super().postprocess_single(inputs, *args, **kwargs)
+
+    def prepare_model(self):
+        if self.is_jit_model:
+            model = torch.jit.load(self.model_path, map_location=self.device)
+            return model
+        return super().prepare_model()
+
+    def forward(self, inputs):
+        if self.is_jit_model:
+            with torch.no_grad():
+                inputs = [torch.stack(inputs['img']), torch.stack(inputs['can_bus']), 
+                    torch.stack(inputs['lidar2img']), torch.stack(inputs['img_shape']), 
+                    torch.stack(inputs['scene_token'])]
+                outputs = self.model(*inputs)
+            outputs = {
+                'pts_bbox':[{
+                    'scores_3d': outputs[0],
+                    'labels_3d': outputs[1],
+                    'boxes_3d': self.box_type_3d(outputs[2], outputs[2].size()[-1])}],
+            }
+            return outputs
+        return super().forward(inputs)
 
     def visualize(self, inputs, results, out_dir, show=False, pipeline=None):
         raise NotImplementedError

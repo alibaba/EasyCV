@@ -529,14 +529,15 @@ def _export_bevformer(model, cfg, filename, fp16=False):
     img_size = (928, 1600)
     img = torch.rand(
         [bacth_size, queue_len, cams_num, 3, img_size[0],
-         img_size[1]]).to(device)
-    can_bus = torch.rand([18]).to(device)
-    lidar2img = torch.rand([6, 4, 4]).to(device)
-    img_shape = torch.tensor([[img_size[0], img_size[1], 3]] *
-                             cams_num).to(device)
+        img_size[1]]).to(device)
+    can_bus = torch.rand([bacth_size, queue_len, 18]).to(device)
+    lidar2img = torch.rand([bacth_size, queue_len, 6, 4, 4]).to(device)
+    img_shape = torch.tensor([[img_size[0], img_size[1], 3]] * cams_num).to(device)
+    img_shape = img_shape.repeat(bacth_size, queue_len, 1, 1)
     scene_token = 'abcdefg1234'
     scene_token = torch.tensor(
         bytearray(pickle.dumps(scene_token)), dtype=torch.uint8, device=device)
+    scene_token = scene_token.repeat(bacth_size, queue_len, 1)
     dummy_inputs = [img, can_bus, lidar2img, img_shape, scene_token]
 
     def _trace_model():

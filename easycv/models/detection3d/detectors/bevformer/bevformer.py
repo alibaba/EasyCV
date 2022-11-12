@@ -210,7 +210,7 @@ class BEVFormer(MVXTwoStageDetector):
         Returns:
             dict: Losses of different branches.
         """
-        self._check_inputs(img_metas, img, **kwargs)
+        self._check_inputs(img_metas, img, kwargs)
 
         len_queue = img.size(1)
         prev_img = img[:, :-1, ...]
@@ -236,7 +236,7 @@ class BEVFormer(MVXTwoStageDetector):
         losses.update(losses_pts)
         return losses
 
-    def _check_inputs(self, img_metas, img, **kwargs):
+    def _check_inputs(self, img_metas, img, kwargs):
         can_bus_in_kwargs = kwargs.get('can_bus', None) is not None
         lidar2img_in_kwargs = kwargs.get('lidar2img', None) is not None
         for batch_i in range(len(img_metas)):
@@ -245,20 +245,22 @@ class BEVFormer(MVXTwoStageDetector):
                     img_metas[batch_i][i]['can_bus'] = kwargs['can_bus'][
                         batch_i][i]
                 else:
-                    img_metas[batch_i][i]['can_bus'] = torch.from_numpy(
-                        img_metas[batch_i][i]['can_bus']).to(img.device)
+                    if isinstance(img_metas[batch_i][i]['can_bus'], np.ndarray):
+                        img_metas[batch_i][i]['can_bus'] = torch.from_numpy(
+                            img_metas[batch_i][i]['can_bus']).to(img.device)
                 if lidar2img_in_kwargs:
                     img_metas[batch_i][i]['lidar2img'] = kwargs['lidar2img'][
                         batch_i][i]
                 else:
-                    img_metas[batch_i][i]['lidar2img'] = torch.from_numpy(
-                        np.array(img_metas[batch_i][i]['lidar2img'])).to(
-                            img.device)
+                    if isinstance(img_metas[batch_i][i]['lidar2img'], np.ndarray):
+                        img_metas[batch_i][i]['lidar2img'] = torch.from_numpy(
+                            np.array(img_metas[batch_i][i]['lidar2img'])).to(
+                                img.device)
         kwargs.pop('can_bus', None)
         kwargs.pop('lidar2img', None)
 
     def forward_test(self, img_metas, img=None, rescale=True, **kwargs):
-        self._check_inputs(img_metas, img, **kwargs)
+        self._check_inputs(img_metas, img, kwargs)
 
         for var, name in [(img_metas, 'img_metas')]:
             if not isinstance(var, list):
@@ -341,14 +343,20 @@ class BEVFormer(MVXTwoStageDetector):
         if isinstance(box_type_3d, torch.Tensor):
             box_type_3d = pickle.loads(box_type_3d.cpu().numpy().tobytes())
 
-        scene_token_str = pickle.loads(scene_token.cpu().numpy().tobytes())
-        img_metas = [[{
-            'scene_token': scene_token_str,
-            'can_bus': can_bus,
-            'lidar2img': lidar2img,
-            'img_shape': img_shape,
-            'box_type_3d': get_box_type(box_type_3d)[0]
-        }]]
+        batch_size, queue_len = img.size()[:2]
+        img_metas = []
+        for batch_i in range(batch_size):
+            img_metas.append([])
+            for i in range(queue_len):
+                img_meta = {
+                    'scene_token': pickle.loads(scene_token[batch_i][i].cpu().numpy().tobytes()),
+                    'can_bus': can_bus[batch_i][i],
+                    'lidar2img': lidar2img[batch_i][i],
+                    'img_shape': img_shape[batch_i][i],
+                    'box_type_3d': get_box_type(box_type_3d)[0]
+                }
+                img_metas[batch_i].append(img_meta)
+
         outputs = self.forward_test(img_metas, img=img)
         scores_3d = outputs['pts_bbox'][0]['scores_3d']
         labels_3d = outputs['pts_bbox'][0]['labels_3d']
