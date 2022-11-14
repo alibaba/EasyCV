@@ -71,32 +71,14 @@ class DetSourceLvis(DetSourceCoco):
                     f'The data in the {self.lvis_path} file directory is not exists'
                 )
 
-        self.ann_file = str(self.lvis_path / self.cfg.get(split))
-        self.img_prefix = str(self.lvis_path / self.cfg.get('dataset'))
-        self.filter_empty_gt = filter_empty_gt
-        self.CLASSES = classes
-
-        # load annotations (and proposals)
-        self.data_infos = self.load_annotations(self.ann_file)
-        self.test_mode = test_mode
-        if not test_mode:
-            valid_inds = self._filter_imgs()
-            self.data_infos = [self.data_infos[i] for i in valid_inds]
-            self._set_group_flag()
-
-        self.iscrowd = iscrowd
-        self.max_labels_num = 120
-
-        transforms = []
-        for transform in pipeline:
-            if isinstance(transform, dict):
-                transform = build_from_cfg(transform, PIPELINES)
-                transforms.append(transform)
-            elif callable(transform):
-                transforms.append(transform)
-            else:
-                raise TypeError('transform must be callable or a dict')
-        self.pipeline = Compose(transforms)
+        super(DetSourceLvis, self).__init__(
+            ann_file=str(self.lvis_path / self.cfg.get(split)),
+            img_prefix=str(self.lvis_path / self.cfg.get('dataset')),
+            pipeline=pipeline,
+            test_mode=test_mode,
+            filter_empty_gt=filter_empty_gt,
+            classes=classes,
+            iscrowd=iscrowd)
 
     def load_annotations(self, ann_file):
         """Load annotation from COCO style annotation file.
