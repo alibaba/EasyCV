@@ -318,7 +318,7 @@ class Detr3DTransformerDecoder(TransformerLayerSequence):
                 reference_points=None,
                 reg_branches=None,
                 key_padding_mask=None,
-                attn_mask = None,
+                attn_mask=None,
                 **kwargs):
         """Forward function for `Detr3DTransformerDecoder`.
         Args:
@@ -348,7 +348,7 @@ class Detr3DTransformerDecoder(TransformerLayerSequence):
                 output,
                 *args,
                 reference_points=reference_points_input,
-                attn_masks = [attn_mask]*layer.num_attn,
+                attn_masks=[attn_mask] * layer.num_attn,
                 key_padding_mask=key_padding_mask,
                 **kwargs)
             output = output.permute(1, 0, 2)
@@ -810,7 +810,7 @@ class PerceptionTransformer(BaseModule):
                 reg_branches=None,
                 cls_branches=None,
                 prev_bev=None,
-                attn_mask = None,
+                attn_mask=None,
                 **kwargs):
         """Forward function for `Detr3DTransformer`.
         Args:
@@ -878,7 +878,7 @@ class PerceptionTransformer(BaseModule):
             value=bev_embed,
             query_pos=query_pos,
             reference_points=reference_points,
-            attn_mask = attn_mask,
+            attn_mask=attn_mask,
             reg_branches=reg_branches,
             cls_branches=cls_branches,
             spatial_shapes=torch.tensor([[bev_h, bev_w]], device=query.device),

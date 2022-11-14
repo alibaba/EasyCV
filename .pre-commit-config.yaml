@@ -1,5 +1,5 @@
 repos:
-  - repo: git@gitlab.alibaba-inc.com:pai-vision/flake8.git
+  - repo: https://gitlab.com/pycqa/flake8.git
     rev: 3.8.3
     hooks:
       - id: flake8
@@ -9,17 +9,17 @@ repos:
   #   hooks:
   #     - id: seed-isort-config
   #       exclude: easycv/thirdparty/
-  - repo: git@gitlab.alibaba-inc.com:pai-vision/isort.git
+  - repo: https://github.com/timothycrosley/isort
     rev: 4.3.21
     hooks:
       - id: isort
         exclude: easycv/thirdparty/|examples/|pai_jobs/
-  - repo: git@gitlab.alibaba-inc.com:pai-vision/mirrors-yapf.git
+  - repo: https://github.com/pre-commit/mirrors-yapf
     rev: v0.30.0
     hooks:
       - id: yapf
         exclude: easycv/thirdparty/|examples/
-  - repo: git@gitlab.alibaba-inc.com:pai-vision/pre-commit-hooks.git
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.1.0
     hooks:
       - id: trailing-whitespace

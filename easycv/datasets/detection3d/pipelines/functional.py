@@ -19,9 +19,10 @@
 # methods in transforms.py.
 ######################################################################
 
-import numpy as np
-import cv2
 from typing import List, Tuple
+
+import cv2
+import numpy as np
 
 #  Available interpolation modes (opencv)
 cv2_interp_codes = {
@@ -33,18 +34,20 @@ cv2_interp_codes = {
 }
 
 
-def scale_image_multiple_view(imgs: List[np.ndarray],
-                              cam_intrinsics: List[np.ndarray],
-                            #   cam_extrinsics: List[np.ndarray],
-                              lidar2img: List[np.ndarray],
-                              rand_scale: float,
-                              interpolation='bilinear') -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
+def scale_image_multiple_view(
+    imgs: List[np.ndarray],
+    cam_intrinsics: List[np.ndarray],
+    #   cam_extrinsics: List[np.ndarray],
+    lidar2img: List[np.ndarray],
+    rand_scale: float,
+    interpolation='bilinear'
+) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
     """Resize the multiple-view images with the same scale selected randomly.
     Notably used in :class:`.transforms.RandomScaleImageMultiViewImage_naive
     Args:
         imgs (list of numpy.array): Multiple-view images to be resized. len(img) is the number of cameras.
                     img shape: [H, W, 3].
-        cam_intrinsics (list of numpy.array): Intrinsic parameters of different cameras. Transformations from camera 
+        cam_intrinsics (list of numpy.array): Intrinsic parameters of different cameras. Transformations from camera
                     to image. len(cam_intrinsics) is the number of camera. For each camera, shape is 4 * 4.
         cam_extrinsics (list of numpy.array): Extrinsic parameters of different cameras. Transformations from
                 lidar to cameras. len(cam_extrinsics) is the number of camera. For each camera, shape is 4 * 4.
@@ -63,16 +66,21 @@ def scale_image_multiple_view(imgs: List[np.ndarray],
     scale_factor[0, 0] *= rand_scale
     scale_factor[1, 1] *= rand_scale
     imgs_new = [
-        cv2.resize(img, (x_size[idx], y_size[idx]), interpolation=cv2_interp_codes[interpolation])
+        cv2.resize(
+            img, (x_size[idx], y_size[idx]),
+            interpolation=cv2_interp_codes[interpolation])
         for idx, img in enumerate(imgs)
     ]
-    cam_intrinsics_new = [scale_factor @ cam_intrinsic for cam_intrinsic in cam_intrinsics]
+    cam_intrinsics_new = [
+        scale_factor @ cam_intrinsic for cam_intrinsic in cam_intrinsics
+    ]
     lidar2img_new = [scale_factor @ l2i for l2i in lidar2img]
 
     return imgs_new, cam_intrinsics_new, lidar2img_new
 
 
-def horizontal_flip_image_multiview(imgs: List[np.ndarray]) -> List[np.ndarray]:
+def horizontal_flip_image_multiview(
+        imgs: List[np.ndarray]) -> List[np.ndarray]:
     """Flip every image horizontally.
     Args:
         imgs (list of numpy.array): Multiple-view images to be resized. len(img) is the number of cameras.
@@ -113,13 +121,15 @@ def horizontal_flip_bbox(bboxes_3d: np.ndarray, dataset: str) -> np.ndarray:
     return bboxes_3d
 
 
-def horizontal_flip_cam_params(img_shape: np.ndarray, cam_intrinsics: List[np.ndarray],
-                                cam_extrinsics: List[np.ndarray], lidar2imgs: List[np.ndarray],
-                                dataset: str) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
+def horizontal_flip_cam_params(
+    img_shape: np.ndarray, cam_intrinsics: List[np.ndarray],
+    cam_extrinsics: List[np.ndarray], lidar2imgs: List[np.ndarray],
+    dataset: str
+) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
     """Flip camera parameters horizontally.
     Args:
         img_shape (numpy.array) of shape [3].
-        cam_intrinsics (list of numpy.array): Intrinsic parameters of different cameras. Transformations from camera 
+        cam_intrinsics (list of numpy.array): Intrinsic parameters of different cameras. Transformations from camera
                     to image. len(cam_intrinsics) is the number of camera. For each camera, shape is 4 * 4.
         cam_extrinsics (list of numpy.array): Extrinsic parameters of different cameras. Transformations from
                 lidar to cameras. len(cam_extrinsics) is the number of camera. For each camera, shape is 4 * 4.
@@ -172,5 +182,5 @@ def horizontal_flip_canbus(canbus: np.ndarray, dataset: str) -> np.ndarray:
         # results['canbus'][-2] = -results['canbus'][-2]  # flip direction
         canbus[-1] = -canbus[-1]  # flip direction
     else:
-        raise NotImplementedError((f"Not support {dataset} dataset"))
+        raise NotImplementedError((f'Not support {dataset} dataset'))
     return canbus
