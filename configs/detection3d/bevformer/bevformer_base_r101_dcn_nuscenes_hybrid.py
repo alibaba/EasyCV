@@ -152,7 +152,7 @@ model = dict(
             loss_weight=2.0),
         # loss_bbox=dict(type='L1Loss', loss_weight=0.25),
         # loss_bbox=dict(type='SmoothL1Loss', loss_weight=0.25),
-        loss_bbox=dict(type='BalancedL1Loss', loss_weight=0.25,gamma=1),
+        loss_bbox=dict(type='BalancedL1Loss', loss_weight=0.25, gamma=1),
         loss_iou=dict(type='GIoULoss', loss_weight=0.0)),
     # model training and testing settings
     train_cfg=dict(
