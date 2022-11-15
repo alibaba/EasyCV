@@ -234,7 +234,10 @@ data = dict(
             data_root=data_root,
             ann_file=data_root + 'nuscenes_infos_temporal_train.pkl',
             pipeline=[
-                dict(type='LoadMultiViewImageFromFiles', to_float32=True),
+                dict(
+                    type='LoadMultiViewImageFromFiles',
+                    to_float32=True,
+                    backend='turbojpeg'),
                 dict(
                     type='LoadAnnotations3D',
                     with_bbox_3d=True,
@@ -262,7 +265,7 @@ data = dict(
                 dict(
                     type='LoadMultiViewImageFromFiles',
                     to_float32=True,
-                )
+                    backend='turbojpeg')
             ],
             classes=CLASSES,
             modality=input_modality,
@@ -297,14 +300,12 @@ eval_pipelines = [
     )
 ]
 
-load_from = 'r101_dcn_fcos3d_pretrain.pth'
+load_from = 'https://github.com/zhiqi-li/storage/releases/download/v1.0/r101_dcn_fcos3d_pretrain.pth'
 log_config = dict(
     interval=50,
     hooks=[dict(type='TextLoggerHook'),
            dict(type='TensorboardLoggerHook')])
 
 checkpoint_config = dict(interval=1)
-cudnn_benchmark = False
+cudnn_benchmark = True
 find_unused_parameters = True
-
-# resume_from = 'experiments/bevformer_hybrid/epoch_20.pth'
