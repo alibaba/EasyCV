@@ -75,6 +75,8 @@ DET_DATA_MANIFEST_OSS = os.path.join(BASE_OSS_PATH,
 
 POSE_DATA_SMALL_COCO_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                           'data/pose/small_coco')
+POSE_DATA_CROWDPOSE_SMALL_LOCAL = os.path.join(BASE_LOCAL_PATH,
+                                               'data/pose/small_CrowdPose/')
 
 SSL_SMALL_IMAGENET_FEATURE = os.path.join(
     BASE_LOCAL_PATH, 'data/selfsup/small_imagenet_feature')
