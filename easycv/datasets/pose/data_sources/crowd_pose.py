@@ -14,7 +14,8 @@ CROWDPOSE_DATASET_INFO = dict(
         'Jiefeng Li, Can Wang, Hao Zhu, Yihuan Mao, Hao-Shu Fang, Cewu Lu',
         title=
         'CrowdPose: Efficient Crowded Scenes Pose Estimation and A New Benchmark',
-        year='2019',
+        year='2018',
+        container='Computer Vision and Pattern Recognition',
         homepage='https://arxiv.org/abs/1812.00324'),
     keypoint_info={
         0:
