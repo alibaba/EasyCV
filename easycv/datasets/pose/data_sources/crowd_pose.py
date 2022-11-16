@@ -4,10 +4,11 @@
 import logging
 
 from easycv.datasets.registry import DATASOURCES
+from easycv.framework.errors import ValueError
 from .top_down import PoseTopDownSource
 
 CROWDPOSE_DATASET_INFO = dict(
-    dataset_name='coco',
+    dataset_name='Crowd Pose',
     paper_info=dict(
         author=
         'Jiefeng Li, Can Wang, Hao Zhu, Yihuan Mao, Hao-Shu Fang, Cewu Lu',
