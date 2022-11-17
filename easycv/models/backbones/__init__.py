@@ -3,6 +3,7 @@ from .benchmark_mlp import BenchMarkMLP
 from .bninception import BNInception
 from .conv_mae_vit import FastConvMAEViT
 from .conv_vitdet import ConvViTDet
+from .edgevit import EdgeVit
 from .efficientformer import EfficientFormer
 from .face_keypoint_backbone import FaceKeypointBackbone
 from .genet import PlainNet

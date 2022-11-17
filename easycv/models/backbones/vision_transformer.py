@@ -14,6 +14,22 @@ from easycv.models.utils import DropPath, Mlp
 from ..registry import BACKBONES
 
 
+def hydra(q, k, v):
+    """ Hydra Attention
+
+    Paper link: https://arxiv.org/pdf/2209.07484.pdf (Hydra Attention: Efficient Attention with Many Heads)
+
+    Args:
+        q, k, and v should all be tensors of shape
+            [batch, tokens, features]
+    """
+    q = q / q.norm(dim=-1, keepdim=True)
+    k = k / k.norm(dim=-1, keepdim=True)
+    kv = (k * v).sum(dim=-2, keepdim=True)
+    out = q * kv
+    return out
+
+
 class Attention(nn.Module):
 
     def __init__(self,
@@ -22,7 +38,8 @@ class Attention(nn.Module):
                  qkv_bias=False,
                  qk_scale=None,
                  attn_drop=0.,
-                 proj_drop=0.):
+                 proj_drop=0.,
+                 hydra_attention=False):
         super().__init__()
         self.num_heads = num_heads
         head_dim = dim // num_heads
@@ -32,25 +49,41 @@ class Attention(nn.Module):
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
+        self.hydra_attention = hydra_attention
 
     def forward(self, x, rel_pos_bias=None):
         B, N, C = x.shape
-        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads,
-                                  C // self.num_heads).permute(2, 0, 3, 1, 4)
-        q, k, v = qkv[0], qkv[1], qkv[2]
 
-        attn = (q @ k.transpose(-2, -1)) * self.scale
+        if self.hydra_attention:
+            qkv = self.qkv(x).reshape(B, N, 3,
+                                      self.num_heads).permute(2, 0, 1, 3)
+            q, k, v = qkv[0], qkv[1], qkv[2]
 
-        if rel_pos_bias is not None:
-            attn = attn + rel_pos_bias
+            x = hydra(q, k, v)
+            x = x.reshape(B, N, C)
 
-        attn = attn.softmax(dim=-1)
-        attn = self.attn_drop(attn)
+            x = self.proj(x)
+            x = self.proj_drop(x)
+            return x, None
+        else:
+            qkv = self.qkv(x).reshape(B, N, 3, self.num_heads,
+                                      C // self.num_heads).permute(
+                                          2, 0, 3, 1, 4)
+            q, k, v = qkv[0], qkv[1], qkv[2]
 
-        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
-        x = self.proj(x)
-        x = self.proj_drop(x)
-        return x, attn
+            attn = (q @ k.transpose(-2, -1)) * self.scale
+
+            if rel_pos_bias is not None:
+                attn = attn + rel_pos_bias
+
+            attn = attn.softmax(dim=-1)
+            attn = self.attn_drop(attn)
+
+            x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+
+            x = self.proj(x)
+            x = self.proj_drop(x)
+            return x, attn
 
 
 class Block(nn.Module):
@@ -67,7 +100,8 @@ class Block(nn.Module):
                  act_layer=nn.GELU,
                  norm_layer=nn.LayerNorm,
                  use_layer_scale=False,
-                 init_values=1e-4):
+                 init_values=1e-4,
+                 hydra_attention=False):
         super().__init__()
         self.norm1 = norm_layer(dim)
         self.attn = Attention(
@@ -76,7 +110,8 @@ class Block(nn.Module):
             qkv_bias=qkv_bias,
             qk_scale=qk_scale,
             attn_drop=attn_drop,
-            proj_drop=drop)
+            proj_drop=drop,
+            hydra_attention=hydra_attention)
         self.drop_path = DropPath(
             drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
@@ -166,6 +201,14 @@ class VisionTransformer(nn.Module):
             scale. Default: False
         init_scale (float): It is used for layer scale in Block to scale the
             gamma_1 and gamma_2.
+        hydra_attention (bool): If hydra_attention is True, it will use Hydra
+            Attention. Default: False
+        hydra_attention_layers (int | None): The number of layers that use Hydra Attention.
+            If it is None and hydra_attention is True, it will be equal to depth.
+            Default: None
+        use_dpr_linspace (bool): If use_dpr_linspace is False, all block's drop_path_rate
+            are the same. Otherwise, it will use "torch.linspace" on drop_path_rate.
+            Default: True
 
     """
 
@@ -187,8 +230,19 @@ class VisionTransformer(nn.Module):
                  global_pool=False,
                  use_layer_scale=False,
                  init_scale=1e-4,
+                 hydra_attention=False,
+                 hydra_attention_layers=None,
+                 use_dpr_linspace=True,
                  **kwargs):
         super().__init__()
+
+        if hydra_attention:
+            if hydra_attention_layers is None:
+                hydra_attention_layers = depth
+            elif hydra_attention_layers > depth:
+                raise ValueError(
+                    'When using Hydra Attention, hydra_attention_Layers must be smaller than or equal to depth.'
+                )
 
         self.num_features = self.embed_dim = embed_dim
         self.num_heads = num_heads
@@ -200,6 +254,10 @@ class VisionTransformer(nn.Module):
         self.norm_layer = norm_layer
         self.use_layer_scale = use_layer_scale
         self.init_scale = init_scale
+        self.hydra_attention = hydra_attention
+        self.hydra_attention_layers = hydra_attention_layers
+        self.drop_path_rate = drop_path_rate
+        self.depth = depth
 
         self.patch_embed = PatchEmbed(
             img_size=img_size[0],
@@ -212,13 +270,32 @@ class VisionTransformer(nn.Module):
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, embed_dim))
         self.pos_drop = nn.Dropout(p=drop_rate)
 
-        self.drop_path_rate = drop_path_rate
-        self.depth = depth
-        dpr = [drop_path_rate for i in range(depth)]
+        if use_dpr_linspace:
+            dpr = [
+                x.item()
+                for x in torch.linspace(0, self.drop_path_rate, self.depth)
+            ]
+        else:
+            dpr = [drop_path_rate for x in range(self.depth)]
+        self.dpr = dpr
+
+        if self.hydra_attention:
+            hy = [
+                x >= (self.depth - self.hydra_attention_layers)
+                for x in range(self.depth)
+            ]
+            head = [
+                self.embed_dim if x >=
+                (self.depth - self.hydra_attention_layers) else self.num_heads
+                for x in range(self.depth)
+            ]
+        else:
+            hy = [False for x in range(self.depth)]
+            head = [self.num_heads for x in range(self.depth)]
         self.blocks = nn.ModuleList([
             Block(
                 dim=embed_dim,
-                num_heads=num_heads,
+                num_heads=head[i],
                 mlp_ratio=mlp_ratio,
                 qkv_bias=qkv_bias,
                 qk_scale=qk_scale,
@@ -227,7 +304,8 @@ class VisionTransformer(nn.Module):
                 drop_path=dpr[i],
                 norm_layer=norm_layer,
                 use_layer_scale=use_layer_scale,
-                init_values=init_scale) for i in range(depth)
+                init_values=init_scale,
+                hydra_attention=hy[i]) for i in range(depth)
         ])
         self.norm = norm_layer(embed_dim)
 
