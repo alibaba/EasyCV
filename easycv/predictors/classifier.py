@@ -121,24 +121,6 @@ class ClassificationPredictor(PredictorV2):
             batch_results.append(result)
         return batch_results
 
-    def build_processor(self):
-        """Build processor to process loaded input.
-        If you need custom preprocessing ops, you need to reimplement it.
-        """
-        if self.pipelines is not None:
-            pipelines = self.pipelines
-        else:
-            pipelines = self.cfg.get('test_pipeline', [])
-        for pipe in pipelines:
-            if pipe['type'] == 'Collect':
-                pipe['keys'] = ['img']
-
-        pipelines = [build_from_cfg(p, PIPELINES) for p in pipelines]
-
-        from easycv.datasets.shared.pipelines.transforms import Compose
-        processor = Compose(pipelines)
-        return processor
-
 
 try:
     from easy_vision.python.inference.predictor import PredictorInterface

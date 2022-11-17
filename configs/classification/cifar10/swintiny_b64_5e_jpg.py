@@ -40,12 +40,19 @@ train_pipeline = [
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Collect', keys=['img', 'gt_labels'])
 ]
-test_pipeline = [
+val_pipeline = [
     dict(type='Resize', size=256),
     dict(type='CenterCrop', size=224),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Collect', keys=['img', 'gt_labels'])
+]
+test_pipeline = [
+    dict(type='Resize', size=256),
+    dict(type='CenterCrop', size=224),
+    dict(type='ToTensor'),
+    dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img'])
 ]
 data = dict(
     imgs_per_gpu=64,

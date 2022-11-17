@@ -24,12 +24,19 @@ train_pipeline = [
     dict(type='Collect', keys=['img', 'gt_labels'])
 ]
 size = int((256 / 224) * 192)
-test_pipeline = [
+val_pipeline = [
     dict(type='Resize', size=size, interpolation=3),
     dict(type='CenterCrop', size=192),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Collect', keys=['img', 'gt_labels'])
+]
+test_pipeline = [
+    dict(type='Resize', size=size, interpolation=3),
+    dict(type='CenterCrop', size=192),
+    dict(type='ToTensor'),
+    dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img'])
 ]
 
 data = dict(
@@ -49,7 +56,7 @@ data = dict(
             list_file=data_test_list,
             root=data_test_root,
             type='ClsSourceImageList'),
-        pipeline=test_pipeline))
+        pipeline=val_pipeline))
 
 eval_config = dict(initial=True, interval=1, gpu_collect=True)
 eval_pipelines = [

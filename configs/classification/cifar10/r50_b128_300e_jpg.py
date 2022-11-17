@@ -24,10 +24,15 @@ train_pipeline = [
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Collect', keys=['img', 'gt_labels'])
 ]
-test_pipeline = [
+val_pipeline = [
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Collect', keys=['img', 'gt_labels'])
+]
+test_pipeline = [
+    dict(type='ToTensor'),
+    dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img'])
 ]
 data = dict(
     imgs_per_gpu=128,
@@ -39,7 +44,7 @@ data = dict(
     val=dict(
         type=dataset_type,
         data_source=dict(split='test', **data_source_cfg),
-        pipeline=test_pipeline),
+        pipeline=val_pipeline),
     test=dict(
         type=dataset_type,
         data_source=dict(split='test', **data_source_cfg),
