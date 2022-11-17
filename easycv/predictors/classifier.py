@@ -5,9 +5,11 @@ import numpy as np
 import torch
 from PIL import Image, ImageFile
 
+from easycv.datasets.registry import PIPELINES
 from easycv.file import io
 from easycv.framework.errors import ValueError
 from easycv.utils.misc import deprecated
+from easycv.utils.registry import build_from_cfg
 from .base import Predictor, PredictorV2
 from .builder import PREDICTORS
 
@@ -35,7 +37,7 @@ class ClassificationPredictor(PredictorV2):
                  device=None,
                  save_results=False,
                  save_path=None,
-                 pipelines=[],
+                 pipelines=None,
                  topk=1,
                  pil_input=True,
                  label_map_path=[],
@@ -118,6 +120,24 @@ class ClassificationPredictor(PredictorV2):
 
             batch_results.append(result)
         return batch_results
+
+    def build_processor(self):
+        """Build processor to process loaded input.
+        If you need custom preprocessing ops, you need to reimplement it.
+        """
+        if self.pipelines is not None:
+            pipelines = self.pipelines
+        else:
+            pipelines = self.cfg.get('test_pipeline', [])
+        for pipe in pipelines:
+            if pipe['type'] == 'Collect':
+                pipe['keys'] = ['img']
+
+        pipelines = [build_from_cfg(p, PIPELINES) for p in pipelines]
+
+        from easycv.datasets.shared.pipelines.transforms import Compose
+        processor = Compose(pipelines)
+        return processor
 
 
 try:
