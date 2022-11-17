@@ -89,7 +89,10 @@ class ClsSourceImageList(object):
 
         for l in lines:
             splits = l.strip().split(delimeter)
-            fns.append(os.path.join(root, splits[0]))
+            if len(root) > 0:
+                fns.append(os.path.join(root, splits[0]))
+            else:
+                fns.append(splits[0])
             # must be int,other with mmcv collect will crash
             label = [int(i) for i in splits[1:]]
             labels.append(

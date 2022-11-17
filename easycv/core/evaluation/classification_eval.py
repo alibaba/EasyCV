@@ -1,6 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from collections import OrderedDict
 
+import numpy as np
+
 from .base_evaluator import Evaluator
 from .builder import EVALUATORS
 from .metric_registry import METRICS
@@ -59,6 +61,11 @@ class ClsEvaluator(Evaluator):
             num = scores.size(0)
             _, pred = scores.topk(
                 max(self._topk), dim=1, largest=True, sorted=True)
+
+            # Avoid topk values greater than the number of categories
+            self._topk = np.array(list(self._topk))
+            self._topk = np.clip(self._topk, 1, scores.shape[-1])
+
             pred = pred.t()
             correct = pred.eq(target.view(1, -1).expand_as(pred))  # KxN
             for k in self._topk:

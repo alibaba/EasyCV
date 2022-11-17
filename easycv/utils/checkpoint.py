@@ -18,7 +18,8 @@ def load_checkpoint(model,
                     filename,
                     map_location='cpu',
                     strict=False,
-                    logger=None):
+                    logger=None,
+                    revise_keys=[(r'^module\.', '')]):
     """Load checkpoint from a file or URI.
 
     Args:
@@ -62,12 +63,14 @@ def load_checkpoint(model,
         ) and torch.distributed.is_initialized():
             torch.distributed.barrier()
         filename = cache_file
+
     return mmcv_load_checkpoint(
         model,
         filename,
         map_location=map_location,
         strict=strict,
-        logger=logger)
+        logger=logger,
+        revise_keys=revise_keys)
 
 
 def save_checkpoint(model, filename, optimizer=None, meta=None):

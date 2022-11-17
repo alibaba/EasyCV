@@ -194,8 +194,25 @@ def grouping_params(user_config_params):
     return first_order_params, multi_order_params
 
 
+def warpper_pai_dict(cfg_dict):
+    # export config
+    cfg_dict['export'] = dict(export_neck=True)
+    cfg_dict['checkpoint_sync_export'] = True
+    # oss config
+    cfg_dict['oss_sync_config'] = dict(
+        other_file_list=['**/events.out.tfevents*', '**/*log*'])
+    cfg_dict['oss_io_config'] = dict(
+        ak_id='your oss ak id',
+        ak_secret='your oss ak secret',
+        hosts='oss-cn-zhangjiakou.aliyuncs.com',
+        buckets=['your_bucket_2'])
+    return cfg_dict
+
+
 # gen mmcv.Config
-def mmcv_config_fromfile(ori_filename, user_config_params=None):
+def mmcv_config_fromfile(ori_filename,
+                         user_config_params=None,
+                         model_type=None):
     # grouping params
     if user_config_params:
         first_order_params, multi_order_params = grouping_params(
@@ -205,6 +222,10 @@ def mmcv_config_fromfile(ori_filename, user_config_params=None):
 
     # replace first-order parameters
     cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename, first_order_params)
+
+    # Add export and oss ​​related configuration to adapt to pai platform
+    if model_type:
+        cfg_dict = warpper_pai_dict(cfg_dict)
 
     if cfg_dict.get('custom_imports', None):
         import_modules_from_strings(**cfg_dict['custom_imports'])
@@ -388,6 +409,16 @@ CONFIG_TEMPLATE_ZOO = {
     'YOLOX_ITAG': 'configs/config_templates/yolox_itag.py',
 
     # cls
+    'CLASSIFICATION_RESNET':
+    'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py',
+    'CLASSIFICATION_RESNEXT':
+    'configs/classification/imagenet/resnext/imagenet_resnext50-32x4d_jpg.py',
+    'CLASSIFICATION_HRNET':
+    'configs/classification/imagenet/hrnet/imagenet_hrnetw18_jpg.py',
+    'CLASSIFICATION_VIT':
+    'configs/classification/imagenet/vit/imagenet_vit_base_patch16_224_jpg.py',
+    'CLASSIFICATION_SWINT':
+    'configs/classification/imagenet/swint/imagenet_swin_tiny_patch4_window7_224_jpg.py',
     'CLASSIFICATION': 'configs/config_templates/classification.py',
     'CLASSIFICATION_OSS': 'configs/config_templates/classification_oss.py',
     'CLASSIFICATION_TFRECORD_OSS':

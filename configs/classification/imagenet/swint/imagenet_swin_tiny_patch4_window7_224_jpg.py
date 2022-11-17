@@ -1,4 +1,4 @@
-_base_ = './swin_tiny_patch4_window7_224_b64x16_300e_jpg.py'
+_base_ = 'configs/classification/imagenet/swint/swin_tiny_patch4_window7_224_b64x16_300e_jpg.py'
 # model settings
 model = dict(
     backbone=dict(

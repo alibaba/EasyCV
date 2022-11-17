@@ -1,4 +1,4 @@
-_base_ = './resnext50-32x4d_b32x8_100e_jpg.py'
+_base_ = 'configs/classification/imagenet/resnext/resnext50-32x4d_b32x8_100e_jpg.py'
 # model settings
 model = dict(
     backbone=dict(

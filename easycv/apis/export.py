@@ -35,6 +35,8 @@ def export(cfg, ckpt_path, filename):
         ckpt_path (str): path to checkpoint file
         filename (str): filename to save exported models
     """
+    # avoid distributed hang
+    cfg.model['pretrained'] = False
     model = build_model(cfg.model)
     if ckpt_path != 'dummy':
         load_checkpoint(model, ckpt_path, map_location='cpu')
