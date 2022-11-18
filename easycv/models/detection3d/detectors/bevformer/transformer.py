@@ -27,6 +27,17 @@ from . import (CustomMSDeformableAttention, MSDeformableAttention3D,
 from .attentions.spatial_cross_attention import SpatialCrossAttention
 
 
+@torch.jit.script
+def _rotate(img: torch.Tensor, angle: torch.Tensor, center: torch.Tensor):
+    """torch.jit.trace does not support torchvision.rotate"""
+
+    img = rotate(
+        img,
+        float(angle.item()),
+        center=[int(center[0].item()), int(center[1].item())])
+    return img
+
+
 @TRANSFORMER_LAYER.register_module()
 class DetrTransformerDecoderLayer(BaseTransformerLayer):
     """Implements decoder layer in DETR transformer.
@@ -359,13 +370,21 @@ class Detr3DTransformerDecoder(TransformerLayerSequence):
 
                 assert reference_points.shape[-1] == 3
 
-                new_reference_points = torch.zeros_like(reference_points)
-                new_reference_points[..., :2] = tmp[..., :2] + inverse_sigmoid(
-                    reference_points[..., :2], eps=1e-5)
-                new_reference_points[...,
-                                     2:3] = tmp[..., 4:5] + inverse_sigmoid(
-                                         reference_points[..., 2:3], eps=1e-5)
+                new_reference_points = torch.zeros_like(reference_points)  # torch.Size([1, 900, 3])
+                # new_reference_points[..., :2] = tmp[..., :2] + inverse_sigmoid(
+                #     reference_points[..., :2], eps=1e-5)
+                # new_reference_points[...,
+                #                      2:3] = tmp[..., 4:5] + inverse_sigmoid(
+                #                          reference_points[..., 2:3], eps=1e-5)
 
+                # new_reference_points = new_reference_points.sigmoid()
+
+                # reference_points = new_reference_points.detach()
+
+                # remove inplace operation, metric may incorrect when using blade
+                new_reference_points_0_2 = tmp[..., :2] + inverse_sigmoid(reference_points[..., :2], eps=1e-5)
+                new_reference_points_2_3 = tmp[..., 4:5] + inverse_sigmoid(reference_points[..., 2:3], eps=1e-5)
+                new_reference_points = torch.cat([new_reference_points_0_2, new_reference_points_2_3], dim=-1)
                 new_reference_points = new_reference_points.sigmoid()
 
                 reference_points = new_reference_points.detach()
@@ -740,14 +759,12 @@ class PerceptionTransformer(BaseModule):
                 for i in range(bs):
                     # num_prev_bev = prev_bev.size(1)
                     rotation_angle = kwargs['img_metas'][i]['can_bus'][-1]
-                    rotation_angle = float(
-                        rotation_angle.detach().cpu().numpy())
                     tmp_prev_bev = prev_bev[:, i].reshape(bev_h, bev_w,
                                                           -1).permute(2, 0, 1)
-                    tmp_prev_bev = rotate(
+                    tmp_prev_bev = _rotate(
                         tmp_prev_bev,
                         rotation_angle,
-                        center=self.rotate_center)
+                        center=torch.tensor(self.rotate_center))
                     tmp_prev_bev = tmp_prev_bev.permute(1, 2, 0).reshape(
                         bev_h * bev_w, 1, -1)
                     prev_bev[:, i] = tmp_prev_bev[:, 0]
