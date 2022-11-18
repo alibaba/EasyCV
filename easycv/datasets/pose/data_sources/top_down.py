@@ -141,8 +141,8 @@ class PoseTopDownSource(object, metaclass=ABCMeta):
                  coco_style=True,
                  test_mode=False):
 
-        if not coco_style:
-            raise ValueError('Only support `coco_style` now!')
+        # if not coco_style:
+        #     raise ValueError('Only support `coco_style` now!')
         if is_filepath(dataset_info):
             cfg = Config.fromfile(dataset_info)
             dataset_info = cfg._cfg_dict['dataset_info']
