@@ -1,4 +1,4 @@
-_base_ = 'configs/classification/imagenet/vit/vit_base_patch16_224_b64x64_300e_jpg.py'
+_base_ = './vit_base_patch16_224_b64x64_300e_jpg.py'
 # model settings
 model = dict(
     backbone=dict(

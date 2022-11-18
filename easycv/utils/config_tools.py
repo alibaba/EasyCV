@@ -66,35 +66,36 @@ class EasyCVConfig(Config):
             tmp_config_file.write(config_file)
 
 
-# To find base cfg in 'easycv/configs/', base_cfg_name should be 'configs/xx/xx.py'
-# TODO: reset the api, keep the same way as mmcv `Config.fromfile`
 def check_base_cfg_path(base_cfg_name='configs/base.py', ori_filename=None):
-
-    if base_cfg_name == '../../base.py':
-        # To becompatible with previous config
-        base_cfg_name = 'configs/base.py'
-
-    base_cfg_dir_1 = osp.abspath(osp.dirname(
-        osp.dirname(__file__)))  # easycv_package_root_path
-    base_cfg_path_1 = osp.join(base_cfg_dir_1, base_cfg_name)
-    print('Read base config from', base_cfg_path_1)
-    if osp.exists(base_cfg_path_1):
-        return base_cfg_path_1
-
-    base_cfg_dir_2 = osp.dirname(base_cfg_dir_1)  # upper level dir
-    base_cfg_path_2 = osp.join(base_cfg_dir_2, base_cfg_name)
-    print('Read base config from', base_cfg_path_2)
-    if osp.exists(base_cfg_path_2):
-        return base_cfg_path_2
-
-    # relative to ori_filename
-    ori_cfg_dir = osp.dirname(ori_filename)
-    base_cfg_path_3 = osp.join(ori_cfg_dir, base_cfg_name)
-    base_cfg_path_3 = osp.abspath(osp.expanduser(base_cfg_path_3))
-    if osp.exists(base_cfg_path_3):
-        return base_cfg_path_3
-
-    raise ValueError('%s not Found' % base_cfg_name)
+    '''
+    Concatenate paths by parsing path rules.
+    for example(pseudo-code):
+        base_cfg_name = ../../../base.py
+        ori_filename = configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py
+        ori_filename.pop()
+        ori_filename = configs/classification/imagenet/resnet/
+        for i in range(3):
+            base_cfg_name.pop()
+            ori_filename.pop()
+        ori_filename = configs/
+        base_cfg_name = base.py
+        base_cfg_name = ori_filename + base_cfg_name = configs/base.py
+    '''
+    if 'configs' not in base_cfg_name and ori_filename is not None:
+        _parse_base_path_list = base_cfg_name.split('/')
+        parse_base_path_list = copy.deepcopy(_parse_base_path_list)
+        parse_ori_path_list = ori_filename.split('/')
+        parse_ori_path_list.pop()
+        for filename in _parse_base_path_list:
+            if filename == '.':
+                parse_base_path_list.pop(0)
+            elif filename == '..':
+                parse_base_path_list.pop(0)
+                parse_ori_path_list.pop()
+            else:
+                break
+        base_cfg_name = '/'.join(parse_ori_path_list + parse_base_path_list)
+    return base_cfg_name
 
 
 # Read config without __base__
@@ -194,7 +195,7 @@ def grouping_params(user_config_params):
     return first_order_params, multi_order_params
 
 
-def warpper_pai_dict(cfg_dict):
+def adapt_pai_params(cfg_dict):
     # export config
     cfg_dict['export'] = dict(export_neck=True)
     cfg_dict['checkpoint_sync_export'] = True
@@ -225,7 +226,7 @@ def mmcv_config_fromfile(ori_filename,
 
     # Add export and oss ​​related configuration to adapt to pai platform
     if model_type:
-        cfg_dict = warpper_pai_dict(cfg_dict)
+        cfg_dict = adapt_pai_params(cfg_dict)
 
     if cfg_dict.get('custom_imports', None):
         import_modules_from_strings(**cfg_dict['custom_imports'])
