@@ -90,9 +90,11 @@ TEST_IMAGES_DIR = os.path.join(BASE_LOCAL_PATH, 'data/test_images')
 
 COMPRESSION_TEST_DATA = os.path.join(BASE_LOCAL_PATH,
                                      'data/compression/test_data')
-
+# Seg data
 SEG_DATA_SMALL_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                         'data/segmentation/small_voc_200')
+SEG_DATA_SMALL_VOC_DOWNLOAD_LOCAL = os.path.join(
+    BASE_LOCAL_PATH, 'download_local/small_download/segmentation')
 
 # OCR data
 SMALL_OCR_CLS_DATA = os.path.join(BASE_LOCAL_PATH, 'data/ocr/small_ocr_cls')
