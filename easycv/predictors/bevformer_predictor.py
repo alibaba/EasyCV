@@ -13,6 +13,7 @@ from easycv.datasets.shared.pipelines.transforms import Compose
 from easycv.predictors.base import PredictorV2
 from easycv.predictors.builder import PREDICTORS
 from easycv.utils.registry import build_from_cfg
+from easycv.utils.misc import encode_str_to_tensor
 
 
 @PREDICTORS.register_module()
@@ -63,6 +64,15 @@ class BEVFormerPredictor(PredictorV2):
         self.use_camera = use_camera
         self.score_threshold = score_threshold
         self.result_key = 'pts_bbox'
+
+        # adapt to jit trace model and blade model
+        bev_embedding = self.model.pts_bbox_head.bev_embedding.weight.clone().detach()
+        self.prev_frame_info = {
+            'prev_bev': bev_embedding[:, None, :],  # [40000, 256] -> [40000, 1, 256]
+            'prev_scene_token': encode_str_to_tensor('dummy_prev_scene_token'),
+            'prev_pos': torch.tensor(0),
+            'prev_angle': torch.tensor(0), 
+        }
 
     def _prepare_input_dict(self, data_info):
         from nuscenes.eval.common.utils import Quaternion, quaternion_yaw
@@ -142,20 +152,29 @@ class BEVFormerPredictor(PredictorV2):
         data_info = mmcv.load(input)
         result = self._prepare_input_dict(data_info)
         result = self.processor(result)
-        result['can_bus'] = DC(
-            torch.stack([to_tensor(result['img_metas'][0]._data['can_bus'])]), cpu_only=False)
-        result['lidar2img'] = DC(
-            torch.stack([to_tensor(result['img_metas'][0]._data['lidar2img'])]),
-            cpu_only=False)
+        
         if self.is_jit_model:
+            result['can_bus'] = DC(
+                to_tensor(result['img_metas'][0]._data['can_bus']), 
+                cpu_only=False)
+            result['lidar2img'] = DC(
+                to_tensor(result['img_metas'][0]._data['lidar2img']),
+                cpu_only=False)
             result['scene_token'] = DC(
-                torch.stack([torch.tensor(
+                torch.tensor(
                     bytearray(pickle.dumps(result['img_metas'][0]._data['scene_token'])),
-                    dtype=torch.uint8)]),
+                    dtype=torch.uint8),
                 cpu_only=False)
             result['img_shape'] = DC(
-                torch.stack([to_tensor(result['img_metas'][0]._data['img_shape'])]),
+                to_tensor(result['img_metas'][0]._data['img_shape']),
                 cpu_only=False)
+        else:
+            result['can_bus'] = DC(
+                torch.stack([to_tensor(result['img_metas'][0]._data['can_bus'])]), cpu_only=False)
+            result['lidar2img'] = DC(
+                torch.stack([to_tensor(result['img_metas'][0]._data['lidar2img'])]),
+                cpu_only=False)
+
         return result
 
     def postprocess_single(self, inputs, *args, **kwargs):
@@ -171,10 +190,26 @@ class BEVFormerPredictor(PredictorV2):
     def forward(self, inputs):
         if self.is_jit_model:
             with torch.no_grad():
-                inputs = [torch.stack(inputs['img']), torch.stack(inputs['can_bus']), 
-                    torch.stack(inputs['lidar2img']), torch.stack(inputs['img_shape']), 
-                    torch.stack(inputs['scene_token'])]
+                img = inputs['img'][0][0]
+                img_metas = {
+                    'can_bus': inputs['can_bus'][0], 
+                    'lidar2img': inputs['lidar2img'][0], 
+                    'img_shape': inputs['img_shape'][0], 
+                    'scene_token': inputs['scene_token'][0],
+                    'prev_bev': self.prev_frame_info['prev_bev'], 
+                    'prev_pos': self.prev_frame_info['prev_pos'], 
+                    'prev_angle': self.prev_frame_info['prev_angle'], 
+                    'prev_scene_token': self.prev_frame_info['prev_scene_token']
+                }
+                inputs = (img, img_metas)
                 outputs = self.model(*inputs)
+
+            # update prev_frame_info
+            self.prev_frame_info['prev_bev'] = outputs[3][0]
+            self.prev_frame_info['prev_pos'] = outputs[3][1]
+            self.prev_frame_info['prev_angle'] = outputs[3][2]
+            self.prev_frame_info['prev_scene_token'] = outputs[3][3]
+            
             outputs = {
                 'pts_bbox':[{
                     'scores_3d': outputs[0],

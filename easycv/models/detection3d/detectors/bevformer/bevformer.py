@@ -12,6 +12,7 @@ from easycv.models.detection3d.detectors.mvx_two_stage import \
     MVXTwoStageDetector
 from easycv.models.detection3d.utils.grid_mask import GridMask
 from easycv.models.registry import MODELS
+from easycv.utils.misc import encode_str_to_tensor, decode_tensor_to_str
 
 
 @MODELS.register_module()
@@ -57,7 +58,7 @@ class BEVFormer(MVXTwoStageDetector):
         self.video_test_mode = video_test_mode
         self.prev_frame_info = {
             'prev_bev': None,
-            'scene_token': None,
+            'prev_scene_token': None,
             'prev_pos': 0,
             'prev_angle': 0,
         }
@@ -269,19 +270,19 @@ class BEVFormer(MVXTwoStageDetector):
         img = [img] if img is None else img
 
         if img_metas[0][0]['scene_token'] != self.prev_frame_info[
-                'scene_token']:
+                'prev_scene_token']:
             # the first sample of each scene is truncated
             self.prev_frame_info['prev_bev'] = None
         # update idx
-        self.prev_frame_info['scene_token'] = img_metas[0][0]['scene_token']
+        self.prev_frame_info['prev_scene_token'] = img_metas[0][0]['scene_token']
 
         # do not use temporal information
         if not self.video_test_mode:
             self.prev_frame_info['prev_bev'] = None
 
         # Get the delta of ego position and angle between two timestamps.
-        tmp_pos = copy.deepcopy(img_metas[0][0]['can_bus'][:3])
-        tmp_angle = copy.deepcopy(img_metas[0][0]['can_bus'][-1])
+        tmp_pos = img_metas[0][0]['can_bus'][:3].clone()
+        tmp_angle = img_metas[0][0]['can_bus'][-1].clone()
         if self.prev_frame_info['prev_bev'] is not None:
             img_metas[0][0]['can_bus'][:3] -= self.prev_frame_info['prev_pos']
             img_metas[0][0]['can_bus'][-1] -= self.prev_frame_info[
@@ -333,36 +334,45 @@ class BEVFormer(MVXTwoStageDetector):
             result_dict['pts_bbox'] = pts_bbox
         return new_prev_bev, bbox_list
 
-    def forward_export(self,
-                       img,
-                       can_bus,
-                       lidar2img,
-                       img_shape,
-                       scene_token,
-                       box_type_3d='LiDAR'):
+    def forward_export(self, img, img_metas):
+        error_str = 'Only support batch_size=1 and queue_length=1, please remove axis of batch_size and queue_length!'
+        if len(img.shape) > 4:
+            raise ValueError(error_str)
+        elif len(img.shape) < 4:
+            raise ValueError('The length of img size must be equal to 4: [num_cameras, img_channel, img_height, img_width]')
+
+        assert len(img_metas['can_bus'].shape) == 1, error_str  # torch.Size([18])
+        assert len(img_metas['lidar2img'].shape) == 3, error_str  # torch.Size([6, 4, 4])
+        assert len(img_metas['img_shape'].shape) == 2, error_str # torch.Size([6, 3])
+        assert len(img_metas['prev_bev'].shape) == 3, error_str # torch.Size([40000, 1, 256])
+
+        img = img[None, None, ...]  # torch.Size([6, 3, 928, 1600]) -> torch.Size([1, 1, 6, 3, 928, 1600])
+
+        box_type_3d = img_metas.get('box_type_3d', 'LiDAR')
         if isinstance(box_type_3d, torch.Tensor):
             box_type_3d = pickle.loads(box_type_3d.cpu().numpy().tobytes())
+        img_metas['box_type_3d'] = get_box_type(box_type_3d)[0]
+        img_metas['scene_token'] = decode_tensor_to_str(img_metas['scene_token'])
 
-        batch_size, queue_len = img.size()[:2]
-        img_metas = []
-        for batch_i in range(batch_size):
-            img_metas.append([])
-            for i in range(queue_len):
-                img_meta = {
-                    'scene_token': pickle.loads(scene_token[batch_i][i].cpu().numpy().tobytes()),
-                    'can_bus': can_bus[batch_i][i],
-                    'lidar2img': lidar2img[batch_i][i],
-                    'img_shape': img_shape[batch_i][i],
-                    'box_type_3d': get_box_type(box_type_3d)[0]
-                }
-                img_metas[batch_i].append(img_meta)
+        # previous frame info
+        self.prev_frame_info['prev_scene_token'] = decode_tensor_to_str(img_metas.pop('prev_scene_token', None))
+        self.prev_frame_info['prev_bev'] = img_metas.pop('prev_bev', None)
+        self.prev_frame_info['prev_pos'] = img_metas.pop('prev_pos', None)
+        self.prev_frame_info['prev_angle'] = img_metas.pop('prev_angle', None)
 
+        img_metas = [[img_metas]]
         outputs = self.forward_test(img_metas, img=img)
         scores_3d = outputs['pts_bbox'][0]['scores_3d']
         labels_3d = outputs['pts_bbox'][0]['labels_3d']
-        boxes_3d = outputs['pts_bbox'][0]['boxes_3d'].tensor
+        boxes_3d = outputs['pts_bbox'][0]['boxes_3d'].tensor.cpu()
 
-        return scores_3d, labels_3d, boxes_3d
+        # info has been updated to the current frame
+        prev_bev = self.prev_frame_info['prev_bev']
+        prev_pos = self.prev_frame_info['prev_pos']
+        prev_angle = self.prev_frame_info['prev_angle']
+        prev_scene_token = encode_str_to_tensor(self.prev_frame_info['prev_scene_token'])
+
+        return scores_3d, labels_3d, boxes_3d, [prev_bev, prev_pos, prev_angle, prev_scene_token]
 
     def forward_history_bev(self,
                             img,

@@ -28,7 +28,7 @@ bev_h_ = 200
 bev_w_ = 200
 queue_length = 4  # each sequence contains `queue_length` frames.
 
-adapt_jit = False  # set True when export jit model or blade model
+adapt_jit = False  # set True when export jit trace model or blade model
 
 model = dict(
     type='BEVFormer',
@@ -314,6 +314,6 @@ export = dict(
         fp16_fallback_op_ratio=0.0,
         customize_op_black_list=[
             'aten::select', 'aten::index', 'aten::slice', 'aten::view',
-            'aten::upsample'
-        ],
+            'aten::upsample', 'aten::clamp' 
+        ]
     ))

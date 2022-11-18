@@ -16,7 +16,7 @@ from easycv.framework.errors import NotImplementedError, ValueError
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, BEVFormer, Classification,
                            MoBY, build_model)
 from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.misc import reparameterize_models
+from easycv.utils.misc import encode_str_to_tensor
 
 __all__ = [
     'export',
@@ -524,21 +524,33 @@ def _export_bevformer(model, cfg, filename, fp16=False):
     model.eval()
     model.to(device)
 
-    # dummy inputs
-    bacth_size, queue_len, cams_num = 1, 1, 6
-    img_size = (928, 1600)
-    img = torch.rand(
-        [bacth_size, queue_len, cams_num, 3, img_size[0],
-        img_size[1]]).to(device)
-    can_bus = torch.rand([bacth_size, queue_len, 18]).to(device)
-    lidar2img = torch.rand([bacth_size, queue_len, 6, 4, 4]).to(device)
-    img_shape = torch.tensor([[img_size[0], img_size[1], 3]] * cams_num).to(device)
-    img_shape = img_shape.repeat(bacth_size, queue_len, 1, 1)
-    scene_token = 'abcdefg1234'
-    scene_token = torch.tensor(
-        bytearray(pickle.dumps(scene_token)), dtype=torch.uint8, device=device)
-    scene_token = scene_token.repeat(bacth_size, queue_len, 1)
-    dummy_inputs = [img, can_bus, lidar2img, img_shape, scene_token]
+    def _dummy_inputs():
+        # dummy inputs
+        bacth_size, queue_len, cams_num = 1, 1, 6
+        img_size = (928, 1600)
+        img = torch.rand([cams_num, 3, img_size[0], img_size[1]]).to(device)
+        can_bus = torch.rand([18]).to(device)
+        lidar2img = torch.rand([6, 4, 4]).to(device)
+        img_shape = torch.tensor([[img_size[0], img_size[1], 3]] * cams_num).to(device)
+        dummy_scene_token = 'dummy_scene_token'
+        scene_token = encode_str_to_tensor(dummy_scene_token).to(device)
+        prev_scene_token = scene_token
+        prev_bev = torch.rand([40000, 1, 256]).to(device)
+        prev_pos = torch.tensor(0)
+        prev_angle = torch.tensor(0)
+        img_metas = {
+            'can_bus':can_bus, 
+            'lidar2img': lidar2img, 
+            'img_shape': img_shape, 
+            'scene_token': scene_token, 
+            'prev_bev': prev_bev, 
+            'prev_pos': prev_pos, 
+            'prev_angle': prev_angle, 
+            'prev_scene_token': prev_scene_token
+        }
+        return img, img_metas
+
+    dummy_inputs = _dummy_inputs()
 
     def _trace_model():
         with torch.no_grad():

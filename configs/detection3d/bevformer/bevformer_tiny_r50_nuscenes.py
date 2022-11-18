@@ -321,5 +321,5 @@ export = dict(
         fp16_fallback_op_ratio=0.0,
         customize_op_black_list=[
             'aten::select', 'aten::index', 'aten::slice', 'aten::view',
-            'aten::upsample'
+            'aten::upsample', 'aten::clamp' 
         ]))

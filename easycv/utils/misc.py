@@ -6,6 +6,9 @@ import warnings
 
 import mmcv
 import numpy as np
+import pickle
+import torch
+from easycv.framework.errors import ValueError
 
 
 def tensor2imgs(tensor, mean=(0, 0, 0), std=(1, 1, 1), to_rgb=True):
@@ -99,3 +102,20 @@ def deprecated(reason):
         return new_func1
 
     return decorator
+
+
+def encode_str_to_tensor(obj):
+    if isinstance(obj, str):
+        return torch.tensor(bytearray(pickle.dumps(obj)), dtype=torch.uint8)
+    elif isinstance(obj, torch.Tensor):
+        return obj
+    else:
+        raise ValueError(f'Not support type {type(obj)}')
+
+def decode_tensor_to_str(obj):
+    if isinstance(obj, torch.Tensor):
+        return pickle.loads(obj.cpu().numpy().tobytes())
+    elif isinstance(obj, str):
+        return obj
+    else:
+        raise ValueError(f'Not support type {type(obj)}')

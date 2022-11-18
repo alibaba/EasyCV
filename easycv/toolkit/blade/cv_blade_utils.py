@@ -80,6 +80,7 @@ def opt_trt_config(
             # 'aten::select', 'aten::index', 'aten::slice', 'aten::view', 'aten::upsample'
         ],
         fp16_fallback_op_ratio=0.05,
+        preserved_attributes=[],
     )
     BLADE_CONFIG_KEYS = list(BLADE_CONFIG_DEFAULT.keys())
 
@@ -190,7 +191,8 @@ def benchmark(model,
               backend,
               batch_size,
               model_name='default',
-              num=200,
+              num_iters=200,
+              warmup_iters=5,
               fp16=False):
     """
     evaluate the time and speed of different models
@@ -201,12 +203,18 @@ def benchmark(model,
         backend (str):  backend name
         batch_size (int)： image batch
         model_name (str): tested model name
-        num: test forward times
+        num_iters: test forward times
     """
-
+    for _ in range(warmup_iters):
+        if fp16:
+            with torch.cuda.amp.autocast():
+                model(*inp)
+        else:
+            model(*inp)
+    
     torch.cuda.synchronize()
     timings = []
-    for i in range(num):
+    for i in range(num_iters):
         start_time = timeit.default_timer()
         if fp16:
             with torch.cuda.amp.autocast():
@@ -256,7 +264,7 @@ def blade_optimize(speed_test_model,
                        enable_fp16=True, fp16_fallback_op_ratio=0.05),
                    backend='TensorRT',
                    batch=1,
-                   warm_up_time=10,
+                   warmup_iters=10,
                    compute_cost=True,
                    use_profile=False,
                    check_result=False,
@@ -293,6 +301,7 @@ def blade_optimize(speed_test_model,
                 model_inputs=tuple(inputs),
             )
     if compute_cost:
+        logging.info('Running benchmark...')
         results = []
         inputs_t = inputs
 
@@ -314,12 +323,13 @@ def blade_optimize(speed_test_model,
                 backend,
                 batch,
                 'easycv',
+                warmup_iters=warmup_iters,
                 fp16=fp16))
         results.append(
             benchmark(
-                model, inputs, backend, batch, 'easycv script', fp16=fp16))
+                model, inputs, backend, batch, 'easycv script', warmup_iters=warmup_iters, fp16=fp16))
         results.append(
-            benchmark(opt_model, inputs, backend, batch, 'blade', fp16=fp16))
+            benchmark(opt_model, inputs, backend, batch, 'blade', warmup_iters=warmup_iters, fp16=fp16))
 
         logging.info('Model Summary:')
         summary = pd.DataFrame(results)
@@ -328,24 +338,24 @@ def blade_optimize(speed_test_model,
     if use_profile:
         torch.cuda.empty_cache()
         # warm-up
-        for k in range(warm_up_time):
+        for k in range(warmup_iters):
             test_result = opt_model(*inputs)
             torch.cuda.synchronize()
 
         torch.cuda.synchronize()
         cu_prof_start()
-        for k in range(warm_up_time):
+        for k in range(warmup_iters):
             test_result = opt_model(*inputs)
             torch.cuda.synchronize()
         cu_prof_stop()
         import torch.autograd.profiler as profiler
         with profiler.profile(use_cuda=True) as prof:
-            for k in range(warm_up_time):
+            for k in range(warmup_iters):
                 test_result = opt_model(*inputs)
                 torch.cuda.synchronize()
 
         with profiler.profile(use_cuda=True) as prof:
-            for k in range(warm_up_time):
+            for k in range(warmup_iters):
                 test_result = opt_model(*inputs)
                 torch.cuda.synchronize()
 
