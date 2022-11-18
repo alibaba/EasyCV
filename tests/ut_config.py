@@ -79,6 +79,8 @@ POSE_DATA_CROWDPOSE_SMALL_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                                'data/pose/small_CrowdPose/')
 POSE_DATA_OC_HUMAN_SMALL_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                               'data/pose/small_oc_human/')
+POSE_DATA_MPII_DOWNLOAD_SMALL_LOCAL = os.path.join(
+    BASE_LOCAL_PATH, 'download_local/small_download/pose/small_mpii/')
 
 SSL_SMALL_IMAGENET_FEATURE = os.path.join(
     BASE_LOCAL_PATH, 'data/selfsup/small_imagenet_feature')
