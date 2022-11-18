@@ -95,7 +95,29 @@ def check_base_cfg_path(base_cfg_name='configs/base.py', ori_filename=None):
             else:
                 break
         base_cfg_name = '/'.join(parse_ori_path_list + parse_base_path_list)
-    return base_cfg_name
+
+    # Avoid the designer not being able to find the config path
+    base_cfg_dir_1 = osp.abspath(osp.dirname(
+        osp.dirname(__file__)))  # easycv_package_root_path
+    base_cfg_path_1 = osp.join(base_cfg_dir_1, base_cfg_name)
+    print('Read base config from', base_cfg_path_1)
+    if osp.exists(base_cfg_path_1):
+        return base_cfg_path_1
+
+    base_cfg_dir_2 = osp.dirname(base_cfg_dir_1)  # upper level dir
+    base_cfg_path_2 = osp.join(base_cfg_dir_2, base_cfg_name)
+    print('Read base config from', base_cfg_path_2)
+    if osp.exists(base_cfg_path_2):
+        return base_cfg_path_2
+
+    # relative to ori_filename
+    ori_cfg_dir = osp.dirname(ori_filename)
+    base_cfg_path_3 = osp.join(ori_cfg_dir, base_cfg_name)
+    base_cfg_path_3 = osp.abspath(osp.expanduser(base_cfg_path_3))
+    if osp.exists(base_cfg_path_3):
+        return base_cfg_path_3
+
+    raise ValueError('%s not Found' % base_cfg_name)
 
 
 # Read config without __base__

@@ -53,7 +53,8 @@ train_pipeline = [
 
 data = dict(
     imgs_per_gpu=64,  # total 256
-    workers_per_gpu=8)
+    workers_per_gpu=8,
+    train=dict(pipeline=train_pipeline))
 
 # optimizer
 paramwise_options = {
