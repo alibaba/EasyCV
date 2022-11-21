@@ -308,7 +308,7 @@ class BEVFormerHead(AnchorFreeHead):
             # TODO: check the shape of reference
             assert reference.shape[-1] == 3
             # tmp: torch.Size([1, 900, 10])
-            # tmp[..., 0:2] += reference[..., 0:2]  
+            # tmp[..., 0:2] += reference[..., 0:2]
             # tmp[..., 0:2] = tmp[..., 0:2].sigmoid()
             # tmp[..., 4:5] += reference[..., 2:3]
             # tmp[..., 4:5] = tmp[..., 4:5].sigmoid()
@@ -331,14 +331,22 @@ class BEVFormerHead(AnchorFreeHead):
             tmp_4_5_add_reference = tmp_4_5 + reference[..., 2:3]
             tmp_4_5_add_reference = tmp_4_5_add_reference.sigmoid()
             tmp_0_1 = tmp_0_2_add_reference[..., 0:1]
-            tmp_0_1_new = (tmp_0_1 * (self.pc_range[3] - self.pc_range[0]) + self.pc_range[0])
+            tmp_0_1_new = (
+                tmp_0_1 * (self.pc_range[3] - self.pc_range[0]) +
+                self.pc_range[0])
             tmp_1_2 = tmp_0_2_add_reference[..., 1:2]
-            tmp_1_2_new = (tmp_1_2 * (self.pc_range[4] - self.pc_range[1]) + self.pc_range[1])
-            tmp_4_5_new = (tmp_4_5_add_reference * (self.pc_range[5] - self.pc_range[2]) + self.pc_range[2])
+            tmp_1_2_new = (
+                tmp_1_2 * (self.pc_range[4] - self.pc_range[1]) +
+                self.pc_range[1])
+            tmp_4_5_new = (
+                tmp_4_5_add_reference * (self.pc_range[5] - self.pc_range[2]) +
+                self.pc_range[2])
 
             tmp_2_4 = tmp[..., 2:4]
             tmp_5_10 = tmp[..., 5:10]
-            tmp = torch.cat([tmp_0_1_new, tmp_1_2_new, tmp_2_4, tmp_4_5_new, tmp_5_10], dim=-1)
+            tmp = torch.cat(
+                [tmp_0_1_new, tmp_1_2_new, tmp_2_4, tmp_4_5_new, tmp_5_10],
+                dim=-1)
 
             # TODO: check if using sigmoid
             outputs_coord = tmp

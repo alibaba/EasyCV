@@ -209,7 +209,7 @@ def benchmark(model,
                 model(*copy.deepcopy(inputs))
         else:
             model(*copy.deepcopy(inputs))
-    
+
     torch.cuda.synchronize()
     timings = []
     for i in range(num_iters):
@@ -325,9 +325,22 @@ def blade_optimize(speed_test_model,
                 fp16=fp16))
         results.append(
             benchmark(
-                model, copy.deepcopy(inputs), backend, batch, 'easycv script', warmup_iters=warmup_iters, fp16=fp16))
+                model,
+                copy.deepcopy(inputs),
+                backend,
+                batch,
+                'easycv script',
+                warmup_iters=warmup_iters,
+                fp16=fp16))
         results.append(
-            benchmark(opt_model, copy.deepcopy(inputs), backend, batch, 'blade', warmup_iters=warmup_iters, fp16=fp16))
+            benchmark(
+                opt_model,
+                copy.deepcopy(inputs),
+                backend,
+                batch,
+                'blade',
+                warmup_iters=warmup_iters,
+                fp16=fp16))
 
         logging.info('Model Summary:')
         summary = pd.DataFrame(results)

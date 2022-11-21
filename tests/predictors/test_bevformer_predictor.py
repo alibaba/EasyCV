@@ -1,24 +1,23 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
 import re
-import unittest
 import tempfile
+import unittest
+
+import mmcv
 import numpy as np
 import torch
 from numpy.testing import assert_array_almost_equal
-import mmcv
-
-from easycv.utils.config_tools import mmcv_config_fromfile
-from easycv.predictors.bevformer_predictor import BEVFormerPredictor
-from easycv.datasets import build_dataset
-from easycv.core.evaluation.builder import build_evaluator
-from easycv.file import io
 from tests.ut_config import (PRETRAINED_MODEL_BEVFORMER_BASE,
                              SMALL_NUSCENES_PATH)
 
 import easycv
-from easycv.predictors import BEVFormerPredictor
 from easycv.apis.export import export
+from easycv.core.evaluation.builder import build_evaluator
+from easycv.datasets import build_dataset
+from easycv.file import io
+from easycv.predictors import BEVFormerPredictor
+from easycv.utils.config_tools import mmcv_config_fromfile
 
 
 class BEVFormerPredictorTest(unittest.TestCase):
@@ -173,6 +172,8 @@ class BEVFormerPredictorTest(unittest.TestCase):
         self._assert_results(results[1], assert_value=False)
 
 
+@unittest.skipIf(torch.__version__ != '1.8.1+cu102',
+                 'need another environment where mmcv has been recompiled')
 class BEVFormerBladePredictorTest(unittest.TestCase):
 
     def setUp(self):
@@ -195,7 +196,7 @@ class BEVFormerBladePredictorTest(unittest.TestCase):
         res = re.search(r'adapt_jit(\s*)=(\s*)False', cfg_str)
         if res is not None:
             cfg_str_list = list(cfg_str)
-            cfg_str_list[res.span()[0]:res.span()[1]] = f'adapt_jit = True'
+            cfg_str_list[res.span()[0]:res.span()[1]] = 'adapt_jit = True'
             cfg_str = ''.join(cfg_str_list)
         with io.open(new_config_path, 'w') as f:
             f.write(cfg_str)
@@ -204,7 +205,8 @@ class BEVFormerBladePredictorTest(unittest.TestCase):
     def test_single(self):
         # test export blade model and bevformer predictor
         ori_ckpt = PRETRAINED_MODEL_BEVFORMER_BASE
-        inputs_file = os.path.join(SMALL_NUSCENES_PATH, 'nuscenes_infos_temporal_val.pkl')
+        inputs_file = os.path.join(SMALL_NUSCENES_PATH,
+                                   'nuscenes_infos_temporal_val.pkl')
 
         easycv_dir = os.path.dirname(easycv.__file__)
         if os.path.exists(os.path.join(easycv_dir, 'configs')):
@@ -241,8 +243,10 @@ class BEVFormerBladePredictorTest(unittest.TestCase):
 
         results = {'pts_bbox': [i['pts_bbox'] for i in predict_results]}
         val_results = val_dataset.evaluate(results, evaluators)
-        self.assertAlmostEqual(val_results['pts_bbox_NuScenes/NDS'], 0.460, delta=0.01)
-        self.assertAlmostEqual(val_results['pts_bbox_NuScenes/mAP'], 0.41, delta=0.01)
+        self.assertAlmostEqual(
+            val_results['pts_bbox_NuScenes/NDS'], 0.460, delta=0.01)
+        self.assertAlmostEqual(
+            val_results['pts_bbox_NuScenes/mAP'], 0.41, delta=0.01)
 
     @unittest.skipIf(True, 'Not support batch yet')
     def test_batch(self):

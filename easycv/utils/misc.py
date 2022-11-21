@@ -2,12 +2,13 @@
 import functools
 import inspect
 import logging
+import pickle
 import warnings
 
 import mmcv
 import numpy as np
-import pickle
 import torch
+
 from easycv.framework.errors import ValueError
 
 
@@ -111,6 +112,7 @@ def encode_str_to_tensor(obj):
         return obj
     else:
         raise ValueError(f'Not support type {type(obj)}')
+
 
 def decode_tensor_to_str(obj):
     if isinstance(obj, torch.Tensor):

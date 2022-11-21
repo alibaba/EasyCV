@@ -12,7 +12,7 @@ from easycv.models.detection3d.detectors.mvx_two_stage import \
     MVXTwoStageDetector
 from easycv.models.detection3d.utils.grid_mask import GridMask
 from easycv.models.registry import MODELS
-from easycv.utils.misc import encode_str_to_tensor, decode_tensor_to_str
+from easycv.utils.misc import decode_tensor_to_str, encode_str_to_tensor
 
 _INIT_DUMMY_PREV_BEV = torch.zeros(size=(40000, 1, 256))
 
@@ -248,14 +248,16 @@ class BEVFormer(MVXTwoStageDetector):
                     img_metas[batch_i][i]['can_bus'] = kwargs['can_bus'][
                         batch_i][i]
                 else:
-                    if isinstance(img_metas[batch_i][i]['can_bus'], np.ndarray):
+                    if isinstance(img_metas[batch_i][i]['can_bus'],
+                                  np.ndarray):
                         img_metas[batch_i][i]['can_bus'] = torch.from_numpy(
                             img_metas[batch_i][i]['can_bus']).to(img.device)
                 if lidar2img_in_kwargs:
                     img_metas[batch_i][i]['lidar2img'] = kwargs['lidar2img'][
                         batch_i][i]
                 else:
-                    if isinstance(img_metas[batch_i][i]['lidar2img'], np.ndarray):
+                    if isinstance(img_metas[batch_i][i]['lidar2img'],
+                                  np.ndarray):
                         img_metas[batch_i][i]['lidar2img'] = torch.from_numpy(
                             np.array(img_metas[batch_i][i]['lidar2img'])).to(
                                 img.device)
@@ -276,7 +278,8 @@ class BEVFormer(MVXTwoStageDetector):
             # the first sample of each scene is truncated
             self.prev_frame_info['prev_bev'] = None
         # update idx
-        self.prev_frame_info['prev_scene_token'] = img_metas[0][0]['scene_token']
+        self.prev_frame_info['prev_scene_token'] = img_metas[0][0][
+            'scene_token']
 
         # do not use temporal information
         if not self.video_test_mode:
@@ -285,7 +288,10 @@ class BEVFormer(MVXTwoStageDetector):
         # Get the delta of ego position and angle between two timestamps.
         tmp_pos = img_metas[0][0]['can_bus'][:3].clone()
         tmp_angle = img_metas[0][0]['can_bus'][-1].clone()
-        if self.prev_frame_info['prev_bev'] is not None and not (self.prev_frame_info['prev_bev'] == _INIT_DUMMY_PREV_BEV.to(self.prev_frame_info['prev_bev'].device)).all():
+        # skip init dummy prev_bev
+        if self.prev_frame_info['prev_bev'] is not None and not (
+                self.prev_frame_info['prev_bev'] == _INIT_DUMMY_PREV_BEV.to(
+                    self.prev_frame_info['prev_bev'].device)).all():
             img_metas[0][0]['can_bus'][:3] -= self.prev_frame_info['prev_pos']
             img_metas[0][0]['can_bus'][-1] -= self.prev_frame_info[
                 'prev_angle']
@@ -341,23 +347,33 @@ class BEVFormer(MVXTwoStageDetector):
         if len(img.shape) > 4:
             raise ValueError(error_str)
         elif len(img.shape) < 4:
-            raise ValueError('The length of img size must be equal to 4: [num_cameras, img_channel, img_height, img_width]')
+            raise ValueError(
+                'The length of img size must be equal to 4: [num_cameras, img_channel, img_height, img_width]'
+            )
 
-        assert len(img_metas['can_bus'].shape) == 1, error_str  # torch.Size([18])
-        assert len(img_metas['lidar2img'].shape) == 3, error_str  # torch.Size([6, 4, 4])
-        assert len(img_metas['img_shape'].shape) == 2, error_str # torch.Size([6, 3])
-        assert len(img_metas['prev_bev'].shape) == 3, error_str # torch.Size([40000, 1, 256])
+        assert len(
+            img_metas['can_bus'].shape) == 1, error_str  # torch.Size([18])
+        assert len(img_metas['lidar2img'].shape
+                   ) == 3, error_str  # torch.Size([6, 4, 4])
+        assert len(
+            img_metas['img_shape'].shape) == 2, error_str  # torch.Size([6, 3])
+        assert len(img_metas['prev_bev'].shape
+                   ) == 3, error_str  # torch.Size([40000, 1, 256])
 
-        img = img[None, None, ...]  # torch.Size([6, 3, 928, 1600]) -> torch.Size([1, 1, 6, 3, 928, 1600])
+        img = img[
+            None, None,
+            ...]  # torch.Size([6, 3, 928, 1600]) -> torch.Size([1, 1, 6, 3, 928, 1600])
 
         box_type_3d = img_metas.get('box_type_3d', 'LiDAR')
         if isinstance(box_type_3d, torch.Tensor):
             box_type_3d = pickle.loads(box_type_3d.cpu().numpy().tobytes())
         img_metas['box_type_3d'] = get_box_type(box_type_3d)[0]
-        img_metas['scene_token'] = decode_tensor_to_str(img_metas['scene_token'])
+        img_metas['scene_token'] = decode_tensor_to_str(
+            img_metas['scene_token'])
 
         # previous frame info
-        self.prev_frame_info['prev_scene_token'] = decode_tensor_to_str(img_metas.pop('prev_scene_token', None))
+        self.prev_frame_info['prev_scene_token'] = decode_tensor_to_str(
+            img_metas.pop('prev_scene_token', None))
         self.prev_frame_info['prev_bev'] = img_metas.pop('prev_bev', None)
         self.prev_frame_info['prev_pos'] = img_metas.pop('prev_pos', None)
         self.prev_frame_info['prev_angle'] = img_metas.pop('prev_angle', None)
@@ -372,9 +388,12 @@ class BEVFormer(MVXTwoStageDetector):
         prev_bev = self.prev_frame_info['prev_bev']
         prev_pos = self.prev_frame_info['prev_pos']
         prev_angle = self.prev_frame_info['prev_angle']
-        prev_scene_token = encode_str_to_tensor(self.prev_frame_info['prev_scene_token'])
+        prev_scene_token = encode_str_to_tensor(
+            self.prev_frame_info['prev_scene_token'])
 
-        return scores_3d, labels_3d, boxes_3d, [prev_bev, prev_pos, prev_angle, prev_scene_token]
+        return scores_3d, labels_3d, boxes_3d, [
+            prev_bev, prev_pos, prev_angle, prev_scene_token
+        ]
 
     def forward_history_bev(self,
                             img,

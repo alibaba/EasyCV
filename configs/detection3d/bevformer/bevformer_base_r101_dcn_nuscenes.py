@@ -306,7 +306,7 @@ log_config = dict(
            dict(type='TensorboardLoggerHook')])
 
 checkpoint_config = dict(interval=1)
-# cudnn_benchmark = True
+cudnn_benchmark = True
 export = dict(
     type='blade',
     blade_config=dict(
@@ -314,6 +314,5 @@ export = dict(
         fp16_fallback_op_ratio=0.0,
         customize_op_black_list=[
             'aten::select', 'aten::index', 'aten::slice', 'aten::view',
-            'aten::upsample', 'aten::clamp' 
-        ]
-    ))
+            'aten::upsample', 'aten::clamp'
+        ]))

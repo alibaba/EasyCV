@@ -1,21 +1,23 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import json
 import os
+import re
 import subprocess
 import tempfile
 import unittest
-import re
+
 import numpy as np
 import torch
-from tests.ut_config import (IMAGENET_LABEL_TXT, PRETRAINED_MODEL_MOCO,
-                             PRETRAINED_MODEL_RESNET50,
-                             PRETRAINED_MODEL_YOLOXS_EXPORT, PRETRAINED_MODEL_BEVFORMER_BASE)
+from tests.ut_config import (IMAGENET_LABEL_TXT,
+                             PRETRAINED_MODEL_BEVFORMER_BASE,
+                             PRETRAINED_MODEL_MOCO, PRETRAINED_MODEL_RESNET50,
+                             PRETRAINED_MODEL_YOLOXS_EXPORT)
 
 import easycv
 from easycv.apis.export import export
+from easycv.file import io
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.test_util import clean_up, get_tmp_dir
-from easycv.file import io
 
 
 class ModelExportTest(unittest.TestCase):
@@ -129,7 +131,7 @@ class ModelExportTest(unittest.TestCase):
             export_config['model']['backbone']['norm_cfg']['type'] == 'BN')
 
     @unittest.skipIf(torch.__version__ != '1.8.1+cu102',
-                 'need another environment where mmcv has been recompiled')
+                     'need another environment where mmcv has been recompiled')
     def test_export_bevformer_jit(self):
         ckpt_path = PRETRAINED_MODEL_BEVFORMER_BASE
 
@@ -150,7 +152,7 @@ class ModelExportTest(unittest.TestCase):
             res = re.search(r'adapt_jit(\s*)=(\s*)False', cfg_str)
             if res is not None:
                 cfg_str_list = list(cfg_str)
-                cfg_str_list[res.span()[0]:res.span()[1]] = f'adapt_jit = True'
+                cfg_str_list[res.span()[0]:res.span()[1]] = 'adapt_jit = True'
                 cfg_str = ''.join(cfg_str_list)
             with io.open(new_config_path, 'w') as f:
                 f.write(cfg_str)

@@ -180,6 +180,7 @@ def _export_yolox(model, cfg, filename):
         model.export_type = export_type
 
         if export_type != 'raw':
+            from easycv.utils.misc import reparameterize_models
             # only when we use jit or blade, we need to reparameterize_models before export
             model = reparameterize_models(model)
             device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -520,7 +521,9 @@ def export_jit_model(model, cfg, filename):
 
 def _export_bevformer(model, cfg, filename, fp16=False):
     if not cfg.adapt_jit:
-        raise ValueError('"cfg.adapt_jit" must be True when export jit trace or blade model.')
+        raise ValueError(
+            '"cfg.adapt_jit" must be True when export jit trace or blade model.'
+        )
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = copy.deepcopy(model)
     model.eval()
@@ -533,7 +536,8 @@ def _export_bevformer(model, cfg, filename, fp16=False):
         img = torch.rand([cams_num, 3, img_size[0], img_size[1]]).to(device)
         can_bus = torch.rand([18]).to(device)
         lidar2img = torch.rand([6, 4, 4]).to(device)
-        img_shape = torch.tensor([[img_size[0], img_size[1], 3]] * cams_num).to(device)
+        img_shape = torch.tensor([[img_size[0], img_size[1], 3]] *
+                                 cams_num).to(device)
         dummy_scene_token = 'dummy_scene_token'
         scene_token = encode_str_to_tensor(dummy_scene_token).to(device)
         prev_scene_token = scene_token
@@ -541,13 +545,13 @@ def _export_bevformer(model, cfg, filename, fp16=False):
         prev_pos = torch.tensor(0)
         prev_angle = torch.tensor(0)
         img_metas = {
-            'can_bus':can_bus, 
-            'lidar2img': lidar2img, 
-            'img_shape': img_shape, 
-            'scene_token': scene_token, 
-            'prev_bev': prev_bev, 
-            'prev_pos': prev_pos, 
-            'prev_angle': prev_angle, 
+            'can_bus': can_bus,
+            'lidar2img': lidar2img,
+            'img_shape': img_shape,
+            'scene_token': scene_token,
+            'prev_bev': prev_bev,
+            'prev_pos': prev_pos,
+            'prev_angle': prev_angle,
             'prev_scene_token': prev_scene_token
         }
         return img, img_metas

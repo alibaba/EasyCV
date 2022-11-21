@@ -1,9 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
-import torch
 import pickle
+
 import mmcv
 import numpy as np
+import torch
 from mmcv.parallel import DataContainer as DC
 
 from easycv.core.bbox import get_box_type
@@ -12,8 +13,8 @@ from easycv.datasets.shared.pipelines.format import to_tensor
 from easycv.datasets.shared.pipelines.transforms import Compose
 from easycv.predictors.base import PredictorV2
 from easycv.predictors.builder import PREDICTORS
-from easycv.utils.registry import build_from_cfg
 from easycv.utils.misc import encode_str_to_tensor
+from easycv.utils.registry import build_from_cfg
 
 
 @PREDICTORS.register_module()
@@ -74,7 +75,7 @@ class BEVFormerPredictor(PredictorV2):
             'prev_bev': _INIT_DUMMY_PREV_BEV.to(self.device),
             'prev_scene_token': encode_str_to_tensor('dummy_prev_scene_token'),
             'prev_pos': torch.tensor(0),
-            'prev_angle': torch.tensor(0), 
+            'prev_angle': torch.tensor(0),
         }
 
     def _prepare_input_dict(self, data_info):
@@ -155,17 +156,19 @@ class BEVFormerPredictor(PredictorV2):
         data_info = mmcv.load(input) if isinstance(input, str) else input
         result = self._prepare_input_dict(data_info)
         result = self.processor(result)
-        
+
         if self.is_jit_model:
             result['can_bus'] = DC(
-                to_tensor(result['img_metas'][0]._data['can_bus']), 
+                to_tensor(result['img_metas'][0]._data['can_bus']),
                 cpu_only=False)
             result['lidar2img'] = DC(
                 to_tensor(result['img_metas'][0]._data['lidar2img']),
                 cpu_only=False)
             result['scene_token'] = DC(
                 torch.tensor(
-                    bytearray(pickle.dumps(result['img_metas'][0]._data['scene_token'])),
+                    bytearray(
+                        pickle.dumps(
+                            result['img_metas'][0]._data['scene_token'])),
                     dtype=torch.uint8),
                 cpu_only=False)
             result['img_shape'] = DC(
@@ -173,9 +176,12 @@ class BEVFormerPredictor(PredictorV2):
                 cpu_only=False)
         else:
             result['can_bus'] = DC(
-                torch.stack([to_tensor(result['img_metas'][0]._data['can_bus'])]), cpu_only=False)
+                torch.stack(
+                    [to_tensor(result['img_metas'][0]._data['can_bus'])]),
+                cpu_only=False)
             result['lidar2img'] = DC(
-                torch.stack([to_tensor(result['img_metas'][0]._data['lidar2img'])]),
+                torch.stack(
+                    [to_tensor(result['img_metas'][0]._data['lidar2img'])]),
                 cpu_only=False)
 
         return result
@@ -195,14 +201,15 @@ class BEVFormerPredictor(PredictorV2):
             with torch.no_grad():
                 img = inputs['img'][0][0]
                 img_metas = {
-                    'can_bus': inputs['can_bus'][0], 
-                    'lidar2img': inputs['lidar2img'][0], 
-                    'img_shape': inputs['img_shape'][0], 
+                    'can_bus': inputs['can_bus'][0],
+                    'lidar2img': inputs['lidar2img'][0],
+                    'img_shape': inputs['img_shape'][0],
                     'scene_token': inputs['scene_token'][0],
-                    'prev_bev': self.prev_frame_info['prev_bev'], 
-                    'prev_pos': self.prev_frame_info['prev_pos'], 
-                    'prev_angle': self.prev_frame_info['prev_angle'], 
-                    'prev_scene_token': self.prev_frame_info['prev_scene_token']
+                    'prev_bev': self.prev_frame_info['prev_bev'],
+                    'prev_pos': self.prev_frame_info['prev_pos'],
+                    'prev_angle': self.prev_frame_info['prev_angle'],
+                    'prev_scene_token':
+                    self.prev_frame_info['prev_scene_token']
                 }
                 inputs = (img, img_metas)
                 outputs = self.model(*inputs)
@@ -212,12 +219,16 @@ class BEVFormerPredictor(PredictorV2):
             self.prev_frame_info['prev_pos'] = outputs[3][1]
             self.prev_frame_info['prev_angle'] = outputs[3][2]
             self.prev_frame_info['prev_scene_token'] = outputs[3][3]
-            
+
             outputs = {
-                'pts_bbox':[{
-                    'scores_3d': outputs[0],
-                    'labels_3d': outputs[1],
-                    'boxes_3d': self.box_type_3d(outputs[2].cpu(), outputs[2].size()[-1])}],
+                'pts_bbox': [{
+                    'scores_3d':
+                    outputs[0],
+                    'labels_3d':
+                    outputs[1],
+                    'boxes_3d':
+                    self.box_type_3d(outputs[2].cpu(), outputs[2].size()[-1])
+                }],
             }
             return outputs
         return super().forward(inputs)
