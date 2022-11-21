@@ -95,7 +95,6 @@ def load_image(img_path,
         backend (str): The image decoding backend type. Options are `cv2`, `pillow`, `turbojpeg`.
     """
     # TODO: functions of multi tries should be in the `io.open`
-    try_cnt = 0
     img = None
     if is_url_path(img_path):
         from mmcv.fileio.file_client import HTTPBackend

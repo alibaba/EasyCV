@@ -519,6 +519,8 @@ def export_jit_model(model, cfg, filename):
 
 
 def _export_bevformer(model, cfg, filename, fp16=False):
+    if not cfg.adapt_jit:
+        raise ValueError('"cfg.adapt_jit" must be True when export jit trace or blade model.')
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = copy.deepcopy(model)
     model.eval()

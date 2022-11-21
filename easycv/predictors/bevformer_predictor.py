@@ -65,10 +65,13 @@ class BEVFormerPredictor(PredictorV2):
         self.score_threshold = score_threshold
         self.result_key = 'pts_bbox'
 
-        # adapt to jit trace model and blade model
-        bev_embedding = self.model.pts_bbox_head.bev_embedding.weight.clone().detach()
+        # The initial prev_bev should be the weight of self.model.pts_bbox_head.bev_embedding, but the weight cannot be taken out from the blade model.
+        # So we using the dummy data as the the initial value, and it will not be used, just to adapt to jit and blade models.
+        # init_prev_bev = self.model.pts_bbox_head.bev_embedding.weight.clone().detach()
+        # init_prev_bev = init_prev_bev[:, None, :],  # [40000, 256] -> [40000, 1, 256]
+        from easycv.models.detection3d.detectors.bevformer.bevformer import _INIT_DUMMY_PREV_BEV
         self.prev_frame_info = {
-            'prev_bev': bev_embedding[:, None, :],  # [40000, 256] -> [40000, 1, 256]
+            'prev_bev': _INIT_DUMMY_PREV_BEV.to(self.device),
             'prev_scene_token': encode_str_to_tensor('dummy_prev_scene_token'),
             'prev_pos': torch.tensor(0),
             'prev_angle': torch.tensor(0), 
@@ -149,7 +152,7 @@ class BEVFormerPredictor(PredictorV2):
         Args:
             input (str): Pickle file path, the content format is the same with the infos file of nusences.
         """
-        data_info = mmcv.load(input)
+        data_info = mmcv.load(input) if isinstance(input, str) else input
         result = self._prepare_input_dict(data_info)
         result = self.processor(result)
         
