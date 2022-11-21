@@ -4,9 +4,14 @@ import random
 import unittest
 
 import numpy as np
-from tests.ut_config import DET_DATA_SMALL_VOC_LOCAL, VOC_CLASSES
+from tests.ut_config import (DET_DATA_SMALL_VOC_LOCAL, VOC_CLASSES,
+                             VOC_DATASET_DOWNLOAD_LOCAL,
+                             VOC_DATASET_DOWNLOAD_SMALL)
 
-from easycv.datasets.detection.data_sources.voc import DetSourceVOC
+from easycv.datasets.detection.data_sources.voc import (DetSourceVOC,
+                                                        DetSourceVOC2007,
+                                                        DetSourceVOC2012)
+from easycv.datasets.utils.download_data.download_voc import download_voc
 from easycv.file import io
 from easycv.framework.errors import ValueError
 
@@ -137,6 +142,69 @@ class DetSourceVOCTest(unittest.TestCase):
         self.assertEqual(num_samples, 20)
         self.assertEqual(data_source._retry_count, 2)
         self.assertEqual(exception.message, 'All samples failed to load!')
+
+    def test_download_voc2007(self):
+        data_root = VOC_DATASET_DOWNLOAD_LOCAL
+
+        cache_at_init = False
+        cache_on_the_fly = False
+        data_source = DetSourceVOC2007(
+            path=data_root,
+            download=True,
+            split='train',
+            classes=VOC_CLASSES,
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly,
+            dataset_home=data_root)
+
+        self._base_test(data_source, cache_at_init, cache_on_the_fly)
+
+    def test_download_voc2012(self):
+        data_root = VOC_DATASET_DOWNLOAD_LOCAL
+
+        cache_at_init = False
+        cache_on_the_fly = False
+        data_source = DetSourceVOC2012(
+            path=data_root,
+            download=True,
+            split='train',
+            classes=VOC_CLASSES,
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly)
+        self._base_test(data_source, cache_at_init, cache_on_the_fly)
+
+    def test_download_voc(self):
+        cfg = dict(
+            voc2007=
+            'https://easycv.oss-cn-hangzhou.aliyuncs.com/data/voc2007_small.tar',
+            voc2012=
+            'https://easycv.oss-cn-hangzhou.aliyuncs.com/data/voc2012_small.tar'
+        )
+
+        cache_at_init = False
+        cache_on_the_fly = False
+
+        voc2007 = download_voc(
+            'voc2007', 'train', target_dir=VOC_DATASET_DOWNLOAD_SMALL,
+            cfg=cfg)['path']
+        print('voc2007 path is ', voc2007)
+        data_source_2007 = DetSourceVOC(
+            path=voc2007,
+            classes=VOC_CLASSES,
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly)
+        self._base_test(data_source_2007, cache_at_init, cache_on_the_fly)
+
+        voc2012 = download_voc(
+            'voc2012', 'train', target_dir=VOC_DATASET_DOWNLOAD_SMALL,
+            cfg=cfg)['path']
+        print('voc2012 path is ', voc2012)
+        data_source_2012 = DetSourceVOC(
+            path=voc2012,
+            classes=VOC_CLASSES,
+            cache_at_init=cache_at_init,
+            cache_on_the_fly=cache_on_the_fly)
+        self._base_test(data_source_2012, cache_at_init, cache_on_the_fly)
 
 
 if __name__ == '__main__':
