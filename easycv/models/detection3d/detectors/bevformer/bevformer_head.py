@@ -307,7 +307,8 @@ class BEVFormerHead(AnchorFreeHead):
                 if self.with_box_refine else None,  # noqa:E501
                 cls_branches=self.cls_branches if self.as_two_stage else None,
                 img_metas=img_metas,
-                prev_bev=prev_bev)
+                prev_bev=prev_bev,
+                attn_mask=self_attn_mask)
 
         bev_embed, hs, init_reference, inter_references = outputs
         hs = hs.permute(0, 2, 1, 3)
