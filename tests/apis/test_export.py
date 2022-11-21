@@ -4,16 +4,18 @@ import os
 import subprocess
 import tempfile
 import unittest
-
+import re
 import numpy as np
 import torch
 from tests.ut_config import (IMAGENET_LABEL_TXT, PRETRAINED_MODEL_MOCO,
                              PRETRAINED_MODEL_RESNET50,
-                             PRETRAINED_MODEL_YOLOXS_EXPORT)
+                             PRETRAINED_MODEL_YOLOXS_EXPORT, PRETRAINED_MODEL_BEVFORMER_BASE)
 
+import easycv
 from easycv.apis.export import export
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.test_util import clean_up, get_tmp_dir
+from easycv.file import io
 
 
 class ModelExportTest(unittest.TestCase):
@@ -125,6 +127,41 @@ class ModelExportTest(unittest.TestCase):
         export_config = json.loads(export_config_str)
         self.assertTrue(
             export_config['model']['backbone']['norm_cfg']['type'] == 'BN')
+
+    @unittest.skipIf(torch.__version__ != '1.8.1+cu102',
+                 'need another environment where mmcv has been recompiled')
+    def test_export_bevformer_jit(self):
+        ckpt_path = PRETRAINED_MODEL_BEVFORMER_BASE
+
+        easycv_dir = os.path.dirname(easycv.__file__)
+        if os.path.exists(os.path.join(easycv_dir, 'configs')):
+            config_dir = os.path.join(easycv_dir, 'configs')
+        else:
+            config_dir = os.path.join(os.path.dirname(easycv_dir), 'configs')
+        config_file = os.path.join(
+            config_dir,
+            'detection3d/bevformer/bevformer_base_r101_dcn_nuscenes.py')
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with io.open(config_file, 'r') as f:
+                cfg_str = f.read()
+            new_config_path = os.path.join(tmpdir, 'new_config.py')
+            # find first adapt_jit and replace value
+            res = re.search(r'adapt_jit(\s*)=(\s*)False', cfg_str)
+            if res is not None:
+                cfg_str_list = list(cfg_str)
+                cfg_str_list[res.span()[0]:res.span()[1]] = f'adapt_jit = True'
+                cfg_str = ''.join(cfg_str_list)
+            with io.open(new_config_path, 'w') as f:
+                f.write(cfg_str)
+
+            cfg = mmcv_config_fromfile(new_config_path)
+            cfg.export.type = 'jit'
+
+            filename = os.path.join(tmpdir, 'model.pth')
+            export(cfg, ckpt_path, filename, fp16=False)
+
+            self.assertTrue(os.path.exists(filename + '.jit'))
 
 
 if __name__ == '__main__':

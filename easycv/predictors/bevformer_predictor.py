@@ -217,7 +217,7 @@ class BEVFormerPredictor(PredictorV2):
                 'pts_bbox':[{
                     'scores_3d': outputs[0],
                     'labels_3d': outputs[1],
-                    'boxes_3d': self.box_type_3d(outputs[2], outputs[2].size()[-1])}],
+                    'boxes_3d': self.box_type_3d(outputs[2].cpu(), outputs[2].size()[-1])}],
             }
             return outputs
         return super().forward(inputs)

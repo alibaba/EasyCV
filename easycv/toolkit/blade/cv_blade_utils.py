@@ -1,11 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import argparse
+import copy
 import ctypes
 import itertools
 import logging
 import os
-import time
 import timeit
 from contextlib import contextmanager
 
@@ -14,7 +13,6 @@ import pandas as pd
 import torch
 import torch_blade
 import torch_blade.tensorrt
-import torchvision
 from torch_blade import optimize
 
 from easycv.framework.errors import RuntimeError
@@ -187,7 +185,7 @@ def computeStats(backend, timings, batch_size=1, model_name='default'):
 
 @torch.no_grad()
 def benchmark(model,
-              inp,
+              inputs,
               backend,
               batch_size,
               model_name='default',
@@ -199,7 +197,7 @@ def benchmark(model,
 
     Args:
         model: input model
-        inp: input of the model
+        inputs: input of the model
         backend (str):  backend name
         batch_size (int)： image batch
         model_name (str): tested model name
@@ -208,9 +206,9 @@ def benchmark(model,
     for _ in range(warmup_iters):
         if fp16:
             with torch.cuda.amp.autocast():
-                model(*inp)
+                model(*copy.deepcopy(inputs))
         else:
-            model(*inp)
+            model(*copy.deepcopy(inputs))
     
     torch.cuda.synchronize()
     timings = []
@@ -218,9 +216,9 @@ def benchmark(model,
         start_time = timeit.default_timer()
         if fp16:
             with torch.cuda.amp.autocast():
-                model(*inp)
+                model(*copy.deepcopy(inputs))
         else:
-            model(*inp)
+            model(*copy.deepcopy(inputs))
         torch.cuda.synchronize()
         end_time = timeit.default_timer()
         meas_time = end_time - start_time
@@ -291,19 +289,19 @@ def blade_optimize(speed_test_model,
                 opt_model = optimize_op(
                     model,
                     allow_tracing=True,
-                    model_inputs=tuple(inputs),
+                    model_inputs=tuple(copy.deepcopy(inputs)),
                 )
     else:
         with opt_trt_config(blade_config):
             opt_model = optimize_op(
                 model,
                 allow_tracing=True,
-                model_inputs=tuple(inputs),
+                model_inputs=tuple(copy.deepcopy(inputs)),
             )
     if compute_cost:
         logging.info('Running benchmark...')
         results = []
-        inputs_t = inputs
+        inputs_t = copy.deepcopy(inputs)
 
         # end2end model and scripts needs different channel purmulate, encounter this problem only when we use end2end export
         if check_inputs and (inputs_t[0].shape[-1] == 3):
@@ -327,9 +325,9 @@ def blade_optimize(speed_test_model,
                 fp16=fp16))
         results.append(
             benchmark(
-                model, inputs, backend, batch, 'easycv script', warmup_iters=warmup_iters, fp16=fp16))
+                model, copy.deepcopy(inputs), backend, batch, 'easycv script', warmup_iters=warmup_iters, fp16=fp16))
         results.append(
-            benchmark(opt_model, inputs, backend, batch, 'blade', warmup_iters=warmup_iters, fp16=fp16))
+            benchmark(opt_model, copy.deepcopy(inputs), backend, batch, 'blade', warmup_iters=warmup_iters, fp16=fp16))
 
         logging.info('Model Summary:')
         summary = pd.DataFrame(results)
@@ -339,32 +337,32 @@ def blade_optimize(speed_test_model,
         torch.cuda.empty_cache()
         # warm-up
         for k in range(warmup_iters):
-            test_result = opt_model(*inputs)
+            test_result = opt_model(*copy.deepcopy(inputs))
             torch.cuda.synchronize()
 
         torch.cuda.synchronize()
         cu_prof_start()
         for k in range(warmup_iters):
-            test_result = opt_model(*inputs)
+            test_result = opt_model(*copy.deepcopy(inputs))
             torch.cuda.synchronize()
         cu_prof_stop()
         import torch.autograd.profiler as profiler
         with profiler.profile(use_cuda=True) as prof:
             for k in range(warmup_iters):
-                test_result = opt_model(*inputs)
+                test_result = opt_model(*copy.deepcopy(inputs))
                 torch.cuda.synchronize()
 
         with profiler.profile(use_cuda=True) as prof:
             for k in range(warmup_iters):
-                test_result = opt_model(*inputs)
+                test_result = opt_model(*copy.deepcopy(inputs))
                 torch.cuda.synchronize()
 
         prof_str = prof.key_averages().table(sort_by='cuda_time_total')
         print(f'{prof_str}')
 
     if check_result:
-        output = model(*inputs)
-        test_result = opt_model(*inputs)
+        output = model(*copy.deepcopy(inputs))
+        test_result = opt_model(*copy.deepcopy(inputs))
         check_results(output, test_result)
 
     return opt_model

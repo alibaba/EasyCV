@@ -558,7 +558,7 @@ def _export_bevformer(model, cfg, filename, fp16=False):
         with torch.no_grad():
             model.forward = model.forward_export
             trace_model = torch.jit.trace(
-                model, dummy_inputs, check_trace=False)
+                model, copy.deepcopy(dummy_inputs), check_trace=False)
         return trace_model
 
     export_type = cfg.export.get('type')
@@ -584,7 +584,7 @@ def _export_bevformer(model, cfg, filename, fp16=False):
         blade_model = blade_optimize(
             speed_test_model=model,
             model=trace_model,
-            inputs=dummy_inputs,
+            inputs=copy.deepcopy(dummy_inputs),
             blade_config=blade_config,
             static_opt=False,
             min_num_nodes=None,  # 50
