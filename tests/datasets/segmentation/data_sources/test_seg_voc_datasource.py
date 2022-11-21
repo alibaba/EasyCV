@@ -6,7 +6,9 @@ import unittest
 import numpy as np
 from tests.ut_config import SEG_DATA_SMALL_VOC_DOWNLOAD_LOCAL, VOC_CLASSES
 
-from easycv.datasets.segmentation.data_sources.voc import SegSourceVoc2010
+from easycv.datasets.segmentation.data_sources.voc import (SegSourceVoc2007,
+                                                           SegSourceVoc2010,
+                                                           SegSourceVoc2012)
 
 
 class SegSourceVocTest(unittest.TestCase):
@@ -63,7 +65,26 @@ class SegSourceVocTest(unittest.TestCase):
                     [0, 5, 8, 11, 15, 255])
         self.assertTrue(exists)
 
-    def test_default(self):
+    def test_voc2012(self):
+
+        _download_url_ = {
+            'url':
+            'https://easycv.oss-cn-hangzhou.aliyuncs.com/data/small_seg_voc/voc2010.zip',
+            'filename': 'VOCtrainval_03-May-2010.tar',
+            'base_dir': os.path.join('VOCdevkit', 'VOC2010')
+        }
+        data_root = SEG_DATA_SMALL_VOC_DOWNLOAD_LOCAL
+        cache_at_init = False
+        cache_on_the_fly = False
+        data_source = SegSourceVoc2012(
+            download=True,
+            path=data_root,
+            split='train',
+            classes=VOC_CLASSES,
+            cfg=_download_url_)
+        self._base_test(data_source, cache_at_init, cache_on_the_fly)
+
+    def test_voc2010(self):
 
         _download_url_ = {
             'url':
@@ -75,6 +96,25 @@ class SegSourceVocTest(unittest.TestCase):
         cache_at_init = False
         cache_on_the_fly = False
         data_source = SegSourceVoc2010(
+            download=True,
+            path=data_root,
+            split='train',
+            classes=VOC_CLASSES,
+            cfg=_download_url_)
+        self._base_test(data_source, cache_at_init, cache_on_the_fly)
+
+    def test_voc2007(self):
+
+        _download_url_ = {
+            'url':
+            'https://easycv.oss-cn-hangzhou.aliyuncs.com/data/small_seg_voc/voc2010.zip',
+            'filename': 'VOCtrainval_03-May-2010.tar',
+            'base_dir': os.path.join('VOCdevkit', 'VOC2010')
+        }
+        data_root = SEG_DATA_SMALL_VOC_DOWNLOAD_LOCAL
+        cache_at_init = False
+        cache_on_the_fly = False
+        data_source = SegSourceVoc2007(
             download=True,
             path=data_root,
             split='train',
