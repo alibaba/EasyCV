@@ -197,7 +197,7 @@ class YoloXPredictor(DetectionPredictor):
             with io.open(self.model_path, 'rb') as infile:
                 model = torch.jit.load(infile, self.device)
         else:
-            from easycv.apis.export import reparameterize_models
+            from easycv.utils.misc import reparameterize_models
             model = super()._build_model()
             model = reparameterize_models(model)
         return model
