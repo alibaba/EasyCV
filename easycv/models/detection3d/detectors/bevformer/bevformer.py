@@ -14,8 +14,6 @@ from easycv.models.detection3d.utils.grid_mask import GridMask
 from easycv.models.registry import MODELS
 from easycv.utils.misc import decode_tensor_to_str, encode_str_to_tensor
 
-# _INIT_DUMMY_PREV_BEV = torch.zeros(size=(40000, 1, 256))
-
 
 @MODELS.register_module()
 class BEVFormer(MVXTwoStageDetector):
