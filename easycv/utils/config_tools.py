@@ -219,7 +219,13 @@ def mmcv_config_fromfile(ori_filename,
                          user_config_params=None,
                          model_type=None):
     # ori_filename conver to absolute path
-    ori_filename = osp.abspath(osp.expanduser(ori_filename))
+    abspath_root = __file__  # easycv package root path
+    for _ in range(10):
+        abspath_root = osp.dirname(abspath_root)
+        check_filename = osp.join(abspath_root, ori_filename)
+        if osp.exists(check_filename):
+            ori_filename = check_filename
+            break
 
     # grouping params
     if user_config_params:
