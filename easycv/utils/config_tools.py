@@ -158,7 +158,6 @@ def mmcv_file2dict_base(ori_filename, first_order_params=None):
 
     BASE_KEY = '_base_'
     if BASE_KEY in cfg_dict:
-        # cfg_dir = osp.dirname(filename)
         base_filename = cfg_dict.pop(BASE_KEY)
         base_filename = base_filename if isinstance(base_filename,
                                                     list) else [base_filename]

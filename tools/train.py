@@ -132,13 +132,10 @@ def main():
                 pass
 
         args.config = tpath
+
+    # build cfg
     cfg = mmcv_config_fromfile(args.config, args.user_config_params,
                                args.model_type)
-
-    # if args.user_config_params is not None:
-    #     # assert args.model_type is not None, 'model_type must be setted'
-    #     # rebuild config by user config params
-    #     cfg = rebuild_config(cfg, args.user_config_params)
 
     # set multi-process settings
     setup_multi_processes(cfg)
