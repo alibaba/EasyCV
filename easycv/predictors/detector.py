@@ -332,7 +332,8 @@ class TorchYoloXPredictor(YoloXPredictor):
           model_config: config string for model to init, in json format
         """
         if model_config:
-            model_config = json.loads(model_config)
+            if isinstance(model_config, str):
+                model_config = json.loads(model_config)
         else:
             model_config = {}
 
