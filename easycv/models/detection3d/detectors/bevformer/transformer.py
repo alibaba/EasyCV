@@ -373,8 +373,8 @@ class Detr3DTransformerDecoder(TransformerLayerSequence):
 
                 assert reference_points.shape[-1] == 3
 
-                new_reference_points = torch.zeros_like(
-                    reference_points)  # torch.Size([1, 900, 3])
+                # new_reference_points = torch.zeros_like(
+                #     reference_points)  # torch.Size([1, 900, 3])
                 # new_reference_points[..., :2] = tmp[..., :2] + inverse_sigmoid(
                 #     reference_points[..., :2], eps=1e-5)
                 # new_reference_points[...,

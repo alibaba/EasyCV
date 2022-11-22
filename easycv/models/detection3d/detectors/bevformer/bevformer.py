@@ -14,8 +14,6 @@ from easycv.models.detection3d.utils.grid_mask import GridMask
 from easycv.models.registry import MODELS
 from easycv.utils.misc import decode_tensor_to_str, encode_str_to_tensor
 
-_INIT_DUMMY_PREV_BEV = torch.zeros(size=(40000, 1, 256))
-
 
 @MODELS.register_module()
 class BEVFormer(MVXTwoStageDetector):
@@ -289,9 +287,10 @@ class BEVFormer(MVXTwoStageDetector):
         tmp_pos = img_metas[0][0]['can_bus'][:3].clone()
         tmp_angle = img_metas[0][0]['can_bus'][-1].clone()
         # skip init dummy prev_bev
-        if self.prev_frame_info['prev_bev'] is not None and not (
-                self.prev_frame_info['prev_bev'] == _INIT_DUMMY_PREV_BEV.to(
-                    self.prev_frame_info['prev_bev'].device)).all():
+        if self.prev_frame_info['prev_bev'] is not None and not torch.equal(
+                self.prev_frame_info['prev_bev'],
+                self.prev_frame_info['prev_bev'].new_zeros(
+                    self.prev_frame_info['prev_bev'].size())):
             img_metas[0][0]['can_bus'][:3] -= self.prev_frame_info['prev_pos']
             img_metas[0][0]['can_bus'][-1] -= self.prev_frame_info[
                 'prev_angle']

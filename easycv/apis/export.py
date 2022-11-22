@@ -541,7 +541,8 @@ def _export_bevformer(model, cfg, filename, fp16=False):
         dummy_scene_token = 'dummy_scene_token'
         scene_token = encode_str_to_tensor(dummy_scene_token).to(device)
         prev_scene_token = scene_token
-        prev_bev = torch.rand([40000, 1, 256]).to(device)
+        prev_bev = torch.rand([cfg.bev_h * cfg.bev_w, 1,
+                               cfg.embed_dim]).to(device)
         prev_pos = torch.tensor(0)
         prev_angle = torch.tensor(0)
         img_metas = {

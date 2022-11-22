@@ -103,6 +103,10 @@ class BEVFormerPredictorTest(unittest.TestCase):
         predictor = BEVFormerPredictor(
             model_path=model_path, config_file=config_file)
         inputs = mmcv.load(inputs_file)['infos']
+        for i in range(len(inputs)):
+            for k in list(inputs[i]['cams'].keys()):
+                inputs[i]['cams'][k]['data_path'] = os.path.join(
+                    SMALL_NUSCENES_PATH, inputs[i]['cams'][k]['data_path'])
         predict_results = predictor(inputs)
 
         results = {'pts_bbox': [i['pts_bbox'] for i in predict_results]}
