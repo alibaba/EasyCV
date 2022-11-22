@@ -276,7 +276,8 @@ def main():
                 shuffle=shuffle,
                 replace=getattr(cfg.data, 'sampling_replace', False),
                 seed=cfg.seed,
-                drop_last=getattr(cfg.data, 'drop_last', False),
+                # The default should be set to True, because sometimes the last batch is not sampled enough, causing an error in batchnorm
+                drop_last=getattr(cfg.data, 'drop_last', True),
                 reuse_worker_cache=cfg.data.get('reuse_worker_cache', False),
                 persistent_workers=cfg.data.get('persistent_workers', False),
                 collate_hooks=cfg.data.get('train_collate_hooks', []),
