@@ -11,6 +11,7 @@ from easycv.core.bbox import get_box_type
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.shared.pipelines.format import to_tensor
 from easycv.datasets.shared.pipelines.transforms import Compose
+from easycv.framework.errors import ValueError
 from easycv.predictors.base import PredictorV2
 from easycv.predictors.builder import PREDICTORS
 from easycv.utils.misc import encode_str_to_tensor
@@ -48,6 +49,10 @@ class BEVFormerPredictor(PredictorV2):
                  model_type=None,
                  *arg,
                  **kwargs):
+        if batch_size > 1:
+            raise ValueError(
+                f'Only support batch_size=1 now, but get batch_size={batch_size}'
+            )
         self.model_type = model_type
         if self.model_type is None:
             if model_path.endswith('jit'):
