@@ -219,6 +219,9 @@ def adapt_pai_params(cfg_dict):
 def mmcv_config_fromfile(ori_filename,
                          user_config_params=None,
                          model_type=None):
+    # ori_filename conver to absolute path
+    ori_filename = osp.abspath(osp.expanduser(ori_filename))
+
     # grouping params
     if user_config_params:
         first_order_params, multi_order_params = grouping_params(
@@ -227,7 +230,6 @@ def mmcv_config_fromfile(ori_filename,
         first_order_params, multi_order_params = None, None
 
     # replace first-order parameters
-    ori_filename = osp.abspath(osp.expanduser(ori_filename))
     cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename, first_order_params)
 
     # Add export and oss ​​related configuration to adapt to pai platform
