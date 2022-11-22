@@ -67,25 +67,35 @@ class EasyCVConfig(Config):
             tmp_config_file.write(config_file)
 
 
-def check_base_cfg_path(base_cfg_name='configs/base.py', ori_filename=None):
+def check_base_cfg_path(base_cfg_name='configs/base.py', father_cfg_name=None):
     '''
     Concatenate paths by parsing path rules.
     for example(pseudo-code):
+        1. 'configs' in base_cfg_name
+        base_cfg_name = configs/base.py
+        father_cfg_name = EasyCV/configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py
+        abspath_root = EasyCV/
+        abspath_base_cfg_name = EasyCV/configs/base.py
+
+        2. 'configs' not in base_cfg_name
         base_cfg_name = ../../../base.py
-        ori_filename = configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py
-        ori_filename.pop()
-        ori_filename = configs/classification/imagenet/resnet/
+        father_cfg_name = EasyCV/configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py
+        father_cfg_name.pop()
+        father_cfg_name = EasyCV/configs/classification/imagenet/resnet/
         for i in range(3):
             base_cfg_name.pop()
-            ori_filename.pop()
-        ori_filename = configs/
+            father_cfg_name.pop()
+        father_cfg_name = EasyCV/configs/
         base_cfg_name = base.py
-        base_cfg_name = ori_filename + base_cfg_name = configs/base.py
+        base_cfg_name = father_cfg_name + base_cfg_name = EasyCV/configs/base.py
     '''
-    if 'configs' not in base_cfg_name and ori_filename is not None:
+    if 'configs' in base_cfg_name:
+        abspath_root = father_cfg_name.split('configs')[0]
+        abspath_base_cfg_name = osp.join(abspath_root, base_cfg_name)
+    else:
         _parse_base_path_list = base_cfg_name.split('/')
         parse_base_path_list = copy.deepcopy(_parse_base_path_list)
-        parse_ori_path_list = ori_filename.split('/')
+        parse_ori_path_list = father_cfg_name.split('/')
         parse_ori_path_list.pop()
         for filename in _parse_base_path_list:
             if filename == '.':
@@ -95,42 +105,14 @@ def check_base_cfg_path(base_cfg_name='configs/base.py', ori_filename=None):
                 parse_ori_path_list.pop()
             else:
                 break
-        base_cfg_name = '/'.join(parse_ori_path_list + parse_base_path_list)
+        abspath_base_cfg_name = '/'.join(parse_ori_path_list +
+                                         parse_base_path_list)
 
-    # Avoid the designer not being able to find the config path
-    base_cfg_dir_1 = osp.abspath(osp.dirname(
-        osp.dirname(__file__)))  # easycv_package_root_path
-    base_cfg_path_1 = osp.join(base_cfg_dir_1, base_cfg_name)
-    print('Read base config from', base_cfg_path_1)
-    if osp.exists(base_cfg_path_1):
-        return base_cfg_path_1
-
-    base_cfg_dir_2 = osp.dirname(base_cfg_dir_1)  # upper level dir
-    base_cfg_path_2 = osp.join(base_cfg_dir_2, base_cfg_name)
-    print('Read base config from', base_cfg_path_2)
-    if osp.exists(base_cfg_path_2):
-        return base_cfg_path_2
-
-    # relative to ori_filename
-    ori_cfg_dir = osp.dirname(ori_filename)
-    base_cfg_path_3 = osp.join(ori_cfg_dir, base_cfg_name)
-    base_cfg_path_3 = osp.abspath(osp.expanduser(base_cfg_path_3))
-    if osp.exists(base_cfg_path_3):
-        return base_cfg_path_3
-
-    raise ValueError('%s not Found' % base_cfg_name)
+    return abspath_base_cfg_name
 
 
 # Read config without __base__
-def mmcv_file2dict_raw(ori_filename, first_order_params=None):
-    filename = osp.abspath(osp.expanduser(ori_filename))
-    if not osp.isfile(filename):
-        if ori_filename.startswith('configs/'):
-            # read configs/config_templates/detection_oss.py
-            filename = check_base_cfg_path(ori_filename)
-        else:
-            raise ValueError('%s and %s not Found' % (ori_filename, filename))
-
+def mmcv_file2dict_raw(filename, first_order_params=None):
     fileExtname = osp.splitext(filename)[1]
     if fileExtname not in ['.py', '.json', '.yaml', '.yml']:
         raise IOError('Only py/yml/yaml/json type are supported now!')
@@ -245,6 +227,7 @@ def mmcv_config_fromfile(ori_filename,
         first_order_params, multi_order_params = None, None
 
     # replace first-order parameters
+    ori_filename = osp.abspath(osp.expanduser(ori_filename))
     cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename, first_order_params)
 
     # Add export and oss ​​related configuration to adapt to pai platform
