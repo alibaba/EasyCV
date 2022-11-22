@@ -81,9 +81,11 @@ class BEVFormerPredictor(PredictorV2):
         # So we using the dummy data as the the initial value, and it will not be used, just to adapt to jit and blade models.
         # init_prev_bev = self.model.pts_bbox_head.bev_embedding.weight.clone().detach()
         # init_prev_bev = init_prev_bev[:, None, :],  # [40000, 256] -> [40000, 1, 256]
-        from easycv.models.detection3d.detectors.bevformer.bevformer import _INIT_DUMMY_PREV_BEV
+        dummy_prev_bev = torch.rand(
+            [self.cfg.bev_h * self.cfg.bev_w, 1,
+             self.cfg.embed_dim]).to(self.device)
         self.prev_frame_info = {
-            'prev_bev': _INIT_DUMMY_PREV_BEV.to(self.device),
+            'prev_bev': dummy_prev_bev.to(self.device),
             'prev_scene_token': encode_str_to_tensor('dummy_prev_scene_token'),
             'prev_pos': torch.tensor(0),
             'prev_angle': torch.tensor(0),
