@@ -95,36 +95,15 @@ def load_image(img_path,
         backend (str): The image decoding backend type. Options are `cv2`, `pillow`, `turbojpeg`.
     """
     # TODO: functions of multi tries should be in the `io.open`
-    try_cnt = 0
     img = None
-    while try_cnt < max_try_times:
-        try:
-            if is_url_path(img_path):
-                from mmcv.fileio.file_client import HTTPBackend
-                client = HTTPBackend()
-                img_bytes = client.get(img_path)
-                img = _load_image(
-                    img_bytes, mode=mode, dtype=dtype, backend=backend)
-            else:
-                with file.io.open(img_path, 'rb') as infile:
-                    img = _load_image(
-                        infile.read(), mode=mode, dtype=dtype, backend=backend)
-            assert img is not None
-            break
-        except Exception as e:
-            logging.error(e)
-            logging.warning('Read file {} fault, try count : {}'.format(
-                img_path, try_cnt))
-            # frequent access to oss will cause error, sleep can aviod it
-            if is_oss_path(img_path):
-                sleep_time = 1
-                logging.warning(
-                    'Sleep {}s, frequent access to oss file may cause error.'.
-                    format(sleep_time))
-                time.sleep(sleep_time)
-        try_cnt += 1
-
-    if img is None:
-        raise IOError('Read Image Error: ' + img_path)
+    if is_url_path(img_path):
+        from mmcv.fileio.file_client import HTTPBackend
+        client = HTTPBackend()
+        img_bytes = client.get(img_path)
+        img = _load_image(img_bytes, mode=mode, dtype=dtype, backend=backend)
+    else:
+        with file.io.open(img_path, 'rb') as infile:
+            img = _load_image(
+                infile.read(), mode=mode, dtype=dtype, backend=backend)
 
     return img

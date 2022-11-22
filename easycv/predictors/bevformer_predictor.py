@@ -1,8 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
+import pickle
 
 import mmcv
 import numpy as np
+import torch
 from mmcv.parallel import DataContainer as DC
 
 from easycv.core.bbox import get_box_type
@@ -11,6 +13,7 @@ from easycv.datasets.shared.pipelines.format import to_tensor
 from easycv.datasets.shared.pipelines.transforms import Compose
 from easycv.predictors.base import PredictorV2
 from easycv.predictors.builder import PREDICTORS
+from easycv.utils.misc import encode_str_to_tensor
 from easycv.utils.registry import build_from_cfg
 
 
@@ -42,8 +45,17 @@ class BEVFormerPredictor(PredictorV2):
                  box_type_3d='LiDAR',
                  use_camera=True,
                  score_threshold=0.1,
+                 model_type=None,
                  *arg,
                  **kwargs):
+        self.model_type = model_type
+        if self.model_type is None:
+            if model_path.endswith('jit'):
+                self.model_type = 'jit'
+            elif model_path.endswith('blade'):
+                self.model_type = 'blade'
+        self.is_jit_model = self.model_type in ['jit', 'blade']
+
         super(BEVFormerPredictor, self).__init__(
             model_path,
             config_file=config_file,
@@ -59,6 +71,18 @@ class BEVFormerPredictor(PredictorV2):
         self.use_camera = use_camera
         self.score_threshold = score_threshold
         self.result_key = 'pts_bbox'
+
+        # The initial prev_bev should be the weight of self.model.pts_bbox_head.bev_embedding, but the weight cannot be taken out from the blade model.
+        # So we using the dummy data as the the initial value, and it will not be used, just to adapt to jit and blade models.
+        # init_prev_bev = self.model.pts_bbox_head.bev_embedding.weight.clone().detach()
+        # init_prev_bev = init_prev_bev[:, None, :],  # [40000, 256] -> [40000, 1, 256]
+        from easycv.models.detection3d.detectors.bevformer.bevformer import _INIT_DUMMY_PREV_BEV
+        self.prev_frame_info = {
+            'prev_bev': _INIT_DUMMY_PREV_BEV.to(self.device),
+            'prev_scene_token': encode_str_to_tensor('dummy_prev_scene_token'),
+            'prev_pos': torch.tensor(0),
+            'prev_angle': torch.tensor(0),
+        }
 
     def _prepare_input_dict(self, data_info):
         from nuscenes.eval.common.utils import Quaternion, quaternion_yaw
@@ -135,19 +159,85 @@ class BEVFormerPredictor(PredictorV2):
         Args:
             input (str): Pickle file path, the content format is the same with the infos file of nusences.
         """
-        data_info = mmcv.load(input)
+        data_info = mmcv.load(input) if isinstance(input, str) else input
         result = self._prepare_input_dict(data_info)
         result = self.processor(result)
-        result['can_bus'] = DC(
-            to_tensor(result['img_metas'][0]._data['can_bus']), cpu_only=False)
-        result['lidar2img'] = DC(
-            to_tensor(result['img_metas'][0]._data['lidar2img']),
-            cpu_only=False)
+
+        if self.is_jit_model:
+            result['can_bus'] = DC(
+                to_tensor(result['img_metas'][0]._data['can_bus']),
+                cpu_only=False)
+            result['lidar2img'] = DC(
+                to_tensor(result['img_metas'][0]._data['lidar2img']),
+                cpu_only=False)
+            result['scene_token'] = DC(
+                torch.tensor(
+                    bytearray(
+                        pickle.dumps(
+                            result['img_metas'][0]._data['scene_token'])),
+                    dtype=torch.uint8),
+                cpu_only=False)
+            result['img_shape'] = DC(
+                to_tensor(result['img_metas'][0]._data['img_shape']),
+                cpu_only=False)
+        else:
+            result['can_bus'] = DC(
+                torch.stack(
+                    [to_tensor(result['img_metas'][0]._data['can_bus'])]),
+                cpu_only=False)
+            result['lidar2img'] = DC(
+                torch.stack(
+                    [to_tensor(result['img_metas'][0]._data['lidar2img'])]),
+                cpu_only=False)
+
         return result
 
     def postprocess_single(self, inputs, *args, **kwargs):
         # TODO: filter results by score_threshold
         return super().postprocess_single(inputs, *args, **kwargs)
+
+    def prepare_model(self):
+        if self.is_jit_model:
+            model = torch.jit.load(self.model_path, map_location=self.device)
+            return model
+        return super().prepare_model()
+
+    def forward(self, inputs):
+        if self.is_jit_model:
+            with torch.no_grad():
+                img = inputs['img'][0][0]
+                img_metas = {
+                    'can_bus': inputs['can_bus'][0],
+                    'lidar2img': inputs['lidar2img'][0],
+                    'img_shape': inputs['img_shape'][0],
+                    'scene_token': inputs['scene_token'][0],
+                    'prev_bev': self.prev_frame_info['prev_bev'],
+                    'prev_pos': self.prev_frame_info['prev_pos'],
+                    'prev_angle': self.prev_frame_info['prev_angle'],
+                    'prev_scene_token':
+                    self.prev_frame_info['prev_scene_token']
+                }
+                inputs = (img, img_metas)
+                outputs = self.model(*inputs)
+
+            # update prev_frame_info
+            self.prev_frame_info['prev_bev'] = outputs[3][0]
+            self.prev_frame_info['prev_pos'] = outputs[3][1]
+            self.prev_frame_info['prev_angle'] = outputs[3][2]
+            self.prev_frame_info['prev_scene_token'] = outputs[3][3]
+
+            outputs = {
+                'pts_bbox': [{
+                    'scores_3d':
+                    outputs[0],
+                    'labels_3d':
+                    outputs[1],
+                    'boxes_3d':
+                    self.box_type_3d(outputs[2].cpu(), outputs[2].size()[-1])
+                }],
+            }
+            return outputs
+        return super().forward(inputs)
 
     def visualize(self, inputs, results, out_dir, show=False, pipeline=None):
         raise NotImplementedError

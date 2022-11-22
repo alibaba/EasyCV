@@ -28,6 +28,8 @@ bev_h_ = 200
 bev_w_ = 200
 queue_length = 4  # each sequence contains `queue_length` frames.
 
+adapt_jit = False  # set True when export jit trace model or blade model
+
 model = dict(
     type='BEVFormer',
     use_grid_mask=True,
@@ -76,6 +78,7 @@ model = dict(
                 return_intermediate=False,
                 transformerlayers=dict(
                     type='BEVFormerLayer',
+                    adapt_jit=adapt_jit,
                     attn_cfgs=[
                         dict(
                             type='TemporalSelfAttention',
@@ -88,7 +91,8 @@ model = dict(
                                 type='MSDeformableAttention3D',
                                 embed_dims=_dim_,
                                 num_points=8,
-                                num_levels=_num_levels_),
+                                num_levels=_num_levels_,
+                                adapt_jit=adapt_jit),
                             embed_dims=_dim_,
                         )
                     ],
@@ -117,7 +121,8 @@ model = dict(
                         dict(
                             type='CustomMSDeformableAttention',
                             embed_dims=_dim_,
-                            num_levels=1),
+                            num_levels=1,
+                            adapt_jit=adapt_jit),
                     ],
                     ffn_cfgs=dict(
                         type='FFN',
@@ -302,3 +307,12 @@ log_config = dict(
 
 checkpoint_config = dict(interval=1)
 cudnn_benchmark = True
+export = dict(
+    type='blade',
+    blade_config=dict(
+        enable_fp16=True,
+        fp16_fallback_op_ratio=0.0,
+        customize_op_black_list=[
+            'aten::select', 'aten::index', 'aten::slice', 'aten::view',
+            'aten::upsample', 'aten::clamp'
+        ]))

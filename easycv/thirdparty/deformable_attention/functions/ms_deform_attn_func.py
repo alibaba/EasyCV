@@ -10,20 +10,31 @@
 # Modified by Bowen Cheng from https://github.com/fundamentalvision/Deformable-DETR
 
 from __future__ import absolute_import, division, print_function
-
+import os
+import subprocess
 import torch
 import torch.nn.functional as F
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 
+def _auto_compile():
+    cur_dir= os.getcwd()
+    target_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    os.chdir(target_dir)
+    res = subprocess.call('python setup.py build install', shell=True)
+    os.chdir(cur_dir)
+    return res
+
 try:
     import MultiScaleDeformableAttention as MSDA
 except ModuleNotFoundError as e:
-    info_string = (
-        '\n\nPlease compile MultiScaleDeformableAttention CUDA op with the following commands:\n'
-        '\t`cd thirdparty/deformable_attention`\n'
-        '\t`python setup.py build install`\n')
-    raise ModuleNotFoundError(info_string)
+    res = _auto_compile()
+    if res != 0:
+        info_string = (
+            '\n\nAuto compile failed! Please compile MultiScaleDeformableAttention CUDA op with the following commands :\n'
+            '\t`cd easycv/thirdparty/deformable_attention`\n'
+            '\t`python setup.py build install`\n')
+        raise ModuleNotFoundError(info_string)
 
 
 class MSDeformAttnFunction(Function):

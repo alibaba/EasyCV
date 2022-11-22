@@ -3,15 +3,16 @@
 
 import math
 import warnings
+from typing import Optional
 
 import torch
 import torch.nn as nn
 from mmcv.cnn import constant_init, xavier_init
-from mmcv.ops.multi_scale_deform_attn import \
-    multi_scale_deformable_attn_pytorch
 from mmcv.runner.base_module import BaseModule
 
 from easycv.models.registry import ATTENTION
+from easycv.thirdparty.deformable_attention.functions import \
+    MSDeformAttnFunction
 
 
 @ATTENTION.register_module()
@@ -36,6 +37,8 @@ class CustomMSDeformableAttention(BaseModule):
         batch_first (bool): Key, Query and Value are shape of
             (batch, n, embed_dim)
             or (n, batch, embed_dim). Default to False.
+        add_identity (bool, optional): Whether to add the
+            identity connection. Default: `True`.
         norm_cfg (dict): Config dict for normalization layer.
             Default: None.
         init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
@@ -50,8 +53,10 @@ class CustomMSDeformableAttention(BaseModule):
                  im2col_step=64,
                  dropout=0.1,
                  batch_first=False,
+                 add_identity=True,
                  norm_cfg=None,
-                 init_cfg=None):
+                 init_cfg=None,
+                 adapt_jit=False):
         super().__init__(init_cfg)
         if embed_dims % num_heads != 0:
             raise ValueError(f'embed_dims must be divisible by num_heads, '
@@ -60,6 +65,7 @@ class CustomMSDeformableAttention(BaseModule):
         self.norm_cfg = norm_cfg
         self.dropout = nn.Dropout(dropout)
         self.batch_first = batch_first
+        self.add_identity = add_identity
 
         # you'd better set dim_per_head to a power of 2
         # which is more efficient in the CUDA implementation
@@ -89,6 +95,11 @@ class CustomMSDeformableAttention(BaseModule):
         self.value_proj = nn.Linear(embed_dims, embed_dims)
         self.output_proj = nn.Linear(embed_dims, embed_dims)
         self.init_weights()
+        self.adapt_jit = adapt_jit
+        if self.adapt_jit:
+            self.ms_deform_attn_op = torch.ops.custom.ms_deform_attn
+        else:
+            self.ms_deform_attn_op = MSDeformAttnFunction.apply
 
     def init_weights(self):
         """Default initialization for Parameters of Module."""
@@ -129,19 +140,23 @@ class CustomMSDeformableAttention(BaseModule):
                 f' 2 or 4, but get {reference_points.shape[-1]} instead.')
         return sampling_locations
 
-    def forward(self,
-                query,
-                key=None,
-                value=None,
-                identity=None,
-                query_pos=None,
-                key_padding_mask=None,
-                reference_points=None,
-                spatial_shapes=None,
-                level_start_index=None,
-                add_identity=True,
-                flag='decoder',
-                **kwargs):
+    def forward(
+        self,
+        query: torch.Tensor,
+        spatial_shapes: torch.Tensor,
+        reference_points: torch.Tensor,
+        level_start_index: torch.Tensor,
+        key: Optional[torch.Tensor] = None,
+        value: Optional[torch.Tensor] = None,
+        identity: Optional[torch.Tensor] = None,
+        query_pos: Optional[torch.Tensor] = None,
+        key_padding_mask: Optional[torch.Tensor] = None,
+        flag: Optional[str] = 'decoder',
+        key_pos: Optional[torch.Tensor] = None,
+        attn_mask: Optional[torch.Tensor] = None,
+        cls_branches: Optional[torch.Tensor] = None,
+        img_metas: Optional[str] = None,
+    ):
         """Forward Function of MultiScaleDeformAttention.
 
         Args:
@@ -211,36 +226,29 @@ class CustomMSDeformableAttention(BaseModule):
         sampling_locations = self._get_sampling_locations(
             reference_points, spatial_shapes, sampling_offsets)
 
-        if torch.cuda.is_available() and value.is_cuda:
-            from easycv.thirdparty.deformable_attention.functions import MSDeformAttnFunction
-            if not torch.jit.is_scripting() and not torch.jit.is_tracing():
-                if value.dtype == torch.float16:
-                    # for mixed precision
-                    assert value.size(0) % min(
-                        value.size(0), self.im2col_step) == 0
-                    output = MSDeformAttnFunction.apply(
-                        value.to(torch.float32),
-                        spatial_shapes, level_start_index,
-                        sampling_locations.to(torch.float32),
-                        attention_weights, self.im2col_step)
-                    output = output.to(torch.float16)
-                else:
-                    output = MSDeformAttnFunction.apply(
-                        value, spatial_shapes, level_start_index,
-                        sampling_locations, attention_weights,
-                        self.im2col_step)
-            else:
-                output = torch.ops.custom.ms_deform_attn(
-                    value, spatial_shapes, level_start_index,
-                    sampling_locations, attention_weights, self.im2col_step)
+        if value.dtype == torch.float16:
+            # for mixed precision
+            assert value.size(0) % min(value.size(0), self.im2col_step) == 0
+            output = self.ms_deform_attn_op(
+                value.to(torch.float32), spatial_shapes, level_start_index,
+                sampling_locations.to(torch.float32), attention_weights,
+                self.im2col_step)
+            output = output.to(torch.float16)
         else:
-            output = multi_scale_deformable_attn_pytorch(
-                value, spatial_shapes, sampling_locations, attention_weights)
+            output = self.ms_deform_attn_op(value, spatial_shapes,
+                                            level_start_index,
+                                            sampling_locations,
+                                            attention_weights,
+                                            self.im2col_step)
+        # cpu
+        # from mmcv.ops.multi_scale_deform_attn import multi_scale_deformable_attn_pytorch
+        # output = multi_scale_deformable_attn_pytorch(
+        #     value, spatial_shapes, sampling_locations, attention_weights)
 
         output = self.output_proj(output)
         if not self.batch_first:
             output = output.permute(1, 0, 2)
-        if add_identity:
+        if self.add_identity:
             return self.dropout(output) + identity
         else:
             return self.dropout(output)
@@ -282,7 +290,8 @@ class MSDeformableAttention3D(CustomMSDeformableAttention):
                  dropout=0.,
                  batch_first=True,
                  norm_cfg=None,
-                 init_cfg=None):
+                 init_cfg=None,
+                 adapt_jit=False):
         super(MSDeformableAttention3D, self).__init__(
             embed_dims=embed_dims,
             num_heads=num_heads,
@@ -291,8 +300,10 @@ class MSDeformableAttention3D(CustomMSDeformableAttention):
             im2col_step=im2col_step,
             dropout=dropout,
             batch_first=batch_first,
+            add_identity=False,
             norm_cfg=norm_cfg,
-            init_cfg=init_cfg)
+            init_cfg=init_cfg,
+            adapt_jit=adapt_jit)
 
         self.output_proj = nn.Identity()
 
@@ -327,62 +338,3 @@ class MSDeformableAttention3D(CustomMSDeformableAttention):
                 f'Last dim of reference_points must be'
                 f' 2, but get {reference_points.shape[-1]} instead.')
         return sampling_locations
-
-    def forward(self,
-                query,
-                key=None,
-                value=None,
-                identity=None,
-                query_pos=None,
-                key_padding_mask=None,
-                reference_points=None,
-                spatial_shapes=None,
-                level_start_index=None,
-                **kwargs):
-        """Forward Function of MultiScaleDeformAttention.
-
-        Args:
-            query (Tensor): Query of Transformer with shape
-                ( bs, num_query, embed_dims).
-            key (Tensor): The key tensor with shape
-                `(bs, num_key,  embed_dims)`.
-            value (Tensor): The value tensor with shape
-                `(bs, num_key,  embed_dims)`.
-            identity (Tensor): The tensor used for addition, with the
-                same shape as `query`. Default None. If None,
-                `query` will be used.
-            query_pos (Tensor): The positional encoding for `query`.
-                Default: None.
-            key_pos (Tensor): The positional encoding for `key`. Default
-                None.
-            reference_points (Tensor):  The normalized reference
-                points with shape (bs, num_query, num_levels, 2),
-                all elements is range in [0, 1], top-left (0,0),
-                bottom-right (1, 1), including padding area.
-                or (N, Length_{query}, num_levels, 4), add
-                additional two dimensions is (w, h) to
-                form reference boxes.
-            key_padding_mask (Tensor): ByteTensor for `query`, with
-                shape [bs, num_key].
-            spatial_shapes (Tensor): Spatial shape of features in
-                different levels. With shape (num_levels, 2),
-                last dimension represents (h, w).
-            level_start_index (Tensor): The start index of each level.
-                A tensor has shape ``(num_levels, )`` and can be represented
-                as [0, h_0*w_0, h_0*w_0+h_1*w_1, ...].
-
-        Returns:
-             Tensor: forwarded results with shape [num_query, bs, embed_dims].
-        """
-        return super().forward(
-            query=query,
-            key=key,
-            value=value,
-            identity=identity,
-            query_pos=query_pos,
-            key_padding_mask=key_padding_mask,
-            reference_points=reference_points,
-            spatial_shapes=spatial_shapes,
-            level_start_index=level_start_index,
-            add_identity=False,
-            **kwargs)

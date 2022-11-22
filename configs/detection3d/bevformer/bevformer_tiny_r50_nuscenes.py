@@ -314,3 +314,12 @@ log_config = dict(
 
 checkpoint_config = dict(interval=1)
 cudnn_benchmark = True
+export = dict(
+    export_type='blade',
+    blade_config=dict(
+        enable_fp16=True,
+        fp16_fallback_op_ratio=0.0,
+        customize_op_black_list=[
+            'aten::select', 'aten::index', 'aten::slice', 'aten::view',
+            'aten::upsample', 'aten::clamp'
+        ]))
