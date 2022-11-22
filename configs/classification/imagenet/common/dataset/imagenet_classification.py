@@ -58,12 +58,12 @@ eval_pipelines = [
     )
 ]
 
-# predict = dict(
-#     type='ClassificationPredictor',
-#     pipelines=[
-#         dict(type='Resize', size=image_size1),
-#         dict(type='CenterCrop', size=image_size2),
-#         dict(type='ToTensor'),
-#         dict(type='Normalize', **img_norm_cfg),
-#         dict(type='Collect', keys=['img'])
-#     ])
+predict = dict(
+    type='ClassificationPredictor',
+    pipelines=[
+        dict(type='Resize', size=image_size1),
+        dict(type='CenterCrop', size=image_size2),
+        dict(type='ToTensor'),
+        dict(type='Normalize', **img_norm_cfg),
+        dict(type='Collect', keys=['img'])
+    ])
