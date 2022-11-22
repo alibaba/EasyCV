@@ -294,7 +294,7 @@ class BEVFormerLayer(BaseModule):
                     query=query,
                     key=key,
                     value=value,
-                    # residual=identity if self.pre_norm else None,
+                    residual=identity if self.pre_norm else None,
                     query_pos=query_pos,
                     reference_points=ref_3d,
                     reference_points_cam=reference_points_cam,

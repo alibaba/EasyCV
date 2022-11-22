@@ -49,7 +49,13 @@ class BEVFormerPredictor(PredictorV2):
                  *arg,
                  **kwargs):
         self.model_type = model_type
+        if self.model_type is None:
+            if model_path.endswith('jit'):
+                self.model_type = 'jit'
+            elif model_path.endswith('blade'):
+                self.model_type = 'blade'
         self.is_jit_model = self.model_type in ['jit', 'blade']
+
         super(BEVFormerPredictor, self).__init__(
             model_path,
             config_file=config_file,

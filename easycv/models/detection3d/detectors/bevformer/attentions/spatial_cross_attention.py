@@ -113,6 +113,7 @@ class SpatialCrossAttention(BaseModule):
         # if residual is None:
         #     inp_residual = query
         #     slots = torch.zeros_like(query)
+        assert residual is None
         inp_residual = query
         slots = torch.zeros_like(query)
 
