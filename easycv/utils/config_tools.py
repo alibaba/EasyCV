@@ -49,8 +49,9 @@ class EasyCVConfig(Config):
             for line in f:
                 key = line.split('=')[0].strip()
 
-                # replace first order params
-                if first_order_params and key in first_order_params:
+                # Replace first order params (Determine whether there is a space in the starting position)
+                if first_order_params and key in first_order_params and line[
+                        0] != ' ':
                     value = first_order_params[key]
                     # repr() is used to convert the data into a string form (in the form of a Python expression) suitable for the interpreter to read
                     line = ' '.join([key, '=', repr(value)]) + '\n'
@@ -427,10 +428,6 @@ def validate_export_config(cfg):
 
 CONFIG_TEMPLATE_ZOO = {
 
-    # detection
-    'YOLOX': 'configs/config_templates/yolox.py',
-    'YOLOX_ITAG': 'configs/config_templates/yolox_itag.py',
-
     # cls
     'CLASSIFICATION_RESNET':
     'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py',
@@ -442,16 +439,16 @@ CONFIG_TEMPLATE_ZOO = {
     'configs/classification/imagenet/vit/imagenet_vit_base_patch16_224_jpg.py',
     'CLASSIFICATION_SWINT':
     'configs/classification/imagenet/swint/imagenet_swin_tiny_patch4_window7_224_jpg.py',
-    'CLASSIFICATION': 'configs/config_templates/classification.py',
-    'CLASSIFICATION_OSS': 'configs/config_templates/classification_oss.py',
-    'CLASSIFICATION_TFRECORD_OSS':
-    'configs/config_templates/classification_tfrecord_oss.py',
 
     # metric learning
-    'METRICLEARNING_TFRECORD_OSS':
-    'configs/config_templates/metric_learning/softmaxbased_tfrecord_oss.py',
+    'METRICLEARNING':
+    'configs/metric_learning/imagenet_timm_softmaxbased_jpg.py',
     'MODELPARALLEL_METRICLEARNING':
-    'configs/config_templates/metric_learning/modelparallel_softmaxbased_tfrecord_oss.py',
+    'configs/metric_learning/imagenet_timm_modelparallel_softmaxbased_jpg.py',
+
+    # detection
+    'YOLOX': 'configs/config_templates/yolox.py',
+    'YOLOX_ITAG': 'configs/config_templates/yolox_itag.py',
 
     # ssl
     'MOCO_R50_TFRECORD': 'configs/config_templates/moco_r50_tfrecord.py',
