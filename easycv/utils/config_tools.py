@@ -90,7 +90,10 @@ def check_base_cfg_path(base_cfg_name='configs/base.py', father_cfg_name=None):
         base_cfg_name = father_cfg_name + base_cfg_name = EasyCV/configs/base.py
     '''
     if 'configs' in base_cfg_name:
-        abspath_root = father_cfg_name.split('configs')[0]
+        if len(father_cfg_name.split('configs')) > 1:
+            abspath_root = father_cfg_name.split('configs')[0]
+        else:
+            abspath_root = father_cfg_name.split('benchmarks')[0]
         abspath_base_cfg_name = osp.join(abspath_root, base_cfg_name)
     else:
         _parse_base_path_list = base_cfg_name.split('/')

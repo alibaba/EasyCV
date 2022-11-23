@@ -6,10 +6,10 @@ import sys
 import tempfile
 import unittest
 
-from mmcv import Config
 from tests.ut_config import SMALL_IMAGENET_RAW_LOCAL
 
 from easycv.file import io
+from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.test_util import run_in_subprocess
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
@@ -69,7 +69,7 @@ class ClassificationTrainTest(unittest.TestCase):
         if not work_dir:
             work_dir = tempfile.TemporaryDirectory().name
 
-        cfg = Config.fromfile(cfg_file)
+        cfg = mmcv_config_fromfile(cfg_file)
         if cfg_options is not None:
             cfg.merge_from_dict(cfg_options)
             cfg.eval_pipelines[0].data = cfg.data.val
