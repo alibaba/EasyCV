@@ -7,6 +7,7 @@ from importlib import import_module
 
 from mmcv import Config, import_modules_from_strings
 
+from easycv.file import io
 from easycv.framework.errors import IOError, KeyError, ValueError
 from .user_config_params_utils import check_value_type
 
@@ -202,9 +203,24 @@ def grouping_params(user_config_params):
     return first_order_params, multi_order_params
 
 
-def adapt_pai_params(cfg_dict):
+def adapt_pai_params(cfg_dict, class_list_params=None):
+    # refactor class_list
+    if class_list_params is not None:
+        class_list, num_classes = class_list_params[0], class_list_params[1]
+        if '.txt' in class_list:
+            cfg_dict['class_list'] = []
+            with open(class_list, 'r', encoding='utf-8') as f:
+                # Setting encoding explicitly to resolve coding issue on windows
+                lines = f.readlines()
+                for line in lines:
+                    line = line.strip().strip(',').replace(' ', '').split(',')
+                    cfg_dict['class_list'].extend(line)
+        elif len(class_list) > 0:
+            cfg_dict['class_list'] = list(map(str, class_list))
+        else:
+            cfg_dict['class_list'] = list(map(str, range(0, num_classes - 1)))
+
     # export config
-    cfg_dict['class_list'] = None
     cfg_dict['export'] = dict(export_neck=True)
     cfg_dict['checkpoint_sync_export'] = True
     # oss config
@@ -231,19 +247,29 @@ def mmcv_config_fromfile(ori_filename,
             ori_filename = check_filename
             break
 
+    # set class_list
+    if 'class_list' in user_config_params:
+        class_list = user_config_params.pop('class_list')
+        for key, value in user_config_params.items():
+            if 'num_classes' in key:
+                class_list_params = [class_list, value]
+                break
+    else:
+        class_list_params = None
+
     # grouping params
     if user_config_params:
         first_order_params, multi_order_params = grouping_params(
             user_config_params)
     else:
-        first_order_params, multi_order_params = None, None
+        first_order_params, multi_order_params = None, None, None
 
     # replace first-order parameters
     cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename, first_order_params)
 
     # Add export and oss ​​related configuration to adapt to pai platform
     if model_type:
-        cfg_dict = adapt_pai_params(cfg_dict)
+        cfg_dict = adapt_pai_params(cfg_dict, class_list_params)
 
     if cfg_dict.get('custom_imports', None):
         import_modules_from_strings(**cfg_dict['custom_imports'])
