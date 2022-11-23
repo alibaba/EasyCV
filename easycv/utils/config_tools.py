@@ -204,6 +204,7 @@ def grouping_params(user_config_params):
 
 def adapt_pai_params(cfg_dict):
     # export config
+    cfg_dict['class_list'] = None
     cfg_dict['export'] = dict(export_neck=True)
     cfg_dict['checkpoint_sync_export'] = True
     # oss config
