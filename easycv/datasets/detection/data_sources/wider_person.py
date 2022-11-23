@@ -46,6 +46,43 @@ class DetSourceWiderPerson(DetSourceBase):
         'pedestrians', 'riders', 'partially-visible persons', 'ignore regions',
         'crowd'
     ]
+    '''
+    dataset_name='Wider Person',
+    paper_info=@article{zhang2019widerperson,
+    Author = {Zhang, Shifeng and Xie, Yiliang and Wan, Jun and Xia, Hansheng and Li, Stan Z. and Guo, Guodong},
+    journal = {IEEE Transactions on Multimedia (TMM)},
+    Title = {WiderPerson: A Diverse Dataset for Dense Pedestrian Detection in the Wild},
+    Year = {2019}}
+
+    '''
+    """
+    data dir is as follows:
+    ```
+    |- data
+        |-Images
+            |-000040.jpg
+            |-...
+        |-Annotations
+            |-000040.jpg.txt
+            |-...
+        |-train.txt
+        |-val.txt
+        |-...
+
+    ```
+    Example1:
+        data_source = DetSourceWiderPerson(
+            path='/your/data/train.txt',
+            classes=${VOC_CLASSES},
+        )
+    Example1:
+        data_source = DetSourceWiderPerson(
+            path='/your/voc_data/train.txt',
+            classes=${CLASSES},
+            img_root_path='/your/data/Images',
+            img_root_path='/your/data/Annotations'
+        )
+    """
 
     def __init__(self,
                  path,
@@ -59,6 +96,21 @@ class DetSourceWiderPerson(DetSourceBase):
                  parse_fn=parse_txt,
                  num_processes=int(cpu_count() / 2),
                  **kwargs) -> None:
+        """
+        Args:
+            path: path of img id list file in root
+            classes: classes list
+            img_root_path: image dir path, if None, default to detect the image dir by the relative path of the `path`
+                according to the WiderPerso data format.
+            label_root_path: label dir path, if None, default to detect the label dir by the relative path of the `path`
+                according to the WiderPerso data format.
+            cache_at_init: if set True, will cache in memory in __init__ for faster training
+            cache_on_the_fly: if set True, will cache in memroy during training
+            img_suffix: suffix of image file
+            label_suffix: suffix of label file
+            parse_fn: parse function to parse item of source iterator
+            num_processes: number of processes to parse samples
+        """
 
         self.path = path
         self.img_root_path = img_root_path
