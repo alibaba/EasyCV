@@ -247,22 +247,20 @@ def mmcv_config_fromfile(ori_filename,
             ori_filename = check_filename
             break
 
-    # set class_list
-    if 'class_list' in user_config_params:
-        class_list = user_config_params.pop('class_list')
-        for key, value in user_config_params.items():
-            if 'num_classes' in key:
-                class_list_params = [class_list, value]
-                break
-    else:
-        class_list_params = None
+    if user_config_params is not None:
+        # set class_list
+        if 'class_list' in user_config_params:
+            class_list = user_config_params.pop('class_list')
+            for key, value in user_config_params.items():
+                if 'num_classes' in key:
+                    class_list_params = [class_list, value]
+                    break
 
-    # grouping params
-    if user_config_params:
+        # grouping params
         first_order_params, multi_order_params = grouping_params(
             user_config_params)
     else:
-        first_order_params, multi_order_params = None, None, None
+        class_list_params, first_order_params, multi_order_params = None, None, None
 
     # replace first-order parameters
     cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename, first_order_params)
