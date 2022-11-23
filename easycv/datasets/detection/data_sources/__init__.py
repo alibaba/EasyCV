@@ -3,6 +3,7 @@ from .african_wildlife import DetSourceAfricanWildlife
 from .coco import DetSourceCoco, DetSourceCoco2017
 from .coco_livs import DetSourceLvis
 from .coco_panoptic import DetSourceCocoPanoptic
+from .fruit import DetSourceFruit
 from .pai_format import DetSourcePAI
 from .raw import DetSourceRaw
 from .voc import DetSourceVOC, DetSourceVOC2007, DetSourceVOC2012
