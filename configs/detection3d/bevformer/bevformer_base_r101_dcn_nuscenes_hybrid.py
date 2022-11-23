@@ -1,11 +1,3 @@
-# BEvFormer-tiny consumes at lease 6700M GPU memory
-# compared to bevformer_base, bevformer_tiny has
-# smaller backbone: R101-DCN -> R50
-# smaller BEV: 200*200 -> 50*50
-# less encoder layers: 6 -> 3
-# smaller input size: 1600*900 -> 800*450
-# multi-scale feautres -> single scale features (C5)
-
 _base_ = ['configs/base.py']
 
 # If point cloud range is changed, the models should also change their point
@@ -14,8 +6,7 @@ point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 voxel_size = [0.2, 0.2, 8]
 
 img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
-
+    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
 # For nuScenes we usually do 10-class detection
 CLASSES = [
     'car', 'truck', 'construction_vehicle', 'bus', 'trailer', 'barrier',
@@ -32,31 +23,30 @@ input_modality = dict(
 embed_dim = 256
 pos_dim = embed_dim // 2
 ffn_dim = embed_dim * 2
-num_levels = 1
-bev_h = 50
-bev_w = 50
-queue_length = 3  # each sequence contains `queue_length` frames.
+num_levels = 4
+bev_h = 200
+bev_w = 200
+queue_length = 4  # each sequence contains `queue_length` frames.
 
 model = dict(
     type='BEVFormer',
     use_grid_mask=True,
     video_test_mode=True,
-    extract_feat_serially=True,
-    pretrained=dict(img='torchvision://resnet50'),
     img_backbone=dict(
         type='ResNet',
-        depth=50,
+        depth=101,
         num_stages=4,
-        # out_indices=(3,),
-        out_indices=(4, ),
-        frozen_stages=1,
+        out_indices=(2, 3, 4),
+        frozen_stages=-1,
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
-        style='pytorch',
+        style='caffe',
+        dcn=dict(type='DCNv2', deform_groups=1, fallback_on_stride=False),
+        stage_with_dcn=(False, False, True, True),
         zero_init_residual=True),
     img_neck=dict(
         type='FPN',
-        in_channels=[2048],
+        in_channels=[512, 1024, 2048],
         out_channels=embed_dim,
         start_level=0,
         add_extra_convs='on_output',
@@ -67,6 +57,8 @@ model = dict(
         bev_h=bev_h,
         bev_w=bev_w,
         num_query=900,
+        num_query_one2many=1800,
+        one2many_gt_mul=4,
         num_classes=10,
         in_channels=embed_dim,
         sync_cls_avg_factor=True,
@@ -80,7 +72,7 @@ model = dict(
             embed_dims=embed_dim,
             encoder=dict(
                 type='BEVFormerEncoder',
-                num_layers=3,
+                num_layers=6,
                 pc_range=point_cloud_range,
                 num_points_in_pillar=4,
                 return_intermediate=False,
@@ -158,7 +150,9 @@ model = dict(
             gamma=2.0,
             alpha=0.25,
             loss_weight=2.0),
-        loss_bbox=dict(type='L1Loss', loss_weight=0.25),
+        # loss_bbox=dict(type='L1Loss', loss_weight=0.25),
+        # loss_bbox=dict(type='SmoothL1Loss', loss_weight=0.25),
+        loss_bbox=dict(type='BalancedL1Loss', loss_weight=0.25, gamma=1),
         loss_iou=dict(type='GIoULoss', loss_weight=0.0)),
     # model training and testing settings
     train_cfg=dict(
@@ -177,15 +171,16 @@ model = dict(
                 pc_range=point_cloud_range))))
 
 dataset_type = 'NuScenesDataset'
-data_root = 'data/nuScenes/nuscenes-v1.0/'
+data_root = 'data/nuscenes/train-val/'
 
 train_pipeline = [
-    dict(type='RandomScaleImageMultiViewImage', scales=[0.5]),
     dict(type='PhotoMetricDistortionMultiViewImage'),
+
+    # dict(type='RandomScaleImageMultiViewImage', scales=[0.8,0.9,1.0,1.1,1.2]),
+    dict(type='RandomHorizontalFlipMultiViewImage'),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=CLASSES),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
-    # dict(type='RandomScaleImageMultiViewImage', scales=[0.5]),
     dict(type='PadMultiViewImage', size_divisor=32),
     dict(type='DefaultFormatBundle3D', class_names=CLASSES),
     dict(
@@ -202,14 +197,13 @@ train_pipeline = [
 
 test_pipeline = [
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
+    dict(type='PadMultiViewImage', size_divisor=32),
     dict(
         type='MultiScaleFlipAug3D',
         img_scale=(1600, 900),
         pts_scale_ratio=1,
         flip=False,
         transforms=[
-            dict(type='RandomScaleImageMultiViewImage', scales=[0.5]),
-            dict(type='PadMultiViewImage', size_divisor=32),
             dict(
                 type='DefaultFormatBundle3D',
                 class_names=CLASSES,
@@ -229,7 +223,7 @@ test_pipeline = [
 
 data = dict(
     imgs_per_gpu=1,  # 8gpus, total batch size=8
-    workers_per_gpu=4,
+    workers_per_gpu=8,
     pin_memory=True,
     # shuffler_sampler=dict(type='DistributedGroupSampler'),
     # nonshuffler_sampler=dict(type='DistributedSampler'),
@@ -281,7 +275,6 @@ data = dict(
 paramwise_cfg = {'img_backbone': dict(lr_mult=0.1)}
 optimizer = dict(
     type='AdamW', lr=2e-4, paramwise_options=paramwise_cfg, weight_decay=0.01)
-
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
@@ -307,6 +300,7 @@ eval_pipelines = [
     )
 ]
 
+load_from = 'https://github.com/zhiqi-li/storage/releases/download/v1.0/r101_dcn_fcos3d_pretrain.pth'
 log_config = dict(
     interval=50,
     hooks=[dict(type='TextLoggerHook'),
@@ -314,12 +308,4 @@ log_config = dict(
 
 checkpoint_config = dict(interval=1)
 cudnn_benchmark = True
-export = dict(
-    export_type='blade',
-    blade_config=dict(
-        enable_fp16=True,
-        fp16_fallback_op_ratio=0.0,
-        customize_op_black_list=[
-            'aten::select', 'aten::index', 'aten::slice', 'aten::view',
-            'aten::upsample', 'aten::clamp'
-        ]))
+find_unused_parameters = True
