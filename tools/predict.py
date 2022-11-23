@@ -269,6 +269,8 @@ def build_and_run_file_io(args):
     print(f'Local rank {args.local_rank}')
     torch.cuda.set_device(args.local_rank)
     predictor = init_predictor(args)
+    predict_fn = predictor.__call__ if hasattr(
+        predictor, '__call__') else predictor.predict
     # create proc executor
     proc_exec = ProcessExecutor(args.queue_size)
 
@@ -293,7 +295,7 @@ def build_and_run_file_io(args):
         PredictorProcess(
             input_queue=proc_exec.get_input_queue(),
             output_queue=proc_exec.get_output_queue(),
-            predict_fn=predictor.__call__,
+            predict_fn=predict_fn,
             batch_size=batch_size,
             local_rank=args.local_rank,
             thread_num=args.predict_thread_num))
@@ -336,7 +338,8 @@ def build_and_run_table_io(args):
     batch_size = args.batch_size
     torch.cuda.set_device(args.local_rank)
     predictor = init_predictor(args)
-
+    predict_fn = predictor.__call__ if hasattr(
+        predictor, '__call__') else predictor.predict
     # batch size should be less than the total number of data in input table
     table_read_batch_size = 1
     table_read_thread_num = 4
@@ -383,7 +386,7 @@ def build_and_run_table_io(args):
         PredictorProcess(
             input_queue=proc_exec.get_input_queue(),
             output_queue=proc_exec.get_output_queue(),
-            predict_fn=predictor.__call__,
+            predict_fn=predict_fn,
             batch_size=batch_size,
             local_rank=args.local_rank,
             thread_num=args.predict_thread_num))
