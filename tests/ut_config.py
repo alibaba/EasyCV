@@ -70,6 +70,9 @@ CONFIG_PATH = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
 DET_DATA_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/detection/raw_data')
 DET_DATA_SMALL_VOC_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                         'data/detection/small_voc')
+DET_DATASET_DOWNLOAD_WIDER_PERSON_LOCAL = os.path.join(
+    BASE_LOCAL_PATH, 'data/detection/small_widerPerson')
+
 DET_DATA_MANIFEST_OSS = os.path.join(BASE_OSS_PATH,
                                      'data/detection/small_coco_itag')
 
