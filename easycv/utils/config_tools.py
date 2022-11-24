@@ -73,8 +73,8 @@ class EasyCVConfig(Config):
                 match_length_after = len(match_list)
 
                 key = line.split('=')[0].strip()
-                # Replace first order params (Determine whether there is a space in the starting position)
-                if first_order_params and key in first_order_params and match_length_before == match_length_after == 0:
+                # Check whether it is a first-order parameter
+                if match_length_before == match_length_after == 0 and first_order_params and key in first_order_params:
                     value = first_order_params[key]
                     # repr() is used to convert the data into a string form (in the form of a Python expression) suitable for the interpreter to read
                     line = ' '.join([key, '=', repr(value)]) + '\n'
