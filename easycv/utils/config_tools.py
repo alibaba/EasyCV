@@ -35,10 +35,19 @@ class EasyCVConfig(Config):
     def _substitute_predefined_vars(filename,
                                     temp_config_name,
                                     first_order_params=None):
-        '''
+        """
         Override Config._substitute_predefined_vars.
         Supports first-order parameter reuse to avoid rebuilding custom config.py templates.
-        '''
+
+        Args:
+            filename (str): Original script file.
+            temp_config_name (str): Template script file.
+            first_order_params (dict): first-order parameters.
+
+        Returns:
+            No return value.
+
+        """
         file_dirname = osp.dirname(filename)
         file_basename = osp.basename(filename)
         file_basename_no_extension = osp.splitext(file_basename)[0]
@@ -73,8 +82,9 @@ class EasyCVConfig(Config):
 
 
 def check_base_cfg_path(base_cfg_name='configs/base.py', father_cfg_name=None):
-    '''
+    """
     Concatenate paths by parsing path rules.
+
     for example(pseudo-code):
         1. 'configs' in base_cfg_name
         base_cfg_name = configs/base.py
@@ -93,7 +103,8 @@ def check_base_cfg_path(base_cfg_name='configs/base.py', father_cfg_name=None):
         father_cfg_name = EasyCV/configs/
         base_cfg_name = base.py
         base_cfg_name = father_cfg_name + base_cfg_name = EasyCV/configs/base.py
-    '''
+
+    """
     if father_cfg_name is not None:
         if 'configs' in base_cfg_name:
             if len(father_cfg_name.split('configs')) > 1:
@@ -214,12 +225,21 @@ def grouping_params(user_config_params):
 
 
 def adapt_pai_params(cfg_dict, class_list_params=None):
-    '''
-    The user passes in the class_list. Support three input methods.
-    str(.txt) parameter construction method: 0, 1, 2 or 0, \n, 1, \n, 2\n or 0, \n, 1, 2 or person, dog, cat.
-    list parameter construction method: '[0, 1, 2]' or '[person, dog, cat]'
-    '' parameter construction method: The default setting is str(0) - str(num_classes - 1)
-    '''
+    """
+    The user passes in the class_list_params.
+
+    Args:
+        cfg_dict (dict): All parameters of cfg.
+        class_list_params (list): class_list_params[1] is num_classes.
+        class_list_params[0] supports three ways to build parameters.
+        str(.txt) parameter construction method: 0, 1, 2 or 0, \n, 1, \n, 2\n or 0, \n, 1, 2 or person, dog, cat.
+        list parameter construction method: '[0, 1, 2]' or '[person, dog, cat]'
+        '' parameter construction method: The default setting is str(0) - str(num_classes - 1)
+
+    Returns:
+        cfg_dict (dict): Add the cfg of export and oss.
+
+    """
     if class_list_params is not None:
         class_list, num_classes = class_list_params[0], class_list_params[1]
         if '.txt' in class_list:
