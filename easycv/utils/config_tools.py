@@ -35,6 +35,10 @@ class EasyCVConfig(Config):
     def _substitute_predefined_vars(filename,
                                     temp_config_name,
                                     first_order_params=None):
+        '''
+        Override Config._substitute_predefined_vars.
+        Supports first-order parameter reuse to avoid rebuilding custom config.py templates.
+        '''
         file_dirname = osp.dirname(filename)
         file_basename = osp.basename(filename)
         file_basename_no_extension = osp.splitext(file_basename)[0]
@@ -90,29 +94,32 @@ def check_base_cfg_path(base_cfg_name='configs/base.py', father_cfg_name=None):
         base_cfg_name = base.py
         base_cfg_name = father_cfg_name + base_cfg_name = EasyCV/configs/base.py
     '''
-    if 'configs' in base_cfg_name:
-        if len(father_cfg_name.split('configs')) > 1:
-            abspath_root = father_cfg_name.split('configs')[0]
-        else:
-            abspath_root = father_cfg_name.split('benchmarks')[0]
-        abspath_base_cfg_name = osp.join(abspath_root, base_cfg_name)
-    else:
-        _parse_base_path_list = base_cfg_name.split('/')
-        parse_base_path_list = copy.deepcopy(_parse_base_path_list)
-        parse_ori_path_list = father_cfg_name.split('/')
-        parse_ori_path_list.pop()
-        for filename in _parse_base_path_list:
-            if filename == '.':
-                parse_base_path_list.pop(0)
-            elif filename == '..':
-                parse_base_path_list.pop(0)
-                parse_ori_path_list.pop()
+    if father_cfg_name is not None:
+        if 'configs' in base_cfg_name:
+            if len(father_cfg_name.split('configs')) > 1:
+                abspath_root = father_cfg_name.split('configs')[0]
             else:
-                break
-        abspath_base_cfg_name = '/'.join(parse_ori_path_list +
-                                         parse_base_path_list)
+                abspath_root = father_cfg_name.split('benchmarks')[0]
+            abspath_base_cfg_name = osp.join(abspath_root, base_cfg_name)
+        else:
+            _parse_base_path_list = base_cfg_name.split('/')
+            parse_base_path_list = copy.deepcopy(_parse_base_path_list)
+            parse_ori_path_list = father_cfg_name.split('/')
+            parse_ori_path_list.pop()
+            for filename in _parse_base_path_list:
+                if filename == '.':
+                    parse_base_path_list.pop(0)
+                elif filename == '..':
+                    parse_base_path_list.pop(0)
+                    parse_ori_path_list.pop()
+                else:
+                    break
+            abspath_base_cfg_name = '/'.join(parse_ori_path_list +
+                                             parse_base_path_list)
 
-    return abspath_base_cfg_name
+        return abspath_base_cfg_name
+    else:
+        return base_cfg_name
 
 
 # Read config without __base__
@@ -127,9 +134,12 @@ def mmcv_file2dict_raw(filename, first_order_params=None):
         if platform.system() == 'Windows':
             temp_config_file.close()
         temp_config_name = osp.basename(temp_config_file.name)
-        EasyCVConfig._substitute_predefined_vars(filename,
-                                                 temp_config_file.name,
-                                                 first_order_params)
+        if first_order_params is not None:
+            EasyCVConfig._substitute_predefined_vars(filename,
+                                                     temp_config_file.name,
+                                                     first_order_params)
+        else:
+            Config._substitute_predefined_vars(filename, temp_config_file.name)
         if filename.endswith('.py'):
             temp_module_name = osp.splitext(temp_config_name)[0]
             sys.path.insert(0, temp_config_dir)
@@ -204,7 +214,12 @@ def grouping_params(user_config_params):
 
 
 def adapt_pai_params(cfg_dict, class_list_params=None):
-    # refactor class_list
+    '''
+    The user passes in the class_list. Support three input methods.
+    str(.txt) parameter construction method: 0, 1, 2 or 0, \n, 1, \n, 2\n or 0, \n, 1, 2 or person, dog, cat.
+    list parameter construction method: '[0, 1, 2]' or '[person, dog, cat]'
+    '' parameter construction method: The default setting is str(0) - str(num_classes - 1)
+    '''
     if class_list_params is not None:
         class_list, num_classes = class_list_params[0], class_list_params[1]
         if '.txt' in class_list:
