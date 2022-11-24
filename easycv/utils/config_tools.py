@@ -59,13 +59,22 @@ class EasyCVConfig(Config):
             fileExtname=file_extname)
         with open(filename, encoding='utf-8') as f:
             # Setting encoding explicitly to resolve coding issue on windows
+            left_match, right_match = '{([', '])}'
+            match_list = []
             line_list = []
             for line in f:
-                key = line.split('=')[0].strip()
+                # Push and pop control regular item matching
+                match_length_before = len(match_list)
+                for single_str in line:
+                    if single_str in left_match:
+                        match_list.append(single_str)
+                    if single_str in right_match:
+                        match_list.pop()
+                match_length_after = len(match_list)
 
+                key = line.split('=')[0].strip()
                 # Replace first order params (Determine whether there is a space in the starting position)
-                if first_order_params and key in first_order_params and line[
-                        0] != ' ':
+                if first_order_params and key in first_order_params and match_length_before == match_length_after == 0:
                     value = first_order_params[key]
                     # repr() is used to convert the data into a string form (in the form of a Python expression) suitable for the interpreter to read
                     line = ' '.join([key, '=', repr(value)]) + '\n'
