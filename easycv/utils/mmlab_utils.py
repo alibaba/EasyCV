@@ -373,3 +373,17 @@ def remove_adapt_for_mmlab(cfg):
     mmlab_modules_cfg = cfg.get('mmlab_modules', [])
     adapter = MMAdapter(mmlab_modules_cfg)
     adapter.reset_mm_registry()
+
+
+def fix_dc_pin_memory():
+    """Fix pin memory for DataContainer."""
+    from mmcv.parallel import DataContainer as DC
+    from torch.utils.data._utils.pin_memory import pin_memory
+
+    def data_container_pin_memory(self):
+        if self.cpu_only:
+            return self
+        self._data = pin_memory(self._data)
+        return self
+
+    setattr(DC, 'pin_memory', data_container_pin_memory)

@@ -2,22 +2,21 @@
 import copy
 import json
 import logging
+import pickle
 from collections import OrderedDict
 from distutils.version import LooseVersion
 from typing import Callable, Dict, List, Optional, Tuple
 
-import cv2
 import torch
-import torchvision
 import torchvision.transforms.functional as t_f
 from mmcv.utils import Config
 
 from easycv.file import io
-from easycv.framework.errors import ValueError
-from easycv.models import (DINO, MOCO, SWAV, YOLOX, Classification, MoBY,
-                           build_model)
+from easycv.framework.errors import NotImplementedError, ValueError
+from easycv.models import (DINO, MOCO, SWAV, YOLOX, BEVFormer, Classification,
+                           MoBY, build_model)
 from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.misc import reparameterize_models
+from easycv.utils.misc import encode_str_to_tensor
 
 __all__ = [
     'export',
@@ -27,7 +26,7 @@ __all__ = [
 ]
 
 
-def export(cfg, ckpt_path, filename):
+def export(cfg, ckpt_path, filename, **kwargs):
     """ export model for inference
 
     Args:
@@ -44,20 +43,22 @@ def export(cfg, ckpt_path, filename):
         cfg.model.backbone.pretrained = False
 
     if isinstance(model, MOCO) or isinstance(model, DINO):
-        _export_moco(model, cfg, filename)
+        _export_moco(model, cfg, filename, **kwargs)
     elif isinstance(model, MoBY):
-        _export_moby(model, cfg, filename)
+        _export_moby(model, cfg, filename, **kwargs)
     elif isinstance(model, SWAV):
-        _export_swav(model, cfg, filename)
+        _export_swav(model, cfg, filename, **kwargs)
     elif isinstance(model, Classification):
-        _export_cls(model, cfg, filename)
+        _export_cls(model, cfg, filename, **kwargs)
     elif isinstance(model, YOLOX):
-        _export_yolox(model, cfg, filename)
+        _export_yolox(model, cfg, filename, **kwargs)
+    elif isinstance(model, BEVFormer):
+        _export_bevformer(model, cfg, filename, **kwargs)
     elif hasattr(cfg, 'export') and getattr(cfg.export, 'use_jit', False):
-        export_jit_model(model, cfg, filename)
+        export_jit_model(model, cfg, filename, **kwargs)
         return
     else:
-        _export_common(model, cfg, filename)
+        _export_common(model, cfg, filename, **kwargs)
 
 
 def _export_common(model, cfg, filename):
@@ -181,6 +182,7 @@ def _export_yolox(model, cfg, filename):
         model.export_type = export_type
 
         if export_type != 'raw':
+            from easycv.utils.misc import reparameterize_models
             # only when we use jit or blade, we need to reparameterize_models before export
             model = reparameterize_models(model)
             device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -517,6 +519,100 @@ def export_jit_model(model, cfg, filename):
     model_jit = torch.jit.script(model)
     with io.open(filename, 'wb') as ofile:
         torch.jit.save(model_jit, ofile)
+
+
+def _export_bevformer(model, cfg, filename, fp16=False):
+    if not cfg.adapt_jit:
+        raise ValueError(
+            '"cfg.adapt_jit" must be True when export jit trace or blade model.'
+        )
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = copy.deepcopy(model)
+    model.eval()
+    model.to(device)
+
+    def _dummy_inputs():
+        # dummy inputs
+        bacth_size, queue_len, cams_num = 1, 1, 6
+        img_size = (928, 1600)
+        img = torch.rand([cams_num, 3, img_size[0], img_size[1]]).to(device)
+        can_bus = torch.rand([18]).to(device)
+        lidar2img = torch.rand([6, 4, 4]).to(device)
+        img_shape = torch.tensor([[img_size[0], img_size[1], 3]] *
+                                 cams_num).to(device)
+        dummy_scene_token = 'dummy_scene_token'
+        scene_token = encode_str_to_tensor(dummy_scene_token).to(device)
+        prev_scene_token = scene_token
+        prev_bev = torch.rand([cfg.bev_h * cfg.bev_w, 1,
+                               cfg.embed_dim]).to(device)
+        prev_pos = torch.tensor(0)
+        prev_angle = torch.tensor(0)
+        img_metas = {
+            'can_bus': can_bus,
+            'lidar2img': lidar2img,
+            'img_shape': img_shape,
+            'scene_token': scene_token,
+            'prev_bev': prev_bev,
+            'prev_pos': prev_pos,
+            'prev_angle': prev_angle,
+            'prev_scene_token': prev_scene_token
+        }
+        return img, img_metas
+
+    dummy_inputs = _dummy_inputs()
+
+    def _trace_model():
+        with torch.no_grad():
+            model.forward = model.forward_export
+            trace_model = torch.jit.trace(
+                model, copy.deepcopy(dummy_inputs), check_trace=False)
+        return trace_model
+
+    export_type = cfg.export.get('type')
+    if export_type in ['jit', 'blade']:
+        if fp16:
+            with torch.cuda.amp.autocast():
+                trace_model = _trace_model()
+        else:
+            trace_model = _trace_model()
+        torch.jit.save(trace_model, filename + '.jit')
+    else:
+        raise NotImplementedError(f'Not support export type {export_type}!')
+
+    if export_type == 'jit':
+        return
+
+    blade_config = cfg.export.get('blade_config')
+
+    from easycv.toolkit.blade import blade_env_assert, blade_optimize
+    assert blade_env_assert()
+
+    def _get_blade_model():
+        blade_model = blade_optimize(
+            speed_test_model=model,
+            model=trace_model,
+            inputs=copy.deepcopy(dummy_inputs),
+            blade_config=blade_config,
+            static_opt=False,
+            min_num_nodes=None,  # 50
+            check_inputs=False,
+            fp16=fp16)
+        return blade_model
+
+    # optimize model with blade
+    if fp16:
+        with torch.cuda.amp.autocast():
+            blade_model = _get_blade_model()
+    else:
+        blade_model = _get_blade_model()
+
+    # save blade code and graph
+    # with io.open(filename + '.blade.code.py', 'w') as ofile:
+    #     ofile.write(blade_model.forward.code)
+    # with io.open(filename + '.blade.graph.txt', 'w') as ofile:
+    #     ofile.write(blade_model.forward.graph)
+    with io.open(filename + '.blade', 'wb') as ofile:
+        torch.jit.save(blade_model, ofile)
 
 
 def replace_syncbn(backbone_cfg):

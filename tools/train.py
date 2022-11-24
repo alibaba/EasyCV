@@ -35,10 +35,10 @@ from easycv.file import io
 from easycv.models import build_model
 from easycv.utils.collect_env import collect_env
 from easycv.utils.logger import get_root_logger
-from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
+from easycv.utils import mmlab_utils
 from easycv.utils.config_tools import (traverse_replace, CONFIG_TEMPLATE_ZOO,
-                                       mmcv_config_fromfile, rebuild_config)
-from easycv.utils.dist_utils import get_device
+                                       mmcv_config_fromfile)
+from easycv.utils.dist_utils import get_device, is_master
 from easycv.utils.setup_env import setup_multi_processes
 
 
@@ -164,7 +164,7 @@ def main():
         cfg.load_from = args.load_from
 
     # dynamic adapt mmdet models
-    dynamic_adapt_for_mmlab(cfg)
+    mmlab_utils.dynamic_adapt_for_mmlab(cfg)
 
     cfg.gpus = args.gpus
 
@@ -233,7 +233,9 @@ def main():
         assert isinstance(args.pretrained, str)
         cfg.model.pretrained = args.pretrained
     model = build_model(cfg.model)
-    print(model)
+
+    if is_master():
+        print(model)
 
     if 'stage' in cfg.model and cfg.model['stage'] == 'EDGE':
         from easycv.utils.flops_counter import get_model_info
@@ -262,6 +264,8 @@ def main():
             ), 'odps config must be set in cfg file / cfg.data.train.data_source !!'
             shuffle = False
 
+        if getattr(cfg.data, 'pin_memory', False):
+            mmlab_utils.fix_dc_pin_memory()
         datasets = [build_dataset(cfg.data.train)]
         data_loaders = [
             build_dataloader(
@@ -271,6 +275,7 @@ def main():
                 cfg.gpus,
                 dist=distributed,
                 shuffle=shuffle,
+                pin_memory=getattr(cfg.data, 'pin_memory', False),
                 replace=getattr(cfg.data, 'sampling_replace', False),
                 seed=cfg.seed,
                 # The default should be set to True, because sometimes the last batch is not sampled enough, causing an error in batchnorm

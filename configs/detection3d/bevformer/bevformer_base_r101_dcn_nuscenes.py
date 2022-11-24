@@ -20,13 +20,15 @@ input_modality = dict(
     use_map=False,
     use_external=True)
 
-_dim_ = 256
-_pos_dim_ = _dim_ // 2
-_ffn_dim_ = _dim_ * 2
-_num_levels_ = 4
-bev_h_ = 200
-bev_w_ = 200
+embed_dim = 256
+pos_dim = embed_dim // 2
+ffn_dim = embed_dim * 2
+num_levels = 4
+bev_h = 200
+bev_w = 200
 queue_length = 4  # each sequence contains `queue_length` frames.
+
+adapt_jit = False  # set True when export jit trace model or blade model
 
 model = dict(
     type='BEVFormer',
@@ -47,18 +49,18 @@ model = dict(
     img_neck=dict(
         type='FPN',
         in_channels=[512, 1024, 2048],
-        out_channels=_dim_,
+        out_channels=embed_dim,
         start_level=0,
         add_extra_convs='on_output',
-        num_outs=_num_levels_,
+        num_outs=num_levels,
         relu_before_extra_convs=True),
     pts_bbox_head=dict(
         type='BEVFormerHead',
-        bev_h=bev_h_,
-        bev_w=bev_w_,
+        bev_h=bev_h,
+        bev_w=bev_w,
         num_query=900,
         num_classes=10,
-        in_channels=_dim_,
+        in_channels=embed_dim,
         sync_cls_avg_factor=True,
         with_box_refine=True,
         as_two_stage=False,
@@ -67,7 +69,7 @@ model = dict(
             rotate_prev_bev=True,
             use_shift=True,
             use_can_bus=True,
-            embed_dims=_dim_,
+            embed_dims=embed_dim,
             encoder=dict(
                 type='BEVFormerEncoder',
                 num_layers=6,
@@ -76,26 +78,28 @@ model = dict(
                 return_intermediate=False,
                 transformerlayers=dict(
                     type='BEVFormerLayer',
+                    adapt_jit=adapt_jit,
                     attn_cfgs=[
                         dict(
                             type='TemporalSelfAttention',
-                            embed_dims=_dim_,
+                            embed_dims=embed_dim,
                             num_levels=1),
                         dict(
                             type='SpatialCrossAttention',
                             pc_range=point_cloud_range,
                             deformable_attention=dict(
                                 type='MSDeformableAttention3D',
-                                embed_dims=_dim_,
+                                embed_dims=embed_dim,
                                 num_points=8,
-                                num_levels=_num_levels_),
-                            embed_dims=_dim_,
+                                num_levels=num_levels,
+                                adapt_jit=adapt_jit),
+                            embed_dims=embed_dim,
                         )
                     ],
                     ffn_cfgs=dict(
                         type='FFN',
                         embed_dims=256,
-                        feedforward_channels=_ffn_dim_,
+                        feedforward_channels=ffn_dim,
                         num_fcs=2,
                         ffn_drop=0.1,
                         act_cfg=dict(type='ReLU', inplace=True),
@@ -111,18 +115,19 @@ model = dict(
                     attn_cfgs=[
                         dict(
                             type='MultiheadAttention',
-                            embed_dims=_dim_,
+                            embed_dims=embed_dim,
                             num_heads=8,
                             dropout=0.1),
                         dict(
                             type='CustomMSDeformableAttention',
-                            embed_dims=_dim_,
-                            num_levels=1),
+                            embed_dims=embed_dim,
+                            num_levels=1,
+                            adapt_jit=adapt_jit),
                     ],
                     ffn_cfgs=dict(
                         type='FFN',
                         embed_dims=256,
-                        feedforward_channels=_ffn_dim_,
+                        feedforward_channels=ffn_dim,
                         num_fcs=2,
                         ffn_drop=0.1,
                         act_cfg=dict(type='ReLU', inplace=True),
@@ -138,9 +143,9 @@ model = dict(
             num_classes=10),
         positional_encoding=dict(
             type='LearnedPositionalEncoding',
-            num_feats=_pos_dim_,
-            row_num_embed=bev_h_,
-            col_num_embed=bev_w_,
+            num_feats=pos_dim,
+            row_num_embed=bev_h,
+            col_num_embed=bev_w,
         ),
         loss_cls=dict(
             type='FocalLoss',
@@ -217,6 +222,7 @@ test_pipeline = [
 data = dict(
     imgs_per_gpu=1,  # 8gpus, total batch size=8
     workers_per_gpu=4,
+    pin_memory=True,
     # shuffler_sampler=dict(type='DistributedGroupSampler'),
     # nonshuffler_sampler=dict(type='DistributedSampler'),
     train=dict(
@@ -226,7 +232,10 @@ data = dict(
             data_root=data_root,
             ann_file=data_root + 'nuscenes_infos_temporal_train.pkl',
             pipeline=[
-                dict(type='LoadMultiViewImageFromFiles', to_float32=True),
+                dict(
+                    type='LoadMultiViewImageFromFiles',
+                    to_float32=True,
+                    backend='turbojpeg'),
                 dict(
                     type='LoadAnnotations3D',
                     with_bbox_3d=True,
@@ -251,7 +260,10 @@ data = dict(
             data_root=data_root,
             ann_file=data_root + 'nuscenes_infos_temporal_val.pkl',
             pipeline=[
-                dict(type='LoadMultiViewImageFromFiles', to_float32=True)
+                dict(
+                    type='LoadMultiViewImageFromFiles',
+                    to_float32=True,
+                    backend='turbojpeg')
             ],
             classes=CLASSES,
             modality=input_modality,
@@ -295,3 +307,12 @@ log_config = dict(
 
 checkpoint_config = dict(interval=1)
 cudnn_benchmark = True
+export = dict(
+    type='blade',
+    blade_config=dict(
+        enable_fp16=True,
+        fp16_fallback_op_ratio=0.0,
+        customize_op_black_list=[
+            'aten::select', 'aten::index', 'aten::slice', 'aten::view',
+            'aten::upsample', 'aten::clamp'
+        ]))
