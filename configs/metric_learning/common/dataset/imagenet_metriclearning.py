@@ -1,5 +1,3 @@
-_base_ = 'configs/base.py'
-
 data_source_type = 'ClsSourceImageList'
 data_train_list = '/apsarapangu/disk1/yunji.cjy/data/imagenet_raw/meta/train_labeled.txt'
 data_train_root = '/apsarapangu/disk1/yunji.cjy/data/imagenet_raw/train/'

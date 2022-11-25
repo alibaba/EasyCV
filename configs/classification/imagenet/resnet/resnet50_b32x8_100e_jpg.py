@@ -1,4 +1,7 @@
-_base_ = '../common/dataset/imagenet_classification.py'
+_base_ = [
+    '../common/classification_base.py',
+    '../common/dataset/imagenet_classification.py'
+]
 
 # model settings
 model = dict(

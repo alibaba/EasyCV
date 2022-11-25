@@ -1,10 +1,3 @@
-_base_ = 'configs/base.py'
-
-log_config = dict(
-    interval=1,
-    hooks=[dict(type='TextLoggerHook'),
-           dict(type='TensorboardLoggerHook')])
-
 data_source_type = 'ClsSourceImageList'
 data_train_list = 'data/imagenet_raw/meta/train_labeled.txt'
 data_train_root = 'data/imagenet_raw/train/'

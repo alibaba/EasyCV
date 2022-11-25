@@ -1,4 +1,7 @@
-_base_ = 'common/dataset/imagenet_metriclearning.py'
+_base_ = [
+    'common/metriclearning_base.py',
+    'common/dataset/imagenet_metriclearning.py'
+]
 
 backbone_channels = 2048
 feature_channels = 1536
