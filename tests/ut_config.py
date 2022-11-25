@@ -77,6 +77,10 @@ DET_DATASET_DOWNLOAD_AFRICAN_WILDLIFE = os.path.join(
 DET_DATASET_FRUIT = os.path.join(BASE_LOCAL_PATH, 'data/detection/small_fruit')
 DET_DATASET_PET = os.path.join(
     BASE_LOCAL_PATH, 'data/detection/small_pet/annotations/annotations')
+DET_DATASET_ARTAXOR = os.path.join(BASE_LOCAL_PATH,
+                                   'data/detection/small_artaxor')
+DET_DATASET_TINY_PERSON = os.path.join(BASE_LOCAL_PATH,
+                                       'data/detection/small_tiny_person')
 
 DET_DATA_MANIFEST_OSS = os.path.join(BASE_OSS_PATH,
                                      'data/detection/small_coco_itag')

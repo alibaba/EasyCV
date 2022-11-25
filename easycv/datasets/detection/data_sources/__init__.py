@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from .african_wildlife import DetSourceAfricanWildlife
-from .coco import DetSourceCoco, DetSourceCoco2017
+from .artaxor import DetSourceArtaxor
+from .coco import DetSourceCoco, DetSourceCoco2017, DetSourceTinyPerson
 from .coco_livs import DetSourceLvis
 from .coco_panoptic import DetSourceCocoPanoptic
 from .fruit import DetSourceFruit
