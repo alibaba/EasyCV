@@ -81,6 +81,8 @@ DET_DATASET_ARTAXOR = os.path.join(BASE_LOCAL_PATH,
                                    'data/detection/small_artaxor')
 DET_DATASET_TINY_PERSON = os.path.join(BASE_LOCAL_PATH,
                                        'data/detection/small_tiny_person')
+DET_DATASET_WIDER_FACE = os.path.join(BASE_LOCAL_PATH,
+                                      'data/detection/small_widerface')
 
 DET_DATA_MANIFEST_OSS = os.path.join(BASE_OSS_PATH,
                                      'data/detection/small_coco_itag')
