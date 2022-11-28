@@ -127,6 +127,73 @@ class SetCriterion(nn.Module):
 
         return losses
 
+    def loss_centerness(self, outputs, targets, indices, num_boxes):
+
+        def ref2ltrb(ref, xyxy):
+            lt = ref - xyxy[..., :2]
+            rb = xyxy[..., 2:] - ref
+            ltrb = torch.cat([lt, rb], dim=-1)
+            return ltrb
+
+        def compute_centerness_targets(box_targets):
+            left_right = box_targets[:, [0, 2]]
+            top_bottom = box_targets[:, [1, 3]]
+            centerness = (left_right.min(-1)[0] / left_right.max(-1)[0]) * (
+                top_bottom.min(-1)[0] / top_bottom.max(-1)[0])
+            return torch.sqrt(centerness)
+
+        assert 'pred_centers' in outputs
+        idx = self._get_src_permutation_idx(indices)
+        src_centers = outputs['pred_centers'][idx]  # logits
+        src_centers = src_centers.squeeze(1)
+        target_boxes = torch.cat(
+            [t['boxes'][i] for t, (_, i) in zip(targets, indices)], dim=0)
+
+        assert 'refpts' in outputs
+        src_refpts = outputs['refpts'][idx]  # sigmoided
+        assert src_refpts.shape[-1] == 2
+
+        target_boxes_xyxy = box_cxcywh_to_xyxy(target_boxes)
+        target_boxes_ltrb = ref2ltrb(src_refpts, target_boxes_xyxy)
+        is_in_box = torch.sum(target_boxes_ltrb >= 0, dim=-1) == 4
+
+        src_centers = src_centers[is_in_box]
+        target_boxes_ltrb = target_boxes_ltrb[is_in_box]
+
+        target_boxes_ltrb = target_boxes_ltrb.detach()
+
+        losses = {}
+        if len(target_boxes_ltrb) == 0:
+            losses['loss_center'] = src_centers.sum(
+            ) * 0  # prevent unused parameters
+        else:
+            target_centers = compute_centerness_targets(target_boxes_ltrb)
+            loss_center = F.binary_cross_entropy_with_logits(
+                src_centers, target_centers, reduction='none')
+            losses['loss_center'] = loss_center.sum() / num_boxes
+
+        return losses
+
+    def loss_iouaware(self, outputs, targets, indices, num_boxes):
+        assert 'pred_ious' in outputs
+        idx = self._get_src_permutation_idx(indices)
+        src_ious = outputs['pred_ious'][idx]  # logits
+        src_ious = src_ious.squeeze(1)
+        src_boxes = outputs['pred_boxes'][idx]
+        target_boxes = torch.cat(
+            [t['boxes'][i] for t, (_, i) in zip(targets, indices)], dim=0)
+
+        iou = torch.diag(
+            box_iou(
+                box_cxcywh_to_xyxy(src_boxes),
+                box_cxcywh_to_xyxy(target_boxes))[0])
+
+        losses = {}
+        loss_iouaware = F.binary_cross_entropy_with_logits(
+            src_ious, iou, reduction='none')
+        losses['loss_iouaware'] = loss_iouaware.sum() / num_boxes
+        return losses
+
     def _get_src_permutation_idx(self, indices):
         # permute predictions following indices
         batch_idx = torch.cat(
@@ -146,17 +213,23 @@ class SetCriterion(nn.Module):
             'labels': self.loss_labels,
             'cardinality': self.loss_cardinality,
             'boxes': self.loss_boxes,
+            'centerness': self.loss_centerness,
+            'iouaware': self.loss_iouaware,
         }
         assert loss in loss_map, f'do you really want to compute {loss} loss?'
         return loss_map[loss](outputs, targets, indices, num_boxes, **kwargs)
 
-    def forward(self, outputs, targets, num_boxes=None, return_indices=False):
+    def forward(self,
+                outputs,
+                targets,
+                num_boxes=None,
+                return_indices=False,
+                img_metas=None):
         """ This performs the loss computation.
         Parameters:
              outputs: dict of tensors, see the output specification of the model for the format
              targets: list of dicts, such that len(targets) == batch_size.
                       The expected keys in each dict depends on the losses applied, see each loss' doc
-
              return_indices: used for vis. if True, the layer0-5 indices will be returned as well.
         """
 
@@ -165,6 +238,10 @@ class SetCriterion(nn.Module):
             for k, v in outputs.items() if k != 'aux_outputs'
         }
 
+        out_bbox = outputs_without_aux['pred_boxes'].flatten(
+            0, 1)  # [batch_size * num_queries, 4]
+        boxes1 = box_cxcywh_to_xyxy(out_bbox)
+        assert (boxes1[:, 2:] >= boxes1[:, :2]).all(), img_metas
         # Retrieve the matching between the outputs of the last layer and the targets
         indices = self.matcher(outputs_without_aux, targets)
         if return_indices:
@@ -178,10 +255,9 @@ class SetCriterion(nn.Module):
                                         dtype=torch.float,
                                         device=next(iter(
                                             outputs.values())).device)
-            if is_dist_available():
+            if is_dist_avail_and_initialized():
                 torch.distributed.all_reduce(num_boxes)
-            _, world_size = get_dist_info()
-            num_boxes = torch.clamp(num_boxes / world_size, min=1).item()
+            num_boxes = torch.clamp(num_boxes / get_world_size(), min=1).item()
 
         # Compute all the requested losses
         losses = {}
@@ -196,13 +272,14 @@ class SetCriterion(nn.Module):
         # In case of auxiliary losses, we repeat this process with the output of each intermediate layer.
         if 'aux_outputs' in outputs:
             for i, aux_outputs in enumerate(outputs['aux_outputs']):
+                out_bbox = aux_outputs['pred_boxes'].flatten(
+                    0, 1)  # [batch_size * num_queries, 4]
+                boxes1 = box_cxcywh_to_xyxy(out_bbox)
+                assert (boxes1[:, 2:] >= boxes1[:, :2]).all(), img_metas
                 indices = self.matcher(aux_outputs, targets)
                 if return_indices:
                     indices_list.append(indices)
                 for loss in self.losses:
-                    if loss == 'masks':
-                        # Intermediate masks losses are too costly to compute, we ignore them.
-                        continue
                     kwargs = {}
                     if loss == 'labels':
                         # Logging is enabled only for the last layer
@@ -219,13 +296,14 @@ class SetCriterion(nn.Module):
         # interm_outputs loss
         if 'interm_outputs' in outputs:
             interm_outputs = outputs['interm_outputs']
+            out_bbox = interm_outputs['pred_boxes'].flatten(
+                0, 1)  # [batch_size * num_queries, 4]
+            boxes1 = box_cxcywh_to_xyxy(out_bbox)
+            assert (boxes1[:, 2:] >= boxes1[:, :2]).all(), img_metas
             indices = self.matcher(interm_outputs, targets)
             if return_indices:
                 indices_list.append(indices)
             for loss in self.losses:
-                if loss == 'masks':
-                    # Intermediate masks losses are too costly to compute, we ignore them.
-                    continue
                 kwargs = {}
                 if loss == 'labels':
                     # Logging is enabled only for the last layer
@@ -321,9 +399,15 @@ class CDNCriterion(SetCriterion):
             losses.update(l_dict)
         else:
             l_dict = dict()
-            l_dict['loss_bbox_dn'] = torch.as_tensor(0.).to('cuda')
-            l_dict['loss_giou_dn'] = torch.as_tensor(0.).to('cuda')
-            l_dict['loss_ce_dn'] = torch.as_tensor(0.).to('cuda')
+            if 'labels' in self.losses:
+                l_dict['loss_ce_dn'] = torch.as_tensor(0.).to('cuda')
+            if 'boxes' in self.losses:
+                l_dict['loss_bbox_dn'] = torch.as_tensor(0.).to('cuda')
+                l_dict['loss_giou_dn'] = torch.as_tensor(0.).to('cuda')
+            if 'centerness' in self.losses:
+                l_dict['loss_center_dn'] = torch.as_tensor(0.).to('cuda')
+            if 'iouaware' in self.losses:
+                l_dict['loss_iouaware_dn'] = torch.as_tensor(0.).to('cuda')
             losses.update(l_dict)
 
         for i in range(aux_num):
@@ -348,9 +432,15 @@ class CDNCriterion(SetCriterion):
                 losses.update(l_dict)
             else:
                 l_dict = dict()
-                l_dict['loss_bbox_dn'] = torch.as_tensor(0.).to('cuda')
-                l_dict['loss_giou_dn'] = torch.as_tensor(0.).to('cuda')
-                l_dict['loss_ce_dn'] = torch.as_tensor(0.).to('cuda')
+                if 'labels' in self.losses:
+                    l_dict['loss_ce_dn'] = torch.as_tensor(0.).to('cuda')
+                if 'boxes' in self.losses:
+                    l_dict['loss_bbox_dn'] = torch.as_tensor(0.).to('cuda')
+                    l_dict['loss_giou_dn'] = torch.as_tensor(0.).to('cuda')
+                if 'centerness' in self.losses:
+                    l_dict['loss_center_dn'] = torch.as_tensor(0.).to('cuda')
+                if 'iouaware' in self.losses:
+                    l_dict['loss_iouaware_dn'] = torch.as_tensor(0.).to('cuda')
                 l_dict = {
                     k + f'_{i}':
                     v * (self.weight_dict[k] if k in self.weight_dict else 1.0)
