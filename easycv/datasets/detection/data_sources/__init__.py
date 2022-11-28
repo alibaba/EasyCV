@@ -4,6 +4,7 @@ from .artaxor import DetSourceArtaxor
 from .coco import DetSourceCoco, DetSourceCoco2017, DetSourceTinyPerson
 from .coco_livs import DetSourceLvis
 from .coco_panoptic import DetSourceCocoPanoptic
+from .crowd_human import DetSourceCrowdHuman
 from .fruit import DetSourceFruit
 from .pai_format import DetSourcePAI
 from .pet import DetSourcePet
@@ -16,5 +17,6 @@ __all__ = [
     'DetSourceCoco', 'DetSourceCocoPanoptic', 'DetSourcePAI', 'DetSourceRaw',
     'DetSourceVOC', 'DetSourceVOC2007', 'DetSourceVOC2012',
     'DetSourceCoco2017', 'DetSourceLvis', 'DetSourceWiderPerson',
-    'DetSourceAfricanWildlife', 'DetSourcePet', 'DetSourceWiderFace'
+    'DetSourceAfricanWildlife', 'DetSourcePet', 'DetSourceWiderFace',
+    'DetSourceCrowdHuman'
 ]
