@@ -14,18 +14,19 @@ class DetSourceWiderFaceTest(unittest.TestCase):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
     def _base_test(self, data_source):
-        index_list = random.choices(list(range(10)), k=3)
-
-        for idx in index_list:
+        index_list = random.choices(list(range(10)), k=6)
+        exclude_list = [i for i in range(7) if i not in index_list]
+        for idx in exclude_list:
             data = data_source[idx]
-            self.assertIn('ann_info', data)
-            self.assertIn('img_info', data)
+            self.assertIn('img_shape', data)
+            self.assertIn('ori_img_shape', data)
             self.assertIn('filename', data)
-            self.assertEqual(data['img'].shape[-1], 3)
             self.assertEqual(len(data['img_shape']), 3)
             self.assertEqual(data['img_fields'], ['img'])
+            self.assertEqual(data['bbox_fields'], ['gt_bboxes'])
             self.assertEqual(data['gt_bboxes'].shape[-1], 4)
-            self.assertGreater(len(data['gt_labels']), 1)
+            self.assertGreaterEqual(len(data['gt_labels']), 1)
+            self.assertEqual(data['img'].shape[-1], 3)
 
         length = len(data_source)
 
