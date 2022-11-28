@@ -351,8 +351,7 @@ class DeformableTransformer(nn.Module):
             ref_token_coord=enc_refpoint_embed,  # bs, nq, 4
         )
         if self.multi_encoder_memory:
-            memory = self.memory_reduce(
-                torch.cat([src_flatten, memory], -1))
+            memory = self.memory_reduce(torch.cat([src_flatten, memory], -1))
         #########################################################
         # End Encoder
         # - memory: bs, \sum{hw}, c
