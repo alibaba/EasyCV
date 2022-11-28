@@ -63,7 +63,7 @@ train_pipeline = [
     dict(type='DefaultFormatBundle'),
     dict(
         type='Collect',
-        keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks'],
+        keys=['img', 'gt_bboxes', 'gt_labels'],
         meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
                    'img_shape', 'pad_shape', 'scale_factor', 'flip',
                    'flip_direction', 'img_norm_cfg'))
@@ -97,11 +97,7 @@ train_dataset = dict(
         img_prefix=data_root + 'train2017/',
         pipeline=[
             dict(type='LoadImageFromFile'),
-            dict(
-                type='LoadAnnotations',
-                with_bbox=True,
-                with_mask=True,
-                poly2mask=False)
+            dict(type='LoadAnnotations', with_bbox=True)
         ],
         classes=CLASSES,
         test_mode=False,
