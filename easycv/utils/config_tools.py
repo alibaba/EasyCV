@@ -53,7 +53,7 @@ class EasyCVConfig(Config):
         "Config [path: /home/kchen/projects/mmcv/tests/data/config/a.py]: "
         "{'item1': [1, 2], 'item2': {'a': 0}, 'item3': True, 'item4': 'test'}"
     """
-    
+
     @staticmethod
     def _substitute_predefined_vars(filename,
                                     temp_config_name,
