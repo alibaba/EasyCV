@@ -4,7 +4,7 @@ import sys
 import tempfile
 from importlib import import_module
 
-import osp as osp
+import os.path as osp
 from mmcv import Config, import_modules_from_strings
 
 import easycv
