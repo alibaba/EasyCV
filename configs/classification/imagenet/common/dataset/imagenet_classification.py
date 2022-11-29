@@ -1,66 +1,3 @@
-data_source_type = 'ClsSourceImageList'
-data_train_list = 'data/imagenet_raw/meta/train_labeled.txt'
-data_train_root = 'data/imagenet_raw/train/'
-data_test_list = 'data/imagenet_raw/meta/val_labeled.txt'
-data_test_root = 'data/imagenet_raw/validation/'
-image_size2 = 224
-image_size1 = int((256 / 224) * image_size2)
-
-dataset_type = 'ClsDataset'
-img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-train_pipeline = [
-    dict(type='RandomResizedCrop', size=image_size2),
-    dict(type='RandomHorizontalFlip'),
-    dict(type='ToTensor'),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Collect', keys=['img', 'gt_labels'])
-]
-test_pipeline = [
-    dict(type='Resize', size=image_size1),
-    dict(type='CenterCrop', size=image_size2),
-    dict(type='ToTensor'),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Collect', keys=['img', 'gt_labels'])
-]
-
-data = dict(
-    imgs_per_gpu=32,  # total 256
-    workers_per_gpu=4,
-    train=dict(
-        type=dataset_type,
-        data_source=dict(
-            list_file=data_train_list,
-            root=data_train_root,
-            type=data_source_type),
-        pipeline=train_pipeline),
-    val=dict(
-        type=dataset_type,
-        data_source=dict(
-            list_file=data_test_list,
-            root=data_test_root,
-            type=data_source_type),
-        pipeline=test_pipeline))
-
-eval_config = dict(initial=False, interval=1, gpu_collect=True)
-eval_pipelines = [
-    dict(
-        mode='test',
-        data=data['val'],
-        dist_eval=True,
-        evaluators=[dict(type='ClsEvaluator', topk=(1, 5))],
-    )
-]
-
-predict = dict(
-    type='ClassificationPredictor',
-    pipelines=[
-        dict(type='Resize', size=image_size1),
-        dict(type='CenterCrop', size=image_size2),
-        dict(type='ToTensor'),
-        dict(type='Normalize', **img_norm_cfg),
-        dict(type='Collect', keys=['img'])
-    ])
-
 class_list = [
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13',
     '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25',
@@ -161,3 +98,66 @@ class_list = [
     '979', '980', '981', '982', '983', '984', '985', '986', '987', '988',
     '989', '990', '991', '992', '993', '994', '995', '996', '997', '998', '999'
 ]
+
+data_source_type = 'ClsSourceImageList'
+data_train_list = 'data/imagenet_raw/meta/train_labeled.txt'
+data_train_root = 'data/imagenet_raw/train/'
+data_test_list = 'data/imagenet_raw/meta/val_labeled.txt'
+data_test_root = 'data/imagenet_raw/validation/'
+image_size2 = 224
+image_size1 = int((256 / 224) * image_size2)
+
+dataset_type = 'ClsDataset'
+img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+train_pipeline = [
+    dict(type='RandomResizedCrop', size=image_size2),
+    dict(type='RandomHorizontalFlip'),
+    dict(type='ToTensor'),
+    dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img', 'gt_labels'])
+]
+test_pipeline = [
+    dict(type='Resize', size=image_size1),
+    dict(type='CenterCrop', size=image_size2),
+    dict(type='ToTensor'),
+    dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img', 'gt_labels'])
+]
+
+data = dict(
+    imgs_per_gpu=32,  # total 256
+    workers_per_gpu=4,
+    train=dict(
+        type=dataset_type,
+        data_source=dict(
+            list_file=data_train_list,
+            root=data_train_root,
+            type=data_source_type),
+        pipeline=train_pipeline),
+    val=dict(
+        type=dataset_type,
+        data_source=dict(
+            list_file=data_test_list,
+            root=data_test_root,
+            type=data_source_type),
+        pipeline=test_pipeline))
+
+eval_config = dict(initial=False, interval=1, gpu_collect=True)
+eval_pipelines = [
+    dict(
+        mode='test',
+        data=data['val'],
+        dist_eval=True,
+        evaluators=[dict(type='ClsEvaluator', topk=(1, 5), class_list=class_list)],
+    )
+]
+
+predict = dict(
+    type='ClassificationPredictor',
+    pipelines=[
+        dict(type='Resize', size=image_size1),
+        dict(type='CenterCrop', size=image_size2),
+        dict(type='ToTensor'),
+        dict(type='Normalize', **img_norm_cfg),
+        dict(type='Collect', keys=['img'])
+    ])
