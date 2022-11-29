@@ -30,7 +30,30 @@ def traverse_replace(d, key, value):
 
 
 class EasyCVConfig(Config):
+    """A facility for config and config files.
 
+    It supports common file formats as configs: python/json/yaml. The interface
+    is the same as a dict object and also allows access config values as
+    attributes.
+
+    Example:
+        >>> cfg = Config(dict(a=1, b=dict(b1=[0, 1])))
+        >>> cfg.a
+        1
+        >>> cfg.b
+        {'b1': [0, 1]}
+        >>> cfg.b.b1
+        [0, 1]
+        >>> cfg = Config.fromfile('tests/data/config/a.py')
+        >>> cfg.filename
+        "/home/kchen/projects/mmcv/tests/data/config/a.py"
+        >>> cfg.item4
+        'test'
+        >>> cfg
+        "Config [path: /home/kchen/projects/mmcv/tests/data/config/a.py]: "
+        "{'item1': [1, 2], 'item2': {'a': 0}, 'item3': True, 'item4': 'test'}"
+    """
+    
     @staticmethod
     def _substitute_predefined_vars(filename,
                                     temp_config_name,
