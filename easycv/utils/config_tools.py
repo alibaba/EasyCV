@@ -7,6 +7,7 @@ from importlib import import_module
 
 from mmcv import Config, import_modules_from_strings
 
+import easycv
 from easycv.file import io
 from easycv.framework.errors import IOError, KeyError, ValueError
 from .user_config_params_utils import check_value_type
@@ -306,13 +307,11 @@ def mmcv_config_fromfile(ori_filename,
                          user_config_params=None,
                          model_type=None):
     # ori_filename conver to absolute path
-    abspath_root = __file__  # easycv package root path
-    for _ in range(10):
-        abspath_root = osp.dirname(abspath_root)
-        check_filename = osp.join(abspath_root, ori_filename)
-        if osp.exists(check_filename):
-            ori_filename = check_filename
-            break
+    abspath_root = os.path.dirname(easycv.__file__)  # easycv package root path
+    if os.path.exists(os.path.join(abspath_root, ori_filename)):
+        ori_filename = os.path.join(abspath_root, ori_filename)
+    else:
+        ori_filename = os.path.join(os.path.dirname(abspath_root, ori_filename))
 
     if user_config_params is not None:
         # set class_list
