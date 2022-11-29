@@ -85,6 +85,8 @@ DET_DATASET_WIDER_FACE = os.path.join(BASE_LOCAL_PATH,
                                       'data/detection/small_widerface')
 DET_DATASET_CROWD_HUMAN = os.path.join(BASE_LOCAL_PATH,
                                        'data/detection/small_crowdhuman')
+DET_DATASET_OBJECT365 = os.path.join(BASE_LOCAL_PATH,
+                                     'data/detection/small_object365')
 
 DET_DATA_MANIFEST_OSS = os.path.join(BASE_OSS_PATH,
                                      'data/detection/small_coco_itag')
