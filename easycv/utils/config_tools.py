@@ -309,7 +309,7 @@ def mmcv_config_fromfile(ori_filename):
     if osp.exists(osp.join(abspath_root, ori_filename)):
         ori_filename = osp.join(abspath_root, ori_filename)
     else:
-        ori_filename = osp.join(osp.dirname(abspath_root, ori_filename))
+        ori_filename = osp.join(osp.dirname(abspath_root), ori_filename)
 
     cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename)
 
@@ -327,7 +327,7 @@ def pai_config_fromfile(ori_filename,
     if osp.exists(osp.join(abspath_root, ori_filename)):
         ori_filename = osp.join(abspath_root, ori_filename)
     else:
-        ori_filename = osp.join(osp.dirname(abspath_root, ori_filename))
+        ori_filename = osp.join(osp.dirname(abspath_root), ori_filename)
 
     if user_config_params is not None:
         # set class_list
