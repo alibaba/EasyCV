@@ -1,10 +1,10 @@
 import copy
-import os.path as osp
 import platform
 import sys
 import tempfile
 from importlib import import_module
 
+import osp as osp
 from mmcv import Config, import_modules_from_strings
 
 import easycv
@@ -180,8 +180,8 @@ def mmcv_file2dict_raw(filename, first_order_params=None):
         temp_config_name = osp.basename(temp_config_file.name)
         if first_order_params is not None:
             WrapperConfig._substitute_predefined_vars(filename,
-                                                     temp_config_file.name,
-                                                     first_order_params)
+                                                      temp_config_file.name,
+                                                      first_order_params)
         else:
             Config._substitute_predefined_vars(filename, temp_config_file.name)
         if filename.endswith('.py'):
@@ -301,12 +301,13 @@ def adapt_pai_params(cfg_dict, class_list_params=None):
         buckets=['your_bucket_2'])
     return cfg_dict
 
+
 # gen mmcv.Config
 def mmcv_config_fromfile(ori_filename):
     # ori_filename conver to absolute path
-    abspath_root = os.path.dirname(easycv.__file__)  # easycv package root path
-    if os.path.exists(os.path.join(abspath_root, ori_filename)):
-        ori_filename = os.path.join(abspath_root, ori_filename)
+    abspath_root = osp.dirname(easycv.__file__)  # easycv package root path
+    if osp.exists(osp.join(abspath_root, ori_filename)):
+        ori_filename = osp.join(abspath_root, ori_filename)
 
     cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename)
 
@@ -315,15 +316,16 @@ def mmcv_config_fromfile(ori_filename):
 
     return Config(cfg_dict, cfg_text=cfg_text, filename=ori_filename)
 
+
 def pai_config_fromfile(ori_filename,
-                         user_config_params=None,
-                         model_type=None):
+                        user_config_params=None,
+                        model_type=None):
     # ori_filename conver to absolute path
-    abspath_root = os.path.dirname(easycv.__file__)  # easycv package root path
-    if os.path.exists(os.path.join(abspath_root, ori_filename)):
-        ori_filename = os.path.join(abspath_root, ori_filename)
+    abspath_root = osp.dirname(easycv.__file__)  # easycv package root path
+    if osp.exists(osp.join(abspath_root, ori_filename)):
+        ori_filename = osp.join(abspath_root, ori_filename)
     else:
-        ori_filename = os.path.join(os.path.dirname(abspath_root, ori_filename))
+        ori_filename = osp.join(osp.dirname(abspath_root, ori_filename))
 
     if user_config_params is not None:
         # set class_list

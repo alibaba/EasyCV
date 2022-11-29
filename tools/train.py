@@ -37,7 +37,8 @@ from easycv.utils.collect_env import collect_env
 from easycv.utils.logger import get_root_logger
 from easycv.utils import mmlab_utils
 from easycv.utils.config_tools import (traverse_replace, CONFIG_TEMPLATE_ZOO,
-                                       mmcv_config_fromfile, pai_config_fromfile)
+                                       mmcv_config_fromfile,
+                                       pai_config_fromfile)
 from easycv.utils.dist_utils import get_device, is_master
 from easycv.utils.setup_env import setup_multi_processes
 
@@ -138,7 +139,7 @@ def main():
         cfg = mmcv_config_fromfile(args.config)
     else:
         cfg = pai_config_fromfile(args.config, args.user_config_params,
-                                args.model_type)
+                                  args.model_type)
 
     # set multi-process settings
     setup_multi_processes(cfg)
