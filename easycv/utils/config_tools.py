@@ -301,9 +301,21 @@ def adapt_pai_params(cfg_dict, class_list_params=None):
         buckets=['your_bucket_2'])
     return cfg_dict
 
-
 # gen mmcv.Config
-def mmcv_config_fromfile(ori_filename,
+def mmcv_config_fromfile(ori_filename):
+    # ori_filename conver to absolute path
+    abspath_root = os.path.dirname(easycv.__file__)  # easycv package root path
+    if os.path.exists(os.path.join(abspath_root, ori_filename)):
+        ori_filename = os.path.join(abspath_root, ori_filename)
+
+    cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename)
+
+    if cfg_dict.get('custom_imports', None):
+        import_modules_from_strings(**cfg_dict['custom_imports'])
+
+    return Config(cfg_dict, cfg_text=cfg_text, filename=ori_filename)
+
+def pai_config_fromfile(ori_filename,
                          user_config_params=None,
                          model_type=None):
     # ori_filename conver to absolute path
