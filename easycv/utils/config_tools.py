@@ -29,7 +29,7 @@ def traverse_replace(d, key, value):
             traverse_replace(v, key, value)
 
 
-class EasyCVConfig(Config):
+class WrapperConfig(Config):
     """A facility for config and config files.
 
     It supports common file formats as configs: python/json/yaml. The interface
@@ -178,7 +178,7 @@ def mmcv_file2dict_raw(filename, first_order_params=None):
             temp_config_file.close()
         temp_config_name = osp.basename(temp_config_file.name)
         if first_order_params is not None:
-            EasyCVConfig._substitute_predefined_vars(filename,
+            WrapperConfig._substitute_predefined_vars(filename,
                                                      temp_config_file.name,
                                                      first_order_params)
         else:
