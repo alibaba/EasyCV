@@ -308,6 +308,8 @@ def mmcv_config_fromfile(ori_filename):
     abspath_root = osp.dirname(easycv.__file__)  # easycv package root path
     if osp.exists(osp.join(abspath_root, ori_filename)):
         ori_filename = osp.join(abspath_root, ori_filename)
+    else:
+        ori_filename = osp.join(osp.dirname(abspath_root, ori_filename))
 
     cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename)
 
