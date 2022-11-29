@@ -1,10 +1,10 @@
 import copy
+import os.path as osp
 import platform
 import sys
 import tempfile
 from importlib import import_module
 
-import os.path as osp
 from mmcv import Config, import_modules_from_strings
 
 import easycv
