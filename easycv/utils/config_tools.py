@@ -121,23 +121,11 @@ def check_base_cfg_path(base_cfg_name='configs/base.py',
     Concatenate paths by parsing path rules.
 
     for example(pseudo-code):
-        1. 'configs' in base_cfg_name
-        base_cfg_name = configs/base.py
-        father_cfg_name = EasyCV/configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py
-        abspath_root = EasyCV/
-        abspath_base_cfg_name = EasyCV/configs/base.py
+        1. 'configs' in base_cfg_name or 'benchmarks' in base_cfg_name:
+        base_cfg_name = easycv_root + base_cfg_name
 
-        2. 'configs' not in base_cfg_name
-        base_cfg_name = ../../../base.py
-        father_cfg_name = EasyCV/configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py
-        father_cfg_name.pop()
-        father_cfg_name = EasyCV/configs/classification/imagenet/resnet/
-        for i in range(3):
-            base_cfg_name.pop()
-            father_cfg_name.pop()
-        father_cfg_name = EasyCV/configs/
-        base_cfg_name = base.py
-        base_cfg_name = father_cfg_name + base_cfg_name = EasyCV/configs/base.py
+        2. 'configs' not in base_cfg_name and 'benchmarks' not in base_cfg_name:
+        base_cfg_name = father_cfg_name + base_cfg_name
 
     """
     parse_base_cfg = base_cfg_name.split('/')
@@ -162,32 +150,6 @@ def check_base_cfg_path(base_cfg_name='configs/base.py',
                                      parse_base_path_list)
 
     return base_cfg_name
-    # if father_cfg_name is not None:
-    #     if 'configs' in base_cfg_name:
-    #         if len(father_cfg_name.split('configs')) > 1:
-    #             abspath_root = father_cfg_name.split('configs')[0]
-    #         else:
-    #             abspath_root = father_cfg_name.split('benchmarks')[0]
-    #         abspath_base_cfg_name = osp.join(abspath_root, base_cfg_name)
-    #     else:
-    #         _parse_base_path_list = base_cfg_name.split('/')
-    #         parse_base_path_list = copy.deepcopy(_parse_base_path_list)
-    #         parse_ori_path_list = father_cfg_name.split('/')
-    #         parse_ori_path_list.pop()
-    #         for filename in _parse_base_path_list:
-    #             if filename == '.':
-    #                 parse_base_path_list.pop(0)
-    #             elif filename == '..':
-    #                 parse_base_path_list.pop(0)
-    #                 parse_ori_path_list.pop()
-    #             else:
-    #                 break
-    #         abspath_base_cfg_name = '/'.join(parse_ori_path_list +
-    #                                          parse_base_path_list)
-
-    #     return abspath_base_cfg_name
-    # else:
-    #     return base_cfg_name
 
 
 # Read config without __base__
@@ -360,6 +322,7 @@ def pai_config_fromfile(ori_filename,
 
     if user_config_params is not None:
         # set class_list
+        class_list_params = None
         if 'class_list' in user_config_params:
             class_list = user_config_params.pop('class_list')
             for key, value in user_config_params.items():
