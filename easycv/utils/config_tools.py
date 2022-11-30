@@ -275,7 +275,7 @@ def adapt_pai_params(cfg_dict, class_list_params=None):
         elif len(class_list) > 0:
             cfg_dict['class_list'] = list(map(str, class_list))
         else:
-            cfg_dict['class_list'] = list(map(str, range(0, num_classes - 1)))
+            cfg_dict['class_list'] = list(map(str, range(0, num_classes)))
 
     # export config
     cfg_dict['export'] = dict(export_neck=True)

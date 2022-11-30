@@ -1,6 +1,6 @@
 import unittest
 
-from easycv.utils.config_tools import check_base_cfg_path
+from easycv.utils.config_tools import adapt_pai_params, check_base_cfg_path
 
 
 class CheckPathTest(unittest.TestCase):
