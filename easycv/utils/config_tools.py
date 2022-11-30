@@ -302,8 +302,7 @@ def adapt_pai_params(cfg_dict, class_list_params=None):
     return cfg_dict
 
 
-# gen mmcv.Config
-def mmcv_config_fromfile(ori_filename):
+def init_path(ori_filename):
     # ori_filename conver to absolute path
     abspath_root = __file__  # easycv package root path
     for _ in range(10):
@@ -312,6 +311,12 @@ def mmcv_config_fromfile(ori_filename):
         if osp.exists(check_filename):
             ori_filename = check_filename
             break
+    return ori_filename
+
+
+# gen mmcv.Config
+def mmcv_config_fromfile(ori_filename):
+    ori_filename = init_path(ori_filename)
 
     cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename)
 
@@ -324,14 +329,7 @@ def mmcv_config_fromfile(ori_filename):
 def pai_config_fromfile(ori_filename,
                         user_config_params=None,
                         model_type=None):
-    # ori_filename conver to absolute path
-    abspath_root = __file__  # easycv package root path
-    for _ in range(10):
-        abspath_root = osp.dirname(abspath_root)
-        check_filename = osp.join(abspath_root, ori_filename)
-        if osp.exists(check_filename):
-            ori_filename = check_filename
-            break
+    ori_filename = init_path(ori_filename)
 
     if user_config_params is not None:
         # set class_list
