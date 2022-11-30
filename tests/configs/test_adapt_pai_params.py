@@ -1,6 +1,9 @@
+import os.path as osp
 import unittest
 
-from easycv.utils.config_tools import adapt_pai_params, check_base_cfg_path
+from tests.ut_config import CLASS_LIST_TEST
+
+from easycv.utils.config_tools import adapt_pai_params
 
 
 class AdaptPaiParamsTest(unittest.TestCase):
@@ -32,6 +35,30 @@ class AdaptPaiParamsTest(unittest.TestCase):
             cfg_dict, class_list_params=class_list_params)
 
         self.assertEqual(cfg_dict['class_list'], ['0', '1', '2'])
+
+    def test_adapt_pai_params_3(self):
+        cfg_dict = {}
+        class_list_params = [
+            osp.join(CLASS_LIST_TEST, 'class_list_int_test.txt'), 8
+        ]
+        cfg_dict = adapt_pai_params(
+            cfg_dict, class_list_params=class_list_params)
+
+        self.assertEqual(cfg_dict['class_list'],
+                         ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
+
+    def test_adapt_pai_params_4(self):
+        cfg_dict = {}
+        class_list_params = [
+            osp.join(CLASS_LIST_TEST, 'class_list_str_test.txt'), 8
+        ]
+        cfg_dict = adapt_pai_params(
+            cfg_dict, class_list_params=class_list_params)
+
+        self.assertEqual(cfg_dict['class_list'], [
+            'airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog',
+            'horse', 'ship', 'truck'
+        ])
 
 
 if __name__ == '__main__':
