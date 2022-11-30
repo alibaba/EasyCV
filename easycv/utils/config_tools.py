@@ -305,7 +305,7 @@ def adapt_pai_params(cfg_dict, class_list_params=None):
 # gen mmcv.Config
 def mmcv_config_fromfile(ori_filename):
     # ori_filename conver to absolute path
-    abspath_root = osp.dirname(easycv.__file__)  # easycv package root path
+    abspath_root = easycv.__file__  # easycv package root path
     if osp.exists(osp.join(abspath_root, ori_filename)):
         ori_filename = osp.join(abspath_root, ori_filename)
     else:
@@ -323,7 +323,7 @@ def pai_config_fromfile(ori_filename,
                         user_config_params=None,
                         model_type=None):
     # ori_filename conver to absolute path
-    abspath_root = osp.dirname(easycv.__file__)  # easycv package root path
+    abspath_root = easycv.__file__  # easycv package root path
     if osp.exists(osp.join(abspath_root, ori_filename)):
         ori_filename = osp.join(abspath_root, ori_filename)
     else:
