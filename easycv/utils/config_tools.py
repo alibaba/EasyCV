@@ -303,6 +303,7 @@ def adapt_pai_params(cfg_dict, class_list_params=None):
 
 
 def init_path(ori_filename):
+    parse_ori_filename = ori_filename.split('/')
     # ori_filename conver to absolute path
     abspath_root = __file__  # easycv package root path
     for _ in range(10):
