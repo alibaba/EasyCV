@@ -114,7 +114,9 @@ class WrapperConfig(Config):
             tmp_config_file.write(config_file)
 
 
-def check_base_cfg_path(base_cfg_name='configs/base.py', father_cfg_name=None):
+def check_base_cfg_path(base_cfg_name='configs/base.py',
+                        father_cfg_name=None,
+                        easycv_root=None):
     """
     Concatenate paths by parsing path rules.
 
@@ -138,14 +140,12 @@ def check_base_cfg_path(base_cfg_name='configs/base.py', father_cfg_name=None):
         base_cfg_name = father_cfg_name + base_cfg_name = EasyCV/configs/base.py
 
     """
-    if father_cfg_name is not None:
-        if 'configs' in base_cfg_name:
-            if len(father_cfg_name.split('configs')) > 1:
-                abspath_root = father_cfg_name.split('configs')[0]
-            else:
-                abspath_root = father_cfg_name.split('benchmarks')[0]
-            abspath_base_cfg_name = osp.join(abspath_root, base_cfg_name)
-        else:
+    parse_base_cfg = base_cfg_name.split('/')
+    if parse_base_cfg[0] == 'configs' or parse_base_cfg[0] == 'benchmarks':
+        if easycv_root is not None:
+            base_cfg_name = osp.join(easycv_root, base_cfg_name)
+    else:
+        if father_cfg_name is not None:
             _parse_base_path_list = base_cfg_name.split('/')
             parse_base_path_list = copy.deepcopy(_parse_base_path_list)
             parse_ori_path_list = father_cfg_name.split('/')
@@ -158,12 +158,36 @@ def check_base_cfg_path(base_cfg_name='configs/base.py', father_cfg_name=None):
                     parse_ori_path_list.pop()
                 else:
                     break
-            abspath_base_cfg_name = '/'.join(parse_ori_path_list +
-                                             parse_base_path_list)
+            base_cfg_name = '/'.join(parse_ori_path_list +
+                                     parse_base_path_list)
 
-        return abspath_base_cfg_name
-    else:
-        return base_cfg_name
+    return base_cfg_name
+    # if father_cfg_name is not None:
+    #     if 'configs' in base_cfg_name:
+    #         if len(father_cfg_name.split('configs')) > 1:
+    #             abspath_root = father_cfg_name.split('configs')[0]
+    #         else:
+    #             abspath_root = father_cfg_name.split('benchmarks')[0]
+    #         abspath_base_cfg_name = osp.join(abspath_root, base_cfg_name)
+    #     else:
+    #         _parse_base_path_list = base_cfg_name.split('/')
+    #         parse_base_path_list = copy.deepcopy(_parse_base_path_list)
+    #         parse_ori_path_list = father_cfg_name.split('/')
+    #         parse_ori_path_list.pop()
+    #         for filename in _parse_base_path_list:
+    #             if filename == '.':
+    #                 parse_base_path_list.pop(0)
+    #             elif filename == '..':
+    #                 parse_base_path_list.pop(0)
+    #                 parse_ori_path_list.pop()
+    #             else:
+    #                 break
+    #         abspath_base_cfg_name = '/'.join(parse_ori_path_list +
+    #                                          parse_base_path_list)
+
+    #     return abspath_base_cfg_name
+    # else:
+    #     return base_cfg_name
 
 
 # Read config without __base__
@@ -211,7 +235,9 @@ def mmcv_file2dict_raw(filename, first_order_params=None):
 
 
 # Reac config with __base__
-def mmcv_file2dict_base(ori_filename, first_order_params=None):
+def mmcv_file2dict_base(ori_filename,
+                        first_order_params=None,
+                        easycv_root=None):
     cfg_dict, cfg_text = mmcv_file2dict_raw(ori_filename, first_order_params)
 
     BASE_KEY = '_base_'
@@ -223,7 +249,8 @@ def mmcv_file2dict_base(ori_filename, first_order_params=None):
         cfg_dict_list = list()
         cfg_text_list = list()
         for f in base_filename:
-            base_cfg_path = check_base_cfg_path(f, ori_filename)
+            base_cfg_path = check_base_cfg_path(
+                f, ori_filename, easycv_root=easycv_root)
             _cfg_dict, _cfg_text = mmcv_file2dict_base(base_cfg_path,
                                                        first_order_params)
             cfg_dict_list.append(_cfg_dict)
@@ -303,26 +330,22 @@ def adapt_pai_params(cfg_dict, class_list_params=None):
 
 
 def init_path(ori_filename):
+    easycv_root = osp.dirname(easycv.__file__)  # easycv package root path
     parse_ori_filename = ori_filename.split('/')
     if parse_ori_filename[0] == 'configs' or parse_ori_filename[
             0] == 'benchmarks':
-        # ori_filename conver to absolute path
-        abspath_root = __file__  # easycv package root path
-        for _ in range(10):
-            abspath_root = osp.dirname(abspath_root)
-            check_filename = osp.join(abspath_root, ori_filename)
-            if osp.exists(check_filename):
-                ori_filename = check_filename
-                break
+        if osp.exists(osp.join(easycv_root, ori_filename)):
+            ori_filename = osp.join(easycv_root, ori_filename)
 
-    return ori_filename
+    return ori_filename, easycv_root
 
 
 # gen mmcv.Config
 def mmcv_config_fromfile(ori_filename):
-    ori_filename = init_path(ori_filename)
+    ori_filename, easycv_root = init_path(ori_filename)
 
-    cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename)
+    cfg_dict, cfg_text = mmcv_file2dict_base(
+        ori_filename, easycv_root=easycv_root)
 
     if cfg_dict.get('custom_imports', None):
         import_modules_from_strings(**cfg_dict['custom_imports'])
@@ -333,7 +356,7 @@ def mmcv_config_fromfile(ori_filename):
 def pai_config_fromfile(ori_filename,
                         user_config_params=None,
                         model_type=None):
-    ori_filename = init_path(ori_filename)
+    ori_filename, easycv_root = init_path(ori_filename)
 
     if user_config_params is not None:
         # set class_list
@@ -351,7 +374,8 @@ def pai_config_fromfile(ori_filename,
         class_list_params, first_order_params, multi_order_params = None, None, None
 
     # replace first-order parameters
-    cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename, first_order_params)
+    cfg_dict, cfg_text = mmcv_file2dict_base(
+        ori_filename, first_order_params, easycv_root=easycv_root)
 
     # Add export and oss ​​related configuration to adapt to pai platform
     if model_type:
