@@ -135,11 +135,11 @@ def main():
         args.config = tpath
 
     # build cfg
-    if args.user_config_params is None:
-        cfg = mmcv_config_fromfile(args.config)
-    else:
-        cfg = pai_config_fromfile(args.config, args.user_config_params,
-                                  args.model_type)
+    # if args.user_config_params is None:
+    #     cfg = mmcv_config_fromfile(args.config)
+    # else:
+    cfg = pai_config_fromfile(args.config, args.user_config_params,
+                              args.model_type)
 
     # set multi-process settings
     setup_multi_processes(cfg)
