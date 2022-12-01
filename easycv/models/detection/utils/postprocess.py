@@ -39,7 +39,7 @@ class DetrPostProcess(nn.Module):
             prob = F.softmax(out_logits, -1)
             scores, labels = prob[..., :-1].max(-1)
             boxes = box_cxcywh_to_xyxy(out_bbox)
-            
+
             # and from relative [0, 1] to absolute [0, height] coordinates
             img_h, img_w = target_sizes.unbind(1)
             scale_fct = torch.stack([img_w, img_h, img_w, img_h],
@@ -76,12 +76,10 @@ class DetrPostProcess(nn.Module):
             'detection_boxes': [boxes[0].cpu().numpy()],
             'detection_scores': [scores[0].cpu().numpy()],
             'detection_classes': [labels[0].cpu().numpy().astype(np.int32)],
-            'detection_masks': [masks[0].cpu().numpy()],
             'img_metas': img_metas
         }
 
         return results
-
 
 
 def output_postprocess(outputs, img_metas=None):

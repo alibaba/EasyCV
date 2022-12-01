@@ -59,6 +59,7 @@ class DINOHead(nn.Module):
             two_stage_bbox_embed_share=True,
             use_centerness=False,
             use_iouaware=False,
+            losses_list=['labels', 'boxes'],
             decoder_sa_type='sa',
             temperatureH=20,
             temperatureW=20,
@@ -82,14 +83,14 @@ class DINOHead(nn.Module):
             num_classes,
             matcher=self.matcher,
             weight_dict=weight_dict,
-            losses=['labels', 'boxes'],
+            losses=losses_list,
             loss_class_type='focal_loss')
         if dn_components is not None:
             self.dn_criterion = CDNCriterion(
                 num_classes,
                 matcher=self.matcher,
                 weight_dict=weight_dict,
-                losses=['labels', 'boxes'],
+                losses=losses_list,
                 loss_class_type='focal_loss')
         self.postprocess = DetrPostProcess(
             num_select=num_select,
@@ -422,10 +423,13 @@ class DINOHead(nn.Module):
         reference = torch.stack(reference)[:-1][..., :2]
         if self.dn_number > 0 and dn_meta is not None:
             outputs_class, outputs_coord_list, outputs_center_list, outputs_iou_list, reference = cdn_post_process(
-                outputs_class, outputs_coord_list, dn_meta, self._set_aux_loss, outputs_center_list, outputs_iou_list, reference)
+                outputs_class, outputs_coord_list, dn_meta, self._set_aux_loss,
+                outputs_center_list, outputs_iou_list, reference)
         out = {
-            'pred_logits': outputs_class[-1],
-            'pred_boxes': outputs_coord_list[-1],
+            'pred_logits':
+            outputs_class[-1],
+            'pred_boxes':
+            outputs_coord_list[-1],
             'pred_centers':
             outputs_center_list[-1]
             if outputs_center_list is not None else None,
@@ -453,12 +457,9 @@ class DINOHead(nn.Module):
             out['interm_outputs'] = {
                 'pred_logits': interm_class,
                 'pred_boxes': interm_coord,
-                'pred_centers':
-                interm_center if self.use_centerness else None,
-                'pred_ious':
-                interm_iou if self.use_iouaware else None,
-                'refpts':
-                init_box_proposal[..., :2],
+                'pred_centers': interm_center if self.use_centerness else None,
+                'pred_ious': interm_iou if self.use_iouaware else None,
+                'refpts': init_box_proposal[..., :2],
             }
 
         out['dn_meta'] = dn_meta
@@ -466,20 +467,28 @@ class DINOHead(nn.Module):
         return out
 
     @torch.jit.unused
-    def _set_aux_loss(self, outputs_class, outputs_coord, outputs_center=None, outputs_iou=None, reference=None):
+    def _set_aux_loss(self,
+                      outputs_class,
+                      outputs_coord,
+                      outputs_center=None,
+                      outputs_iou=None,
+                      reference=None):
         # this is a workaround to make torchscript happy, as torchscript
         # doesn't support dictionary with non-homogeneous values, such
         # as a dict having both a Tensor and a list.
         return [{
-            'pred_logits': a,
-            'pred_boxes': b,
+            'pred_logits':
+            a,
+            'pred_boxes':
+            b,
             'pred_centers':
             outputs_center[i] if outputs_center is not None else None,
             'pred_ious':
             outputs_iou[i] if outputs_iou is not None else None,
             'refpts':
             reference[i],
-        } for a, b in zip(outputs_class[:-1], outputs_coord[:-1])]
+        } for i, (a,
+                  b) in enumerate(zip(outputs_class[:-1], outputs_coord[:-1]))]
 
     # over-write because img_metas are needed as inputs for bbox_head.
     def forward_train(self, x, img_metas, gt_bboxes, gt_labels):

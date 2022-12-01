@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from easycv.models.detection.utils import (accuracy, box_cxcywh_to_xyxy,
-                                           generalized_box_iou)
+                                           box_iou, generalized_box_iou)
 from easycv.models.loss.focal_loss import py_sigmoid_focal_loss
 from easycv.utils.dist_utils import get_dist_info, is_dist_available
 
@@ -219,12 +219,7 @@ class SetCriterion(nn.Module):
         assert loss in loss_map, f'do you really want to compute {loss} loss?'
         return loss_map[loss](outputs, targets, indices, num_boxes, **kwargs)
 
-    def forward(self,
-                outputs,
-                targets,
-                num_boxes=None,
-                return_indices=False,
-                img_metas=None):
+    def forward(self, outputs, targets, num_boxes=None, return_indices=False):
         """ This performs the loss computation.
         Parameters:
              outputs: dict of tensors, see the output specification of the model for the format
@@ -238,10 +233,6 @@ class SetCriterion(nn.Module):
             for k, v in outputs.items() if k != 'aux_outputs'
         }
 
-        out_bbox = outputs_without_aux['pred_boxes'].flatten(
-            0, 1)  # [batch_size * num_queries, 4]
-        boxes1 = box_cxcywh_to_xyxy(out_bbox)
-        assert (boxes1[:, 2:] >= boxes1[:, :2]).all(), img_metas
         # Retrieve the matching between the outputs of the last layer and the targets
         indices = self.matcher(outputs_without_aux, targets)
         if return_indices:
@@ -255,9 +246,10 @@ class SetCriterion(nn.Module):
                                         dtype=torch.float,
                                         device=next(iter(
                                             outputs.values())).device)
-            if is_dist_avail_and_initialized():
+            if is_dist_available():
                 torch.distributed.all_reduce(num_boxes)
-            num_boxes = torch.clamp(num_boxes / get_world_size(), min=1).item()
+            _, world_size = get_dist_info()
+            num_boxes = torch.clamp(num_boxes / world_size, min=1).item()
 
         # Compute all the requested losses
         losses = {}
@@ -272,10 +264,6 @@ class SetCriterion(nn.Module):
         # In case of auxiliary losses, we repeat this process with the output of each intermediate layer.
         if 'aux_outputs' in outputs:
             for i, aux_outputs in enumerate(outputs['aux_outputs']):
-                out_bbox = aux_outputs['pred_boxes'].flatten(
-                    0, 1)  # [batch_size * num_queries, 4]
-                boxes1 = box_cxcywh_to_xyxy(out_bbox)
-                assert (boxes1[:, 2:] >= boxes1[:, :2]).all(), img_metas
                 indices = self.matcher(aux_outputs, targets)
                 if return_indices:
                     indices_list.append(indices)
@@ -296,10 +284,6 @@ class SetCriterion(nn.Module):
         # interm_outputs loss
         if 'interm_outputs' in outputs:
             interm_outputs = outputs['interm_outputs']
-            out_bbox = interm_outputs['pred_boxes'].flatten(
-                0, 1)  # [batch_size * num_queries, 4]
-            boxes1 = box_cxcywh_to_xyxy(out_bbox)
-            assert (boxes1[:, 2:] >= boxes1[:, :2]).all(), img_metas
             indices = self.matcher(interm_outputs, targets)
             if return_indices:
                 indices_list.append(indices)
