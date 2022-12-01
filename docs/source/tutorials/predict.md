@@ -144,6 +144,8 @@ PYTHONPATH=. python tools/predict.py \
    --result_column result \
    --odps_config /path/to/odps.config
 ```
+
+<details>
 - `model_type`: 模型类型， 对应easycv/predictors/下的不同Predictor类名， 例如YoloXPredictor
 
 - `model_path`: 模型文件路径/模型目录
