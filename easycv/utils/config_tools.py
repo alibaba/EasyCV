@@ -118,36 +118,35 @@ def check_base_cfg_path(base_cfg_name='configs/base.py',
                         father_cfg_name=None,
                         easycv_root=None):
     """
-    Concatenate paths by parsing path rules.
+    Concatenate paths by parsing path rules. Prioritize whether there is a cfg path locally.
 
     for example(pseudo-code):
-        1. 'configs' in base_cfg_name or 'benchmarks' in base_cfg_name:
-        base_cfg_name = easycv_root + base_cfg_name
+        1. parse_base_cfg[0] == '.' or parse_base_cfg[0] == '..':
+            base_cfg_name = father_cfg_name + base_cfg_name
 
-        2. 'configs' not in base_cfg_name and 'benchmarks' not in base_cfg_name:
-        base_cfg_name = father_cfg_name + base_cfg_name
-
+        2. parse_base_cfg[0] != '.' and parse_base_cfg[0] != '..':
+            if not osp.exists(base_cfg_name):
+                base_cfg_name = easycv_root + base_cfg_name
     """
     parse_base_cfg = base_cfg_name.split('/')
-    if parse_base_cfg[0] == 'configs' or parse_base_cfg[0] == 'benchmarks':
-        if easycv_root is not None:
-            base_cfg_name = osp.join(easycv_root, base_cfg_name)
+    if parse_base_cfg[0] == '.' or parse_base_cfg[0] == '..':
+        _parse_base_path_list = base_cfg_name.split('/')
+        parse_base_path_list = copy.deepcopy(_parse_base_path_list)
+        parse_ori_path_list = father_cfg_name.split('/')
+        parse_ori_path_list.pop()
+        for filename in _parse_base_path_list:
+            if filename == '.':
+                parse_base_path_list.pop(0)
+            elif filename == '..':
+                parse_base_path_list.pop(0)
+                parse_ori_path_list.pop()
+            else:
+                break
+        base_cfg_name = '/'.join(parse_ori_path_list + parse_base_path_list)
     else:
-        if father_cfg_name is not None:
-            _parse_base_path_list = base_cfg_name.split('/')
-            parse_base_path_list = copy.deepcopy(_parse_base_path_list)
-            parse_ori_path_list = father_cfg_name.split('/')
-            parse_ori_path_list.pop()
-            for filename in _parse_base_path_list:
-                if filename == '.':
-                    parse_base_path_list.pop(0)
-                elif filename == '..':
-                    parse_base_path_list.pop(0)
-                    parse_ori_path_list.pop()
-                else:
-                    break
-            base_cfg_name = '/'.join(parse_ori_path_list +
-                                     parse_base_path_list)
+        if not osp.exists(base_cfg_name):
+            if easycv_root is not None:
+                base_cfg_name = osp.join(easycv_root, base_cfg_name)
 
     return base_cfg_name
 
@@ -293,11 +292,8 @@ def adapt_pai_params(cfg_dict, class_list_params=None):
 
 def init_path(ori_filename):
     easycv_root = osp.dirname(easycv.__file__)  # easycv package root path
-    parse_ori_filename = ori_filename.split('/')
-    if parse_ori_filename[0] == 'configs' or parse_ori_filename[
-            0] == 'benchmarks':
-        if osp.exists(osp.join(easycv_root, ori_filename)):
-            ori_filename = osp.join(easycv_root, ori_filename)
+    if not osp.exists(ori_filename):
+        ori_filename = osp.join(easycv_root, ori_filename)
 
     return ori_filename, easycv_root
 
