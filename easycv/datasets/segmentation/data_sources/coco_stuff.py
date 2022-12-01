@@ -191,8 +191,8 @@ class SegSourceCocoStuff10k(SegSourceBase):
         with io.open(self.path, 'r') as f:
             lines = f.read().splitlines()
 
-        self.img_files = []
-        self.label_files = []
+        img_files = []
+        label_files = []
         for line in lines:
 
             img_filename = os.path.join(self.img_root, line + self.img_suffix)
@@ -203,7 +203,7 @@ class SegSourceCocoStuff10k(SegSourceBase):
                 self.img_files.append(img_filename)
                 self.label_files.append(label_filename)
 
-        return list(zip(self.img_files, self.label_files))
+        return list(zip(img_files, label_files))
 
     def __getitem__(self, idx):
         result_dict = self.samples_list[idx]
@@ -360,4 +360,4 @@ class SegSourceCocoStuff164k(SegSourceBase):
                 label_files.append(label_file)
                 img_files.append(img_file)
 
-        return list(zip(self.img_files, self.label_files))
+        return list(zip(img_files, label_files))
