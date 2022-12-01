@@ -14,7 +14,7 @@ class DetSourceCocoTest(unittest.TestCase):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
     def _base_test(self, data_source):
-        index_list = random.choices(list(range(20)), k=1)
+        index_list = random.choices(list(range(19)), k=1)
 
         for idx in index_list:
             data = data_source[idx]
@@ -29,7 +29,7 @@ class DetSourceCocoTest(unittest.TestCase):
 
         length = len(data_source)
 
-        self.assertEqual(length, 20)
+        self.assertEqual(length, 19)
 
         exists = False
         for idx in range(length):
@@ -73,7 +73,7 @@ class DetSourceCocoTest(unittest.TestCase):
             ],
             classes=['person'],
             filter_empty_gt=False,
-            iscrowd=False)
+            iscrowd=True)
 
         self._base_test(data_source)
 
