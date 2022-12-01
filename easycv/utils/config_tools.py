@@ -119,7 +119,7 @@ def check_base_cfg_path(base_cfg_name='configs/base.py',
                         easycv_root=None):
     """
     Concatenate paths by parsing path rules.
-    If base_cfg_name is a relative path, it will be spliced with fater_cfg_name;
+    If base_cfg_name is a relative path, it will be spliced with father_cfg_name;
     Otherwise, first judge whether base_cfg_name exists, if not, find it in easycv_root.
     """
     parse_base_cfg = base_cfg_name.split('/')
