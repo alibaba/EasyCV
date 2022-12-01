@@ -1,1 +1,2 @@
-from . import detectors, utils
+from . import utils
+from .detectors import *

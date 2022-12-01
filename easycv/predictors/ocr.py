@@ -190,8 +190,8 @@ class OCRPredictor(object):
             inputs = [cv2.imread(path) for path in inputs]
 
         dt_boxes_batch = self.det_predictor(inputs)
-        boxes_res = []
-        text_res = []
+
+        res = []
         for img, dt_boxes in zip(inputs, dt_boxes_batch):
             dt_boxes = dt_boxes['points']
             dt_boxes = self.sorted_boxes(dt_boxes)
@@ -211,9 +211,9 @@ class OCRPredictor(object):
                 if score >= self.drop_score:
                     filter_boxes.append(np.float32(box))
                     filter_rec_res.append(rec_reuslt['preds_text'])
-            boxes_res.append(filter_boxes)
-            text_res.append(filter_rec_res)
-        return boxes_res, text_res
+            res_item = dict(boxes=filter_boxes, rec_res=filter_rec_res)
+            res.append(res_item)
+        return res
 
     def flip_img(self, result, img_list, threshold=0.9):
         output = {'labels': [], 'logits': []}

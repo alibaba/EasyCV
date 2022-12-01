@@ -120,7 +120,10 @@ class Classification(BaseModel):
                     self.backbone,
                     self.backbone.default_pretrained_model_path,
                     strict=False,
-                    logger=logger)
+                    logger=logger,
+                    revise_keys=[
+                        (r'^backbone\.', '')
+                    ])  # revise_keys is used to avoid load mismatches
             else:
                 raise ValueError(
                     'default_pretrained_model_path for {} not found'.format(

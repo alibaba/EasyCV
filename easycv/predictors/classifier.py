@@ -35,10 +35,10 @@ class ClassificationPredictor(PredictorV2):
                  device=None,
                  save_results=False,
                  save_path=None,
-                 pipelines=[],
+                 pipelines=None,
                  topk=1,
                  pil_input=True,
-                 label_map_path=[],
+                 label_map_path=None,
                  *args,
                  **kwargs):
         super(ClassificationPredictor, self).__init__(
@@ -59,7 +59,12 @@ class ClassificationPredictor(PredictorV2):
             self.INPUT_IMAGE_MODE = 'RGB'
 
         if label_map_path is None:
-            class_list = self.cfg.get('CLASSES', [])
+            if 'CLASSES' in self.cfg:
+                class_list = self.cfg.get('CLASSES', [])
+            elif 'class_list' in self.cfg:
+                class_list = self.cfg.get('class_list', [])
+            else:
+                class_list = []
         else:
             with io.open(label_map_path, 'r') as f:
                 class_list = f.readlines()
@@ -85,7 +90,9 @@ class ClassificationPredictor(PredictorV2):
                     img = img.convert(self.INPUT_IMAGE_MODE.upper())
                 results['filename'] = input
             else:
-                assert isinstance(input, ImageFile.ImageFile)
+                if isinstance(input, np.ndarray):
+                    input = Image.fromarray(input)
+                # assert isinstance(input, ImageFile.ImageFile)
                 img = input
                 results['filename'] = None
             results['img'] = img

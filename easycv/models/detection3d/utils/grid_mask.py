@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 from mmcv.runner import auto_fp16
 from PIL import Image
+from torchvision.transforms.functional import rotate
 
 
 class Grid(object):
@@ -113,7 +114,7 @@ class GridMask(nn.Module):
         ww = int(1.5 * w)
         d = np.random.randint(2, h)
         self.l = min(max(int(d * self.ratio + 0.5), 1), d - 1)
-        mask = np.ones((hh, ww), np.float32)
+        mask = torch.ones((hh, ww), dtype=torch.uint8, device=x.device)
         st_h = np.random.randint(d)
         st_w = np.random.randint(d)
         if self.use_h:
@@ -128,19 +129,16 @@ class GridMask(nn.Module):
                 mask[:, s:t] *= 0
 
         r = np.random.randint(self.rotate)
-        mask = Image.fromarray(np.uint8(mask))
-        mask = mask.rotate(r)
-        mask = np.asarray(mask)
+        mask = rotate(mask.unsqueeze(0), r)[0]
         mask = mask[(hh - h) // 2:(hh - h) // 2 + h,
                     (ww - w) // 2:(ww - w) // 2 + w]
-
-        mask = torch.from_numpy(mask).to(x.dtype).cuda()
+        mask = mask.to(x.dtype)
         if self.mode == 1:
             mask = 1 - mask
         mask = mask.expand_as(x)
         if self.offset:
-            offset = torch.from_numpy(2 * (np.random.rand(h, w) - 0.5)).to(
-                x.dtype).cuda()
+            offset = (2 * torch.rand(
+                (h, w), device=x.device) - 0.5).to(x.dtype)
             x = x * mask + offset * (1 - mask)
         else:
             x = x * mask

@@ -46,9 +46,9 @@ class TorchOCRTest(unittest.TestCase):
             cls_model_path=PRETRAINED_MODEL_OCRCLS,
             use_angle_cls=True)
         img = cv2.imread(os.path.join(TEST_IMAGES_DIR, 'ocr_det.jpg'))
-        filter_boxes, filter_rec_res = predictor([img])
-        self.assertEqual(filter_rec_res[0][0][0], '纯臻营养护发素')
-        self.assertGreater(filter_rec_res[0][0][1], 0.91)
+        res = predictor([img])
+        self.assertEqual(res[0]['rec_res'][0][0], '纯臻营养护发素')
+        self.assertGreater(res[0]['rec_res'][0][1], 0.91)
 
 
 if __name__ == '__main__':

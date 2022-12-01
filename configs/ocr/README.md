@@ -23,7 +23,7 @@ We provide exported models contain weights and process config for easyly predict
 #### recognition model
 |language|Download|
 |---|---|
-|chiese|[chinese_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/chinese_rec.pth)|
+|chinese|[chinese_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/chinese_rec.pth)|
 |english|[english_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/english_rec.pth)|
 |korean|[korean_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/korean_rec.pth)|
 |japan|[japan_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/japan_rec.pth)|
@@ -71,11 +71,11 @@ predictor = OCRPredictor(
     rec_model_path=path_to_recmodel,
     cls_model_path=path_to_clsmodel,
     use_angle_cls=True)
-filter_boxes, filter_rec_res = predictor(img_path)
+out = predictor(img_path)
 img = cv2.imread('ocr_det.jpg')
 out_img = predictor.show(
-    filter_boxes[0],
-    filter_rec_res[0],
+    out[0]['boxes'],
+    out[0]['rec_res'],
     img,
     font_path='simfang.ttf')
 cv2.imwrite('out_img.jpg', out_img)
