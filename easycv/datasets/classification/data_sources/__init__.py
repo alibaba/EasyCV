@@ -11,7 +11,8 @@ from .mnist import ClsSourceFashionMnist, ClsSourceMnist
 
 __all__ = [
     'ClsSourceCifar10', 'ClsSourceCifar100', 'ClsSourceImageListByClass',
-    'ClsSourceImageList', 'ClsSourceItag', 'ClsSourceImageNetTFRecord', 'ClsSourceCUB',
-    'ClsSourceImageNet1k', 'ClsSourceCaltech101', 'ClsSourceCaltech256',
-    'ClsSourceFlowers102', 'ClsSourceMnist', 'ClsSourceFashionMnist'
+    'ClsSourceImageList', 'ClsSourceItag', 'ClsSourceImageNetTFRecord',
+    'ClsSourceCUB', 'ClsSourceImageNet1k', 'ClsSourceCaltech101',
+    'ClsSourceCaltech256', 'ClsSourceFlowers102', 'ClsSourceMnist',
+    'ClsSourceFashionMnist'
 ]
