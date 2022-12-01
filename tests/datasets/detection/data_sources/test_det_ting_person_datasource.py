@@ -14,7 +14,7 @@ class DetSourceCocoTest(unittest.TestCase):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
     def _base_test(self, data_source):
-        index_list = random.choices(list(range(19)), k=1)
+        index_list = random.choices(list(range(19)), k=0)
 
         for idx in index_list:
             data = data_source[idx]
