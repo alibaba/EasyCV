@@ -40,6 +40,25 @@ hrnet = {
     'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/hrnet/hrnetw64/epoch_100.pth',
 }
 
+vit = {
+    'vit-base':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/vit/vit-base-patch16/epoch_300.pth',
+}
+
+swint = {
+    'swint-tiny':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/swint/swin-tiny-patch4-window7/epoch_300.pth',
+}
+
+deit = {
+    'deitiii-small':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/deitiii/imagenet_deitiii_small_patch16_224/deitiii_small.pth',
+    'deitiii-base':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/deitiii/imagenet_deitiii_base_patch16_192/deitiii_base.pth',
+    'deitiii-large':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/deitiii/imagenet_deitiii_large_patch16_192/deitiii_large.pth',
+}
+
 mobilenetv2 = {
     'MobileNetV2_1.0':
     'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/mobilenetv2/mobilenet_v2.pth',

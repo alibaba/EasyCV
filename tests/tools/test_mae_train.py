@@ -76,7 +76,6 @@ class MAETrainTest(unittest.TestCase):
         if not work_dir:
             work_dir = tempfile.TemporaryDirectory().name
 
-        # cfg = Config.fromfile(cfg_file)
         cfg = mmcv_config_fromfile(cfg_file)
         if cfg_options is not None:
             cfg.merge_from_dict(cfg_options)

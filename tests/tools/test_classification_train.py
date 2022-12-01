@@ -6,10 +6,10 @@ import sys
 import tempfile
 import unittest
 
-from mmcv import Config
 from tests.ut_config import SMALL_IMAGENET_RAW_LOCAL
 
 from easycv.file import io
+from easycv.utils.config_tools import mmcv_config_fromfile, pai_config_fromfile
 from easycv.utils.test_util import run_in_subprocess
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
@@ -51,6 +51,21 @@ TRAIN_CONFIGS = [{
         SMALL_IMAGENET_DATA_ROOT + 'meta/val_labeled_100.txt',
         'model.train_preprocess': ['randomErasing', 'mixUp']
     }
+}, {
+    'config_file':
+    'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py',
+    'cfg_options': {
+        **_COMMON_OPTIONS, 'data_train_root':
+        SMALL_IMAGENET_DATA_ROOT + 'train/',
+        'data_train_list':
+        SMALL_IMAGENET_DATA_ROOT + 'meta/train_labeled_200.txt',
+        'data_test_root': SMALL_IMAGENET_DATA_ROOT + 'validation/',
+        'data_test_list':
+        SMALL_IMAGENET_DATA_ROOT + 'meta/val_labeled_100.txt',
+        'image_resize2': [224, 224],
+        'save_epochs': 1,
+        'eval_epochs': 1
+    }
 }]
 
 
@@ -62,17 +77,22 @@ class ClassificationTrainTest(unittest.TestCase):
     def tearDown(self):
         super().tearDown()
 
-    def _base_train(self, train_cfgs):
+    def _base_train(self, train_cfgs, adapt_pai=False):
         cfg_file = train_cfgs.pop('config_file')
         cfg_options = train_cfgs.pop('cfg_options', None)
         work_dir = train_cfgs.pop('work_dir', None)
         if not work_dir:
             work_dir = tempfile.TemporaryDirectory().name
 
-        cfg = Config.fromfile(cfg_file)
-        if cfg_options is not None:
-            cfg.merge_from_dict(cfg_options)
+        if adapt_pai:
+            cfg = pai_config_fromfile(cfg_file, user_config_params=cfg_options)
             cfg.eval_pipelines[0].data = cfg.data.val
+        else:
+            cfg = mmcv_config_fromfile(cfg_file)
+            if cfg_options is not None:
+                cfg.merge_from_dict(cfg_options)
+                cfg.eval_pipelines[0].data = cfg.data.val
+
         tmp_cfg_file = tempfile.NamedTemporaryFile(suffix='.py').name
         cfg.dump(tmp_cfg_file)
 
@@ -99,6 +119,11 @@ class ClassificationTrainTest(unittest.TestCase):
         train_cfgs = copy.deepcopy(TRAIN_CONFIGS[1])
 
         self._base_train(train_cfgs)
+
+    def test_classification_pai(self):
+        train_cfgs = copy.deepcopy(TRAIN_CONFIGS[2])
+
+        self._base_train(train_cfgs, adapt_pai=True)
 
 
 if __name__ == '__main__':
