@@ -1,11 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import concurrent.futures
+
 import mmcv
 import numpy as np
 
 from easycv.core.points import BasePoints, get_points_type
 from easycv.datasets.detection.pipelines import LoadAnnotations
 from easycv.datasets.registry import PIPELINES
+from easycv.file.image import load_image
 
 
 @PIPELINES.register_module()
@@ -17,13 +20,23 @@ class LoadMultiViewImageFromFiles(object):
     Args:
         to_float32 (bool, optional): Whether to convert the img to float32.
             Defaults to False.
-        color_type (str, optional): Color type of the file.
-            Defaults to 'unchanged'.
+        channel_order (str, optional): Channel order.
+            Defaults to 'bgr'.
+        backend (str): The image decoding backend type. Options are `cv2`, `pillow`, `turbojpeg`.
     """
 
-    def __init__(self, to_float32=False, color_type='unchanged'):
+    def __init__(self,
+                 to_float32=False,
+                 channel_order='bgr',
+                 backend='pillow'):
         self.to_float32 = to_float32
-        self.color_type = color_type
+        self.channel_order = channel_order
+        self.backend = backend
+
+    @staticmethod
+    def _load_image(img_path, idx, mode, backend):
+        img = load_image(img_path, mode=mode, backend=backend)
+        return idx, img
 
     def __call__(self, results):
         """Call function to load multi-view image from files.
@@ -45,8 +58,24 @@ class LoadMultiViewImageFromFiles(object):
         """
         filename = results['img_filename']
         # img is of shape (h, w, c, num_views)
-        img = np.stack(
-            [mmcv.imread(name, self.color_type) for name in filename], axis=-1)
+
+        img_list = []
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=len(filename)) as executor:
+            threads = []
+            for idx, name in enumerate(filename):
+                future = executor.submit(self._load_image, name, idx,
+                                         self.channel_order, self.backend)
+                threads.append(future)
+
+            for future in concurrent.futures.as_completed(threads):
+                img_list.append(future.result())
+
+        img_list = sorted(img_list, key=lambda item: item[0])
+        assert len(img_list) == len(filename)
+        img_list = [item[1] for item in img_list]
+        img = np.stack(img_list, axis=-1)
+
         if self.to_float32:
             img = img.astype(np.float32)
         results['filename'] = filename

@@ -510,10 +510,10 @@ class BaseTransformerLayer(BaseModule):
 
             elif layer == 'cross_attn':
                 query = self.attentions[attn_index](
-                    query,
-                    key,
-                    value,
-                    identity if self.pre_norm else None,
+                    query=query,
+                    key=key,
+                    value=value,
+                    identity=identity if self.pre_norm else None,
                     query_pos=query_pos,
                     key_pos=key_pos,
                     attn_mask=attn_masks[attn_index],

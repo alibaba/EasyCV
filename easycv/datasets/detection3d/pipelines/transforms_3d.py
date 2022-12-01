@@ -1,5 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Copyright (c) Alibaba, Inc. and its affiliates.
+from typing import List, Tuple
+
 import mmcv
 import numpy as np
 from numpy import random
@@ -7,6 +9,10 @@ from numpy import random
 from easycv.core.bbox import (CameraInstance3DBoxes, DepthInstance3DBoxes,
                               LiDARInstance3DBoxes)
 from easycv.datasets.registry import PIPELINES
+from .functional import (horizontal_flip_bbox, horizontal_flip_cam_params,
+                         horizontal_flip_canbus,
+                         horizontal_flip_image_multiview,
+                         scale_image_multiple_view)
 
 
 @PIPELINES.register_module()
@@ -298,42 +304,140 @@ class PadMultiViewImage(object):
 
 @PIPELINES.register_module()
 class RandomScaleImageMultiViewImage(object):
-    """Random scale the image.
+    """Resize the multiple-view images with the same scale selected randomly.  .
     Args:
-        scales (List[float]): List of scales.
+        scales (tuple of float): ratio for resizing the images. Every time, select one ratio
+        randomly.
     """
 
-    def __init__(self, scales=[]):
+    def __init__(self, scales=[0.5, 1.0, 1.5]):
         self.scales = scales
-        assert len(self.scales) == 1
+        self.seed = 0
 
-    def __call__(self, results):
-        """Call function to pad images, masks, semantic segmentation maps.
-        Args:
-            results (dict): Result dict from loading pipeline.
-        Returns:
-            dict: Updated result dict.
+    def forward(
+        self,
+        imgs: List[np.ndarray],
+        cam_intrinsics: List[np.ndarray],
+        lidar2img: List[np.ndarray],
+        seed=None,
+        scale=1
+    ) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
         """
+        Args:
+            imgs (list of numpy.array): Multiple-view images to be resized. len(img) is the number of cameras.
+                    img shape: [H, W, 3].
+        cam_intrinsics (list of numpy.array): Intrinsic parameters of different cameras. Transformations from camera
+                    to image. len(cam_intrinsics) is the number of camera. For each camera, shape is 4 * 4.
+        cam_extrinsics (list of numpy.array): Extrinsic parameters of different cameras. Transformations from
+                lidar to cameras. len(cam_extrinsics) is the number of camera. For each camera, shape is 4 * 4.
+        lidar2img (list of numpy.array): Transformations from lidar to images. len(lidar2img) is the number
+                of camera. For each camera, shape is 4 * 4.
+            seed (int): Seed for generating random number.
+        Returns:
+            imgs_new (list of numpy.array): Updated multiple-view images
+            cam_intrinsics_new (list of numpy.array): Updated intrinsic parameters of different cameras.
+            lidar2img_new (list of numpy.array): Updated Transformations from lidar to images.
+        """
+        rand_scale = scale
+        imgs_new, cam_intrinsic_new, lidar2img_new = scale_image_multiple_view(
+            imgs, cam_intrinsics, lidar2img, rand_scale)
+
+        return imgs_new, cam_intrinsic_new, lidar2img_new
+
+    def __call__(self, data):
+        imgs = data['img']
+        cam_intrinsics = data['cam_intrinsic']
+        lidar2img = data['lidar2img']
+
         rand_ind = np.random.permutation(range(len(self.scales)))[0]
-        rand_scale = self.scales[rand_ind]
+        scale = data[
+            'resize_scale'] if 'resize_scale' in data else self.scales[rand_ind]
 
-        y_size = [int(img.shape[0] * rand_scale) for img in results['img']]
-        x_size = [int(img.shape[1] * rand_scale) for img in results['img']]
-        scale_factor = np.eye(4)
-        scale_factor[0, 0] *= rand_scale
-        scale_factor[1, 1] *= rand_scale
-        results['img'] = [
-            mmcv.imresize(img, (x_size[idx], y_size[idx]), return_scale=False)
-            for idx, img in enumerate(results['img'])
-        ]
-        lidar2img = [scale_factor @ l2i for l2i in results['lidar2img']]
-        results['lidar2img'] = lidar2img
-        results['img_shape'] = [img.shape for img in results['img']]
-        results['ori_shape'] = [img.shape for img in results['img']]
+        imgs_new, cam_intrinsic_new, lidar2img_new = self.forward(
+            imgs, cam_intrinsics, lidar2img, None, scale)
 
-        return results
+        data['img'] = imgs_new
+        data['cam_intrinsic'] = cam_intrinsic_new
+        data['lidar2img'] = lidar2img_new
+        return data
 
-    def __repr__(self):
-        repr_str = self.__class__.__name__
-        repr_str += f'(size={self.scales}, '
-        return repr_str
+
+@PIPELINES.register_module()
+class RandomHorizontalFlipMultiViewImage(object):
+    """Horizontally flip the multiple-view images with bounding boxes, camera parameters and can bus randomly.  .
+    Support coordinate systems like Waymo (https://waymo.com/open/data/perception/) or Nuscenes (https://www.nuscenes.org/public/images/data.png).
+    Args:
+        flip_ratio (float 0~1): probability of the images being flipped. Default value is 0.5.
+        dataset (string): Specify 'waymo' coordinate system or 'nuscenes' coordinate system.
+    """
+
+    def __init__(self, flip_ratio=0.5, dataset='nuScenes'):
+        self.flip_ratio = flip_ratio
+        self.seed = 0
+        self.dataset = dataset
+
+    def forward(
+        self,
+        imgs: List[np.ndarray],
+        bboxes_3d: np.ndarray,
+        cam_intrinsics: List[np.ndarray],
+        cam_extrinsics: List[np.ndarray],
+        lidar2imgs: List[np.ndarray],
+        canbus: np.ndarray,
+        seed=None,
+        flip_flag=True
+    ) -> Tuple[bool, List[np.ndarray], np.ndarray, List[np.ndarray],
+               List[np.ndarray], List[np.ndarray], np.ndarray]:
+        """
+        Args:
+        imgs (list of numpy.array): Multiple-view images to be resized. len(img) is the number of cameras.
+                img shape: [H, W, 3].
+        bboxes_3d (np.ndarray): bounding boxes of shape [N * 7], N is the number of objects.
+        cam_intrinsics (list of numpy.array): Intrinsic parameters of different cameras. Transformations from camera
+                to image. len(cam_intrinsics) is the number of camera. For each camera, shape is 4 * 4.
+        cam_extrinsics (list of numpy.array): Extrinsic parameters of different cameras. Transformations from
+                lidar to cameras. len(cam_extrinsics) is the number of camera. For each camera, shape is 4 * 4.
+        lidar2img (list of numpy.array): Transformations from lidar to images. len(lidar2img) is the number
+                of camera. For each camera, shape is 4 * 4.
+        canbus (numpy.array):
+        seed (int): Seed for generating random number.
+        Returns:
+            imgs_new (list of numpy.array): Updated multiple-view images
+            cam_intrinsics_new (list of numpy.array): Updated intrinsic parameters of different cameras.
+            lidar2img_new (list of numpy.array): Updated Transformations from lidar to images.
+        """
+
+        if flip_flag == False:
+            return flip_flag, imgs, bboxes_3d, cam_intrinsics, cam_extrinsics, lidar2imgs, canbus
+        else:
+            # flip_flag = True
+            imgs_flip = horizontal_flip_image_multiview(imgs)
+            bboxes_3d_flip = horizontal_flip_bbox(bboxes_3d, self.dataset)
+            img_shape = imgs[0].shape
+            cam_intrinsics_flip, cam_extrinsics_flip, lidar2imgs_flip = horizontal_flip_cam_params(
+                img_shape, cam_intrinsics, cam_extrinsics, lidar2imgs,
+                self.dataset)
+            canbus_flip = horizontal_flip_canbus(canbus, self.dataset)
+        return flip_flag, imgs_flip, bboxes_3d_flip, cam_intrinsics_flip, cam_extrinsics_flip, lidar2imgs_flip, canbus_flip
+
+    def __call__(self, data):
+
+        imgs = data['img']
+        bboxes_3d = data['gt_bboxes_3d']
+        cam_intrinsics = data['cam_intrinsic']
+        lidar2imgs = data['lidar2img']
+        canbus = data['can_bus']
+        cam_extrinsics = data['lidar2cam']
+        flip_flag = data['flip_flag']
+
+        flip_flag, imgs_flip, bboxes_3d_flip, cam_intrinsics_flip, cam_extrinsics_flip, lidar2imgs_flip, canbus_flip = self.forward(
+            imgs, bboxes_3d, cam_intrinsics, cam_extrinsics, lidar2imgs,
+            canbus, None, flip_flag)
+
+        data['img'] = imgs_flip
+        data['gt_bboxes_3d'] = bboxes_3d_flip
+        data['cam_intrinsic'] = cam_intrinsics_flip
+        data['lidar2img'] = lidar2imgs_flip
+        data['can_bus'] = canbus_flip
+        data['lidar2cam'] = cam_extrinsics_flip
+        return data
