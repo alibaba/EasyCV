@@ -6,6 +6,6 @@ from .voc import SegSourceVoc2007, SegSourceVoc2010, SegSourceVoc2012
 
 __all__ = [
     'SegSourceRaw', 'SegSourceVoc2010', 'SegSourceVoc2007', 'SegSourceVoc2012',
-    'SegSourceCoco', 'SegSourceCoco2017', 'SegSourceCocoStuff10k',
+    'SegSourceCoco', 'SegSourceCoco2017', 'SegSourceCocoStuff164k',
     'SegSourceCocoStuff10k'
 ]
