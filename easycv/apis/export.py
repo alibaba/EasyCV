@@ -26,19 +26,23 @@ __all__ = [
 ]
 
 
-def export(cfg, ckpt_path, filename, **kwargs):
+def export(cfg, ckpt_path, filename, model=None, **kwargs):
     """ export model for inference
 
     Args:
         cfg: Config object
         ckpt_path (str): path to checkpoint file
         filename (str): filename to save exported models
+        model (nn.module): model instance
     """
-    model = build_model(cfg.model)
+    if model is None:
+        model = build_model(cfg.model)
     if ckpt_path != 'dummy':
         load_checkpoint(model, ckpt_path, map_location='cpu')
     else:
-        cfg.model.backbone.pretrained = False
+        if hasattr(cfg.model, 'backbone') and hasattr(cfg.model.backbone,
+                                                      'pretrained'):
+            cfg.model.backbone.pretrained = False
 
     if isinstance(model, MOCO) or isinstance(model, DINO):
         _export_moco(model, cfg, filename, **kwargs)
