@@ -30,7 +30,7 @@ NUSCENES_CLASSES = [
 ]
 
 BASE_OSS_PATH = 'oss://pai-vision-data-hz/unittest/'
-BASE_LOCAL_PATH = os.path.expanduser('~/easycv_nfs/')
+BASE_LOCAL_PATH = os.path.expanduser('/apsarapangu/disk4/easycv_nfs/')
 
 TMP_DIR_OSS = os.path.join(BASE_OSS_PATH, 'tmp')
 TMP_DIR_LOCAL = os.path.join(BASE_LOCAL_PATH, 'tmp')

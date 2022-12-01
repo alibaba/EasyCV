@@ -1,4 +1,7 @@
+import os
 import unittest
+
+from tests.ut_config import BASE_LOCAL_PATH
 
 from easycv.utils.config_tools import check_base_cfg_path
 
@@ -51,12 +54,12 @@ class CheckPathTest(unittest.TestCase):
             father_cfg_name=father_cfg_name,
             easycv_root=easycv_root)
 
-        self.assertEqual(
-            base_cfg_name,
-            'configs/classification/imagenet/resnet/common/base.py')
+        self.assertEqual(base_cfg_name, '/root/easycv/common/base.py')
 
     def test_check_4(self):
-        base_cfg_name = 'common/base.py'
+        base_cfg_name = os.path.join(
+            BASE_LOCAL_PATH,
+            'data/classification/imagenet/resnet/imagenet_resnet50_jpg.py')
         easycv_root = '/root/easycv'
         father_cfg_name = 'data/classification/imagenet/resnet/imagenet_resnet50_jpg.py'
         base_cfg_name = check_base_cfg_path(
@@ -64,19 +67,12 @@ class CheckPathTest(unittest.TestCase):
             father_cfg_name=father_cfg_name,
             easycv_root=easycv_root)
 
-        self.assertEqual(base_cfg_name,
-                         'data/classification/imagenet/resnet/common/base.py')
-
-    def test_check_5(self):
-        base_cfg_name = '../base.py'
-        easycv_root = '/root/easycv'
-        father_cfg_name = 'data/classification/imagenet/resnet/imagenet_resnet50_jpg.py'
-        base_cfg_name = check_base_cfg_path(
-            base_cfg_name=base_cfg_name,
-            father_cfg_name=father_cfg_name,
-            easycv_root=easycv_root)
-
-        self.assertEqual(base_cfg_name, 'data/classification/imagenet/base.py')
+        self.assertEqual(
+            base_cfg_name,
+            os.path.join(
+                BASE_LOCAL_PATH,
+                'data/classification/imagenet/resnet/imagenet_resnet50_jpg.py')
+        )
 
 
 if __name__ == '__main__':
