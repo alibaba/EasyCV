@@ -3,6 +3,7 @@ import os.path as osp
 import platform
 import sys
 import tempfile
+import warnings
 from importlib import import_module
 
 from mmcv import Config, import_modules_from_strings
@@ -138,9 +139,11 @@ def check_base_cfg_path(base_cfg_name='configs/base.py',
                 break
         base_cfg_name = '/'.join(parse_ori_path_list + parse_base_path_list)
     else:
-        if not osp.exists(base_cfg_name):
-            if easycv_root is not None:
-                base_cfg_name = osp.join(easycv_root, base_cfg_name)
+        if not osp.exists(base_cfg_name) and osp.exists(
+                osp.join(easycv_root, base_cfg_name)):
+            base_cfg_name = osp.join(easycv_root, base_cfg_name)
+        else:
+            warnings.warn('base_cfg_name does not exist!')
 
     return base_cfg_name
 
