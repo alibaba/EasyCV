@@ -45,8 +45,10 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 
 ## 最新进展
+[🔥 2022.12.02] bevformer-base在nuscenes val上NDS+0.8,通过pai-blade优化后推理速度提升42%。
 
-[🔥 Latest News] 近期我们开源了YOLOX-PAI，在40-50mAP(推理速度小于1ms)范围内达到了业界的SOTA水平。同时EasyCV提供了一套简洁高效的模型导出和预测接口，供用户快速完成端到端的图像检测任务。如果你想快速了解YOLOX-PAI, 点击 [这里](docs/source/tutorials/yolox.md)!
+
+[🔥 2022.08.31] 近期我们开源了YOLOX-PAI，在40-50mAP(推理速度小于1ms)范围内达到了业界的SOTA水平。同时EasyCV提供了一套简洁高效的模型导出和预测接口，供用户快速完成端到端的图像检测任务。如果你想快速了解YOLOX-PAI, 点击 [这里](docs/source/tutorials/yolox.md)!
 
 * 31/08/2022 EasyCV v0.6.0 版本发布。
   -  发布YOLOX-PAI，在轻量级模型中取得SOTA效果

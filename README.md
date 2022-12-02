@@ -46,8 +46,10 @@ EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focuses
 
 
 ## What's New
+[🔥 2022.12.02] bevformer-base is NDS+0.8 on nuscenes val, and the inference speed is increased by 42% after pai-blade optimization.
 
-[🔥 Latest News] We have released our YOLOX-PAI that achieves SOTA results within 40~50 mAP (less than 1ms). And we also provide a convenient and fast export/predictor api for end2end object detection. To get a quick start of YOLOX-PAI, click [here](docs/source/tutorials/yolox.md)!
+
+[🔥 2022.08.31] We have released our YOLOX-PAI that achieves SOTA results within 40~50 mAP (less than 1ms). And we also provide a convenient and fast export/predictor api for end2end object detection. To get a quick start of YOLOX-PAI, click [here](docs/source/tutorials/yolox.md)!
 
 * 31/08/2022 EasyCV v0.6.0 was released.
   -  Release YOLOX-PAI which achieves SOTA results within 40~50 mAP (less than 1ms)
