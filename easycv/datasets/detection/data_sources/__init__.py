@@ -6,7 +6,7 @@ from .coco_livs import DetSourceLvis
 from .coco_panoptic import DetSourceCocoPanoptic
 from .crowd_human import DetSourceCrowdHuman
 from .fruit import DetSourceFruit
-from .object365 import DetSourceObject365
+from .objects365 import DetSourceObjects365
 from .pai_format import DetSourcePAI
 from .pet import DetSourcePet
 from .raw import DetSourceRaw
@@ -15,9 +15,12 @@ from .wider_face import DetSourceWiderFace
 from .wider_person import DetSourceWiderPerson
 
 __all__ = [
+    'DetSourceCoco', 'DetSourceCocoPanoptic', 'DetSourceObjects365',
+    'DetSourcePAI', 'DetSourceRaw', 'DetSourceVOC', 'DetSourceVOC2007',
+    'DetSourceVOC2012', 'DetSourceCoco2017'
     'DetSourceCoco', 'DetSourceCocoPanoptic', 'DetSourcePAI', 'DetSourceRaw',
     'DetSourceVOC', 'DetSourceVOC2007', 'DetSourceVOC2012',
     'DetSourceCoco2017', 'DetSourceLvis', 'DetSourceWiderPerson',
     'DetSourceAfricanWildlife', 'DetSourcePet', 'DetSourceWiderFace',
-    'DetSourceCrowdHuman', 'DetSourceObject365'
+    'DetSourceCrowdHuman'
 ]

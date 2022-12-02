@@ -62,7 +62,7 @@ class DetSourceObject365(unittest.TestCase):
 
         data_source = build_datasource(
             dict(
-                type='DetSourceObject365',
+                type='DetSourceObjects365',
                 ann_file=DET_DATASET_OBJECT365 + '/val.json',
                 img_prefix=DET_DATASET_OBJECT365 + '/images',
                 pipeline=[
