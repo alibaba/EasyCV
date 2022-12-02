@@ -40,6 +40,35 @@ class DetSourceObjects365(DetSourceCoco):
                     |- *****(imageID)
     """
 
+    def __init__(self,
+                 ann_file,
+                 img_prefix,
+                 pipeline,
+                 test_mode=False,
+                 filter_empty_gt=False,
+                 classes=[],
+                 iscrowd=False):
+        """
+        Args:
+            ann_file: Path of annotation file.
+            img_prefix: coco path prefix
+            test_mode (bool, optional): If set True, `self._filter_imgs` will not works.
+            filter_empty_gt (bool, optional): If set true, images without bounding
+                boxes of the dataset's classes will be filtered out. This option
+                only works when `test_mode=False`, i.e., we never filter images
+                during tests.
+            iscrowd: when traing setted as False, when val setted as True
+        """
+
+        super(DetSourceObjects365, self).__init__(
+            ann_file=ann_file,
+            img_prefix=img_prefix,
+            pipeline=pipeline,
+            test_mode=test_mode,
+            filter_empty_gt=filter_empty_gt,
+            classes=classes,
+            iscrowd=iscrowd)
+
     def load_annotations(self, ann_file):
         """Load annotation from COCO style annotation file.
         Args:
