@@ -46,8 +46,11 @@ EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focuses
 
 
 ## What's New
-[🔥 2022.12.02] bevformer-base is NDS+0.8 on nuscenes val, and the inference speed is increased by 42% after pai-blade optimization.
+[🔥 2022.12.02]
 
+* 02/12/2022 EasyCV v0.8.0 was released.
+- bevformer-base NDS increased by 0.8 on nuscenes val, training speed increased by 10%, and inference speed increased by 40%.
+- Support Objects365 pretrain and Adding the DINO++ model can achieve an accuracy of 63.4mAP at a model scale of 200M(Under the same scale, the accuracy is the best).
 
 [🔥 2022.08.31] We have released our YOLOX-PAI that achieves SOTA results within 40~50 mAP (less than 1ms). And we also provide a convenient and fast export/predictor api for end2end object detection. To get a quick start of YOLOX-PAI, click [here](docs/source/tutorials/yolox.md)!
 

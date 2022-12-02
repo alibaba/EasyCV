@@ -3,15 +3,17 @@
 ## Highlights
 - Unify the parsing method of config scripts, and support both local and pai platform products ([#235](https://github.com/alibaba/EasyCV/pull/235))
 - Add BEVFormer and improve the performance of BEVFormer ([#224](https://github.com/alibaba/EasyCV/pull/224))
+- Add DINO++ and support objects365 pretrain ([#242](https://github.com/alibaba/EasyCV/pull/242))
 
 ## New Features
 - Add DeiT of Hydra Attention version ([#220](https://github.com/alibaba/EasyCV/pull/220))
 - Add EdgeViTv3 ([#214](https://github.com/alibaba/EasyCV/pull/214))
 - Add BEVFormer and improve the performance of BEVFormer ([#224](https://github.com/alibaba/EasyCV/pull/224))
 - Unify the parsing method of config scripts, and support both local and pai platform products ([#235](https://github.com/alibaba/EasyCV/pull/235))
+- Add DINO++ and support objects365 pretrain ([#242](https://github.com/alibaba/EasyCV/pull/242))
 
 ## Improvements
-- Add data source and support for automatic download ([#206](https://github.com/alibaba/EasyCV/pull/206))
+- Add data source and support for automatic download ([#206](https://github.com/alibaba/EasyCV/pull/206) [#229](https://github.com/alibaba/EasyCV/pull/229))
 - Classification support confusion matrix ([#241](https://github.com/alibaba/EasyCV/pull/241))
 
 ## Bug Fixes

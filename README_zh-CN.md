@@ -45,8 +45,11 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 
 ## 最新进展
-[🔥 2022.12.02] bevformer-base在nuscenes val上NDS+0.8,通过pai-blade优化后推理速度提升42%。
+[🔥 2022.12.02]
 
+* 02/12/2022 EasyCV v0.8.0 was released.
+- bevformer-base NDS在nuscenes val上提升0.8，训练速度提升10%，推理速度提升40%。
+- 支持Objects365预训练，加入DINO++模型在200M模型规模下可达到63.4mAP的精度（同等规模下精度最佳）。
 
 [🔥 2022.08.31] 近期我们开源了YOLOX-PAI，在40-50mAP(推理速度小于1ms)范围内达到了业界的SOTA水平。同时EasyCV提供了一套简洁高效的模型导出和预测接口，供用户快速完成端到端的图像检测任务。如果你想快速了解YOLOX-PAI, 点击 [这里](docs/source/tutorials/yolox.md)!
 
