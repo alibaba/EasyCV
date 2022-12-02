@@ -12,7 +12,7 @@
 
 ## Improvements
 - Unify the parsing method of config scripts, and support both local and pai platform products ([#235](https://github.com/alibaba/EasyCV/pull/235))
-- Add data source and support for automatic download ([#206](https://github.com/alibaba/EasyCV/pull/206) [#229](https://github.com/alibaba/EasyCV/pull/229))
+- Add data source and support for automatic download ([#206](https://github.com/alibaba/EasyCV/pull/206) [#229](https://github.com/alibaba/EasyCV/pull/229) [data_hub](https://github.com/alibaba/EasyCV/blob/master/docs/source/data_hub.md))
 - Add confusion matrix metric for Classification models ([#241](https://github.com/alibaba/EasyCV/pull/241))
 
 ## Bug Fixes
