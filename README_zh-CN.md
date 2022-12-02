@@ -73,6 +73,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 * [YOLOX-PAI: 加速YOLOX, 比YOLOv6更快更强](https://zhuanlan.zhihu.com/p/560597953)
 * [EasyCV带你复现更好更快的自监督算法-FastConvMAE](https://zhuanlan.zhihu.com/p/566988235)
 * [EasyCV DataHub 提供多领域视觉数据集下载，助力模型生产](https://zhuanlan.zhihu.com/p/572593950)
+* [使用EasyCV Mask2Former轻松实现图像分割](https://zhuanlan.zhihu.com/p/583831421)
 
 
 ## 安装

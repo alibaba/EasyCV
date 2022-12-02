@@ -1,7 +1,6 @@
 # v 0.8.0 (2/12/2022)
 
 ## Highlights
-- Unify the parsing method of config scripts, and support both local and pai platform products ([#235](https://github.com/alibaba/EasyCV/pull/235))
 - Add BEVFormer and improve the performance of BEVFormer ([#224](https://github.com/alibaba/EasyCV/pull/224))
 - Add DINO++ and support objects365 pretrain ([#242](https://github.com/alibaba/EasyCV/pull/242))
 
@@ -9,18 +8,16 @@
 - Add DeiT of Hydra Attention version ([#220](https://github.com/alibaba/EasyCV/pull/220))
 - Add EdgeViTv3 ([#214](https://github.com/alibaba/EasyCV/pull/214))
 - Add BEVFormer and improve the performance of BEVFormer ([#224](https://github.com/alibaba/EasyCV/pull/224))
-- Unify the parsing method of config scripts, and support both local and pai platform products ([#235](https://github.com/alibaba/EasyCV/pull/235))
 - Add DINO++ and support objects365 pretrain ([#242](https://github.com/alibaba/EasyCV/pull/242))
 
 ## Improvements
+- Unify the parsing method of config scripts, and support both local and pai platform products ([#235](https://github.com/alibaba/EasyCV/pull/235))
 - Add data source and support for automatic download ([#206](https://github.com/alibaba/EasyCV/pull/206) [#229](https://github.com/alibaba/EasyCV/pull/229))
-- Classification support confusion matrix ([#241](https://github.com/alibaba/EasyCV/pull/241))
+- Add confusion matrix metric for Classification models ([#241](https://github.com/alibaba/EasyCV/pull/241))
 
 ## Bug Fixes
-- Update flake8 url for pre-commit ([#234](https://github.com/alibaba/EasyCV/pull/234))
 - Sync the predict config in the config file for predictor ([#238](https://github.com/alibaba/EasyCV/pull/238))
-- Modify ocr predictor ([#237](https://github.com/alibaba/EasyCV/pull/237))
-- MMMosaic bug fix ([#231](https://github.com/alibaba/EasyCV/pull/231))
+- Fix index of image_scale with y2 with bottom_left implemented in _mosaic_combine ([#231](https://github.com/alibaba/EasyCV/pull/231))
 - Add bevformer benchmark and fix classification predict bug ([#240](https://github.com/alibaba/EasyCV/pull/240))
 
 # v 0.7.0 (3/11/2022)
