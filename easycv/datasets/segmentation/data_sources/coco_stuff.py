@@ -200,8 +200,8 @@ class SegSourceCocoStuff10k(SegSourceBase):
                                           line + self.label_suffix)
 
             if os.path.exists(img_filename) and os.path.exists(label_filename):
-                self.img_files.append(img_filename)
-                self.label_files.append(label_filename)
+                img_files.append(img_filename)
+                label_files.append(label_filename)
 
         return list(zip(img_files, label_files))
 
