@@ -22,7 +22,7 @@ scikit-image
 sklearn
 tensorboard
 thop
-timm>=0.4.9
+timm==0.5.4
 wget
 xtcocotools
 yacs
