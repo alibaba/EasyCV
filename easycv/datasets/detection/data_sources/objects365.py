@@ -1,17 +1,43 @@
-# Copyright (c) OpenMMLab. All rights reserved.
-import os
+import os.path as osp
 
-from tqdm import tqdm
 from xtcocotools.coco import COCO
 
+from easycv.datasets.detection.data_sources.coco import DetSourceCoco
 from easycv.datasets.registry import DATASOURCES
-from .coco import DetSourceCoco
+
+objv2_ignore_list = [
+    # images exist in annotations but not in image folder.
+    'patch16/objects365_v2_00908726.jpg',
+    'patch6/objects365_v1_00320532.jpg',
+    'patch6/objects365_v1_00320534.jpg',
+]
 
 
 @DATASOURCES.register_module
-class DetSourceObject365(DetSourceCoco):
+class DetSourceObjects365(DetSourceCoco):
     """
-    Object 365 data source
+    objects365 data source.
+    The form of the objects365 dataset folder build:
+        |- objects365
+            |- annotation
+                |- zhiyuan_objv2_train.json
+                |- zhiyuan_objv2_val.json
+            |- train
+                |- patch0
+                    |- *****(imageID)
+                |- patch1
+                    |- *****(imageID)
+                ...
+                |- patch50
+                    |- *****(imageID)
+            |- val
+                |- patch0
+                    |- *****(imageID)
+                |- patch1
+                    |- *****(imageID)
+                ...
+                |- patch43
+                    |- *****(imageID)
     """
 
     def __init__(self,
@@ -34,7 +60,7 @@ class DetSourceObject365(DetSourceCoco):
             iscrowd: when traing setted as False, when val setted as True
         """
 
-        super(DetSourceObject365, self).__init__(
+        super(DetSourceObjects365, self).__init__(
             ann_file=ann_file,
             img_prefix=img_prefix,
             pipeline=pipeline,
@@ -50,6 +76,7 @@ class DetSourceObject365(DetSourceCoco):
         Returns:
             list[dict]: Annotation info from COCO api.
         """
+
         self.coco = COCO(ann_file)
         # The order of returned `cat_ids` will not
         # change with the order of the CLASSES
@@ -57,19 +84,23 @@ class DetSourceObject365(DetSourceCoco):
 
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         self.img_ids = self.coco.getImgIds()
-        img_path = os.listdir(self.img_prefix)
         data_infos = []
         total_ann_ids = []
-        for i in tqdm(self.img_ids, desc='Scaning Images'):
+        for i in self.img_ids:
             info = self.coco.loadImgs([i])[0]
-            filename = os.path.basename(info['file_name'])
-            # Filter the information corresponding to the image
-            if filename in img_path:
-                info['filename'] = filename
-                data_infos.append(info)
-                ann_ids = self.coco.getAnnIds(imgIds=[i])
-                total_ann_ids.extend(ann_ids)
+
+            # rename filename and filter wrong data
+            info['patch_name'] = osp.join(
+                osp.split(osp.split(info['file_name'])[0])[-1],
+                osp.split(info['file_name'])[-1])
+            if info['patch_name'] in objv2_ignore_list:
+                continue
+
+            info['filename'] = info['patch_name']
+
+            data_infos.append(info)
+            ann_ids = self.coco.getAnnIds(imgIds=[i])
+            total_ann_ids.extend(ann_ids)
         assert len(set(total_ann_ids)) == len(
             total_ann_ids), f"Annotation ids in '{ann_file}' are not unique!"
-        del total_ann_ids
         return data_infos
