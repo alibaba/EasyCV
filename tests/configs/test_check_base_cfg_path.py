@@ -20,7 +20,7 @@ class CheckPathTest(unittest.TestCase):
             father_cfg_name=father_cfg_name,
             easycv_root=easycv_root)
 
-        self.assertEqual(base_cfg_name, '/root/easycv/configs/base.py')
+        self.assertEqual(base_cfg_name, 'configs/base.py')
 
     def test_check_1(self):
         base_cfg_name = 'benchmarks/base.py'
