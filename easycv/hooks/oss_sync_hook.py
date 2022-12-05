@@ -111,12 +111,13 @@ class OSSSyncHook(Hook):
         # try to upload exported model
         epoch = runner.epoch
         export_ckpt_fname = self.export_ckpt_filename_tmpl.format(epoch)
-        export_local_ckpt = os.path.join(self.work_dir, export_ckpt_fname)
-        export_oss_ckpt = os.path.join(self.oss_work_dir, export_ckpt_fname)
-        if not os.path.exists(export_local_ckpt):
-            runner.logger.warning(
-                f'{export_local_ckpt} does not exists, skip upload')
-        else:
-            runner.logger.info(
-                f'upload {export_local_ckpt} to {export_oss_ckpt}')
-            io.safe_copy(export_local_ckpt, export_oss_ckpt)
+
+        # upload all export files
+        export_files = glob.glob(
+            os.path.join(self.work_dir, '*{}*'.format(export_ckpt_fname)),
+            recursive=True)
+        for export_file in export_files:
+            rel_path = os.path.relpath(export_file, self.work_dir)
+            target_oss_path = os.path.join(self.oss_work_dir, rel_path)
+            runner.logger.info(f'upload {export_file} to {target_oss_path}')
+            io.safe_copy(export_file, target_oss_path)
