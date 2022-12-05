@@ -9,7 +9,6 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 import torch
 import torchvision.transforms.functional as t_f
-from attr import has
 from mmcv.utils import Config
 
 from easycv.file import io
