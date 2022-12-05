@@ -192,4 +192,5 @@ log_config = dict(
         # dict(type='WandbLoggerHookV2'),
     ])
 
+checkpoint_sync_export = True
 export = dict(export_type = 'raw', preprocess_jit = False, batch_size=1, blade_config=dict(enable_fp16=True, fp16_fallback_op_ratio=0.01), use_trt_efficientnms=False)
