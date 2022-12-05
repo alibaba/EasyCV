@@ -171,8 +171,6 @@ class STrack(BaseTrack):
 
 class BYTETracker(object):
     def __init__(self, 
-        detection_model_path=None,
-        detection_model_type='TorchYolo5Predictor',
         det_high_thresh=0.7,
         det_low_thresh=0.1, 
         match_thresh=0.8,
@@ -180,10 +178,6 @@ class BYTETracker(object):
         match_thresh_init=1.0, 
         track_buffer=5, 
         frame_rate=25):
-
-        if detection_model_path is not None:
-            self.detector = build_predictor(dict(type=detection_model_type, model_path=detection_model_path))
-            self.has_detector = True
 
         self.tracked_stracks = []  # type: list[STrack]
         self.lost_stracks = []  # type: list[STrack]
@@ -200,39 +194,6 @@ class BYTETracker(object):
         self.buffer_size = int(frame_rate / 30 * track_buffer)
         self.max_time_lost = self.buffer_size
         self.kalman_filter = KalmanFilter()
-
-    
-    def predict(self, image_list, target_label=None, target_threshold=None):
-        outputs = {}
-        if self.has_detector:
-            detection_res = self.detector.predict(image_list)
-            for fidx, res in enumerate(detection_res):
-                boxes, scores, classes = post_process(res['detection_boxes'], 
-                    res['detection_scores'], res['detection_classes'], target_label=[2], threshold=[0.01])
-                ftracks = self.update(boxes, scores, classes)
-                fres = []
-                for t in ftracks:
-                    tid = t.track_id
-                    tlbr = t.tlwh_to_tlbr(t.tlwh)
-                    tlbr = [int(i) for i in tlbr]
-                    fres.append(tlbr + [tid])
-                outputs[fidx] = fres
-            return outputs
-        else:
-            print("BYTETracker has no detector, should init BYTETracker with detection_model_path and detection_model_type of evtorch")
-            return outputs
-
-
-    def detect(self, input_data_list):
-        """
-            evtorch detector need PIL Image input or RGB numpy array input
-        """
-        if self.has_detector:
-            out = self.detector.predict(input_data_list)
-            return out
-        else:
-            print("BYTETracker has no detector, should init BYTETracker with detection_model_path and detection_model_type of evtorch")
-            return []
 
     
     def update(self, bbox_xyxy, confidences, classes, target_label=None, target_threshold=None):
