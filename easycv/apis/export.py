@@ -9,6 +9,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 import torch
 import torchvision.transforms.functional as t_f
+from attr import has
 from mmcv.utils import Config
 
 from easycv.file import io
@@ -35,13 +36,23 @@ def export(cfg, ckpt_path, filename, model=None, **kwargs):
         filename (str): filename to save exported models
         model (nn.module): model instance
     """
+    if hasattr(cfg.model, 'pretrained'):
+        logging.warning(
+            'Export needs to set model.pretrained to false to avoid hanging during distributed training'
+        )
+        cfg.model.pretrained = False
+
     if model is None:
         model = build_model(cfg.model)
+
     if ckpt_path != 'dummy':
         load_checkpoint(model, ckpt_path, map_location='cpu')
     else:
         if hasattr(cfg.model, 'backbone') and hasattr(cfg.model.backbone,
                                                       'pretrained'):
+            logging.warning(
+                'Export needs to set model.backbone.pretrained to false to avoid hanging during distributed training'
+            )
             cfg.model.backbone.pretrained = False
 
     if isinstance(model, MOCO) or isinstance(model, DINO):

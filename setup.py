@@ -154,6 +154,7 @@ def pack_resource():
     proj_dir = root_dir + 'easycv/'
     shutil.copytree('./easycv', proj_dir)
     shutil.copytree('./configs', proj_dir + 'configs')
+    shutil.copytree('./benchmarks', proj_dir + 'benchmarks')
     shutil.copytree('./tools', proj_dir + 'tools')
     shutil.copytree('./resource', proj_dir + 'resource')
     shutil.copytree('./requirements', 'package/requirements')
@@ -177,7 +178,8 @@ if __name__ == '__main__':
         author_email='easycv@list.alibaba-inc.com',
         keywords='self-supvervised, classification, vision',
         url='https://github.com/alibaba/EasyCV.git',
-        packages=find_packages(exclude=('configs', 'tools', 'demo')),
+        packages=find_packages(
+            exclude=('configs', 'benchmarks', 'tools', 'demo')),
         include_package_data=True,
         classifiers=[
             'Development Status :: 4 - Beta',

@@ -19,6 +19,39 @@ COCO_CLASSES = [
     'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear',
     'hair drier', 'toothbrush'
 ]
+
+COCO_STUFF_CLASSES = [
+    'unlabeled', 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
+    'train', 'truck', 'boat', 'traffic light', 'fire hydrant', 'street sign',
+    'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse',
+    'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'hat', 'backpack',
+    'umbrella', 'shoe', 'eye glasses', 'handbag', 'tie', 'suitcase', 'frisbee',
+    'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat',
+    'baseball glove', 'skateboard', 'surfboard', 'tennis racket', 'bottle',
+    'plate', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana',
+    'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza',
+    'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed', 'mirror',
+    'dining table', 'window', 'desk', 'toilet', 'door', 'tv', 'laptop',
+    'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven',
+    'toaster', 'sink', 'refrigerator', 'blender', 'book', 'clock', 'vase',
+    'scissors', 'teddy bear', 'hair drier', 'toothbrush', 'hair brush',
+    'banner', 'blanket', 'branch', 'bridge', 'building-other', 'bush',
+    'cabinet', 'cage', 'cardboard', 'carpet', 'ceiling-other', 'ceiling-tile',
+    'cloth', 'clothes', 'clouds', 'counter', 'cupboard', 'curtain',
+    'desk-stuff', 'dirt', 'door-stuff', 'fence', 'floor-marble', 'floor-other',
+    'floor-stone', 'floor-tile', 'floor-wood', 'flower', 'fog', 'food-other',
+    'fruit', 'furniture-other', 'grass', 'gravel', 'ground-other', 'hill',
+    'house', 'leaves', 'light', 'mat', 'metal', 'mirror-stuff', 'moss',
+    'mountain', 'mud', 'napkin', 'net', 'paper', 'pavement', 'pillow',
+    'plant-other', 'plastic', 'platform', 'playingfield', 'railing',
+    'railroad', 'river', 'road', 'rock', 'roof', 'rug', 'salad', 'sand', 'sea',
+    'shelf', 'sky-other', 'skyscraper', 'snow', 'solid-other', 'stairs',
+    'stone', 'straw', 'structural-other', 'table', 'tent', 'textile-other',
+    'towel', 'tree', 'vegetable', 'wall-brick', 'wall-concrete', 'wall-other',
+    'wall-panel', 'wall-stone', 'wall-tile', 'wall-wood', 'water-other',
+    'waterdrops', 'window-blind', 'window-other', 'wood'
+]
+
 VOC_CLASSES = [
     'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat',
     'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person',
@@ -42,6 +75,8 @@ CIFAR10_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/classification/cifar10')
 CIFAR100_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/classification/cifar100')
 SAMLL_IMAGENET1K_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                           'datasets/imagenet-1k/imagenet_raw')
+CLASS_LIST_TEST = os.path.join(BASE_LOCAL_PATH,
+                               'data/classification/class_list_test')
 
 SMALL_IMAGENET_TFRECORD_LOCAL = os.path.join(
     BASE_LOCAL_PATH, 'data/classification/small_imagenet_tfrecord/')
@@ -56,6 +91,9 @@ IO_DATA_MULTI_DIRS_OSS = os.path.join(BASE_OSS_PATH,
                                       'data/io_test_dir/multi_dirs/')
 DET_DATA_SMALL_COCO_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                          'data/detection/small_coco')
+CLS_DATA_COMMON_LOCAL = os.path.join(BASE_LOCAL_PATH, 'download_local/cls')
+DET_DATASET_DOWNLOAD_SMALL = os.path.join(
+    BASE_LOCAL_PATH, 'download_local/small_download/detection')
 DET_DATA_COCO2017_DOWNLOAD = os.path.join(BASE_LOCAL_PATH, 'download_local/')
 VOC_DATASET_DOWNLOAD_LOCAL = os.path.join(BASE_LOCAL_PATH, 'download_local')
 VOC_DATASET_DOWNLOAD_SMALL = os.path.join(BASE_LOCAL_PATH,
@@ -67,11 +105,35 @@ CONFIG_PATH = 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py'
 DET_DATA_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/detection/raw_data')
 DET_DATA_SMALL_VOC_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                         'data/detection/small_voc')
+DET_DATASET_DOWNLOAD_WIDER_PERSON_LOCAL = os.path.join(
+    BASE_LOCAL_PATH, 'data/detection/small_widerPerson')
+DET_DATASET_DOWNLOAD_AFRICAN_WILDLIFE = os.path.join(
+    BASE_LOCAL_PATH, 'data/detection/small_african_wildlife')
+DET_DATASET_FRUIT = os.path.join(BASE_LOCAL_PATH, 'data/detection/small_fruit')
+DET_DATASET_PET = os.path.join(
+    BASE_LOCAL_PATH, 'data/detection/small_pet/annotations/annotations')
+DET_DATASET_ARTAXOR = os.path.join(BASE_LOCAL_PATH,
+                                   'data/detection/small_artaxor')
+DET_DATASET_TINY_PERSON = os.path.join(BASE_LOCAL_PATH,
+                                       'data/detection/small_tiny_person')
+DET_DATASET_WIDER_FACE = os.path.join(BASE_LOCAL_PATH,
+                                      'data/detection/small_widerface')
+DET_DATASET_CROWD_HUMAN = os.path.join(BASE_LOCAL_PATH,
+                                       'data/detection/small_crowdhuman')
+DET_DATASET_OBJECT365 = os.path.join(BASE_LOCAL_PATH,
+                                     'data/detection/small_object365')
+
 DET_DATA_MANIFEST_OSS = os.path.join(BASE_OSS_PATH,
                                      'data/detection/small_coco_itag')
 
 POSE_DATA_SMALL_COCO_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                           'data/pose/small_coco')
+POSE_DATA_CROWDPOSE_SMALL_LOCAL = os.path.join(BASE_LOCAL_PATH,
+                                               'data/pose/small_CrowdPose/')
+POSE_DATA_OC_HUMAN_SMALL_LOCAL = os.path.join(BASE_LOCAL_PATH,
+                                              'data/pose/small_oc_human/')
+POSE_DATA_MPII_DOWNLOAD_SMALL_LOCAL = os.path.join(
+    BASE_LOCAL_PATH, 'download_local/small_download/pose/small_mpii/')
 
 SSL_SMALL_IMAGENET_FEATURE = os.path.join(
     BASE_LOCAL_PATH, 'data/selfsup/small_imagenet_feature')
@@ -81,9 +143,15 @@ TEST_IMAGES_DIR = os.path.join(BASE_LOCAL_PATH, 'data/test_images')
 
 COMPRESSION_TEST_DATA = os.path.join(BASE_LOCAL_PATH,
                                      'data/compression/test_data')
-
+# Seg data
 SEG_DATA_SMALL_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH,
                                         'data/segmentation/small_voc_200')
+SEG_DATA_SMALL_VOC_DOWNLOAD_LOCAL = os.path.join(
+    BASE_LOCAL_PATH, 'download_local/small_download/segmentation')
+SEG_DATA_SMALL_COCO_STUFF_10K = os.path.join(
+    BASE_LOCAL_PATH, 'data/segmentation/small_coco_stuff/small_coco_stuff10k')
+SEG_DATA_SAMLL_COCO_STUFF_164K = os.path.join(
+    BASE_LOCAL_PATH, 'data/segmentation/small_coco_stuff/small_coco_stuff164k')
 
 # OCR data
 SMALL_OCR_CLS_DATA = os.path.join(BASE_LOCAL_PATH, 'data/ocr/small_ocr_cls')
