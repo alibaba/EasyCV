@@ -87,6 +87,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 * [torchacc使用](docs/source/tutorials/torchacc.md)
 * [本地/oss文件读取](docs/source/tutorials/file.md)
 * [mmdetection模型使用](docs/source/tutorials/mmdet_models_usage_guide.md)
+* [批量推理工具][docs/source/tutorials/predict.md]
 
 ## 模型库
 

@@ -86,7 +86,7 @@ Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We
 * [using torchacc](docs/source/tutorials/torchacc.md)
 * [file io for local and oss files](docs/source/tutorials/file.md)
 * [using mmdetection model in EasyCV](docs/source/tutorials/mmdet_models_usage_guide.md)
-
+* [batch prediction tools][docs/source/tutorials/predict.md]
 
 
 
