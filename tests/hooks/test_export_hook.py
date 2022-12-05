@@ -64,7 +64,7 @@ def _build_model():
     @MODELS.register_module()
     class TestExportModel(nn.Module):
 
-        def __init__(self):
+        def __init__(self, pretrained=False):
             super().__init__()
             self.linear = nn.Linear(2, 1)
 

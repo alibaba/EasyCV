@@ -12,9 +12,14 @@ from easycv.models.detection.utils import box_cxcywh_to_xyxy
 class DetrPostProcess(nn.Module):
     """ This module converts the model's output into the format expected by the coco api"""
 
-    def __init__(self, num_select=None) -> None:
+    def __init__(self,
+                 num_select=None,
+                 use_centerness=False,
+                 use_iouaware=False) -> None:
         super().__init__()
         self.num_select = num_select
+        self.use_centerness = use_centerness
+        self.use_iouaware = use_iouaware
 
     @torch.no_grad()
     def forward(self, outputs, target_sizes, img_metas):
@@ -34,8 +39,24 @@ class DetrPostProcess(nn.Module):
             prob = F.softmax(out_logits, -1)
             scores, labels = prob[..., :-1].max(-1)
             boxes = box_cxcywh_to_xyxy(out_bbox)
+
+            # and from relative [0, 1] to absolute [0, height] coordinates
+            img_h, img_w = target_sizes.unbind(1)
+            scale_fct = torch.stack([img_w, img_h, img_w, img_h],
+                                    dim=1).to(boxes.device)
+            boxes = boxes * scale_fct[:, None, :]
         else:
-            prob = out_logits.sigmoid()
+            if self.use_centerness and self.use_iouaware:
+                prob = out_logits.sigmoid(
+                )**0.45 * outputs['pred_centers'].sigmoid(
+                )**0.05 * outputs['pred_ious'].sigmoid()**0.5
+            elif self.use_centerness:
+                prob = out_logits.sigmoid() * outputs['pred_centers'].sigmoid()
+            elif self.use_iouaware:
+                prob = out_logits.sigmoid() * outputs['pred_ious'].sigmoid()
+            else:
+                prob = out_logits.sigmoid()
+
             topk_values, topk_indexes = torch.topk(
                 prob.view(out_logits.shape[0], -1), self.num_select, dim=1)
             scores = topk_values
@@ -45,11 +66,11 @@ class DetrPostProcess(nn.Module):
             boxes = torch.gather(boxes, 1,
                                  topk_boxes.unsqueeze(-1).repeat(1, 1, 4))
 
-        # and from relative [0, 1] to absolute [0, height] coordinates
-        img_h, img_w = target_sizes.unbind(1)
-        scale_fct = torch.stack([img_w, img_h, img_w, img_h],
-                                dim=1).to(boxes.device)
-        boxes = boxes * scale_fct[:, None, :]
+            # and from relative [0, 1] to absolute [0, height] coordinates
+            img_h, img_w = target_sizes.unbind(1)
+            scale_fct = torch.stack([img_w, img_h, img_w, img_h],
+                                    dim=1).to(boxes.device)
+            boxes = boxes * scale_fct[:, None, :]
 
         results = {
             'detection_boxes': [boxes[0].cpu().numpy()],

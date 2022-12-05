@@ -45,8 +45,13 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 
 ## 最新进展
+[🔥 2022.12.02]
 
-[🔥 Latest News] 近期我们开源了YOLOX-PAI，在40-50mAP(推理速度小于1ms)范围内达到了业界的SOTA水平。同时EasyCV提供了一套简洁高效的模型导出和预测接口，供用户快速完成端到端的图像检测任务。如果你想快速了解YOLOX-PAI, 点击 [这里](docs/source/tutorials/yolox.md)!
+* 02/12/2022 EasyCV v0.8.0 was released.
+- bevformer-base NDS在nuscenes val上提升0.8，训练速度提升10%，推理速度提升40%。
+- 支持Objects365预训练，加入DINO++模型在200M模型规模下可达到63.4mAP的精度（同等规模下精度最佳）。
+
+[🔥 2022.08.31] 近期我们开源了YOLOX-PAI，在40-50mAP(推理速度小于1ms)范围内达到了业界的SOTA水平。同时EasyCV提供了一套简洁高效的模型导出和预测接口，供用户快速完成端到端的图像检测任务。如果你想快速了解YOLOX-PAI, 点击 [这里](docs/source/tutorials/yolox.md)!
 
 * 31/08/2022 EasyCV v0.6.0 版本发布。
   -  发布YOLOX-PAI，在轻量级模型中取得SOTA效果
@@ -68,6 +73,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 * [YOLOX-PAI: 加速YOLOX, 比YOLOv6更快更强](https://zhuanlan.zhihu.com/p/560597953)
 * [EasyCV带你复现更好更快的自监督算法-FastConvMAE](https://zhuanlan.zhihu.com/p/566988235)
 * [EasyCV DataHub 提供多领域视觉数据集下载，助力模型生产](https://zhuanlan.zhihu.com/p/572593950)
+* [使用EasyCV Mask2Former轻松实现图像分割](https://zhuanlan.zhihu.com/p/583831421)
 
 
 ## 安装
