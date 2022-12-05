@@ -1,4 +1,4 @@
-# v 0.8.0 (2/12/2022)
+# v 0.8.0 (5/12/2022)
 
 ## Highlights
 - Add BEVFormer and improve the performance of BEVFormer ([#224](https://github.com/alibaba/EasyCV/pull/224))
@@ -12,8 +12,9 @@
 
 ## Improvements
 - Unify the parsing method of config scripts, and support both local and pai platform products ([#235](https://github.com/alibaba/EasyCV/pull/235))
-- Add data source and support for automatic download ([#206](https://github.com/alibaba/EasyCV/pull/206) [#229](https://github.com/alibaba/EasyCV/pull/229) [data_hub](https://github.com/alibaba/EasyCV/blob/master/docs/source/data_hub.md))
+- Add more data source apis for open source datasets, involving classification, detection, segmentation and keypoints tasks. And part of the data source apis support automatic download. For more information, please refer to [data_hub](https://github.com/alibaba/EasyCV/blob/master/docs/source/data_hub.md) ([#206](https://github.com/alibaba/EasyCV/pull/206) [#229](https://github.com/alibaba/EasyCV/pull/229))
 - Add confusion matrix metric for Classification models ([#241](https://github.com/alibaba/EasyCV/pull/241))
+- Add prediction script ([#239](https://github.com/alibaba/EasyCV/pull/239))
 
 ## Bug Fixes
 - Sync the predict config in the config file for predictor ([#238](https://github.com/alibaba/EasyCV/pull/238))
