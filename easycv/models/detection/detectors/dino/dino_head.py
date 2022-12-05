@@ -57,6 +57,9 @@ class DINOHead(nn.Module):
             dec_pred_bbox_embed_share=True,
             two_stage_class_embed_share=True,
             two_stage_bbox_embed_share=True,
+            use_centerness=False,
+            use_iouaware=False,
+            losses_list=['labels', 'boxes'],
             decoder_sa_type='sa',
             temperatureH=20,
             temperatureW=20,
@@ -80,16 +83,19 @@ class DINOHead(nn.Module):
             num_classes,
             matcher=self.matcher,
             weight_dict=weight_dict,
-            losses=['labels', 'boxes'],
+            losses=losses_list,
             loss_class_type='focal_loss')
         if dn_components is not None:
             self.dn_criterion = CDNCriterion(
                 num_classes,
                 matcher=self.matcher,
                 weight_dict=weight_dict,
-                losses=['labels', 'boxes'],
+                losses=losses_list,
                 loss_class_type='focal_loss')
-        self.postprocess = DetrPostProcess(num_select=num_select)
+        self.postprocess = DetrPostProcess(
+            num_select=num_select,
+            use_centerness=use_centerness,
+            use_iouaware=use_iouaware)
         self.transformer = build_neck(transformer)
 
         self.positional_encoding = PositionEmbeddingSineHW(
@@ -161,15 +167,43 @@ class DINOHead(nn.Module):
         nn.init.constant_(_bbox_embed.layers[-1].weight.data, 0)
         nn.init.constant_(_bbox_embed.layers[-1].bias.data, 0)
 
+        # fcos centerness & iou-aware & tokenlabel
+        self.use_centerness = use_centerness
+        self.use_iouaware = use_iouaware
+        if self.use_centerness:
+            _center_embed = MLP(embed_dims, embed_dims, 1, 3)
+        if self.use_iouaware:
+            _iou_embed = MLP(embed_dims, embed_dims, 1, 3)
+
         if dec_pred_bbox_embed_share:
             box_embed_layerlist = [
                 _bbox_embed for i in range(transformer.num_decoder_layers)
             ]
+            if self.use_centerness:
+                center_embed_layerlist = [
+                    _center_embed
+                    for i in range(transformer.num_decoder_layers)
+                ]
+            if self.use_iouaware:
+                iou_embed_layerlist = [
+                    _iou_embed for i in range(transformer.num_decoder_layers)
+                ]
         else:
             box_embed_layerlist = [
                 copy.deepcopy(_bbox_embed)
                 for i in range(transformer.num_decoder_layers)
             ]
+            if self.use_centerness:
+                center_embed_layerlist = [
+                    copy.deepcopy(_center_embed)
+                    for i in range(transformer.num_decoder_layers)
+                ]
+            if self.use_iouaware:
+                iou_embed_layerlist = [
+                    copy.deepcopy(_iou_embed)
+                    for i in range(transformer.num_decoder_layers)
+                ]
+
         if dec_pred_class_embed_share:
             class_embed_layerlist = [
                 _class_embed for i in range(transformer.num_decoder_layers)
@@ -184,6 +218,13 @@ class DINOHead(nn.Module):
         self.transformer.decoder.bbox_embed = self.bbox_embed
         self.transformer.decoder.class_embed = self.class_embed
 
+        if self.use_centerness:
+            self.center_embed = nn.ModuleList(center_embed_layerlist)
+            self.transformer.decoder.center_embed = self.center_embed
+        if self.use_iouaware:
+            self.iou_embed = nn.ModuleList(iou_embed_layerlist)
+            self.transformer.decoder.iou_embed = self.iou_embed
+
         # two stage
         self.two_stage_type = two_stage_type
         self.two_stage_add_query_num = two_stage_add_query_num
@@ -194,9 +235,19 @@ class DINOHead(nn.Module):
             if two_stage_bbox_embed_share:
                 assert dec_pred_class_embed_share and dec_pred_bbox_embed_share
                 self.transformer.enc_out_bbox_embed = _bbox_embed
+                if self.use_centerness:
+                    self.transformer.enc_out_center_embed = _center_embed
+                if self.use_iouaware:
+                    self.transformer.enc_out_iou_embed = _iou_embed
             else:
                 self.transformer.enc_out_bbox_embed = copy.deepcopy(
                     _bbox_embed)
+                if self.use_centerness:
+                    self.transformer.enc_out_center_embed = copy.deepcopy(
+                        _center_embed)
+                if self.use_iouaware:
+                    self.transformer.enc_out_iou_embed = copy.deepcopy(
+                        _iou_embed)
 
             if two_stage_class_embed_share:
                 assert dec_pred_class_embed_share and dec_pred_bbox_embed_share
@@ -261,10 +312,9 @@ class DINOHead(nn.Module):
 
     def prepare(self, features, targets=None, mode='train'):
 
-        if self.dn_number > 0 or targets is not None:
+        if self.dn_number > 0 and targets is not None:
             input_query_label, input_query_bbox, attn_mask, dn_meta =\
-                prepare_for_cdn(dn_args=(targets, self.dn_number, self.dn_label_noise_ratio, self.dn_box_noise_scale),
-                                training=self.training, num_queries=self.num_queries, num_classes=self.num_classes,
+                prepare_for_cdn(dn_args=(targets, self.dn_number, self.dn_label_noise_ratio, self.dn_box_noise_scale), num_queries=self.num_queries, num_classes=self.num_classes,
                                 hidden_dim=self.embed_dims, label_enc=self.label_enc)
         else:
             assert targets is None
@@ -355,29 +405,61 @@ class DINOHead(nn.Module):
             layer_cls_embed(layer_hs)
             for layer_cls_embed, layer_hs in zip(self.class_embed, hs)
         ])
+
+        outputs_center_list = None
+        if self.use_centerness:
+            outputs_center_list = torch.stack([
+                layer_center_embed(layer_hs)
+                for layer_center_embed, layer_hs in zip(self.center_embed, hs)
+            ])
+
+        outputs_iou_list = None
+        if self.use_iouaware:
+            outputs_iou_list = torch.stack([
+                layer_iou_embed(layer_hs)
+                for layer_iou_embed, layer_hs in zip(self.iou_embed, hs)
+            ])
+
+        reference = torch.stack(reference)[:-1][..., :2]
         if self.dn_number > 0 and dn_meta is not None:
-            outputs_class, outputs_coord_list = cdn_post_process(
-                outputs_class, outputs_coord_list, dn_meta, self._set_aux_loss)
+            outputs_class, outputs_coord_list, outputs_center_list, outputs_iou_list, reference = cdn_post_process(
+                outputs_class, outputs_coord_list, dn_meta, self._set_aux_loss,
+                outputs_center_list, outputs_iou_list, reference)
         out = {
-            'pred_logits': outputs_class[-1],
-            'pred_boxes': outputs_coord_list[-1]
+            'pred_logits':
+            outputs_class[-1],
+            'pred_boxes':
+            outputs_coord_list[-1],
+            'pred_centers':
+            outputs_center_list[-1]
+            if outputs_center_list is not None else None,
+            'pred_ious':
+            outputs_iou_list[-1] if outputs_iou_list is not None else None,
+            'refpts':
+            reference[-1],
         }
 
         out['aux_outputs'] = self._set_aux_loss(outputs_class,
-                                                outputs_coord_list)
+                                                outputs_coord_list,
+                                                outputs_center_list,
+                                                outputs_iou_list, reference)
 
         # for encoder output
         if hs_enc is not None:
             # prepare intermediate outputs
             interm_coord = ref_enc[-1]
             interm_class = self.transformer.enc_out_class_embed(hs_enc[-1])
+            if self.use_centerness:
+                interm_center = self.transformer.enc_out_center_embed(
+                    hs_enc[-1])
+            if self.use_iouaware:
+                interm_iou = self.transformer.enc_out_iou_embed(hs_enc[-1])
             out['interm_outputs'] = {
                 'pred_logits': interm_class,
-                'pred_boxes': interm_coord
-            }
-            out['interm_outputs_for_matching_pre'] = {
-                'pred_logits': interm_class,
-                'pred_boxes': init_box_proposal
+                'pred_boxes': interm_coord,
+                'pred_centers': interm_center if self.use_centerness else None,
+                'pred_ious': interm_iou if self.use_iouaware else None,
+                'refpts': init_box_proposal[..., :2],
             }
 
         out['dn_meta'] = dn_meta
@@ -385,14 +467,28 @@ class DINOHead(nn.Module):
         return out
 
     @torch.jit.unused
-    def _set_aux_loss(self, outputs_class, outputs_coord):
+    def _set_aux_loss(self,
+                      outputs_class,
+                      outputs_coord,
+                      outputs_center=None,
+                      outputs_iou=None,
+                      reference=None):
         # this is a workaround to make torchscript happy, as torchscript
         # doesn't support dictionary with non-homogeneous values, such
         # as a dict having both a Tensor and a list.
         return [{
-            'pred_logits': a,
-            'pred_boxes': b
-        } for a, b in zip(outputs_class[:-1], outputs_coord[:-1])]
+            'pred_logits':
+            a,
+            'pred_boxes':
+            b,
+            'pred_centers':
+            outputs_center[i] if outputs_center is not None else None,
+            'pred_ious':
+            outputs_iou[i] if outputs_iou is not None else None,
+            'refpts':
+            reference[i],
+        } for i, (a,
+                  b) in enumerate(zip(outputs_class[:-1], outputs_coord[:-1]))]
 
     # over-write because img_metas are needed as inputs for bbox_head.
     def forward_train(self, x, img_metas, gt_bboxes, gt_labels):
