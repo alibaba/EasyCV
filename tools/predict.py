@@ -1,3 +1,6 @@
+# Copyright (c) Alibaba, Inc. and its affiliates.
+
+# isort:skip_file
 import argparse
 import copy
 import functools
@@ -9,6 +12,16 @@ import threading
 import traceback
 
 import torch
+
+try:
+    import easy_predict
+except ModuleNotFoundError:
+    print('please install easy_predict first using following instruction')
+    print(
+        'pip install https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/release/easy_predict-0.4.2-py2.py3-none-any.whl'
+    )
+    exit()
+
 from easy_predict import (Base64DecodeProcess, DataFields,
                           DefaultResultFormatProcess, DownloadProcess,
                           FileReadProcess, FileWriteProcess, Process,
@@ -18,12 +31,6 @@ from mmcv.runner import init_dist
 
 from easycv.utils.dist_utils import get_dist_info
 from easycv.utils.logger import get_root_logger
-
-try:
-    import easy_predict
-except ModuleNotFoundError:
-    print('please install easy_predict first')
-    exit()
 
 
 def define_args():
@@ -103,7 +110,11 @@ def define_args():
         default=1,
         help='batch size used for prediction')
     parser.add_argument('--local_rank', type=int, default=0)
-    parser.add_argument('--launcher', type=str, default=None, help='pytorch')
+    parser.add_argument(
+        '--launcher',
+        type=str,
+        choices=[None, 'pytorch'],
+        help='if assigned pytorch, should be used in gpu environment')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -121,7 +132,11 @@ class PredictorProcess(Process):
                  input_queue=None,
                  output_queue=None):
         job_name = 'Predictor'
-        thread_init_fn = functools.partial(torch.cuda.set_device, local_rank)
+        if torch.cuda.is_available():
+            thread_init_fn = functools.partial(torch.cuda.set_device,
+                                               local_rank)
+        else:
+            thread_init_fn = None
         super(PredictorProcess, self).__init__(
             job_name,
             thread_num,
@@ -263,11 +278,10 @@ def build_and_run_file_io(args):
     num_worker = world_size
     print(f'worker num {num_worker}')
     print(f'worker_id {worker_id}')
-    thread_num = 1
     batch_size = args.batch_size
-    # os.environ['CUDA_VISIBLE_DEVICES'] = str(rank % torch.cuda.device_count())
     print(f'Local rank {args.local_rank}')
-    torch.cuda.set_device(args.local_rank)
+    if torch.cuda.is_available():
+        torch.cuda.set_device(args.local_rank)
     predictor = init_predictor(args)
     predict_fn = predictor.__call__ if hasattr(
         predictor, '__call__') else predictor.predict
@@ -334,9 +348,9 @@ def build_and_run_table_io(args):
     print(f'worker num {num_worker}')
     print(f'worker_id {worker_id}')
 
-    thread_num = 1
     batch_size = args.batch_size
-    torch.cuda.set_device(args.local_rank)
+    if torch.cuda.is_available():
+        torch.cuda.set_device(args.local_rank)
     predictor = init_predictor(args)
     predict_fn = predictor.__call__ if hasattr(
         predictor, '__call__') else predictor.predict

@@ -96,7 +96,7 @@ PYTHONPATH=. python tools/predict.py  \
 
 多机多卡运行
 
-这里多机多卡启动方式复用pytorch DDP方式
+这里多机多卡启动方式复用pytorch DDP方式， 需要在GPU环境下使用
 ```shell
 PYTHONPATH=. python -m torch.distributed.launch --nproc_per_node=2 --master_port=29527 \
                     tools/predict.py \
@@ -165,6 +165,8 @@ PYTHONPATH=. python tools/predict.py \
 </details>
 
 多卡示例
+
+这里多机多卡启动方式复用pytorch DDP方式， 需要在GPU环境下使用
 ```shell
 #创建输出表分区
 odpscmd -e "alter table 表名 add partition (ds=分区名);"
