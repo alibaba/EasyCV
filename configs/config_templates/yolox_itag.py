@@ -152,8 +152,6 @@ eval_pipelines = [
 ]
 
 checkpoint_config = dict(interval='${interval}')
-# export model during training
-checkpoint_sync_export = True
 # optimizer
 # basic_lr_per_img = 0.01 / 64.0
 optimizer = dict(
@@ -193,5 +191,7 @@ load_from = None
 resume_from = None
 workflow = [('train', 1)]
 
-export = dict(use_jit=False)
 oss_sync_config = dict(other_file_list=['**/events.out.tfevents*', '**/*log*'])
+# export model during training
+checkpoint_sync_export = True
+export = dict(export_type='raw')
