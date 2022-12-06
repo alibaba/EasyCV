@@ -1,3 +1,54 @@
+# v 0.8.0 (5/12/2022)
+
+## Highlights
+- Add BEVFormer and improve the performance of BEVFormer ([#224](https://github.com/alibaba/EasyCV/pull/224))
+- Add DINO++ and support objects365 pretrain ([#242](https://github.com/alibaba/EasyCV/pull/242))
+
+## New Features
+- Add DeiT of Hydra Attention version ([#220](https://github.com/alibaba/EasyCV/pull/220))
+- Add EdgeViTv3 ([#214](https://github.com/alibaba/EasyCV/pull/214))
+- Add BEVFormer and improve the performance of BEVFormer ([#224](https://github.com/alibaba/EasyCV/pull/224))
+- Add DINO++ and support objects365 pretrain ([#242](https://github.com/alibaba/EasyCV/pull/242))
+
+## Improvements
+- Unify the parsing method of config scripts, and support both local and pai platform products ([#235](https://github.com/alibaba/EasyCV/pull/235))
+- Add more data source apis for open source datasets, involving classification, detection, segmentation and keypoints tasks. And part of the data source apis support automatic download. For more information, please refer to [data_hub](https://github.com/alibaba/EasyCV/blob/master/docs/source/data_hub.md) ([#206](https://github.com/alibaba/EasyCV/pull/206) [#229](https://github.com/alibaba/EasyCV/pull/229))
+- Add confusion matrix metric for Classification models ([#241](https://github.com/alibaba/EasyCV/pull/241))
+- Add prediction script ([#239](https://github.com/alibaba/EasyCV/pull/239))
+
+## Bug Fixes
+- Sync the predict config in the config file for predictor ([#238](https://github.com/alibaba/EasyCV/pull/238))
+- Fix index of image_scale with y2 with bottom_left implemented in _mosaic_combine ([#231](https://github.com/alibaba/EasyCV/pull/231))
+- Add bevformer benchmark and fix classification predict bug ([#240](https://github.com/alibaba/EasyCV/pull/240))
+
+# v 0.7.0 (3/11/2022)
+
+## Highlights
+- Support auto hyperparameter optimization of NNI ([#211](https://github.com/alibaba/EasyCV/pull/211))
+- Add DeiT III ([#171](https://github.com/alibaba/EasyCV/pull/171))
+- Add semantic segmentation model SegFormer ([#191](https://github.com/alibaba/EasyCV/pull/191))
+- Add 3d detection model BEVFormer ([#203](https://github.com/alibaba/EasyCV/pull/203))
+
+## New Features
+- Support semantic mask2former ([#199](https://github.com/alibaba/EasyCV/pull/199))
+- Support face 2d keypoint detection ([#191](https://github.com/alibaba/EasyCV/pull/191))
+- Support hand keypoints detection ([#191](https://github.com/alibaba/EasyCV/pull/191))
+- Support wholebody keypoint detection ([#207](https://github.com/alibaba/EasyCV/pull/207))
+- Support auto hyperparameter optimization of NNI ([#211](https://github.com/alibaba/EasyCV/pull/211))
+- Add DeiT III ([#171](https://github.com/alibaba/EasyCV/pull/171))
+- Add semantic segmentation model SegFormer ([#191](https://github.com/alibaba/EasyCV/pull/191))
+- Add 3d detection model BEVFormer ([#203](https://github.com/alibaba/EasyCV/pull/203))
+
+## Improvements
+- Optimze predcitor apis, support cpu and batch inference ([#195](https://github.com/alibaba/EasyCV/pull/195))
+- Speed up ViTDet model ([#177](https://github.com/alibaba/EasyCV/pull/177))
+- Support export jit model end2end for yolox ([#215](https://github.com/alibaba/EasyCV/pull/215))
+
+## Bug Fixes
+- Fix the bug of io.copytree copying multiple directories ([#193](https://github.com/alibaba/EasyCV/pull/193))
+- Move thirdparty into easycv ([#216](https://github.com/alibaba/EasyCV/pull/216))
+
+
 # v 0.6.1 (06/09/2022)
 
 ## Bug Fixes

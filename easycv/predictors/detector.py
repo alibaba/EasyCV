@@ -7,13 +7,13 @@ import numpy as np
 import torch
 from torchvision.transforms import Compose
 
-from easycv.apis.export import reparameterize_models
 from easycv.core.visualization import imshow_bboxes
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.utils import replace_ImageToTensor
 from easycv.file import io
 from easycv.models import build_model
 from easycv.models.detection.utils import postprocess
+from easycv.thirdparty.mtcnn import FaceDetector
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
@@ -27,11 +27,6 @@ try:
     from easy_vision.python.inference.predictor import PredictorInterface
 except Exception:
     from .interface import PredictorInterface
-
-try:
-    from thirdparty.mtcnn import FaceDetector
-except Exception:
-    from easycv.thirdparty.mtcnn import FaceDetector
 
 
 @PREDICTORS.register_module()
@@ -202,6 +197,7 @@ class YoloXPredictor(DetectionPredictor):
             with io.open(self.model_path, 'rb') as infile:
                 model = torch.jit.load(infile, self.device)
         else:
+            from easycv.utils.misc import reparameterize_models
             model = super()._build_model()
             model = reparameterize_models(model)
         return model
@@ -300,11 +296,15 @@ class YoloXPredictor(DetectionPredictor):
                 det_out['detection_scores'] = results[2]
                 det_out['detection_classes'] = results[3]
             else:
-                det_out = self.post_assign(
-                    postprocess(
-                        results.unsqueeze(0), len(self.CLASSES),
-                        self.test_conf, self.nms_thre),
-                    img_metas=[img_meta])
+                if self.model_type == 'jit':
+                    det_out = self.post_assign(
+                        results.unsqueeze(0), img_metas=[img_meta])
+                else:
+                    det_out = self.post_assign(
+                        postprocess(
+                            results.unsqueeze(0), len(self.CLASSES),
+                            self.test_conf, self.nms_thre),
+                        img_metas=[img_meta])
             det_out['detection_scores'] = det_out['detection_scores'][0]
             det_out['detection_boxes'] = det_out['detection_boxes'][0]
             det_out['detection_classes'] = det_out['detection_classes'][0]
@@ -332,7 +332,8 @@ class TorchYoloXPredictor(YoloXPredictor):
           model_config: config string for model to init, in json format
         """
         if model_config:
-            model_config = json.loads(model_config)
+            if isinstance(model_config, str):
+                model_config = json.loads(model_config)
         else:
             model_config = {}
 

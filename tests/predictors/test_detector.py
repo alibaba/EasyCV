@@ -11,6 +11,7 @@ from easycv.predictors.detector import DetectionPredictor, YoloXPredictor, Torch
 from tests.ut_config import (PRETRAINED_MODEL_YOLOXS_EXPORT,
                              PRETRAINED_MODEL_YOLOXS_NOPRE_NOTRT_JIT,
                              PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT,
+                             PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT_B2,
                              DET_DATA_SMALL_COCO_LOCAL)
 from numpy.testing import assert_array_almost_equal
 
@@ -42,7 +43,6 @@ class YoloXPredictorTest(unittest.TestCase):
 
     def _base_test_single(self, model_path, inputs):
         predictor = YoloXPredictor(model_path=model_path, score_thresh=0.5)
-
         outputs = predictor(inputs)
         self.assertEqual(len(outputs), 1)
         output = outputs[0]
@@ -83,7 +83,7 @@ class YoloXPredictorTest(unittest.TestCase):
         self._base_test_single(jit_path, [self.img])
 
     def test_batch_jit_pre_trt(self):
-        jit_path = PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT
+        jit_path = PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT_B2
         self._base_test_batch(
             jit_path, [self.img], num_samples=4, batch_size=2)
 

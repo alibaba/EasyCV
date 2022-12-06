@@ -34,18 +34,20 @@ class ExportHook(Hook):
             'export_after_each_ckpt', False)
 
     def export_model(self, runner, epoch):
-        # epoch = runner.epoch
-        ckpt_fname = self.ckpt_filename_tmpl.format(epoch)
         export_ckpt_fname = self.export_ckpt_filename_tmpl.format(epoch)
-        local_ckpt = os.path.join(self.work_dir, ckpt_fname)
         export_local_ckpt = os.path.join(self.work_dir, export_ckpt_fname)
 
-        if not os.path.exists(local_ckpt):
-            runner.logger.warning(f'{local_ckpt} does not exists, skip export')
+        runner.logger.info(f'export model to {export_local_ckpt}')
+        from easycv.apis.export import export
+        if hasattr(runner.model, 'module'):
+            model = runner.model.module
         else:
-            runner.logger.info(f'export {local_ckpt} to {export_local_ckpt}')
-            from easycv.apis.export import export
-            export(self.cfg, local_ckpt, export_local_ckpt)
+            model = runner.model
+        export(
+            self.cfg,
+            ckpt_path='dummy',
+            filename=export_local_ckpt,
+            model=model)
 
     @master_only
     def after_train_iter(self, runner):

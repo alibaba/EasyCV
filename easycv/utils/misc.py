@@ -2,11 +2,14 @@
 import functools
 import inspect
 import logging
+import pickle
 import warnings
-from functools import partial
 
 import mmcv
 import numpy as np
+import torch
+
+from easycv.framework.errors import ValueError
 
 
 def tensor2imgs(tensor, mean=(0, 0, 0), std=(1, 1, 1), to_rgb=True):
@@ -20,25 +23,6 @@ def tensor2imgs(tensor, mean=(0, 0, 0), std=(1, 1, 1), to_rgb=True):
             img, mean, std, to_bgr=to_rgb).astype(np.uint8)
         imgs.append(np.ascontiguousarray(img))
     return imgs
-
-
-def multi_apply(func, *args, **kwargs):
-    """Apply function to a list of arguments.
-    Note:
-        This function applies the ``func`` to multiple inputs and
-        map the multiple outputs of the ``func`` into different
-        list. Each list contains the same type of outputs corresponding
-        to different inputs.
-    Args:
-        func (Function): A function that will be applied to a list of
-            arguments
-    Returns:
-        tuple(list): A tuple containing multiple list, each list contains \
-            a kind of returned results by the function
-    """
-    pfunc = partial(func, **kwargs) if kwargs else func
-    map_results = map(pfunc, *args)
-    return tuple(map(list, zip(*map_results)))
 
 
 def unmap(data, count, inds, fill=0):
@@ -119,3 +103,21 @@ def deprecated(reason):
         return new_func1
 
     return decorator
+
+
+def encode_str_to_tensor(obj):
+    if isinstance(obj, str):
+        return torch.tensor(bytearray(pickle.dumps(obj)), dtype=torch.uint8)
+    elif isinstance(obj, torch.Tensor):
+        return obj
+    else:
+        raise ValueError(f'Not support type {type(obj)}')
+
+
+def decode_tensor_to_str(obj):
+    if isinstance(obj, torch.Tensor):
+        return pickle.loads(obj.cpu().numpy().tobytes())
+    elif isinstance(obj, str):
+        return obj
+    else:
+        raise ValueError(f'Not support type {type(obj)}')

@@ -6,13 +6,12 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, Scale
 
+from easycv.core.utils.misc import filter_scores_and_topk, multi_apply
 from easycv.models.builder import HEADS, build_loss
 from easycv.models.detection.utils import (MlvlPointGenerator, batched_nms,
                                            bbox2result, distance2bbox,
-                                           filter_scores_and_topk,
                                            select_single_mlvl)
 from easycv.models.utils import reduce_mean
-from easycv.utils.misc import multi_apply
 
 INF = 1e8
 

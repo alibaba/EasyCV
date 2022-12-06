@@ -12,8 +12,7 @@ from easycv.apis.test import single_gpu_test
 from easycv.datasets import build_dataloader, build_dataset
 from easycv.models.builder import build_model
 from easycv.utils.config_tools import mmcv_config_fromfile
-from easycv.utils.mmlab_utils import (MM_REGISTRY, MMDET,
-                                      dynamic_adapt_for_mmlab,
+from easycv.utils.mmlab_utils import (dynamic_adapt_for_mmlab,
                                       remove_adapt_for_mmlab)
 
 
@@ -128,7 +127,17 @@ class MMLabUtilTest(unittest.TestCase):
     def test_reset(self):
         model = self._get_model()
         remove_adapt_for_mmlab(self.cfg)
-        mmdet_registry = MM_REGISTRY[MMDET]
+        from mmdet.models.builder import MODELS as MMMODELS
+        from mmdet.models.builder import BACKBONES as MMBACKBONES
+        from mmdet.models.builder import NECKS as MMNECKS
+        from mmdet.models.builder import HEADS as MMHEADS
+        mmdet_registry = {
+            'model': MMMODELS,
+            'backbone': MMBACKBONES,
+            'neck': MMNECKS,
+            'head': MMHEADS
+        }
+
         for module, registry in mmdet_registry.items():
             for k, v in registry.module_dict.items():
                 self.assertTrue('easycv' not in str(v))

@@ -7,6 +7,8 @@ from importlib import import_module
 
 from mmcv import Config, import_modules_from_strings
 
+import easycv
+from easycv.file import io
 from easycv.framework.errors import IOError, KeyError, ValueError
 from .user_config_params_utils import check_value_type
 
@@ -28,50 +30,130 @@ def traverse_replace(d, key, value):
             traverse_replace(v, key, value)
 
 
-BASE_KEY = '_base_'
+class WrapperConfig(Config):
+    """A facility for config and config files.
+
+    It supports common file formats as configs: python/json/yaml. The interface
+    is the same as a dict object and also allows access config values as
+    attributes.
+
+    Example:
+        >>> cfg = Config(dict(a=1, b=dict(b1=[0, 1])))
+        >>> cfg.a
+        1
+        >>> cfg.b
+        {'b1': [0, 1]}
+        >>> cfg.b.b1
+        [0, 1]
+        >>> cfg = Config.fromfile('tests/data/config/a.py')
+        >>> cfg.filename
+        "/home/kchen/projects/mmcv/tests/data/config/a.py"
+        >>> cfg.item4
+        'test'
+        >>> cfg
+        "Config [path: /home/kchen/projects/mmcv/tests/data/config/a.py]: "
+        "{'item1': [1, 2], 'item2': {'a': 0}, 'item3': True, 'item4': 'test'}"
+    """
+
+    @staticmethod
+    def _substitute_predefined_vars(filename,
+                                    temp_config_name,
+                                    first_order_params=None):
+        """
+        Override Config._substitute_predefined_vars.
+        Supports first-order parameter reuse to avoid rebuilding custom config.py templates.
+
+        Args:
+            filename (str): Original script file.
+            temp_config_name (str): Template script file.
+            first_order_params (dict): first-order parameters.
+
+        Returns:
+            No return value.
+
+        """
+        file_dirname = osp.dirname(filename)
+        file_basename = osp.basename(filename)
+        file_basename_no_extension = osp.splitext(file_basename)[0]
+        file_extname = osp.splitext(filename)[1]
+        support_templates = dict(
+            fileDirname=file_dirname,
+            fileBasename=file_basename,
+            fileBasenameNoExtension=file_basename_no_extension,
+            fileExtname=file_extname)
+        with open(filename, encoding='utf-8') as f:
+            # Setting encoding explicitly to resolve coding issue on windows
+            left_match, right_match = '{([', '])}'
+            match_list = []
+            line_list = []
+            for line in f:
+                # Push and pop control regular item matching
+                match_length_before = len(match_list)
+                for single_str in line:
+                    if single_str in left_match:
+                        match_list.append(single_str)
+                    if single_str in right_match:
+                        match_list.pop()
+                match_length_after = len(match_list)
+
+                key = line.split('=')[0].strip()
+                # Check whether it is a first-order parameter
+                if match_length_before == match_length_after == 0 and first_order_params and key in first_order_params:
+                    value = first_order_params[key]
+                    # repr() is used to convert the data into a string form (in the form of a Python expression) suitable for the interpreter to read
+                    line = ' '.join([key, '=', repr(value)]) + '\n'
+
+                line_list.append(line)
+            config_file = ''.join(line_list)
+
+        for key, value in support_templates.items():
+            regexp = r'\{\{\s*' + str(key) + r'\s*\}\}'
+            value = value.replace('\\', '/')
+            config_file = re.sub(regexp, value, config_file)
+        with open(temp_config_name, 'w', encoding='utf-8') as tmp_config_file:
+            tmp_config_file.write(config_file)
 
 
-# To find base cfg in 'easycv/configs/', base_cfg_name should be 'configs/xx/xx.py'
-# TODO: reset the api, keep the same way as mmcv `Config.fromfile`
-def check_base_cfg_path(base_cfg_name='configs/base.py', ori_filename=None):
+def check_base_cfg_path(base_cfg_name='configs/base.py',
+                        father_cfg_name=None,
+                        easycv_root=None):
+    """
+    Concatenate paths by parsing path rules.
 
-    if base_cfg_name == '../../base.py':
-        # To becompatible with previous config
-        base_cfg_name = 'configs/base.py'
+    for example(pseudo-code):
+        1. 'configs' in base_cfg_name or 'benchmarks' in base_cfg_name:
+        base_cfg_name = easycv_root + base_cfg_name
 
-    base_cfg_dir_1 = osp.abspath(osp.dirname(
-        osp.dirname(__file__)))  # easycv_package_root_path
-    base_cfg_path_1 = osp.join(base_cfg_dir_1, base_cfg_name)
-    print('Read base config from', base_cfg_path_1)
-    if osp.exists(base_cfg_path_1):
-        return base_cfg_path_1
+        2. 'configs' not in base_cfg_name and 'benchmarks' not in base_cfg_name:
+        base_cfg_name = father_cfg_name + base_cfg_name
 
-    base_cfg_dir_2 = osp.dirname(base_cfg_dir_1)  # upper level dir
-    base_cfg_path_2 = osp.join(base_cfg_dir_2, base_cfg_name)
-    print('Read base config from', base_cfg_path_2)
-    if osp.exists(base_cfg_path_2):
-        return base_cfg_path_2
+    """
+    parse_base_cfg = base_cfg_name.split('/')
+    if parse_base_cfg[0] == 'configs' or parse_base_cfg[0] == 'benchmarks':
+        if easycv_root is not None:
+            base_cfg_name = osp.join(easycv_root, base_cfg_name)
+    else:
+        if father_cfg_name is not None:
+            _parse_base_path_list = base_cfg_name.split('/')
+            parse_base_path_list = copy.deepcopy(_parse_base_path_list)
+            parse_ori_path_list = father_cfg_name.split('/')
+            parse_ori_path_list.pop()
+            for filename in _parse_base_path_list:
+                if filename == '.':
+                    parse_base_path_list.pop(0)
+                elif filename == '..':
+                    parse_base_path_list.pop(0)
+                    parse_ori_path_list.pop()
+                else:
+                    break
+            base_cfg_name = '/'.join(parse_ori_path_list +
+                                     parse_base_path_list)
 
-    # relative to ori_filename
-    ori_cfg_dir = osp.dirname(ori_filename)
-    base_cfg_path_3 = osp.join(ori_cfg_dir, base_cfg_name)
-    base_cfg_path_3 = osp.abspath(osp.expanduser(base_cfg_path_3))
-    if osp.exists(base_cfg_path_3):
-        return base_cfg_path_3
-
-    raise ValueError('%s not Found' % base_cfg_name)
+    return base_cfg_name
 
 
 # Read config without __base__
-def mmcv_file2dict_raw(ori_filename):
-    filename = osp.abspath(osp.expanduser(ori_filename))
-    if not osp.isfile(filename):
-        if ori_filename.startswith('configs/'):
-            # read configs/config_templates/detection_oss.py
-            filename = check_base_cfg_path(ori_filename)
-        else:
-            raise ValueError('%s and %s not Found' % (ori_filename, filename))
-
+def mmcv_file2dict_raw(filename, first_order_params=None):
     fileExtname = osp.splitext(filename)[1]
     if fileExtname not in ['.py', '.json', '.yaml', '.yml']:
         raise IOError('Only py/yml/yaml/json type are supported now!')
@@ -82,7 +164,12 @@ def mmcv_file2dict_raw(ori_filename):
         if platform.system() == 'Windows':
             temp_config_file.close()
         temp_config_name = osp.basename(temp_config_file.name)
-        Config._substitute_predefined_vars(filename, temp_config_file.name)
+        if first_order_params is not None:
+            WrapperConfig._substitute_predefined_vars(filename,
+                                                      temp_config_file.name,
+                                                      first_order_params)
+        else:
+            Config._substitute_predefined_vars(filename, temp_config_file.name)
         if filename.endswith('.py'):
             temp_module_name = osp.splitext(temp_config_name)[0]
             sys.path.insert(0, temp_config_dir)
@@ -110,11 +197,13 @@ def mmcv_file2dict_raw(ori_filename):
 
 
 # Reac config with __base__
-def mmcv_file2dict_base(ori_filename):
-    cfg_dict, cfg_text = mmcv_file2dict_raw(ori_filename)
+def mmcv_file2dict_base(ori_filename,
+                        first_order_params=None,
+                        easycv_root=None):
+    cfg_dict, cfg_text = mmcv_file2dict_raw(ori_filename, first_order_params)
 
+    BASE_KEY = '_base_'
     if BASE_KEY in cfg_dict:
-        # cfg_dir = osp.dirname(filename)
         base_filename = cfg_dict.pop(BASE_KEY)
         base_filename = base_filename if isinstance(base_filename,
                                                     list) else [base_filename]
@@ -122,8 +211,10 @@ def mmcv_file2dict_base(ori_filename):
         cfg_dict_list = list()
         cfg_text_list = list()
         for f in base_filename:
-            base_cfg_path = check_base_cfg_path(f, ori_filename)
-            _cfg_dict, _cfg_text = mmcv_file2dict_base(base_cfg_path)
+            base_cfg_path = check_base_cfg_path(
+                f, ori_filename, easycv_root=easycv_root)
+            _cfg_dict, _cfg_text = mmcv_file2dict_base(base_cfg_path,
+                                                       first_order_params)
             cfg_dict_list.append(_cfg_dict)
             cfg_text_list.append(_cfg_text)
 
@@ -143,15 +234,125 @@ def mmcv_file2dict_base(ori_filename):
     return cfg_dict, cfg_text
 
 
+def grouping_params(user_config_params):
+    first_order_params, multi_order_params = {}, {}
+    for full_key, v in user_config_params.items():
+        key_list = full_key.split('.')
+        if len(key_list) == 1:
+            first_order_params[full_key] = v
+        else:
+            multi_order_params[full_key] = v
+
+    return first_order_params, multi_order_params
+
+
+def adapt_pai_params(cfg_dict, class_list_params=None):
+    """
+    The user passes in the class_list_params.
+
+    Args:
+        cfg_dict (dict): All parameters of cfg.
+        class_list_params (list): class_list_params[1] is num_classes.
+        class_list_params[0] supports three ways to build parameters.
+        str(.txt) parameter construction method: 0, 1, 2 or 0, \n, 1, \n, 2\n or 0, \n, 1, 2 or person, dog, cat.
+        list parameter construction method: '[0, 1, 2]' or '[person, dog, cat]'
+        '' parameter construction method: The default setting is str(0) - str(num_classes - 1)
+
+    Returns:
+        cfg_dict (dict): Add the cfg of export and oss.
+
+    """
+    if class_list_params is not None:
+        class_list, num_classes = class_list_params[0], class_list_params[1]
+        if '.txt' in class_list:
+            cfg_dict['class_list'] = []
+            with open(class_list, 'r', encoding='utf-8') as f:
+                # Setting encoding explicitly to resolve coding issue on windows
+                lines = f.readlines()
+                for line in lines:
+                    line = line.strip().strip(',').replace(' ', '').split(',')
+                    cfg_dict['class_list'].extend(line)
+        elif len(class_list) > 0:
+            cfg_dict['class_list'] = list(map(str, class_list))
+        else:
+            cfg_dict['class_list'] = list(map(str, range(0, num_classes)))
+
+    # export config
+    cfg_dict['export'] = dict(export_neck=True)
+    cfg_dict['checkpoint_sync_export'] = True
+    # oss config
+    cfg_dict['oss_sync_config'] = dict(
+        other_file_list=['**/events.out.tfevents*', '**/*log*'])
+    cfg_dict['oss_io_config'] = dict(
+        ak_id='your oss ak id',
+        ak_secret='your oss ak secret',
+        hosts='oss-cn-zhangjiakou.aliyuncs.com',
+        buckets=['your_bucket_2'])
+    return cfg_dict
+
+
+def init_path(ori_filename):
+    easycv_root = osp.dirname(easycv.__file__)  # easycv package root path
+    parse_ori_filename = ori_filename.split('/')
+    if parse_ori_filename[0] == 'configs' or parse_ori_filename[
+            0] == 'benchmarks':
+        if osp.exists(osp.join(easycv_root, ori_filename)):
+            ori_filename = osp.join(easycv_root, ori_filename)
+
+    return ori_filename, easycv_root
+
+
 # gen mmcv.Config
 def mmcv_config_fromfile(ori_filename):
+    ori_filename, easycv_root = init_path(ori_filename)
 
-    cfg_dict, cfg_text = mmcv_file2dict_base(ori_filename)
+    cfg_dict, cfg_text = mmcv_file2dict_base(
+        ori_filename, easycv_root=easycv_root)
 
     if cfg_dict.get('custom_imports', None):
         import_modules_from_strings(**cfg_dict['custom_imports'])
 
     return Config(cfg_dict, cfg_text=cfg_text, filename=ori_filename)
+
+
+def pai_config_fromfile(ori_filename,
+                        user_config_params=None,
+                        model_type=None):
+    ori_filename, easycv_root = init_path(ori_filename)
+
+    if user_config_params is not None:
+        # set class_list
+        class_list_params = None
+        if 'class_list' in user_config_params:
+            class_list = user_config_params.pop('class_list')
+            for key, value in user_config_params.items():
+                if 'num_classes' in key:
+                    class_list_params = [class_list, value]
+                    break
+
+        # grouping params
+        first_order_params, multi_order_params = grouping_params(
+            user_config_params)
+    else:
+        class_list_params, first_order_params, multi_order_params = None, None, None
+
+    # replace first-order parameters
+    cfg_dict, cfg_text = mmcv_file2dict_base(
+        ori_filename, first_order_params, easycv_root=easycv_root)
+
+    # Add export and oss ​​related configuration to adapt to pai platform
+    if model_type:
+        cfg_dict = adapt_pai_params(cfg_dict, class_list_params)
+
+    if cfg_dict.get('custom_imports', None):
+        import_modules_from_strings(**cfg_dict['custom_imports'])
+
+    cfg = Config(cfg_dict, cfg_text=cfg_text, filename=ori_filename)
+
+    # replace multi-order parameters
+    if multi_order_params:
+        cfg.merge_from_dict(multi_order_params)
+    return cfg
 
 
 # get the true value for ori_key in cfg_dict
@@ -320,21 +521,27 @@ def validate_export_config(cfg):
 
 CONFIG_TEMPLATE_ZOO = {
 
+    # cls
+    'CLASSIFICATION_RESNET':
+    'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py',
+    'CLASSIFICATION_RESNEXT':
+    'configs/classification/imagenet/resnext/imagenet_resnext50-32x4d_jpg.py',
+    'CLASSIFICATION_HRNET':
+    'configs/classification/imagenet/hrnet/imagenet_hrnetw18_jpg.py',
+    'CLASSIFICATION_VIT':
+    'configs/classification/imagenet/vit/imagenet_vit_base_patch16_224_jpg.py',
+    'CLASSIFICATION_SWINT':
+    'configs/classification/imagenet/swint/imagenet_swin_tiny_patch4_window7_224_jpg.py',
+
+    # metric learning
+    'METRICLEARNING':
+    'configs/metric_learning/imagenet_timm_softmaxbased_jpg.py',
+    'MODELPARALLEL_METRICLEARNING':
+    'configs/metric_learning/imagenet_timm_modelparallel_softmaxbased_jpg.py',
+
     # detection
     'YOLOX': 'configs/config_templates/yolox.py',
     'YOLOX_ITAG': 'configs/config_templates/yolox_itag.py',
-
-    # cls
-    'CLASSIFICATION': 'configs/config_templates/classification.py',
-    'CLASSIFICATION_OSS': 'configs/config_templates/classification_oss.py',
-    'CLASSIFICATION_TFRECORD_OSS':
-    'configs/config_templates/classification_tfrecord_oss.py',
-
-    # metric learning
-    'METRICLEARNING_TFRECORD_OSS':
-    'configs/config_templates/metric_learning/softmaxbased_tfrecord_oss.py',
-    'MODELPARALLEL_METRICLEARNING':
-    'configs/config_templates/metric_learning/modelparallel_softmaxbased_tfrecord_oss.py',
 
     # ssl
     'MOCO_R50_TFRECORD': 'configs/config_templates/moco_r50_tfrecord.py',

@@ -1,4 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import numpy as np
+
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
 from easycv.datasets.shared.data_sources.concat import SourceConcat
@@ -36,6 +38,12 @@ class SegDataset(BaseDataset):
     def __getitem__(self, idx):
         data_dict = self.data_source[idx]
         data_dict = self.pipeline(data_dict)
+        if 'gt_semantic_seg' in data_dict:
+            labels = np.unique(data_dict['gt_semantic_seg']._data)
+            # avoid the sample only have ignore index
+            if labels.shape[0] == 1 and labels[0] == self.ignore_index:
+
+                return self.__getitem__(np.random.randint(self.__len__()))
         return data_dict
 
     def evaluate(self, results, evaluators=[], **kwargs):

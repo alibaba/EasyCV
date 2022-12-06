@@ -45,8 +45,13 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 
 ## 最新进展
+[🔥 2022.12.02]
 
-[🔥 Latest News] 近期我们开源了YOLOX-PAI，在40-50mAP(推理速度小于1ms)范围内达到了业界的SOTA水平。同时EasyCV提供了一套简洁高效的模型导出和预测接口，供用户快速完成端到端的图像检测任务。如果你想快速了解YOLOX-PAI, 点击 [这里](docs/source/tutorials/yolox.md)!
+* 02/12/2022 EasyCV v0.8.0 was released.
+- bevformer-base NDS在nuscenes val上提升0.8，训练速度提升10%，推理速度提升40%。
+- 支持Objects365预训练，加入DINO++模型在200M模型规模下可达到63.4mAP的精度（同等规模下精度最佳）。
+
+[🔥 2022.08.31] 近期我们开源了YOLOX-PAI，在40-50mAP(推理速度小于1ms)范围内达到了业界的SOTA水平。同时EasyCV提供了一套简洁高效的模型导出和预测接口，供用户快速完成端到端的图像检测任务。如果你想快速了解YOLOX-PAI, 点击 [这里](docs/source/tutorials/yolox.md)!
 
 * 31/08/2022 EasyCV v0.6.0 版本发布。
   -  发布YOLOX-PAI，在轻量级模型中取得SOTA效果
@@ -65,6 +70,11 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 * [MAE自监督算法介绍和基于EasyCV的复现](https://zhuanlan.zhihu.com/p/515859470)
 * [基于EasyCV复现ViTDet：单层特征超越FPN](https://zhuanlan.zhihu.com/p/528733299)
 * [基于EasyCV复现DETR和DAB-DETR，Object Query的正确打开方式](https://zhuanlan.zhihu.com/p/543129581)
+* [YOLOX-PAI: 加速YOLOX, 比YOLOv6更快更强](https://zhuanlan.zhihu.com/p/560597953)
+* [EasyCV带你复现更好更快的自监督算法-FastConvMAE](https://zhuanlan.zhihu.com/p/566988235)
+* [EasyCV DataHub 提供多领域视觉数据集下载，助力模型生产](https://zhuanlan.zhihu.com/p/572593950)
+* [使用EasyCV Mask2Former轻松实现图像分割](https://zhuanlan.zhihu.com/p/583831421)
+
 
 ## 安装
 
@@ -77,9 +87,13 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 * [自监督学习教程](docs/source/tutorials/ssl.md)
 * [图像分类教程](docs/source/tutorials/cls.md)
+* [度量学习教程](docs/source/tutorials/metric_learning.md)
 * [使用YOLOX-PAI进行物体检测教程](docs/source/tutorials/yolox.md)
 * [YOLOX模型压缩教程](docs/source/tutorials/compression.md)
-* [torchacc](docs/source/tutorials/torchacc.md)
+* [torchacc使用](docs/source/tutorials/torchacc.md)
+* [本地/oss文件读取](docs/source/tutorials/file.md)
+* [mmdetection模型使用](docs/source/tutorials/mmdet_models_usage_guide.md)
+* [批量推理工具][docs/source/tutorials/predict.md]
 
 ## 模型库
 
@@ -100,6 +114,9 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
       </td>
       <td>
         <b>分割</b>
+      </td>
+      <td>
+        <b>3D目标检测</b>
       </td>
     </tr>
     <tr valign="top">
@@ -139,7 +156,8 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
           <li><a href="configs/classification/imagenet/timm/pit">PiT (ArXiv'2021)</a></li>
           <li><a href="configs/classification/imagenet/timm/twins">Twins (NeurIPS'2021)</a></li>
           <li><a href="configs/classification/imagenet/timm/shuffle_transformer">Shuffle Transformer (ArXiv'2021)</a></li>
-          <li><a href="configs/classification/imagenet/vit">DeiT III (ECCV'2022)</a></li>
+          <li><a href="configs/classification/imagenet/deitiii">DeiT III (ECCV'2022)</a></li>
+          <li><a href="configs/classification/imagenet/deit">Hydra Attention (2022)</a></li>
         </ul>
       </td>
       <td>
@@ -180,6 +198,11 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
         </ul>
       </ul>
       </td>
+      <td>
+        <ul>
+            <li><a href="configs/detection3d/bevformer">BEVFormer (ECCV'2022)</a></li>
+      </ul>
+      </td>
     </tr>
 </td>
     </tr>
@@ -191,7 +214,8 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 - [自监督模型库](docs/source/model_zoo_ssl.md)
 - [图像分类模型库](docs/source/model_zoo_cls.md)
 - [目标检测模型库](docs/source/model_zoo_det.md)
-
+- [3D目标检测模型库](docs/source/model_zoo_det3d.md)
+- [图像分割模型库](docs/source/model_zoo_seg.md)
 
 ## 开源许可证
 

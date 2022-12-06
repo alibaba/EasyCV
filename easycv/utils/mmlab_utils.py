@@ -21,23 +21,13 @@ try:
     from mmcv.runner.hooks import HOOKS
     import mmdet
     HOOKS._module_dict.pop('YOLOXLrUpdaterHook', None)
-    from mmdet.models.builder import MODELS as MMMODELS
-    from mmdet.models.builder import BACKBONES as MMBACKBONES
-    from mmdet.models.builder import NECKS as MMNECKS
-    from mmdet.models.builder import HEADS as MMHEADS
     from mmdet.core import BitmapMasks, PolygonMasks, encode_mask_results
     from mmdet.core.mask import mask2bbox
-    MM_REGISTRY = {
-        MMDET: {
-            'model': MMMODELS,
-            'backbone': MMBACKBONES,
-            'neck': MMNECKS,
-            'head': MMHEADS
-        }
-    }
-    MM_ORIGINAL_REGISTRY = copy.deepcopy(MM_REGISTRY)
 except ImportError:
     pass
+
+MM_REGISTRY = None
+MM_ORIGINAL_REGISTRY = None
 
 EASYCV_REGISTRY_MAP = {
     'model': MODELS,
@@ -167,6 +157,24 @@ class MMAdapter:
 
     @staticmethod
     def reset_mm_registry():
+        global MM_ORIGINAL_REGISTRY
+        global MM_REGISTRY
+
+        if MM_REGISTRY is None:
+            from mmdet.models.builder import MODELS as MMMODELS
+            from mmdet.models.builder import BACKBONES as MMBACKBONES
+            from mmdet.models.builder import NECKS as MMNECKS
+            from mmdet.models.builder import HEADS as MMHEADS
+            MM_REGISTRY = {
+                MMDET: {
+                    'model': MMMODELS,
+                    'backbone': MMBACKBONES,
+                    'neck': MMNECKS,
+                    'head': MMHEADS
+                }
+            }
+            MM_ORIGINAL_REGISTRY = copy.deepcopy(MM_REGISTRY)
+
         for mmtype, registries in MM_ORIGINAL_REGISTRY.items():
             for k, ori_v in registries.items():
                 MM_REGISTRY[mmtype][k]._module_dict = copy.deepcopy(
@@ -365,3 +373,17 @@ def remove_adapt_for_mmlab(cfg):
     mmlab_modules_cfg = cfg.get('mmlab_modules', [])
     adapter = MMAdapter(mmlab_modules_cfg)
     adapter.reset_mm_registry()
+
+
+def fix_dc_pin_memory():
+    """Fix pin memory for DataContainer."""
+    from mmcv.parallel import DataContainer as DC
+    from torch.utils.data._utils.pin_memory import pin_memory
+
+    def data_container_pin_memory(self):
+        if self.cpu_only:
+            return self
+        self._data = pin_memory(self._data)
+        return self
+
+    setattr(DC, 'pin_memory', data_container_pin_memory)

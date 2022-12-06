@@ -244,7 +244,7 @@ class MMMosaic(object):
             x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
                 center_position_xy[1], \
                 center_position_xy[0], \
-                min(self.img_scale[1] * 2, center_position_xy[1] +
+                min(self.img_scale[0] * 2, center_position_xy[1] +
                     img_shape_wh[1])
             crop_coord = img_shape_wh[0] - (x2 - x1), 0, img_shape_wh[0], min(
                 y2 - y1, img_shape_wh[1])
@@ -1903,7 +1903,7 @@ class LoadAnnotations:
         repr_str += f'with_seg={self.with_seg}, '
         repr_str += f'poly2mask={self.poly2mask}, '
         repr_str += f'poly2mask={self.file_client_args})'
-        return
+        return repr_str
 
 
 @PIPELINES.register_module()

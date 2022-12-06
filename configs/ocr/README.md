@@ -2,7 +2,7 @@
 ## PP-OCRv3
 We convert [PaddleOCRv3](https://github.com/PaddlePaddle/PaddleOCR) models to pytorch style, and provide end2end interface to recognize text in images, by simplely load exported models.
 ### detection
-We test on on icdar2015 dataset.
+We test on icdar2015 dataset.
 |Algorithm|backbone|configs|precison|recall|Hmean|Download|
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 |DB|MobileNetv3|[det_model_en.py](configs/ocr/detection/det_model_en.py)|0.7803|0.7250|0.7516|[log](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/fintune_icdar2015_mobilev3/20220902_140307.log.json)-[model](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/det/fintune_icdar2015_mobilev3/epoch_70.pth)|
@@ -23,7 +23,7 @@ We provide exported models contain weights and process config for easyly predict
 #### recognition model
 |language|Download|
 |---|---|
-|chiese|[chinese_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/chinese_rec.pth)|
+|chinese|[chinese_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/chinese_rec.pth)|
 |english|[english_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/english_rec.pth)|
 |korean|[korean_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/korean_rec.pth)|
 |japan|[japan_rec.pth](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/rec/japan_rec.pth)|
@@ -59,7 +59,7 @@ out = predictor([img_path])
 print(out)
 ```
 ![rec_input](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/test_image/japan_rec.jpg)<br/>
-![rec_putput](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/test_image/japan_predict.jpg)
+![rec_output](http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/export_model/test_image/japan_predict.jpg)
 ##### end2end
 ```
 import cv2
@@ -71,11 +71,11 @@ predictor = OCRPredictor(
     rec_model_path=path_to_recmodel,
     cls_model_path=path_to_clsmodel,
     use_angle_cls=True)
-filter_boxes, filter_rec_res = predictor(img_path)
+out = predictor(img_path)
 img = cv2.imread('ocr_det.jpg')
 out_img = predictor.show(
-    filter_boxes[0],
-    filter_rec_res[0],
+    out[0]['boxes'],
+    out[0]['rec_res'],
     img,
     font_path='simfang.ttf')
 cv2.imwrite('out_img.jpg', out_img)

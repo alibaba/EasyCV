@@ -25,6 +25,7 @@ import requests
 import torch
 import torch.distributed as dist
 from mmcv.runner import init_dist
+from mmcv import DictAction
 
 from easycv import __version__
 from easycv.apis import init_random_seed, set_random_seed, train_model
@@ -34,11 +35,11 @@ from easycv.file import io
 from easycv.models import build_model
 from easycv.utils.collect_env import collect_env
 from easycv.utils.logger import get_root_logger
-from easycv.utils.mmlab_utils import dynamic_adapt_for_mmlab
-from easycv.utils.config_tools import traverse_replace
-from easycv.utils.config_tools import (CONFIG_TEMPLATE_ZOO,
-                                       mmcv_config_fromfile, rebuild_config)
-from easycv.utils.dist_utils import get_device
+from easycv.utils import mmlab_utils
+from easycv.utils.config_tools import (traverse_replace, CONFIG_TEMPLATE_ZOO,
+                                       mmcv_config_fromfile,
+                                       pai_config_fromfile)
+from easycv.utils.dist_utils import get_device, is_master
 from easycv.utils.setup_env import setup_multi_processes
 
 
@@ -93,9 +94,14 @@ def parse_args():
     )
     parser.add_argument(
         '--user_config_params',
-        nargs=argparse.REMAINDER,
-        default=None,
-        help='modify config options using the command-line')
+        nargs='+',
+        action=DictAction,
+        help='override some settings in the used config, the key-value pair '
+        'in xxx=yyy format will be merged into config file. If the value to '
+        'be overwritten is a list, it should be like key="[a,b]" or key=a,b '
+        'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
+        'Note that the quotation marks are necessary and that no white space '
+        'is allowed. Single quote double quote equivalent.')
 
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
@@ -127,12 +133,13 @@ def main():
                 pass
 
         args.config = tpath
-    cfg = mmcv_config_fromfile(args.config)
 
-    if args.user_config_params is not None:
-        assert args.model_type is not None, 'model_type must be setted'
-        # rebuild config by user config params
-        cfg = rebuild_config(cfg, args.user_config_params)
+    # build cfg
+    if args.user_config_params is None:
+        cfg = mmcv_config_fromfile(args.config)
+    else:
+        cfg = pai_config_fromfile(args.config, args.user_config_params,
+                                  args.model_type)
 
     # set multi-process settings
     setup_multi_processes(cfg)
@@ -161,7 +168,7 @@ def main():
         cfg.load_from = args.load_from
 
     # dynamic adapt mmdet models
-    dynamic_adapt_for_mmlab(cfg)
+    mmlab_utils.dynamic_adapt_for_mmlab(cfg)
 
     cfg.gpus = args.gpus
 
@@ -230,7 +237,9 @@ def main():
         assert isinstance(args.pretrained, str)
         cfg.model.pretrained = args.pretrained
     model = build_model(cfg.model)
-    print(model)
+
+    if is_master():
+        print(model)
 
     if 'stage' in cfg.model and cfg.model['stage'] == 'EDGE':
         from easycv.utils.flops_counter import get_model_info
@@ -259,6 +268,8 @@ def main():
             ), 'odps config must be set in cfg file / cfg.data.train.data_source !!'
             shuffle = False
 
+        if getattr(cfg.data, 'pin_memory', False):
+            mmlab_utils.fix_dc_pin_memory()
         datasets = [build_dataset(cfg.data.train)]
         data_loaders = [
             build_dataloader(
@@ -268,9 +279,11 @@ def main():
                 cfg.gpus,
                 dist=distributed,
                 shuffle=shuffle,
+                pin_memory=getattr(cfg.data, 'pin_memory', False),
                 replace=getattr(cfg.data, 'sampling_replace', False),
                 seed=cfg.seed,
-                drop_last=getattr(cfg.data, 'drop_last', False),
+                # The default should be set to True, because sometimes the last batch is not sampled enough, causing an error in batchnorm
+                drop_last=getattr(cfg.data, 'drop_last', True),
                 reuse_worker_cache=cfg.data.get('reuse_worker_cache', False),
                 persistent_workers=cfg.data.get('persistent_workers', False),
                 collate_hooks=cfg.data.get('train_collate_hooks', []),

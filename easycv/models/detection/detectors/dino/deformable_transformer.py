@@ -43,6 +43,7 @@ class DeformableTransformer(nn.Module):
         num_patterns=0,
         modulate_hw_attn=False,
         # for deformable encoder
+        multi_encoder_memory=False,
         deformable_encoder=True,
         deformable_decoder=True,
         num_feature_levels=1,
@@ -126,6 +127,10 @@ class DeformableTransformer(nn.Module):
             deformable_encoder=deformable_encoder,
             enc_layer_share=enc_layer_share,
             two_stage_type=two_stage_type)
+
+        self.multi_encoder_memory = multi_encoder_memory
+        if self.multi_encoder_memory:
+            self.memory_reduce = nn.Linear(d_model * 2, d_model)
 
         # choose decoder layer type
         if deformable_decoder:
@@ -218,6 +223,8 @@ class DeformableTransformer(nn.Module):
 
         self.enc_out_class_embed = None
         self.enc_out_bbox_embed = None
+        self.enc_out_center_embed = None
+        self.enc_out_iou_embed = None
 
         # evolution of anchors
         self.dec_layer_number = dec_layer_number
@@ -250,7 +257,7 @@ class DeformableTransformer(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
         for m in self.modules():
-            from thirdparty.deformable_attention.modules import MSDeformAttn
+            from easycv.thirdparty.deformable_attention.modules import MSDeformAttn
             if isinstance(m, MSDeformAttn):
                 m._reset_parameters()
         if self.num_feature_levels > 1 and self.level_embed is not None:
@@ -343,6 +350,8 @@ class DeformableTransformer(nn.Module):
             ref_token_index=enc_topk_proposals,  # bs, nq
             ref_token_coord=enc_refpoint_embed,  # bs, nq, 4
         )
+        if self.multi_encoder_memory:
+            memory = self.memory_reduce(torch.cat([src_flatten, memory], -1))
         #########################################################
         # End Encoder
         # - memory: bs, \sum{hw}, c
@@ -729,6 +738,8 @@ class TransformerDecoder(nn.Module):
             self.query_scale = MLP(d_model, d_model, d_model, 2)
         self.bbox_embed = None
         self.class_embed = None
+        self.center_embed = None
+        self.iou_embed = None
 
         self.d_model = d_model
         self.modulate_hw_attn = modulate_hw_attn
@@ -909,7 +920,7 @@ class DeformableTransformerEncoderLayer(nn.Module):
         super().__init__()
 
         # self attention
-        from thirdparty.deformable_attention.modules import MSDeformAttn
+        from easycv.thirdparty.deformable_attention.modules import MSDeformAttn
         self.self_attn = MSDeformAttn(
             d_model, n_levels, n_heads, n_points, im2col_step=64)
         self.dropout1 = nn.Dropout(dropout)
@@ -983,7 +994,7 @@ class DeformableTransformerDecoderLayer(nn.Module):
         assert sorted(module_seq) == ['ca', 'ffn', 'sa']
 
         # cross attention
-        from thirdparty.deformable_attention.modules import MSDeformAttn
+        from easycv.thirdparty.deformable_attention.modules import MSDeformAttn
         self.cross_attn = MSDeformAttn(
             d_model, n_levels, n_heads, n_points, im2col_step=64)
         self.dropout1 = nn.Dropout(dropout)
@@ -1009,7 +1020,7 @@ class DeformableTransformerDecoderLayer(nn.Module):
         assert decoder_sa_type in ['sa', 'ca_label', 'ca_content']
 
         if decoder_sa_type == 'ca_content':
-            from thirdparty.deformable_attention.modules import MSDeformAttn
+            from easycv.thirdparty.deformable_attention.modules import MSDeformAttn
             self.self_attn = MSDeformAttn(
                 d_model, n_levels, n_heads, n_points, im2col_step=64)
 

@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Adapt from https://github.com/open-mmlab/mmpose/blob/master/mmpose/datasets/pipelines/top_down_transform.py
+import logging
 
 import cv2
 import numpy as np
@@ -759,5 +760,121 @@ class TopDownRandomTranslation:
             # reference bbox size is [200, 200] pixels
             center += self.trans_factor * np.random.uniform(
                 -1, 1, size=2) * scale * 200
+        results['center'] = center
+        return results
+
+
+def bbox_xywh2cs(bbox, aspect_ratio, padding=1., pixel_std=200.):
+    """Transform the bbox format from (x,y,w,h) into (center, scale)
+
+    Args:
+        bbox (ndarray): Single bbox in (x, y, w, h)
+        aspect_ratio (float): The expected bbox aspect ratio (w over h)
+        padding (float): Bbox padding factor that will be multilied to scale.
+            Default: 1.0
+        pixel_std (float): The scale normalization factor. Default: 200.0
+
+    Returns:
+        tuple: A tuple containing center and scale.
+        - np.ndarray[float32](2,): Center of the bbox (x, y).
+        - np.ndarray[float32](2,): Scale of the bbox w & h.
+    """
+
+    x, y, w, h = bbox[:4]
+    center = np.array([x + w * 0.5, y + h * 0.5], dtype=np.float32)
+
+    if w > aspect_ratio * h:
+        h = w * 1.0 / aspect_ratio
+    elif w < aspect_ratio * h:
+        w = h * aspect_ratio
+
+    scale = np.array([w, h], dtype=np.float32) / pixel_std
+    scale = scale * padding
+
+    return center, scale
+
+
+def bbox_cs2xyxy(center, scale, padding=1., pixel_std=200.):
+    wh = scale * 0.8 / padding * pixel_std
+    xy = center - 0.5 * wh
+    x1, y1 = xy
+    w, h = wh
+    return np.r_[x1, y1, x1 + w, y1 + h]
+
+
+@PIPELINES.register_module()
+class TopDownGetBboxCenterScale:
+    """Convert bbox from [x, y, w, h] to center and scale.
+
+    The center is the coordinates of the bbox center, and the scale is the
+    bbox width and height normalized by a scale factor.
+
+    Required key: 'bbox', 'ann_info'
+
+    Modifies key: 'center', 'scale'
+
+    Args:
+        padding (float): bbox padding scale that will be multilied to scale.
+            Default: 1.25
+    """
+    # Pixel std is 200.0, which serves as the normalization factor to
+    # to calculate bbox scales.
+    pixel_std: float = 200.0
+
+    def __init__(self, padding: float = 1.25):
+        self.padding = padding
+
+    def __call__(self, results):
+
+        if 'center' in results and 'scale' in results:
+            logging.info(
+                'Use the "center" and "scale" that already exist in the data '
+                'sample. The padding will still be applied.')
+            results['scale'] *= self.padding
+        else:
+            bbox = results['bbox']
+            image_size = results['ann_info']['image_size']
+            aspect_ratio = image_size[0] / image_size[1]
+
+            center, scale = bbox_xywh2cs(
+                bbox,
+                aspect_ratio=aspect_ratio,
+                padding=self.padding,
+                pixel_std=self.pixel_std)
+
+            results['center'] = center
+            results['scale'] = scale
+        return results
+
+
+@PIPELINES.register_module()
+class TopDownRandomShiftBboxCenter:
+    """Random shift the bbox center.
+
+    Required key: 'center', 'scale'
+
+    Modifies key: 'center'
+
+    Args:
+        shift_factor (float): The factor to control the shift range, which is
+            scale*pixel_std*scale_factor. Default: 0.16
+        prob (float): Probability of applying random shift. Default: 0.3
+    """
+    # Pixel std is 200.0, which serves as the normalization factor to
+    # to calculate bbox scales.
+    pixel_std: float = 200.0
+
+    def __init__(self, shift_factor: float = 0.16, prob: float = 0.3):
+        self.shift_factor = shift_factor
+        self.prob = prob
+
+    def __call__(self, results):
+
+        center = results['center']
+        scale = results['scale']
+        if np.random.rand() < self.prob:
+            center += np.random.uniform(
+                -1, 1, 2) * self.shift_factor * scale * self.pixel_std
+
         results['center'] = center
         return results
