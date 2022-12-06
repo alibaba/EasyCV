@@ -216,6 +216,55 @@ class PredictorProcess(Process):
             )
 
 
+def create_yolox_predictor_kwargs(model_dir):
+    jit_models = glob.glob('%s/**/*.jit' % model_dir, recursive=True)
+    raw_models = glob.glob('%s/**/*.pt' % model_dir, recursive=True)
+    if len(jit_models) > 0:
+        assert len(
+            jit_models
+        ) == 1, f'more than one jit script model files is found in {model_dir}'
+        config_path = jit_models[0] + '.config.json'
+        if not os.path.exists(config_path):
+            raise ValueError(
+                f'Not find config json file {config_path} for inference with jit script model'
+            )
+        return {'model_path': jit_models[0], 'config_file': config_path}
+    else:
+        assert len(raw_models) > 0, f'export model not found in {model_dir}'
+        assert len(raw_models
+                   ) == 1, f'more than one model files is found in {model_dir}'
+        return {'model_path': raw_models[0]}
+
+
+def create_default_predictor_kwargs(model_dir):
+    model_path = glob.glob('%s/**/*.pt*' % model_dir, recursive=True)
+    assert len(model_path) > 0, f'model not found in {model_dir}'
+    assert len(
+        model_path) == 1, f'more than one model file is found {model_path}'
+    model_path = model_path[0]
+    logging.info(f'model found: {model_path}')
+
+    config_path = glob.glob('%s/**/*.py' % model_dir, recursive=True)
+    if len(config_path) == 0:
+        config_path = None
+    else:
+        assert len(config_path
+                   ) == 1, f'more than one config file is found {config_path}'
+        config_path = config_path[0]
+        logging.info(f'config found: {config_path}')
+    if config_path:
+        return {'model_path': model_path, 'config_file': config_path}
+    else:
+        return {'model_path': model_path}
+
+
+def create_predictor_kwargs(model_type, model_dir):
+    if model_type == 'YoloXPredictor':
+        return create_yolox_predictor_kwargs(model_dir)
+    else:
+        return create_default_predictor_kwargs(model_dir)
+
+
 def init_predictor(args):
     model_type = args.model_type
     model_path = args.model_path
@@ -223,31 +272,12 @@ def init_predictor(args):
     from easycv.predictors.builder import build_predictor
 
     ori_model_path = model_path
-    if not ori_model_path.endswith('pth') and not ori_model_path.endswith(
-            'pt'):
-        model_path = glob.glob('%s/**/*.pt*' % ori_model_path, recursive=True)
-        assert len(model_path) > 0, f'model not found in {ori_model_path}'
-        assert len(
-            model_path) == 1, f'more than one model file is found {model_path}'
-        model_path = model_path[0]
-        logging.info(f'model found: {model_path}')
-
-        config_path = glob.glob('%s/**/*.py' % ori_model_path, recursive=True)
-        if len(config_path) == 0:
-            config_path = None
-        else:
-            assert len(
-                config_path
-            ) == 1, f'more than one config file is found {config_path}'
-            config_path = config_path[0]
-            logging.info(f'config found: {config_path}')
+    if os.path.isdir(ori_model_path):
+        predictor_kwargs = create_predictor_kwargs(model_type, ori_model_path)
     else:
-        model_path = ori_model_path
-        config_path = None
+        predictor_kwargs = {'model_path': ori_model_path}
 
-    predictor_cfg = dict(type=model_type, model_path=model_path)
-    if config_path:
-        predictor_cfg['config_file'] = config_path
+    predictor_cfg = dict(type=model_type, **predictor_kwargs)
     if args.model_config != '':
         predictor_cfg['model_config'] = args.model_config
     predictor = build_predictor(predictor_cfg)
