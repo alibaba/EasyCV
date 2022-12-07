@@ -292,7 +292,8 @@ def adapt_pai_params(cfg_dict, class_list_params=None):
 
 
 def init_path(ori_filename):
-    easycv_root = osp.dirname(easycv.__file__)  # easycv package root path
+    easycv_root = osp.dirname(osp.dirname(
+        easycv.__file__))  # easycv package root path
     parse_ori_filename = ori_filename.split('/')
     if parse_ori_filename[0] == 'configs' or parse_ori_filename[
             0] == 'benchmarks':
