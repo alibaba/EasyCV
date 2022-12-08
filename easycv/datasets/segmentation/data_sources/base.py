@@ -16,8 +16,7 @@ from easycv.framework.errors import NotImplementedError, ValueError
 
 
 def load_image(img_path):
-    img = _load_img(img_path, mode='RGB')
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    img = _load_img(img_path, mode='BGR')
     result = {
         'img': img.astype(np.float32),
         'img_shape': img.shape,  # h, w, c
