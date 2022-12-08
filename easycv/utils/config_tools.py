@@ -214,8 +214,8 @@ def mmcv_file2dict_base(ori_filename,
         for f in base_filename:
             base_cfg_path = check_base_cfg_path(
                 f, ori_filename, easycv_root=easycv_root)
-            _cfg_dict, _cfg_text = mmcv_file2dict_base(base_cfg_path,
-                                                       first_order_params)
+            _cfg_dict, _cfg_text = mmcv_file2dict_base(
+                base_cfg_path, first_order_params, easycv_root=easycv_root)
             cfg_dict_list.append(_cfg_dict)
             cfg_text_list.append(_cfg_text)
 
