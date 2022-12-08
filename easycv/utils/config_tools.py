@@ -3,6 +3,7 @@ import os.path as osp
 import platform
 import sys
 import tempfile
+import warnings
 from importlib import import_module
 
 from mmcv import Config, import_modules_from_strings
@@ -293,6 +294,11 @@ def adapt_pai_params(cfg_dict, class_list_params=None):
 
 def init_path(ori_filename):
     easycv_root = osp.dirname(easycv.__file__)  # easycv package root path
+    if not osp.exists(osp.join(easycv_root, 'configs')) and osp.exists(
+            osp.join(osp.dirname(easycv_root), 'configs')):
+        easycv_root = osp.dirname(easycv_root)
+    else:
+        warnings.warn('easycv root does not exist!')
     parse_ori_filename = ori_filename.split('/')
     if parse_ori_filename[0] == 'configs' or parse_ori_filename[
             0] == 'benchmarks':
