@@ -298,7 +298,7 @@ def init_path(ori_filename):
             osp.join(osp.dirname(easycv_root), 'configs')):
         easycv_root = osp.dirname(easycv_root)
     else:
-        warnings.warn('easycv root does not exist!')
+        raise ValueError('easycv root does not exist!')
     parse_ori_filename = ori_filename.split('/')
     if parse_ori_filename[0] == 'configs' or parse_ori_filename[
             0] == 'benchmarks':

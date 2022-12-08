@@ -323,12 +323,13 @@ class BYTETracker(object):
 
         fres = []
         for t in output_stracks:
+            tscore = t.score
             tid = t.track_id
             tlbr = t.tlwh_to_tlbr(t.tlwh)
             tlbr = [int(i) for i in tlbr]
-            fres.append(tlbr + [tid])
+            fres.append(np.array([tid] + tlbr + [tscore]))
 
-        return np.array(fres)
+        return {'track_bboxes': np.array(fres)}
 
 
 def joint_stracks(tlista, tlistb):
