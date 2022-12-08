@@ -57,7 +57,6 @@ class MaskedAutoencoderViT(nn.Module):
                 num_heads,
                 mlp_ratio,
                 qkv_bias=True,
-                qk_scale=None,
                 norm_layer=norm_layer) for i in range(depth)
         ])
         self.norm = norm_layer(embed_dim)
