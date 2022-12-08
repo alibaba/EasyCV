@@ -1,10 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import tempfile
 import unittest
 
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 
-from easycv.predictors.detector import DetrPredictor
+from easycv.predictors.detector import DetectionPredictor
 
 
 class DETRTest(unittest.TestCase):
@@ -16,9 +17,11 @@ class DETRTest(unittest.TestCase):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/detr/epoch_150.pth'
         config_path = 'configs/detection/detr/detr_r50_8x2_150e_coco.py'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-        detr = DetrPredictor(model_path, config_path)
-        output = detr.predict(img)
-        detr.visualize(img, output, out_file=None)
+        model = DetectionPredictor(model_path, config_path)
+        output = model(img)[0]
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as tmp_file:
+            tmp_save_path = tmp_file.name
+            model.visualize(img, output, out_file=tmp_save_path)
 
         self.assertIn('detection_boxes', output)
         self.assertIn('detection_scores', output)
@@ -91,9 +94,11 @@ class DETRTest(unittest.TestCase):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/dab_detr/dab_detr_epoch_50.pth'
         config_path = 'configs/detection/dab_detr/dab_detr_r50_8x2_50e_coco.py'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-        dab_detr = DetrPredictor(model_path, config_path)
-        output = dab_detr.predict(img)
-        dab_detr.visualize(img, output, out_file=None)
+        model = DetectionPredictor(model_path, config_path)
+        output = model(img)[0]
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as tmp_file:
+            tmp_save_path = tmp_file.name
+            model.visualize(img, output, out_file=tmp_save_path)
 
         self.assertIn('detection_boxes', output)
         self.assertIn('detection_scores', output)
@@ -166,9 +171,11 @@ class DETRTest(unittest.TestCase):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/dn_detr/dn_detr_epoch_50.pth'
         config_path = 'configs/detection/dab_detr/dn_detr_r50_8x2_50e_coco.py'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-        dn_detr = DetrPredictor(model_path, config_path)
-        output = dn_detr.predict(img)
-        dn_detr.visualize(img, output, out_file=None)
+        model = DetectionPredictor(model_path, config_path)
+        output = model(img)[0]
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as tmp_file:
+            tmp_save_path = tmp_file.name
+            model.visualize(img, output, out_file=tmp_save_path)
 
         self.assertIn('detection_boxes', output)
         self.assertIn('detection_scores', output)
@@ -241,9 +248,11 @@ class DETRTest(unittest.TestCase):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/dino/dino_4sc_r50_36e/epoch_29.pth'
         config_path = 'configs/detection/dino/dino_4sc_r50_36e_coco.py'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-        dino = DetrPredictor(model_path, config_path)
-        output = dino.predict(img)
-        dino.visualize(img, output, out_file=None)
+        model = DetectionPredictor(model_path, config_path)
+        output = model(img)[0]
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as tmp_file:
+            tmp_save_path = tmp_file.name
+            model.visualize(img, output, out_file=tmp_save_path)
 
         self.assertIn('detection_boxes', output)
         self.assertIn('detection_scores', output)

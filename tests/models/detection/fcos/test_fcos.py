@@ -1,10 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import tempfile
 import unittest
 
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 
-from easycv.predictors.detector import DetrPredictor
+from easycv.predictors.detector import DetectionPredictor
 
 
 class FCOSTest(unittest.TestCase):
@@ -16,9 +17,11 @@ class FCOSTest(unittest.TestCase):
         model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/fcos/fcos_epoch_12.pth'
         config_path = 'configs/detection/fcos/fcos_r50_torch_1x_coco.py'
         img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
-        fcos = DetrPredictor(model_path, config_path)
-        output = fcos.predict(img)
-        fcos.visualize(img, output, out_file=None)
+        model = DetectionPredictor(model_path, config_path)
+        output = model(img)[0]
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as tmp_file:
+            tmp_save_path = tmp_file.name
+            model.visualize(img, output, out_file=tmp_save_path)
 
         self.assertIn('detection_boxes', output)
         self.assertIn('detection_scores', output)
