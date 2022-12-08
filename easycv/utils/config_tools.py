@@ -294,11 +294,11 @@ def adapt_pai_params(cfg_dict, class_list_params=None):
 
 def init_path(ori_filename):
     easycv_root = osp.dirname(easycv.__file__)  # easycv package root path
-    if not osp.exists(osp.join(easycv_root, 'configs')) and osp.exists(
-            osp.join(osp.dirname(easycv_root), 'configs')):
-        easycv_root = osp.dirname(easycv_root)
-    else:
-        raise ValueError('easycv root does not exist!')
+    if not osp.exists(osp.join(easycv_root, 'configs')):
+        if osp.exists(osp.join(osp.dirname(easycv_root), 'configs')):
+            easycv_root = osp.dirname(easycv_root)
+        else:
+            raise ValueError('easycv root does not exist!')
     parse_ori_filename = ori_filename.split('/')
     if parse_ori_filename[0] == 'configs' or parse_ori_filename[
             0] == 'benchmarks':
