@@ -63,6 +63,24 @@ val_pipeline = [
     dict(type='VideoToTensor', keys=['imgs'])
 ]
 
+test_pipeline = [
+    dict(type='DecordInit'),
+    dict(
+        type='SampleFrames',
+        clip_len=32,
+        frame_interval=2,
+        num_clips=4,
+        test_mode=True),
+    dict(type='DecordDecode'),
+    dict(type='VideoResize', scale=(-1, 224)),
+    dict(type='VideoThreeCrop', crop_size=224),
+    dict(type='VideoFlip', flip_ratio=0),
+    dict(type='VideoNormalize', **img_norm_cfg),
+    dict(type='FormatShape', input_format='NCTHW'),
+    dict(type='Collect', keys=['imgs', 'label'], meta_keys=[]),
+    dict(type='VideoToTensor', keys=['imgs'])
+]
+
 data_root = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/'
 train_dataset = dict(
     type = 'VideoDataset',
@@ -77,6 +95,7 @@ train_dataset = dict(
 
 val_dataset = dict(
     type = 'VideoDataset',
+    imgs_per_gpu=1,
     data_source = dict(
         type='VideoDatasource',
         ann_file = data_root+'kinetics400/test.txt',
@@ -87,7 +106,7 @@ val_dataset = dict(
 )
 
 data = dict(
-    imgs_per_gpu=1, workers_per_gpu=4, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=8, workers_per_gpu=4, train=train_dataset, val=val_dataset)
 
 # optimizer
 total_epochs = 30
@@ -102,7 +121,7 @@ optimizer = dict(
         'relative_position_bias_table': dict(weight_decay=0.),
         'norm': dict(weight_decay=0.),
     })
-
+optimizer_config = dict(update_interval=8)
 # learning policy
 lr_config = dict(
     policy='CosineAnnealing',
