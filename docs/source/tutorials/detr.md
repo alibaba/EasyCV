@@ -11,7 +11,7 @@ To use coco data to train detection, you can refer to [configs/detection/detr/de
 To immediately use a model on a given input image, we provide the Predictor API. Predictor group together a pretrained model with the preprocessing that was used during that model's training. For example, we can easily extract detected objects in an image:
 
 ``` python
->>> from easycv.predictors.detector import DetectionPredictor
+>>> from easycv.predictors.detector import DetrPredictor
 
 # Specify file path
 >>> model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/detr/epoch_150.pth'
@@ -19,13 +19,13 @@ To immediately use a model on a given input image, we provide the Predictor API.
 >>> img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
 
 # Allocate a predictor for object detection
->>> model = DetectionPredictor(model_path, config_path)
->>> output = model(img)[0]
->>> model.visualize(img, output, out_file='./result.jpg')
-output['detection_scores'][:2] = [0.58311516, 0.98532575]
-output['detection_classes'][:2] = [2, 2]
-output['detection_boxes'][:2] = [[1.32131638e+02, 9.08366165e+01, 1.51008240e+02, 1.01831055e+02],
-								[1.89690186e+02, 1.08048561e+02, 2.96801422e+02, 1.54441940e+02]]
+>>> detr = DetrPredictor(model_path, config_path)
+>>> output = detr.predict(img)
+>>> detr.visualize(img, output, out_file='./result.jpg')
+output['detection_scores'][0][:2] = [0.07836595922708511, 0.219977006316185]
+output['detection_classes'][0][:2] = [2, 0]
+output['detection_boxes'][0][:2] = [[131.10389709472656, 90.93302154541016, 148.95504760742188,101.69216918945312],
+                                    [239.10910034179688, 113.36551666259766,256.0523376464844, 125.22894287109375]]
 
 ```
 
