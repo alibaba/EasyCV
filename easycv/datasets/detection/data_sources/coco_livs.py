@@ -6,10 +6,7 @@ from torchvision.datasets.utils import download_and_extract_archive
 from xtcocotools.coco import COCO
 
 from easycv.datasets.detection.data_sources.coco import DetSourceCoco
-from easycv.datasets.registry import DATASOURCES, PIPELINES
-from easycv.datasets.shared.pipelines import Compose
-from easycv.framework.errors import TypeError
-from easycv.utils.registry import build_from_cfg
+from easycv.datasets.registry import DATASOURCES
 
 
 @DATASOURCES.register_module
