@@ -25,3 +25,4 @@ from .swin_transformer import SwinTransformer
 from .vision_transformer import VisionTransformer
 from .vitdet import ViTDet
 from .swin_transformer3d import SwinTransformer3D
+from .x3d import X3D

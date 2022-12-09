@@ -46,7 +46,7 @@ class Recognizer3dTest(unittest.TestCase):
         # batch, num_clip, channel, time, w, h
         frames = torch.randn(1 ,1, 3, 32, 224, 224)
         label = torch.tensor([1])
-        output = model(imgs=frames, labels=label)
+        output = model(imgs=frames, label=label)
         
         self.assertIn('loss_cls', output)
         
@@ -54,8 +54,44 @@ class Recognizer3dTest(unittest.TestCase):
         with torch.no_grad():
             frames_test = torch.randn(1 ,12, 3, 32, 224, 224)
             output = model(imgs=frames_test, mode='test')
-            self.assertEqual(output.shape, (1, 400))
+            self.assertEqual(output['prob'].shape, (1, 400))
 
+    def test_x3d(self):
+        model_cfg = dict(
+            type='Recognizer3D',
+            backbone=dict(
+                type='X3D',
+                width_factor=2.0,
+                depth_factor=2.2,
+                bottlneck_factor=2.25,
+                dim_c5=2048,
+                dim_c1=12,
+                num_classes=400,
+                num_frames=4,),
+            cls_head=dict(
+                type='X3DHead',
+                in_channels=192,
+                num_classes=400,
+                spatial_type='avg',
+                dropout_ratio=0.5,
+                fc1_bias=False),
+            test_cfg = dict(average_clips='prob'))
+        
+        model = build_model(model_cfg)
+        
+        model.train()
+        # batch, num_clip, channel, time, w, h
+        frames = torch.randn(1 ,1, 3, 4, 224, 224)
+        label = torch.tensor([1])
+        output = model(imgs=frames, label=label)
+        
+        self.assertIn('loss_cls', output)
+        
+        model.eval()
+        with torch.no_grad():
+            frames_test = torch.randn(1 ,12, 3, 4, 224, 224)
+            output = model(imgs=frames_test, mode='test')
+            self.assertEqual(output['prob'].shape, (1, 400))
         
 if __name__ == '__main__':
     unittest.main()
