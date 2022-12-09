@@ -114,12 +114,6 @@ class DetectionPredictor(PredictorV2):
             out_file=out_file)
 
 
-@deprecated(reason='Please use DetectionPredictor.')
-@PREDICTORS.register_module()
-class DetrPredictor(DetectionPredictor):
-    """"""
-
-
 class _JitProcessorWrapper:
 
     def __init__(self, processor, device) -> None:
