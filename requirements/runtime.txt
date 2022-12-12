@@ -5,7 +5,6 @@ future
 h5py
 imgaug
 json_tricks
-lap
 lmdb
 numba
 numpy
