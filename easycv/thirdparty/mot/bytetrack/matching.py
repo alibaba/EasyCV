@@ -8,7 +8,7 @@ import time
 from scipy.spatial.distance import cdist
 from cython_bbox import bbox_overlaps as bbox_ious
 
-from easycv.thirdparty.bytetrack import kalman_filter
+from easycv.thirdparty.mot.bytetrack import kalman_filter
 
 
 def merge_matches(m1, m2, shape):

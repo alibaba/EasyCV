@@ -12,7 +12,7 @@ import seaborn as sns
 import mmcv
 
 from easycv.predictors import DetectionPredictor
-from easycv.thirdparty.bytetrack.byte_tracker import BYTETracker
+from easycv.thirdparty.mot.bytetrack.byte_tracker import BYTETracker
 
 def detection_result_filter(bboxes, scores, classes, target_classes, target_thresholds=None):
     # post process to filter result

@@ -7,9 +7,9 @@ import copy
 import torch
 import torch.nn.functional as F
 
-from easycv.thirdparty.bytetrack.kalman_filter import KalmanFilter
-from easycv.thirdparty.bytetrack.basetrack import BaseTrack, TrackState
-from easycv.thirdparty.bytetrack import matching   
+from easycv.thirdparty.mot.bytetrack.kalman_filter import KalmanFilter
+from easycv.thirdparty.mot.bytetrack.basetrack import BaseTrack, TrackState
+from easycv.thirdparty.mot.bytetrack import matching   
 
 from easycv.predictors.builder import build_predictor, PREDICTORS
 
