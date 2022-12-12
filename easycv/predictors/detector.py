@@ -114,12 +114,6 @@ class DetectionPredictor(PredictorV2):
             out_file=out_file)
 
 
-@deprecated(reason='Please use DetectionPredictor.')
-@PREDICTORS.register_module()
-class DetrPredictor(DetectionPredictor):
-    """"""
-
-
 class _JitProcessorWrapper:
 
     def __init__(self, processor, device) -> None:
@@ -332,7 +326,8 @@ class TorchYoloXPredictor(YoloXPredictor):
           model_config: config string for model to init, in json format
         """
         if model_config:
-            model_config = json.loads(model_config)
+            if isinstance(model_config, str):
+                model_config = json.loads(model_config)
         else:
             model_config = {}
 

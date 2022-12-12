@@ -10,7 +10,7 @@ import torch
 from easycv.datasets.face.pipelines.face_keypoint_transform import (
     FaceKeypointNorm, FaceKeypointRandomAugmentation, normal)
 from easycv.datasets.registry import DATASOURCES
-from easycv.datasets.shared.base import BaseDataset
+from easycv.file.image import load_image
 
 FACE_KEYPOINT_DATASET_INFO = dict(
     real_list_file_dir='real_face_list.txt',
@@ -156,7 +156,8 @@ class FaceKeypintSource():
     def __getitem__(self, index):
         img_path, points, points_mask, pose, pose_mask = copy.deepcopy(
             self.points_and_pose_datas[index])
-        image = cv2.imread(img_path)
+
+        image = load_image(img_path, backend='cv2')
 
         return {
             'img': image,
