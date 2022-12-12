@@ -153,6 +153,10 @@ def main():
     if args.work_dir is not None:
         cfg.work_dir = args.work_dir
 
+    # set default work_dir if work_dir is not specified
+    if not cfg.get('work_dir', None):
+        cfg.work_dir = './work_dir'
+
     # if `work_dir` is oss path, redirect `work_dir` to local path, add `oss_work_dir` point to oss path,
     # and use osssync hook to upload log and ckpt in work_dir to oss_work_dir
     if cfg.work_dir.startswith('oss://'):
