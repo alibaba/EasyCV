@@ -1,3 +1,4 @@
+# Copyright (c) Alibaba, Inc. and its affiliates.
 import numpy as np
 from collections import deque
 import os
@@ -290,6 +291,7 @@ class BYTETracker(object):
         # get scores of lost tracks
         output_stracks = [track for track in self.tracked_stracks if track.is_activated]
 
+        # output: [id, t, l, b, r, score]
         fres = []
         for t in output_stracks:
             tscore = t.score
