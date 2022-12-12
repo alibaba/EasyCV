@@ -359,6 +359,7 @@ def _export_swav(model, cfg, filename):
 
     model_config = dict(
         type='Classification',
+        pretrained=False,  # avoid loading default pretrained backbone model
         backbone=tbackbone,
     )
 
@@ -426,6 +427,7 @@ def _export_moco(model, cfg, filename):
 
     model_config = dict(
         type='Classification',
+        pretrained=False,  # avoid loading default pretrained backbone model
         backbone=replace_syncbn(cfg.model.backbone),
         head=dict(
             type='ClsHead',
@@ -481,6 +483,7 @@ def _export_moby(model, cfg, filename):
 
     model_config = dict(
         type='Classification',
+        pretrained=False,  # avoid loading default pretrained backbone model
         backbone=replace_syncbn(cfg.model.backbone),
         head=dict(
             type='ClsHead',
