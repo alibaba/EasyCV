@@ -5,6 +5,7 @@ import torch
 from torch import nn
 from torch.cuda.amp import custom_bwd, custom_fwd
 from torch.nn.modules.utils import _triple
+from mmcv.runner import force_fp32
 
 
 class DepthwiseConv3dFunction(torch.autograd.Function):
@@ -37,11 +38,11 @@ class DepthwiseConv3dFunction(torch.autograd.Function):
     @staticmethod
     @custom_bwd
     def backward(ctx, grad_output):
-        grad_output = grad_output.contiguous()
+        grad_output = grad_output.contiguous().float()
         if not grad_output.is_cuda:
             raise NotImplementedError
         input, weight, bias = ctx.saved_tensors
-        grad_input = torch.zeros_like(input)
+        grad_input = torch.zeros_like(input).float()
         grad_weight = torch.zeros_like(weight)
         grad_input, grad_weight, grad_bias = DWCONV_CUDA.conv_depthwise3d_backward_cuda(
             grad_output, grad_input, grad_weight,
@@ -53,7 +54,6 @@ class DepthwiseConv3dFunction(torch.autograd.Function):
 
 
 depthwise_conv3d = DepthwiseConv3dFunction.apply
-
 
 class DepthwiseConv3d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1,

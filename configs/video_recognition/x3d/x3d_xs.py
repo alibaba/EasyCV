@@ -126,7 +126,7 @@ lr_config = dict(
 checkpoint_config = dict(interval=5)
 
 # eval 
-eval_config = dict(initial=True, interval=1, gpu_collect=True)
+eval_config = dict(initial=False, interval=1, gpu_collect=True)
 eval_pipelines = [
     dict(
         mode='test',
