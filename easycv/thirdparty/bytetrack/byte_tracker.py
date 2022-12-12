@@ -6,35 +6,11 @@ import copy
 import torch
 import torch.nn.functional as F
 
-try:
-    from thirdparty.bytetrack.kalman_filter import KalmanFilter
-    from thirdparty.bytetrack.basetrack import BaseTrack, TrackState
-    from thirdparty.bytetrack import matching
-except:
-    from easycv.thirdparty.bytetrack.kalman_filter import KalmanFilter
-    from easycv.thirdparty.bytetrack.basetrack import BaseTrack, TrackState
-    from easycv.thirdparty.bytetrack import matching   
+from easycv.thirdparty.bytetrack.kalman_filter import KalmanFilter
+from easycv.thirdparty.bytetrack.basetrack import BaseTrack, TrackState
+from easycv.thirdparty.bytetrack import matching   
 
 from easycv.predictors.builder import build_predictor, PREDICTORS
-
-
-def post_process(bbox_xyxy, bbox_confidences, bbox_classes, target_label, threshold=None):
-    # post process to filter result
-    bbox_xyxy_tmp = []
-    bbox_confidences_tmp = []
-    bbox_classes_tmp = []
-    assert len(target_label)==len(threshold), "detection post process, class filter need target_label and threshold both, and should be same length!"
-
-    for bidx, bcls in enumerate(bbox_classes):
-        if bcls in target_label and bbox_confidences[bidx] > threshold[target_label.index(bcls)]:
-            bbox_xyxy_tmp.append(bbox_xyxy[bidx])
-            bbox_confidences_tmp.append(bbox_confidences[bidx])
-            bbox_classes_tmp.append(bbox_classes[bidx])
-    bbox_xyxy = np.array(bbox_xyxy_tmp)
-    bbox_confidences = np.array(bbox_confidences_tmp)
-    bbox_classes = np.array(bbox_classes_tmp)
-    return bbox_xyxy, bbox_confidences, bbox_classes
-
 
 
 class STrack(BaseTrack):
@@ -196,19 +172,12 @@ class BYTETracker(object):
         self.kalman_filter = KalmanFilter()
 
     
-    def update(self, bbox_xyxy, confidences, classes, target_label=None, target_threshold=None):
+    def update(self, bboxes, scores, classes):
         self.frame_id += 1
         activated_starcks = []
         refind_stracks = []
         lost_stracks = []
         removed_stracks = []
-
-        bboxes = bbox_xyxy
-        scores = confidences
-        classes = classes
-
-        if target_label is not None:
-            boxes, scores, classes = post_process(bboxes, confidences, classes, target_label=target_label, threshold=target_threshold)
 
         remain_inds = scores > self.track_thresh
         inds_low = scores > self.low_thresh
@@ -371,101 +340,3 @@ def remove_duplicate_stracks(stracksa, stracksb):
     resa = [t for i, t in enumerate(stracksa) if not i in dupa]
     resb = [t for i, t in enumerate(stracksb) if not i in dupb]
     return resa, resb
-
-
-if __name__ == "__main__":
-    import cv2
-    import random
-    from PIL import Image
-    import  argparse
-
-    colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(2000)]
-    def plot_one_box(x, img, color=None, label=None, line_thickness=None):
-        '''
-        yolo used plot 
-        :x : bboxes
-        :img: ploted image
-        :color: color 3
-        :label: label text
-        :return: None
-        '''
-        # Plots one bounding box on image img
-        tl = int(line_thickness or round(0.002 * (img.shape[0] + img.shape[1]) / 2)) + 1  # line/font thickness
-        # tl = int(line_thickness)
-        c1, c2 = (int(x[0]), int(x[1])), (int(x[2]), int(x[3]))
-        cv2.rectangle(img, c1, c2, color, thickness=tl, lineType=cv2.LINE_AA)
-        if label:
-            tf = max(tl - 1, 1)  # font thickness
-            t_size = cv2.getTextSize(label, 0, fontScale=tl / 10, thickness=tf)[0]
-            c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
-            cv2.rectangle(img, c1, c2, color, -1, cv2.LINE_AA)  # filled
-            cv2.putText(img, label, (c1[0], c1[1] - 2), 0, 0.5, [225, 255, 255], thickness=max(tf-10,2), lineType=cv2.LINE_AA)
-        return
-
-
-
-    parser = argparse.ArgumentParser('ev eas processor local runner')
-    parser.add_argument('--test_video', type=str, help='local model dir')
-    parser.add_argument('--det_model', type=str,  help='local model dir')
-
-
-    args = parser.parse_args()
-
-    # video_list : oss://pai-vision-data-inner/data/yuanqisenlin/poc_0917/video_data/正常拿取商品/
-    test_video = args.test_video
-    print("test video         : ", test_video)
-
-    #build tracker
-    
-    # custom application
-    # YoloDetector + FeatureExtractor
-    tracker = BYTETracker(
-        detection_model_path=args.det_model,
-        detection_model_type='TorchYolo5Predictor',
-        det_high_thresh=0.2,
-        det_low_thresh=0.05, 
-        match_thresh=1.0,
-        match_thresh_second=1.0, 
-        match_thresh_init=1.0,  
-        track_buffer=2, 
-        frame_rate=25)
-
-
-    # read input video
-    cap = cv2.VideoCapture(test_video)
-    img_list = []
-    ret = True
-    while(cap.isOpened() and ret):
-        ret, frame = cap.read()
-        if ret:
-            img_list.append(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
-
-    res = tracker.predict(img_list, target_label=[2], target_threshold=[0.1])
-    res_keys = list(res.keys())
-    res_keys = sorted(res_keys)
-    for idx in res_keys:
-        tracks = res[idx]
-        img = np.array(img_list[idx])
-        if len(tracks) > 0:
-            for t in tracks:
-                tid = t[-1]
-                box = t[:4]
-                box = [int(i) for i in box]
-                plot_one_box(box, img, color=colors[int(tid)], label=str(tid))
-        img_list[idx] = img
-
-    #write out video
-    if test_video[-4:] == '.avi':
-        fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-    if test_video[-4:] == '.mp4':
-        fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-    w, h = img_list[0].shape[1], img_list[0].shape[0]
-    print("video w, h         : ", w,h)
-    # output_video = test_video.replace(test_video[-4:], '_output'+test_video[-4:])
-    output_video = "test.mp4"
-    print("output video       : ", output_video)
-    videowriter = cv2.VideoWriter(output_video, fourcc, 15, (w, h))
-    for idx, img in enumerate(img_list):
-        img = np.asarray(img)
-        img = img[:,:,[2,1,0]]
-        videowriter.write(img)
