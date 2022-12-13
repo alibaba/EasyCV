@@ -334,7 +334,7 @@ class X3DTransform(nn.Module):
             padding=[int(self.temp_kernel_size // 2), dilation, dilation],
             dilation=[1, dilation, dilation],
             groups=num_groups,
-            # bias=False,
+            bias=False,
         )
         self.b_bn = norm_module(
             num_features=dim_inner, eps=self._eps, momentum=self._bn_mmt

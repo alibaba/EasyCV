@@ -19,8 +19,7 @@ model = dict(
         dropout_ratio=0.5,
         fc1_bias=False),
     test_cfg = dict(
-        average_clips='prob',
-        max_testing_views=4))
+        average_clips='prob'))
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_bgr=False)
@@ -64,10 +63,10 @@ test_pipeline = [
         type='SampleFrames',
         clip_len=4,
         frame_interval=12,
-        num_clips=4,
+        num_clips=10,
         test_mode=True),
     dict(type='DecordDecode'),
-    dict(type='VideoResize', scale=(-1, 228)),
+    dict(type='VideoResize', scale=(-1, 182)),
     dict(type='VideoThreeCrop', crop_size=182),
     dict(type='VideoFlip', flip_ratio=0),
     dict(type='VideoNormalize', **img_norm_cfg),
@@ -97,11 +96,11 @@ val_dataset = dict(
         data_root = data_root,
         split = ' ', 
         ),
-    pipeline=val_pipeline,
+    pipeline=test_pipeline,
 )
 
 data = dict(
-    imgs_per_gpu=64, workers_per_gpu=4, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=16, workers_per_gpu=4, train=train_dataset, val=val_dataset)
 
 # optimizer
 total_epochs = 300
@@ -126,7 +125,7 @@ lr_config = dict(
 checkpoint_config = dict(interval=5)
 
 # eval 
-eval_config = dict(initial=False, interval=1, gpu_collect=True)
+eval_config = dict(initial=False, interval=5, gpu_collect=True)
 eval_pipelines = [
     dict(
         mode='test',
@@ -137,7 +136,7 @@ eval_pipelines = [
 ]
 
 log_config = dict(
-    interval=1,
+    interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')

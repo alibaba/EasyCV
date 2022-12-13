@@ -387,8 +387,8 @@ Tensor conv_depthwise3d_cuda(
     TORCH_CHECK(input.device() == bias.device(), "expects input and bias tensors to be on the same device.");
   }
 
-  conv_depthwise_shape_check<3>(input, weight, bias, Tensor() /* undefined */,
-                                kernel_size, stride, padding, dilation);
+  // conv_depthwise_shape_check<3>(input, weight, bias, Tensor() /* undefined */,
+  //                               kernel_size, stride, padding, dilation);
 
   Tensor input_ = input.contiguous();
 

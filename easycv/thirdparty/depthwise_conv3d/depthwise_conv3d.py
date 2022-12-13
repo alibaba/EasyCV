@@ -49,7 +49,7 @@ class DepthwiseConv3dFunction(torch.autograd.Function):
             ctx.kernel_size,
             ctx.stride,
             ctx.padding,
-            ctx.dilation, (True, True, True))
+            ctx.dilation, (True, True, False))
         return grad_input, grad_weight, grad_bias, None, None, None, None, None, None
 
 
