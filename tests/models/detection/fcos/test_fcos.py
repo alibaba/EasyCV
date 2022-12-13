@@ -6,7 +6,8 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 
 from easycv.predictors.detector import DetectionPredictor
-from easycv.thirdparty.mot.bytetrack.byte_tracker import BYTETracker
+
+# from easycv.thirdparty.mot.bytetrack.byte_tracker import BYTETracker
 
 
 class FCOSTest(unittest.TestCase):
