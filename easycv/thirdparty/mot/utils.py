@@ -7,6 +7,50 @@ import seaborn as sns
 
 import mmcv
 
+def reid_predictor(detection_results, reid_model):
+    pred_dets = detection_results['boxes']  # cls_id, score, x0, y0, x1, y1
+    pred_xyxys = pred_dets[:, 2:6]
+
+    ori_image = detection_results['ori_image']
+    ori_image_shape = ori_image.shape[:2]
+    pred_xyxys, keep_idx = clip_box(pred_xyxys, ori_image_shape)
+
+    if len(keep_idx[0]) == 0:
+        return pred_embeddings
+
+    pred_dets = pred_dets[keep_idx[0]]
+    pred_xyxys = pred_dets[:, 2:6]
+
+    w, h = self.tracker.input_size
+    crops = get_crops(pred_xyxys, ori_image, w, h)
+
+    # to keep fast speed, only use topk crops
+    # crops = crops[:50]  # reid_batch_size
+
+    pred_embeddings = reid_model(crops)
+
+    return pred_embeddings
+
+def clip_box(xyxy, ori_image_shape):
+    H, W = ori_image_shape
+    xyxy[:, 0::2] = np.clip(xyxy[:, 0::2], a_min=0, a_max=W)
+    xyxy[:, 1::2] = np.clip(xyxy[:, 1::2], a_min=0, a_max=H)
+    w = xyxy[:, 2:3] - xyxy[:, 0:1]
+    h = xyxy[:, 3:4] - xyxy[:, 1:2]
+    mask = np.logical_and(h > 0, w > 0)
+    keep_idx = np.nonzero(mask)
+    return xyxy[keep_idx[0]], keep_idx
+
+def get_crops(xyxy, ori_img, w, h):
+    crops = []
+    xyxy = xyxy.astype(np.int64)
+    ori_img = ori_img.transpose(1, 0, 2)  # [h,w,3]->[w,h,3]
+    for i, bbox in enumerate(xyxy):
+        crop = ori_img[bbox[0]:bbox[2], bbox[1]:bbox[3], :]
+        crops.append(crop)
+    crops = preprocess_reid(crops, w, h)
+    return crops
+
 def detection_result_filter(bboxes, scores, classes, target_classes, target_thresholds=None):
     # post process to filter result
     bboxes_tmp = []
