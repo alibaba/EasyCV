@@ -98,7 +98,7 @@ def main():
             track_result = tracker.update(detection_boxes, detection_scores, detection_classes) # [id, t, l, b, r, score]
 
             pred_embeddings = reid_predictor({'boxes': track_result['track_bboxes'], 'img_metas': img_metas}, reid_model)
-            print(pred_embeddings)
+            print(len(pred_embeddings), pred_embeddings[0]['prob'])
 
         if args.output is not None:
             if IN_VIDEO or OUT_VIDEO:

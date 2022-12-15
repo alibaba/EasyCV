@@ -123,6 +123,7 @@ class ClassificationPredictor(PredictorV2):
                 for l_idx, l_name in enumerate(self.label_map):
                     result['class_probs'][l_name] = output_prob[i][l_idx]
 
+            result['prob'] = inputs['prob']
             batch_results.append(result)
         return batch_results
 
