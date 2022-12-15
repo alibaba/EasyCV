@@ -91,12 +91,14 @@ def main():
         detection_boxes = result['detection_boxes']
         detection_scores = result['detection_scores']
         detection_classes = result['detection_classes']
+        img_metas = result['img_metas']
 
         detection_boxes, detection_scores, detection_classes = detection_result_filter(detection_boxes, detection_scores, detection_classes, target_classes=[0], target_thresholds=[0])
         if len(detection_boxes) > 0:
             track_result = tracker.update(detection_boxes, detection_scores, detection_classes) # [id, t, l, b, r, score]
 
-            pred_embeddings = reid_predictor({'boxes': track_result['track_bboxes'], 'ori_image': img}, reid_model)
+            pred_embeddings = reid_predictor({'boxes': track_result['track_bboxes'], 'img_metas': img_metas}, reid_model)
+            print(pred_embeddings)
 
         if args.output is not None:
             if IN_VIDEO or OUT_VIDEO:

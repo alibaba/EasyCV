@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from .bevformer_predictor import BEVFormerPredictor
-from .classifier import TorchClassifier
+from .classifier import ClassificationPredictor, TorchClassifier
 from .detector import (DetectionPredictor, TorchFaceDetector,
                        TorchYoloXClassifierPredictor, TorchYoloXPredictor,
                        YoloXPredictor)
