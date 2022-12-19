@@ -113,7 +113,6 @@ class Adai(Optimizer):
                 
                 exp_avg.mul_(beta1).addcmul_(1 - beta1, grad)
                 exp_avg_hat = exp_avg / bias_correction1
-                
                 p.data.add_(exp_avg_hat, alpha=-group['lr'])
 
         return loss

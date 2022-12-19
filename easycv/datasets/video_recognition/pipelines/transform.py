@@ -1020,7 +1020,6 @@ class VideoRandomRescale:
                         interpolation=self.interpolation,
                         lazy=False)
         results = resize(results)
-        print(results['imgs'][0].shape)
         results['short_edge'] = short_edge
         return results
 

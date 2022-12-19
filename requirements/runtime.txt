@@ -26,3 +26,4 @@ timm==0.5.4
 wget
 xtcocotools
 yacs
+transformers
