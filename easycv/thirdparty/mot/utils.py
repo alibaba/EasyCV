@@ -3,6 +3,7 @@
 import os
 import sys
 import cv2
+from functools import reduce
 import numpy as np
 import random
 import re
@@ -11,6 +12,285 @@ import seaborn as sns
 import mmcv
 
 from torchvision.transforms import functional as F
+
+def get_color(idx):
+    idx = idx * 3
+    color = ((37 * idx) % 255, (17 * idx) % 255, (29 * idx) % 255)
+    return color
+
+def plot_tracking(image,
+                  tlwhs,
+                  obj_ids,
+                  scores=None,
+                  frame_id=0,
+                  fps=0.,
+                  ids2names=[],
+                  do_entrance_counting=False,
+                  entrance=None):
+    im = np.ascontiguousarray(np.copy(image))
+    im_h, im_w = im.shape[:2]
+
+    text_scale = max(0.5, image.shape[1] / 3000.)
+    text_thickness = 2
+    line_thickness = max(1, int(image.shape[1] / 500.))
+
+    cv2.putText(
+        im,
+        'frame: %d fps: %.2f num: %d' % (frame_id, fps, len(tlwhs)),
+        (0, int(15 * text_scale) + 5),
+        cv2.FONT_ITALIC,
+        text_scale, (0, 0, 255),
+        thickness=text_thickness)
+    for i, tlwh in enumerate(tlwhs):
+        x1, y1, w, h = tlwh
+        intbox = tuple(map(int, (x1, y1, x1 + w, y1 + h)))
+        obj_id = int(obj_ids[i])
+        id_text = 'ID: {}'.format(int(obj_id))
+        if ids2names != []:
+            assert len(
+                ids2names) == 1, "plot_tracking only supports single classes."
+            id_text = 'ID: {}_'.format(ids2names[0]) + id_text
+        _line_thickness = 1 if obj_id <= 0 else line_thickness
+        color = get_color(abs(obj_id))
+        cv2.rectangle(
+            im, intbox[0:2], intbox[2:4], color=color, thickness=line_thickness)
+        cv2.putText(
+            im,
+            id_text, (intbox[0], intbox[1] - 25),
+            cv2.FONT_ITALIC,
+            text_scale, (0, 255, 255),
+            thickness=text_thickness)
+
+        if scores is not None:
+            text = 'score: {:.2f}'.format(float(scores[i]))
+            cv2.putText(
+                im,
+                text, (intbox[0], intbox[1] - 6),
+                cv2.FONT_ITALIC,
+                text_scale, (0, 255, 0),
+                thickness=text_thickness)
+    if do_entrance_counting:
+        entrance_line = tuple(map(int, entrance))
+        cv2.rectangle(
+            im,
+            entrance_line[0:2],
+            entrance_line[2:4],
+            color=(0, 255, 255),
+            thickness=line_thickness)
+    return im
+
+def get_mtmct_matching_results(pred_mtmct_file, secs_interval=0.5,
+                               video_fps=20):
+    res = np.loadtxt(pred_mtmct_file)  # 'cid, tid, fid, x1, y1, w, h, -1, -1'
+    camera_ids = list(map(int, np.unique(res[:, 0])))
+
+    res = res[:, :7]
+    # each line in res: 'cid, tid, fid, x1, y1, w, h'
+
+    camera_tids = []
+    camera_results = dict()
+    for c_id in camera_ids:
+        camera_results[c_id] = res[res[:, 0] == c_id]
+        tids = np.unique(camera_results[c_id][:, 1])
+        tids = list(map(int, tids))
+        camera_tids.append(tids)
+
+    # select common tids throughout each video
+    common_tids = reduce(np.intersect1d, camera_tids)
+    if len(common_tids) == 0:
+        print(
+            'No common tracked ids in these videos, please check your MOT result or select new videos.'
+        )
+        return None, None
+
+    # get mtmct matching results by cid_tid_fid_results[c_id][t_id][f_id]
+    cid_tid_fid_results = dict()
+    cid_tid_to_fids = dict()
+    interval = int(secs_interval * video_fps)  # preferably less than 10
+    for c_id in camera_ids:
+        cid_tid_fid_results[c_id] = dict()
+        cid_tid_to_fids[c_id] = dict()
+        for t_id in common_tids:
+            tid_mask = camera_results[c_id][:, 1] == t_id
+            cid_tid_fid_results[c_id][t_id] = dict()
+
+            camera_trackid_results = camera_results[c_id][tid_mask]
+            fids = np.unique(camera_trackid_results[:, 2])
+            fids = fids[fids % interval == 0]
+            fids = list(map(int, fids))
+            cid_tid_to_fids[c_id][t_id] = fids
+
+            for f_id in fids:
+                st_frame = f_id
+                ed_frame = f_id + interval
+
+                st_mask = camera_trackid_results[:, 2] >= st_frame
+                ed_mask = camera_trackid_results[:, 2] < ed_frame
+                frame_mask = np.logical_and(st_mask, ed_mask)
+                cid_tid_fid_results[c_id][t_id][f_id] = camera_trackid_results[
+                    frame_mask]
+
+    return camera_results, cid_tid_fid_results
+
+
+def save_mtmct_crops(cid_tid_fid_res,
+                     images_dir,
+                     crops_dir,
+                     width=300,
+                     height=200):
+    camera_ids = cid_tid_fid_res.keys()
+    seqs_folder = os.listdir(images_dir)
+    seqs = []
+    for x in seqs_folder:
+        if os.path.isdir(os.path.join(images_dir, x)):
+            seqs.append(x)
+    assert len(seqs) == len(camera_ids)
+    seqs.sort()
+
+    if not os.path.exists(crops_dir):
+        os.makedirs(crops_dir)
+
+    common_tids = list(cid_tid_fid_res[list(camera_ids)[0]].keys())
+
+    # get crops by name 'tid_cid_fid.jpg
+    for t_id in common_tids:
+        for i, c_id in enumerate(camera_ids):
+            infer_dir = os.path.join(images_dir, seqs[i])
+            if os.path.exists(os.path.join(infer_dir, 'img1')):
+                infer_dir = os.path.join(infer_dir, 'img1')
+            all_images = os.listdir(infer_dir)
+            all_images.sort()
+
+            for f_id in cid_tid_fid_res[c_id][t_id].keys():
+                frame_idx = f_id - 1 if f_id > 0 else 0
+                im_path = os.path.join(infer_dir, all_images[frame_idx])
+
+                im = cv2.imread(im_path)  # (H, W, 3)
+
+                # only select one track
+                track = cid_tid_fid_res[c_id][t_id][f_id][0]
+
+                cid, tid, fid, x1, y1, w, h = [int(v) for v in track]
+                clip = im[y1:(y1 + h), x1:(x1 + w)]
+                clip = cv2.resize(clip, (width, height))
+
+                cv2.imwrite(
+                    os.path.join(crops_dir,
+                                 'tid{:06d}_cid{:06d}_fid{:06d}.jpg'.format(
+                                     tid, cid, fid)), clip)
+
+            print("Finish cropping image of tracked_id {} in camera: {}".format(
+                t_id, c_id))
+
+
+def save_mtmct_vis_results(camera_results,
+                           images_dir,
+                           save_dir,
+                           save_videos=False):
+    # camera_results: 'cid, tid, fid, x1, y1, w, h'
+    camera_ids = camera_results.keys()
+    seqs_folder = os.listdir(images_dir)
+    seqs = []
+    for x in seqs_folder:
+        if os.path.isdir(os.path.join(images_dir, x)):
+            seqs.append(x)
+    assert len(seqs) == len(camera_ids)
+    seqs.sort()
+
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    for i, c_id in enumerate(camera_ids):
+        print("Start visualization for camera {} of sequence {}.".format(
+            c_id, seqs[i]))
+        cid_save_dir = os.path.join(save_dir, '{}'.format(seqs[i]))
+        if not os.path.exists(cid_save_dir):
+            os.makedirs(cid_save_dir)
+
+        infer_dir = os.path.join(images_dir, seqs[i])
+        if os.path.exists(os.path.join(infer_dir, 'img1')):
+            infer_dir = os.path.join(infer_dir, 'img1')
+        all_images = os.listdir(infer_dir)
+        all_images.sort()
+
+        for f_id, im_path in enumerate(all_images):
+            img = cv2.imread(os.path.join(infer_dir, im_path))
+            tracks = camera_results[c_id][camera_results[c_id][:, 2] == f_id]
+            if tracks.shape[0] > 0:
+                tracked_ids = tracks[:, 1]
+                xywhs = tracks[:, 3:]
+                online_im = plot_tracking(
+                    img, xywhs, tracked_ids, scores=None, frame_id=f_id)
+            else:
+                online_im = img
+                print('Frame {} of seq {} has no tracking results'.format(
+                    f_id, seqs[i]))
+
+            cv2.imwrite(
+                os.path.join(cid_save_dir, '{:05d}.jpg'.format(f_id)),
+                online_im)
+            if f_id % 40 == 0:
+                print('Processing frame {}'.format(f_id))
+
+        if save_videos:
+            output_video_path = os.path.join(cid_save_dir, '..',
+                                             '{}_mtmct_vis.mp4'.format(seqs[i]))
+            cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
+                cid_save_dir, output_video_path)
+            os.system(cmd_str)
+            print('Save camera {} video in {}.'.format(seqs[i],
+                                                       output_video_path))
+
+def parse_pt_gt(mot_feature):
+    img_rects = dict()
+    for line in mot_feature:
+        fid = int(re.sub('[a-z,A-Z]', "", mot_feature[line]['frame']))
+        tid = mot_feature[line]['id']
+        rect = list(map(lambda x: int(float(x)), mot_feature[line]['bbox']))
+        if fid not in img_rects:
+            img_rects[fid] = list()
+        rect.insert(0, tid)
+        img_rects[fid].append(rect)
+    return img_rects
+
+def gen_res(output_dir_filename,
+            scene_cluster,
+            map_tid,
+            mot_list_breaks):
+    f_w = open(output_dir_filename, 'w')
+    for idx, mot_feature in enumerate(mot_list_breaks):
+        cid = scene_cluster[idx]
+        img_rects = parse_pt_gt(mot_feature)
+
+        for fid in img_rects:
+            tid_rects = img_rects[fid]
+            fid = int(fid) + 1
+            for tid_rect in tid_rects:
+                tid = tid_rect[0]
+                rect = tid_rect[1:]
+                cx = 0.5 * rect[0] + 0.5 * rect[2]
+                cy = 0.5 * rect[1] + 0.5 * rect[3]
+                w = rect[2] - rect[0]
+                w = min(w * 1.2, w + 40)
+                h = rect[3] - rect[1]
+                h = min(h * 1.2, h + 40)
+                rect[2] -= rect[0]
+                rect[3] -= rect[1]
+                rect[0] = max(0, rect[0])
+                rect[1] = max(0, rect[1])
+                x1, y1 = max(0, cx - 0.5 * w), max(0, cy - 0.5 * h)
+                x2, y2 = cx + 0.5 * w, cy + 0.5 * h
+                w, h = x2 - x1, y2 - y1
+                new_rect = list(map(int, [x1, y1, w, h]))
+                rect = list(map(int, rect))
+                if (cid, tid) in map_tid:
+                    new_tid = map_tid[(cid, tid)]
+                    f_w.write(
+                        str(cid) + ' ' + str(new_tid) + ' ' + str(fid) + ' ' +
+                        ' '.join(map(str, new_rect)) + ' -1 -1'
+                        '\n')
+    print('gen_res: write file in {}'.format(output_dir_filename))
+    f_w.close()
 
 def get_match(cluster_labels):
     cluster_dict = dict()

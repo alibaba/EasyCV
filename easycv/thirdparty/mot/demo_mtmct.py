@@ -11,7 +11,7 @@ import mmcv
 
 from easycv.predictors import DetectionPredictor, ClassificationPredictor
 from easycv.thirdparty.mot.bytetrack.byte_tracker import BYTETracker
-from easycv.thirdparty.mot.utils import detection_result_filter, show_result, reid_predictor, parse_bias, trajectory_fusion, video2frames, _is_valid_video, sub_cluster
+from easycv.thirdparty.mot.utils import detection_result_filter, show_result, reid_predictor, parse_bias, trajectory_fusion, video2frames, _is_valid_video, sub_cluster, gen_res, get_mtmct_matching_results, save_mtmct_crops, save_mtmct_vis_results
 
 def main():
     parser = ArgumentParser()
@@ -33,6 +33,10 @@ def main():
         '--show',
         action='store_true',
         help='whether show the results on the fly')
+    parser.add_argument(
+        '--save_images',
+        action='store_true',
+        help='Save visualization image results.')
     parser.add_argument('--fps', help='FPS of the output video')
     args = parser.parse_args()
     assert args.output or args.show
@@ -153,28 +157,27 @@ def main():
         use_ff=False,
         use_rerank=False,
         use_st_filter=False)
-    print(map_tid)
-    exit()
 
-    if args.output is not None:
-        if IN_VIDEO or OUT_VIDEO:
-            out_file = osp.join(out_path, f'{frame_id:06d}.jpg')
-        else:
-            out_file = osp.join(out_path, img.rsplit(os.sep, 1)[-1])
-    else:
-        out_file = None
+    pred_mtmct_file = os.path.join(args.output, 'mtmct_result.txt')
+    gen_res(
+        pred_mtmct_file,
+        scene_cluster,
+        map_tid,
+        mot_list_breaks)
 
-    show_result(img, track_result,
-        score_thr=args.score_thr,
-        show=args.show,
-        wait_time=int(1000. / fps) if fps else 0,
-        out_file=out_file)
-    prog_bar.update()
+    camera_results, cid_tid_fid_res = get_mtmct_matching_results(
+        pred_mtmct_file)
 
-    if args.output and OUT_VIDEO:
-        print(f'making the output video at {args.output} with a FPS of {fps}')
-        mmcv.frames2video(out_path, args.output, fps=fps, fourcc='mp4v')
-        out_dir.cleanup()
+    crops_dir = os.path.join(args.output, 'mtmct_crops')
+    save_mtmct_crops(
+        cid_tid_fid_res, images_dir=args.input, crops_dir=crops_dir)
+
+    save_dir = os.path.join(args.output, 'mtmct_vis')
+    save_mtmct_vis_results(
+        camera_results,
+        images_dir=args.input,
+        save_dir=save_dir,
+        save_videos=args.save_images)
 
 
 if __name__ == '__main__':
