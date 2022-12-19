@@ -1,13 +1,248 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import os
+import sys
 import cv2
 import numpy as np
 import random
+import re
 import seaborn as sns
 
 import mmcv
 
 from torchvision.transforms import functional as F
+
+def get_match(cluster_labels):
+    cluster_dict = dict()
+    cluster = list()
+    for i, l in enumerate(cluster_labels):
+        if l in list(cluster_dict.keys()):
+            cluster_dict[l].append(i)
+        else:
+            cluster_dict[l] = [i]
+    for idx in cluster_dict:
+        cluster.append(cluster_dict[idx])
+    return cluster
+
+def combin_feature(cid_tid_dict, sub_cluster):
+    for sub_ct in sub_cluster:
+        if len(sub_ct) < 2: continue
+        mean_feat = np.array([cid_tid_dict[i]['mean_feat'] for i in sub_ct])
+        for i in sub_ct:
+            cid_tid_dict[i]['mean_feat'] = mean_feat.mean(axis=0)
+    return cid_tid_dict
+
+def get_cid_tid(cluster_labels, cid_tids):
+    cluster = list()
+    for labels in cluster_labels:
+        cid_tid_list = list()
+        for label in labels:
+            cid_tid_list.append(cid_tids[label])
+        cluster.append(cid_tid_list)
+    return cluster
+
+def get_sim_matrix(cid_tid_dict,
+                   cid_tids,
+                   use_ff=True,
+                   use_rerank=True,
+                   use_st_filter=False):
+    # Note: camera independent get_sim_matrix function,
+    # which is different from the one in camera_utils.py.
+    count = len(cid_tids)
+
+    q_arr = np.array(
+        [cid_tid_dict[cid_tids[i]]['mean_feat'] for i in range(count)])
+    g_arr = np.array(
+        [cid_tid_dict[cid_tids[i]]['mean_feat'] for i in range(count)])
+    q_arr = normalize(q_arr, axis=1)
+    g_arr = normalize(g_arr, axis=1)
+
+    st_mask = np.ones((count, count), dtype=np.float32)
+    st_mask = intracam_ignore(st_mask, cid_tids)
+
+    visual_sim_matrix = visual_rerank(
+        q_arr, g_arr, cid_tids, use_ff=use_ff, use_rerank=use_rerank)
+    visual_sim_matrix = visual_sim_matrix.astype('float32')
+
+    np.set_printoptions(precision=3)
+    sim_matrix = visual_sim_matrix * st_mask
+
+    np.fill_diagonal(sim_matrix, 0)
+    return sim_matrix
+
+def get_labels(cid_tid_dict,
+               cid_tids,
+               use_ff=True,
+               use_rerank=True,
+               use_st_filter=False):
+    try:
+        from sklearn.cluster import AgglomerativeClustering
+    except Exception as e:
+        raise RuntimeError(
+            'Unable to use sklearn in MTMCT in PP-Tracking, please install sklearn, for example: `pip install sklearn`'
+        )
+    # 1st cluster
+    sim_matrix = get_sim_matrix(
+        cid_tid_dict,
+        cid_tids,
+        use_ff=use_ff,
+        use_rerank=use_rerank,
+        use_st_filter=use_st_filter)
+    cluster_labels = AgglomerativeClustering(
+        n_clusters=None,
+        distance_threshold=0.5,
+        affinity='precomputed',
+        linkage='complete').fit_predict(1 - sim_matrix)
+    labels = get_match(cluster_labels)
+    sub_cluster = get_cid_tid(labels, cid_tids)
+
+    # 2nd cluster
+    cid_tid_dict_new = combin_feature(cid_tid_dict, sub_cluster)
+    sim_matrix = get_sim_matrix(
+        cid_tid_dict_new,
+        cid_tids,
+        use_ff=use_ff,
+        use_rerank=use_rerank,
+        use_st_filter=use_st_filter)
+    cluster_labels = AgglomerativeClustering(
+        n_clusters=None,
+        distance_threshold=0.9,
+        affinity='precomputed',
+        linkage='complete').fit_predict(1 - sim_matrix)
+    labels = get_match(cluster_labels)
+    sub_cluster = get_cid_tid(labels, cid_tids)
+
+    return labels
+
+def sub_cluster(cid_tid_dict,
+                scene_cluster,
+                use_ff=False,
+                use_rerank=False,
+                use_st_filter=False):
+    '''
+    cid_tid_dict: all camera_id and track_id
+    scene_cluster: like [41, 42, 43, 44, 45, 46] in AIC21 MTMCT S06 test videos
+    '''
+    assert (len(scene_cluster) != 0), "Error: scene_cluster length equals 0"
+    cid_tids = sorted(
+        [key for key in cid_tid_dict.keys() if key[0] in scene_cluster])
+    clu = get_labels(
+        cid_tid_dict,
+        cid_tids,
+        use_ff=use_ff,
+        use_rerank=use_rerank,
+        use_st_filter=use_st_filter)
+    new_clu = list()
+    for c_list in clu:
+        if len(c_list) <= 1: continue
+        cam_list = [cid_tids[c][0] for c in c_list]
+        if len(cam_list) != len(set(cam_list)): continue
+        new_clu.append([cid_tids[c] for c in c_list])
+    all_clu = new_clu
+    cid_tid_label = dict()
+    for i, c_list in enumerate(all_clu):
+        for c in c_list:
+            cid_tid_label[c] = i + 1
+    return cid_tid_label
+
+def _is_valid_video(f, extensions=('.mp4', '.avi', '.mov', '.rmvb', '.flv')):
+    return f.lower().endswith(extensions)
+
+def video2frames(video_path, outpath, frame_rate=25, **kargs):
+    def _dict2str(kargs):
+        cmd_str = ''
+        for k, v in kargs.items():
+            cmd_str += (' ' + str(k) + ' ' + str(v))
+        return cmd_str
+
+    ffmpeg = ['ffmpeg ', ' -y -loglevel ', ' error ']
+    vid_name = os.path.basename(video_path).split('.')[0]
+    out_full_path = os.path.join(outpath, vid_name)
+
+    if not os.path.exists(out_full_path):
+        os.makedirs(out_full_path)
+
+    # video file name
+    outformat = os.path.join(out_full_path, '%05d.jpg')
+
+    cmd = ffmpeg
+    cmd = ffmpeg + [
+        ' -i ', video_path, ' -r ', str(frame_rate), ' -f image2 ', outformat
+    ]
+    cmd = ''.join(cmd) + _dict2str(kargs)
+
+    if os.system(cmd) != 0:
+        raise RuntimeError('ffmpeg process video: {} error'.format(video_path))
+        sys.exit(-1)
+
+    sys.stdout.flush()
+    return out_full_path
+
+def parse_bias(cameras_bias):
+    cid_bias = dict()
+    for cameras in cameras_bias.keys():
+        cameras_id = re.sub('[a-z,A-Z]', "", cameras)
+        cameras_id = int(cameras_id)
+        bias = cameras_bias[cameras]
+        cid_bias[cameras_id] = float(bias)
+    return cid_bias
+
+def parse_pt(mot_feature):
+    mot_list = dict()
+    for line in mot_feature:
+        fid = int(re.sub('[a-z,A-Z]', "", mot_feature[line]['frame']))
+        tid = mot_feature[line]['id']
+        bbox = list(map(lambda x: int(float(x)), mot_feature[line]['bbox']))
+        if tid not in mot_list:
+            mot_list[tid] = dict()
+        out_dict = mot_feature[line]
+        mot_list[tid][fid] = out_dict
+    return mot_list
+
+def gen_new_mot(mot_list):
+    out_dict = dict()
+    for tracklet in mot_list:
+        tracklet = mot_list[tracklet]
+        for f in tracklet:
+            out_dict[tracklet[f]['imgname']] = tracklet[f]
+    return out_dict
+
+def trajectory_fusion(mot_feature, cid, cid_bias):
+    cur_bias = cid_bias[cid]
+    mot_list_break = {}
+
+    mot_list = parse_pt(mot_feature)
+
+    mot_list_break = gen_new_mot(mot_list)  # save break feature for gen result
+
+    tid_data = dict()
+    for tid in mot_list:
+        tracklet = mot_list[tid]
+        if len(tracklet) <= 1:
+            continue
+        frame_list = list(tracklet.keys())
+        frame_list.sort()
+        feature_list = [
+            tracklet[f]['feat'] for f in frame_list
+            if (tracklet[f]['bbox'][3] - tracklet[f]['bbox'][1]) *
+            (tracklet[f]['bbox'][2] - tracklet[f]['bbox'][0]) > 2000
+        ]
+        if len(feature_list) < 2:
+            feature_list = [tracklet[f]['feat'] for f in frame_list]
+        io_time = [
+            cur_bias + frame_list[0] / 10., cur_bias + frame_list[-1] / 10.
+        ]
+        all_feat = np.array([feat for feat in feature_list])
+        mean_feat = np.mean(all_feat, axis=0)
+        tid_data[tid] = {
+            'cam': cid,
+            'tid': tid,
+            'mean_feat': mean_feat,
+            'frame_list': frame_list,
+            'tracklet': tracklet,
+            'io_time': io_time
+        }
+    return tid_data, mot_list_break
 
 def reid_predictor(detection_results, reid_model):
     img_metas = detection_results['img_metas']
