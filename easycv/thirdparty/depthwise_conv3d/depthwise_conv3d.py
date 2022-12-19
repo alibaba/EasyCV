@@ -6,7 +6,7 @@ from torch import nn
 from torch.cuda.amp import custom_bwd, custom_fwd
 from torch.nn.modules.utils import _triple
 from mmcv.runner import force_fp32
-
+from fvcore.nn.weight_init import c2_msra_fill
 
 class DepthwiseConv3dFunction(torch.autograd.Function):
     @staticmethod
@@ -85,13 +85,14 @@ class DepthwiseConv3d(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        n = self.in_channels
-        for k in self.kernel_size:
-            n *= k
-        stdv = 1. / math.sqrt(n)
-        self.weight.data.uniform_(-stdv, stdv)
-        if self.with_bias:
-            self.bias.data.fill_(0)
+        c2_msra_fill(self)
+        # n = self.in_channels
+        # for k in self.kernel_size:
+        #     n *= k
+        # stdv = 1. / math.sqrt(n)
+        # self.weight.data.uniform_(-stdv, stdv)
+        # if self.with_bias:
+        #     self.bias.data.fill_(0)
     def forward(self, x):
         return depthwise_conv3d(x, self.weight, self.bias, self.stride, self.padding, self.dilation,
                                 self.groups, )

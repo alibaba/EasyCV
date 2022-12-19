@@ -145,6 +145,7 @@ class X3DHead(nn.Module):
         x = self.conv_5(inputs)
         x = self.conv_5_bn(x)
         x = self.conv_5_relu(x)
+ 
         x = self.avg_pool(x)
 
         x = self.lin_5(x)
@@ -158,6 +159,7 @@ class X3DHead(nn.Module):
         if hasattr(self, "dropout"):
             x = self.dropout(x)
         x = self.projection(x)
+
         # Performs fully convlutional inference.
         if not self.training:
             x = self.act(x)
@@ -336,9 +338,8 @@ class X3D(nn.Module):
             )
             dim_in = dim_out
             self.add_module(prefix, s)
-
         # spat_sz = int(math.ceil(self.train_crop_size / 32.0))
-
+        
         # if isinstance(self.num_classes, list):
         #     for idx,num_classes in enumerate(self.num_classes):
         #         prefix = "h{}".format(idx)

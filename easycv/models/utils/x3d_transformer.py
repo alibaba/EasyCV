@@ -314,28 +314,28 @@ class X3DTransform(nn.Module):
         self.a_relu = nn.ReLU(inplace=self._inplace_relu)
 
         # Tx3x3, BN, ReLU.
-        # self.b = nn.Conv3d(
-        #     dim_inner,
-        #     dim_inner,
-        #     [self.temp_kernel_size, 3, 3],
-        #     stride=[1, str3x3, str3x3],
-        #     padding=[int(self.temp_kernel_size // 2), dilation, dilation],
-        #     groups=num_groups,
-        #     bias=False,
-        #     dilation=[1, dilation, dilation],
-        # )
-        
-        from easycv.thirdparty.depthwise_conv3d.depthwise_conv3d import DepthwiseConv3d
-        self.b = DepthwiseConv3d(
+        self.b = nn.Conv3d(
             dim_inner,
             dim_inner,
             [self.temp_kernel_size, 3, 3],
             stride=[1, str3x3, str3x3],
             padding=[int(self.temp_kernel_size // 2), dilation, dilation],
-            dilation=[1, dilation, dilation],
             groups=num_groups,
             bias=False,
+            dilation=[1, dilation, dilation],
         )
+        
+        # from easycv.thirdparty.depthwise_conv3d.depthwise_conv3d import DepthwiseConv3d
+        # self.b = DepthwiseConv3d(
+        #     dim_inner,
+        #     dim_inner,
+        #     [self.temp_kernel_size, 3, 3],
+        #     stride=[1, str3x3, str3x3],
+        #     padding=[int(self.temp_kernel_size // 2), dilation, dilation],
+        #     dilation=[1, dilation, dilation],
+        #     groups=num_groups,
+        #     bias=False,
+        # )
         self.b_bn = norm_module(
             num_features=dim_inner, eps=self._eps, momentum=self._bn_mmt
         )

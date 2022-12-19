@@ -972,7 +972,6 @@ class VideoResize:
                 assert results['proposals'].shape[1] == 4
                 results['proposals'] = self._box_resize(
                     results['proposals'], self.scale_factor)
-
         return results
 
     def __repr__(self):
@@ -1021,7 +1020,7 @@ class VideoRandomRescale:
                         interpolation=self.interpolation,
                         lazy=False)
         results = resize(results)
-
+        print(results['imgs'][0].shape)
         results['short_edge'] = short_edge
         return results
 
