@@ -37,6 +37,8 @@ def main():
     args = parser.parse_args()
     assert args.output or args.show
 
+    cid_bias = parse_bias({'c003': 0, 'c004': 0})
+    scene_cluster = list(cid_bias.keys())
     mot_list_breaks = []
     cid_tid_dict = dict()
     # load images
@@ -105,6 +107,8 @@ def main():
         track_result = None
         mot_features_dict = dict()
         for frame_id, img in enumerate(imgs):
+            if frame_id == 5:
+                break
             result = det_model(img)[0]
 
             detection_boxes = result['detection_boxes']
@@ -116,24 +120,21 @@ def main():
             if len(detection_boxes) > 0:
                 track_result = tracker.update(detection_boxes, detection_scores, detection_classes) # [id, t, l, b, r, score]
 
-                pred_embeddings = reid_predictor({'boxes': track_result['track_bboxes'], 'img_metas': img_metas}, reid_model)
+                pred_embeddings, track_bboxes  = reid_predictor({'boxes': track_result['track_bboxes'], 'img_metas': img_metas}, reid_model)
 
-                print(len(track_result['track_bboxes']), len(pred_embeddings))
 
-                for idx in range(len(track_result['track_bboxes'])):
-                    _id = int(track_result['track_bboxes'][idx, 0])
+                for idx in range(len(track_bboxes)):
+                    _id = int(track_bboxes[idx, 0])
                     imgname = f'{seq}_{_id}_{frame_id}.jpg'
 
                     mot_features_dict[imgname] = dict()
-                    mot_features_dict[imgname]['bbox'] = track_result['track_bboxes'][idx, 1:5]
+                    mot_features_dict[imgname]['bbox'] = track_bboxes[idx, 1:5]
                     mot_features_dict[imgname]['frame'] = f"{frame_id:06d}"
                     mot_features_dict[imgname]['id'] = _id
                     mot_features_dict[imgname]['imgname'] = imgname
                     mot_features_dict[imgname]['feat'] = pred_embeddings[idx]['prob'].squeeze().numpy()
 
         cid = int(re.sub('[a-z,A-Z]', "", seq))
-        cid_bias = parse_bias({'c003': 0, 'c004': 0})
-        
         tid_data, mot_list_break = trajectory_fusion(
             mot_features_dict,
             cid,
@@ -145,7 +146,7 @@ def main():
             tid = tracklet['tid']
             if (cid, tid) not in cid_tid_dict:
                 cid_tid_dict[(cid, tid)] = tracklet
-            
+
     map_tid = sub_cluster(
         cid_tid_dict,
         scene_cluster,

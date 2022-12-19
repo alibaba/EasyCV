@@ -41,6 +41,50 @@ def get_cid_tid(cluster_labels, cid_tids):
         cluster.append(cid_tid_list)
     return cluster
 
+def normalize(nparray, axis=0):
+    try:
+        from sklearn import preprocessing
+    except Exception as e:
+        raise RuntimeError(
+            'Unable to use sklearn in MTMCT in PP-Tracking, please install sklearn, for example: `pip install sklearn`'
+        )
+    nparray = preprocessing.normalize(nparray, norm='l2', axis=axis)
+    return nparray
+
+def intracam_ignore(st_mask, cid_tids):
+    count = len(cid_tids)
+    for i in range(count):
+        for j in range(count):
+            if cid_tids[i][0] == cid_tids[j][0]:
+                st_mask[i, j] = 0.
+    return st_mask
+
+def visual_rerank(prb_feats,
+                  gal_feats,
+                  cid_tids,
+                  use_ff=False,
+                  use_rerank=False):
+    """Rerank by visual cures."""
+    gal_labels = np.array([[0, item[0]] for item in cid_tids])
+    prb_labels = gal_labels.copy()
+    # if use_ff:
+    #     print('current use ff finetuned parameters....')
+    #     # Step1-1: fic. finetuned parameters: [la]
+    #     prb_feats, gal_feats = run_fic(prb_feats, gal_feats, prb_labels,
+    #                                    gal_labels, 3.0)
+    #     # Step1=2: fac. finetuned parameters: [beta,knn,lr,prb_epoch,gal_epoch]
+    #     prb_feats, gal_feats = run_fac(prb_feats, gal_feats, prb_labels,
+    #                                    gal_labels, 0.08, 20, 0.5, 1, 1)
+    # if use_rerank:
+    #     print('current use rerank finetuned parameters....')
+    #     # Step2: k-reciprocal. finetuned parameters: [k1,k2,lambda_value]
+    #     sims = ReRank2(prb_feats, gal_feats, 20, 3, 0.3)
+    # else:
+    sims = 1.0 - np.dot(prb_feats, gal_feats.T)
+
+    # NOTE: sims here is actually dist, the smaller the more similar
+    return 1.0 - sims
+
 def get_sim_matrix(cid_tid_dict,
                    cid_tids,
                    use_ff=True,
@@ -246,8 +290,8 @@ def trajectory_fusion(mot_feature, cid, cid_bias):
 
 def reid_predictor(detection_results, reid_model):
     img_metas = detection_results['img_metas']
-    pred_dets = detection_results['boxes']  # id, x0, y0, x1, y1, score
-    pred_xyxys = pred_dets[:, 1:5]
+    detection_boxes = detection_results['boxes']  # id, x0, y0, x1, y1, score
+    pred_xyxys = detection_boxes[:, 1:5]
 
     ori_img_shape = img_metas['ori_img_shape'][:2]
     pred_xyxys, keep_idx = clip_box(pred_xyxys, ori_img_shape)
@@ -255,8 +299,8 @@ def reid_predictor(detection_results, reid_model):
     if len(keep_idx[0]) == 0:
         return None
 
-    pred_dets = pred_dets[keep_idx[0]]
-    pred_xyxys = pred_dets[:, 1:5]
+    detection_boxes = detection_boxes[keep_idx[0]]
+    pred_xyxys = detection_boxes[:, 1:5]
 
     filename = img_metas['filename']
     w, h = img_metas['batch_input_shape']
@@ -265,7 +309,7 @@ def reid_predictor(detection_results, reid_model):
 
     pred_embeddings = reid_model(batch_crop_imgs)
 
-    return pred_embeddings
+    return pred_embeddings, detection_boxes
 
 def decode_image(im_file):
     """read rgb image
