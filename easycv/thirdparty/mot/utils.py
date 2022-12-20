@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Copyright (c) Alibaba, Inc. and its affiliates.
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 import os
 import sys
 import cv2
