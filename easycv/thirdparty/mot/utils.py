@@ -347,19 +347,6 @@ def visual_rerank(prb_feats,
     """Rerank by visual cures."""
     gal_labels = np.array([[0, item[0]] for item in cid_tids])
     prb_labels = gal_labels.copy()
-    # if use_ff:
-    #     print('current use ff finetuned parameters....')
-    #     # Step1-1: fic. finetuned parameters: [la]
-    #     prb_feats, gal_feats = run_fic(prb_feats, gal_feats, prb_labels,
-    #                                    gal_labels, 3.0)
-    #     # Step1=2: fac. finetuned parameters: [beta,knn,lr,prb_epoch,gal_epoch]
-    #     prb_feats, gal_feats = run_fac(prb_feats, gal_feats, prb_labels,
-    #                                    gal_labels, 0.08, 20, 0.5, 1, 1)
-    # if use_rerank:
-    #     print('current use rerank finetuned parameters....')
-    #     # Step2: k-reciprocal. finetuned parameters: [k1,k2,lambda_value]
-    #     sims = ReRank2(prb_feats, gal_feats, 20, 3, 0.3)
-    # else:
     sims = 1.0 - np.dot(prb_feats, gal_feats.T)
 
     # NOTE: sims here is actually dist, the smaller the more similar

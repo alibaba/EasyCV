@@ -111,8 +111,7 @@ def main():
         track_result = None
         mot_features_dict = dict()
         for frame_id, img in enumerate(imgs):
-            if frame_id == 5:
-                break
+
             result = det_model(img)[0]
 
             detection_boxes = result['detection_boxes']
@@ -166,7 +165,7 @@ def main():
         mot_list_breaks)
 
     camera_results, cid_tid_fid_res = get_mtmct_matching_results(
-        pred_mtmct_file)
+        pred_mtmct_file, secs_interval=0.5, video_fps=20)
 
     crops_dir = os.path.join(args.output, 'mtmct_crops')
     save_mtmct_crops(
