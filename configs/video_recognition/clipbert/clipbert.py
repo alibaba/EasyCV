@@ -91,7 +91,7 @@ val_pipeline = [
     dict(type='TextTokenizer'),
     dict(type='FormatShape', input_format='NCTHW'),
     dict(type='Collect', keys=['imgs', 'label','text_input_ids','text_input_mask'], meta_keys=[]),
-    dict(type='VideoToTensor', keys=['imgs'])
+    dict(type='VideoToTensor', keys=['imgs','label'])
 ]
 
 data_root = '/home/yanhaiqiang.yhq/easycv_nfs/easymm/'
@@ -99,7 +99,7 @@ train_dataset = dict(
     type = 'VideoDataset',
     data_source = dict(
         type='VideoTextDatasource',
-        ann_file = data_root+'douyin_video_224/video_text_pair_rec_val.txt',
+        ann_file = data_root+'douyin_video_224/video_text_pair_rec_train.txt',
         data_root = data_root+'douyin_video/',
         ),
     pipeline=train_pipeline,
@@ -116,7 +116,7 @@ val_dataset = dict(
 )
 
 data = dict(
-    imgs_per_gpu=1, workers_per_gpu=4, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=2, workers_per_gpu=4, train=train_dataset, val=val_dataset)
 
 
 total_epochs = 30
@@ -140,7 +140,7 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 
 # eval 
-eval_config = dict(initial=True, interval=1, gpu_collect=True)
+eval_config = dict(initial=False, interval=1, gpu_collect=True)
 eval_pipelines = [
     dict(
         mode='test',

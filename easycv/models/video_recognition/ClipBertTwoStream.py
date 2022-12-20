@@ -30,20 +30,20 @@ def load_state_dict_with_mismatch(model, loaded_state_dict_or_path):
                 mismatched_shape_keys.append(k)
             else:
                 toload[k] = loaded_state_dict[k_rename]
-    import logging
-    _LOG_FMT = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s'
-    _DATE_FMT = '%m/%d/%Y %H:%M:%S'
-    logging.basicConfig(format=_LOG_FMT, datefmt=_DATE_FMT, level=logging.INFO)
-    LOGGER = logging.getLogger('__main__')  # this is the global logger
-    LOGGER.info("You can ignore the keys with `num_batches_tracked` or from task heads")
-    LOGGER.info("Keys in loaded but not in model:")
-    diff_keys = load_keys.difference(model_keys)
-    LOGGER.info(f"In total {len(diff_keys)}, {sorted(diff_keys)}")
-    LOGGER.info("Keys in model but not in loaded:")
-    diff_keys = model_keys.difference(load_keys)
-    LOGGER.info(f"In total {len(diff_keys)}, {sorted(diff_keys)}")
-    LOGGER.info("Keys in model and loaded, but shape mismatched:")
-    LOGGER.info(f"In total {len(mismatched_shape_keys)}, {sorted(mismatched_shape_keys)}")
+    # import logging
+    # _LOG_FMT = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s'
+    # _DATE_FMT = '%m/%d/%Y %H:%M:%S'
+    # logging.basicConfig(format=_LOG_FMT, datefmt=_DATE_FMT, level=logging.INFO)
+    # LOGGER = logging.getLogger('__main__')  # this is the global logger
+    # LOGGER.info("You can ignore the keys with `num_batches_tracked` or from task heads")
+    # LOGGER.info("Keys in loaded but not in model:")
+    # diff_keys = load_keys.difference(model_keys)
+    # LOGGER.info(f"In total {len(diff_keys)}, {sorted(diff_keys)}")
+    # LOGGER.info("Keys in model but not in loaded:")
+    # diff_keys = model_keys.difference(load_keys)
+    # LOGGER.info(f"In total {len(diff_keys)}, {sorted(diff_keys)}")
+    # LOGGER.info("Keys in model and loaded, but shape mismatched:")
+    # LOGGER.info(f"In total {len(mismatched_shape_keys)}, {sorted(mismatched_shape_keys)}")
     model.load_state_dict(toload, strict=False)
 
 
@@ -88,6 +88,7 @@ class ClipBertTwoStream(BaseModel):
         imgs = imgs.reshape((-1, ) + imgs.shape[2:])
         visual_feature = self.vision(imgs)
         visual_feature = rearrange(visual_feature, 'n c d h w -> n d h w c')
+        # visual_feature = torch.mean(visual_feature,1,True)
         logits = self.text(
             text_input_ids = text_input_ids,
             visual_inputs = visual_feature,
@@ -99,13 +100,12 @@ class ClipBertTwoStream(BaseModel):
     def forward_train(self, imgs, text_input_ids, text_input_mask, label, **kwargs):
         """Defines the computation performed at every call when training."""
         losses = dict()
-
         cls_score = self.extract_feat(imgs, text_input_ids, text_input_mask)
 
 
-        gt_labels = label.squeeze()
+        gt_labels = torch.flatten(label)
         loss_cls = self.loss_cls(cls_score, gt_labels)
-        losses.update(loss_cls)
+        losses['loss_cls'] = loss_cls
 
         return losses
 
