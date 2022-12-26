@@ -23,7 +23,7 @@ sklearn
 tensorboard
 thop
 timm==0.5.4
+transformers
 wget
 xtcocotools
 yacs
-transformers

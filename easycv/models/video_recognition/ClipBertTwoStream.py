@@ -1,12 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import torch
-from torch import nn
 import torch.nn.functional as F
+from einops import rearrange
+from torch import nn
 
 from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
-from einops import rearrange
 
 
 def load_state_dict_with_mismatch(model, loaded_state_dict_or_path):
@@ -14,7 +14,7 @@ def load_state_dict_with_mismatch(model, loaded_state_dict_or_path):
 
     if isinstance(loaded_state_dict_or_path, str):
         loaded_state_dict = torch.load(
-            loaded_state_dict_or_path, map_location="cpu")
+            loaded_state_dict_or_path, map_location='cpu')
     else:
         loaded_state_dict = loaded_state_dict_or_path
     model_keys = set([k for k in list(model.state_dict().keys())])
@@ -23,10 +23,11 @@ def load_state_dict_with_mismatch(model, loaded_state_dict_or_path):
     toload = {}
     mismatched_shape_keys = []
     for k in model_keys:
-        k_rename = k.replace('encoder_text','encoder')
-        k_rename = k_rename.replace('encoder_co','encoder')
+        k_rename = k.replace('encoder_text', 'encoder')
+        k_rename = k_rename.replace('encoder_co', 'encoder')
         if k_rename in load_keys:
-            if model.state_dict()[k].shape != loaded_state_dict[k_rename].shape:
+            if model.state_dict(
+            )[k].shape != loaded_state_dict[k_rename].shape:
                 mismatched_shape_keys.append(k)
             else:
                 toload[k] = loaded_state_dict[k_rename]
@@ -49,59 +50,57 @@ def load_state_dict_with_mismatch(model, loaded_state_dict_or_path):
 
 @MODELS.register_module()
 class ClipBertTwoStream(BaseModel):
-    def __init__(
-        self,
-        vision,
-        text,
-        train_cfg=None,
-        test_cfg=None,
-        vison_pretrained=None,
-        text_pretrained=None,
-        loss_cls=dict(type='CrossEntropyLoss')
-    ):
+
+    def __init__(self,
+                 vision,
+                 text,
+                 train_cfg=None,
+                 test_cfg=None,
+                 vison_pretrained=None,
+                 text_pretrained=None,
+                 loss_cls=dict(type='CrossEntropyLoss')):
         super(ClipBertTwoStream, self).__init__()
         self.vision = builder.build_backbone(vision)
         self.text = builder.build_backbone(text)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        
+
         self.vison_pretrained = vison_pretrained
         self.text_pretrained = text_pretrained
         self.loss_cls = builder.build_loss(loss_cls)
         self.activate_fn = nn.Softmax(dim=1)
-        
+
         self.init_weights()
-        
+
     def init_weights(self):
-        
-        if self.vison_pretrained!=None:
+
+        if self.vison_pretrained != None:
             self.vision.init_weights(pretrained=self.vison_pretrained)
         else:
             self.vision.init_weights()
-        if self.text_pretrained!=None:
+        if self.text_pretrained != None:
             load_state_dict_with_mismatch(self.text, self.text_pretrained)
         else:
             self.text.init_weights()
 
- 
     def extract_feat(self, imgs, text_input_ids, text_input_mask):
         imgs = imgs.reshape((-1, ) + imgs.shape[2:])
         visual_feature = self.vision(imgs)
         visual_feature = rearrange(visual_feature, 'n c d h w -> n d h w c')
         # visual_feature = torch.mean(visual_feature,1,True)
         logits = self.text(
-            text_input_ids = text_input_ids,
-            visual_inputs = visual_feature,
-            text_input_mask = text_input_mask,
+            text_input_ids=text_input_ids,
+            visual_inputs=visual_feature,
+            text_input_mask=text_input_mask,
         )
-        
+
         return logits
-    
-    def forward_train(self, imgs, text_input_ids, text_input_mask, label, **kwargs):
+
+    def forward_train(self, imgs, text_input_ids, text_input_mask, label,
+                      **kwargs):
         """Defines the computation performed at every call when training."""
         losses = dict()
         cls_score = self.extract_feat(imgs, text_input_ids, text_input_mask)
-
 
         gt_labels = torch.flatten(label)
         loss_cls = self.loss_cls(cls_score, gt_labels)
@@ -109,7 +108,12 @@ class ClipBertTwoStream(BaseModel):
 
         return losses
 
-    def forward_test(self, imgs, text_input_ids, text_input_mask, label=None, **kwargs):
+    def forward_test(self,
+                     imgs,
+                     text_input_ids,
+                     text_input_mask,
+                     label=None,
+                     **kwargs):
         """Defines the computation performed at every call when evaluation and
         testing."""
         cls_score = self.extract_feat(imgs, text_input_ids, text_input_mask)
@@ -120,7 +124,7 @@ class ClipBertTwoStream(BaseModel):
             result['prob'] = self.activate_fn(cls_score.cpu())
             result['class'] = torch.argmax(result['prob'])
             return result
-        
+
     def train_step(self, data, optimizer):
         """The iteration step during training.
 
@@ -157,14 +161,3 @@ class ClipBertTwoStream(BaseModel):
             num_samples = len(data['imgs'].data)
 
         return dict(loss=loss, log_vars=log_vars, num_samples=num_samples)
-    
-    
-        
-            
-            
-        
-        
-        
-        
-        
-        

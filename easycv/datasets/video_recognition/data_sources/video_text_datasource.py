@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os
 import copy
+import os
 
 import torch
 
@@ -10,23 +10,23 @@ from easycv.datasets.registry import DATASOURCES
 @DATASOURCES.register_module
 class VideoTextDatasource(object):
     """video datasource for video recognition
-    
+
     This class is used to load video recognition ann_file, return a dict
     containing path of original video or frame dir and other information.
-    
+
     The ann_file is a text file with multiple lines, and each line indicates
     a sample video with filepath and label, which are split with a split_char.
     Example of a annotation file:
-    
+
     .. code-block:: txt
-    
+
         some/path/000.mp4 text 1
         some/path/001.mp4 text 1
         some/path/002.mp4 text 2
         some/path/003.mp4 text 2
         some/path/004.mp4 text 3
         some/path/005.mp4 text 3
-        
+
     Args:
         ann_file (str): Path to the annotation file.
         data_root (str): Data dir for video.
@@ -41,7 +41,7 @@ class VideoTextDatasource(object):
         modality (str): Modality of data. Support 'RGB', 'Flow', 'Audio'.
             Default: 'RGB'.
     """
-    
+
     def __init__(self,
                  ann_file,
                  data_root=None,
@@ -60,28 +60,30 @@ class VideoTextDatasource(object):
         self.start_index = start_index
         self.modality = modality
         self.video_infos = self.load_annotations()
-    
+
     def load_annotations(self):
         """Load annotation file to get video information"""
-        
+
         video_infos = []
         with open(self.ann_file, 'r') as fin:
             for line in fin:
                 line_split = line.strip().split(self.split)
                 if self.multi_class:
                     assert self.num_classes is not None
-                    filename, text, label = line_split[0], line_split[1], line_split[2:]
+                    filename, text, label = line_split[0], line_split[
+                        1], line_split[2:]
                     label = list(map(int, label))
                 else:
-                    filename, text,  label = line_split
+                    filename, text, label = line_split
                     label = int(label)
                 if self.data_root is not None:
                     filename = os.path.join(self.data_root, filename)
-                video_infos.append(dict(filename=filename, label=label, text=text))
+                video_infos.append(
+                    dict(filename=filename, label=label, text=text))
         return video_infos
-    
+
     def prepare_data(self, idx):
-        
+
         input_dict = copy.deepcopy(self.video_infos[idx])
         input_dict['start_index'] = self.start_index
         input_dict['modality'] = self.modality
@@ -90,14 +92,13 @@ class VideoTextDatasource(object):
             onehot[input_dict['label']] = 1.
             input_dict = onehot
         return input_dict
-            
+
     def __len__(self):
         """Return the length of data infos.
         """
         return len(self.video_infos)
-    
+
     def __getitem__(self, idx):
         """Get item from video infos according to the given indix.
         """
         return self.prepare_data(idx)
-        

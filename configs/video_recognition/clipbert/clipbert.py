@@ -4,11 +4,11 @@ model = dict(
     type='ClipBertTwoStream',
     vision=dict(
         type='SwinTransformer3D',
-        patch_size=(2,4,4),
+        patch_size=(2, 4, 4),
         embed_dim=96,
         depths=[2, 2, 6, 2],
         num_heads=[3, 6, 12, 24],
-        window_size=(8,7,7),
+        window_size=(8, 7, 7),
         mlp_ratio=4.,
         qkv_bias=True,
         qk_scale=None,
@@ -19,46 +19,44 @@ model = dict(
     text=dict(
         type='ClipBertTwoClassification',
         config_text=dict(
-            backbone_channel_in_size = 2048,
-            attention_probs_dropout_prob = 0.1,
-            hidden_act = "gelu",
-            hidden_dropout_prob = 0.1,
-            hidden_size =  768,
-            initializer_range =  0.02,
-            intermediate_size =  3072,
-            layer_norm_eps =  1e-12,
-            max_position_embeddings = 512,
-            model_type = "bert",
-            num_attention_heads = 12,
-            num_hidden_layers = 10,
-            pad_token_id = 1,
-            type_vocab_size = 2,
-            vocab_size = 21128,
+            backbone_channel_in_size=2048,
+            attention_probs_dropout_prob=0.1,
+            hidden_act='gelu',
+            hidden_dropout_prob=0.1,
+            hidden_size=768,
+            initializer_range=0.02,
+            intermediate_size=3072,
+            layer_norm_eps=1e-12,
+            max_position_embeddings=512,
+            model_type='bert',
+            num_attention_heads=12,
+            num_hidden_layers=10,
+            pad_token_id=1,
+            type_vocab_size=2,
+            vocab_size=21128,
         ),
         config_co=dict(
-            backbone_channel_in_size = 2048,
-            attention_probs_dropout_prob = 0.1,
-            hidden_act = "gelu",
-            hidden_dropout_prob = 0.1,
-            hidden_size =  768,
-            initializer_range =  0.02,
-            intermediate_size =  3072,
-            layer_norm_eps =  1e-12,
-            max_position_embeddings = 512,
-            model_type = "bert",
-            num_attention_heads = 12,
-            num_hidden_layers = 2,
-            pad_token_id = 1,
-            num_labels = 282,
+            backbone_channel_in_size=2048,
+            attention_probs_dropout_prob=0.1,
+            hidden_act='gelu',
+            hidden_dropout_prob=0.1,
+            hidden_size=768,
+            initializer_range=0.02,
+            intermediate_size=3072,
+            layer_norm_eps=1e-12,
+            max_position_embeddings=512,
+            model_type='bert',
+            num_attention_heads=12,
+            num_hidden_layers=2,
+            pad_token_id=1,
+            num_labels=282,
         ),
     ),
     vison_pretrained='swin_tiny_patch4_window7_224_22k.pth',
-    text_pretrained='bert_base_chinese/pytorch_model.bin'
-    )
+    text_pretrained='bert_base_chinese/pytorch_model.bin')
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_bgr=False)
-
 
 train_pipeline = [
     dict(type='DecordInit'),
@@ -71,7 +69,10 @@ train_pipeline = [
     dict(type='VideoNormalize', **img_norm_cfg),
     dict(type='TextTokenizer'),
     dict(type='FormatShape', input_format='NCTHW'),
-    dict(type='Collect', keys=['imgs', 'label', 'text_input_ids','text_input_mask'], meta_keys=[]),
+    dict(
+        type='Collect',
+        keys=['imgs', 'label', 'text_input_ids', 'text_input_mask'],
+        meta_keys=[]),
     dict(type='VideoToTensor', keys=['imgs', 'label'])
 ]
 
@@ -90,40 +91,46 @@ val_pipeline = [
     dict(type='VideoNormalize', **img_norm_cfg),
     dict(type='TextTokenizer'),
     dict(type='FormatShape', input_format='NCTHW'),
-    dict(type='Collect', keys=['imgs', 'label','text_input_ids','text_input_mask'], meta_keys=[]),
-    dict(type='VideoToTensor', keys=['imgs','label'])
+    dict(
+        type='Collect',
+        keys=['imgs', 'label', 'text_input_ids', 'text_input_mask'],
+        meta_keys=[]),
+    dict(type='VideoToTensor', keys=['imgs', 'label'])
 ]
 
 data_root = '/home/yanhaiqiang.yhq/easycv_nfs/easymm/'
 train_dataset = dict(
-    type = 'VideoDataset',
-    data_source = dict(
+    type='VideoDataset',
+    data_source=dict(
         type='VideoTextDatasource',
-        ann_file = data_root+'douyin_video_224/video_text_pair_rec_train.txt',
-        data_root = data_root+'douyin_video/',
-        ),
+        ann_file=data_root + 'douyin_video_224/video_text_pair_rec_train.txt',
+        data_root=data_root + 'douyin_video/',
+    ),
     pipeline=train_pipeline,
 )
 
 val_dataset = dict(
-    type = 'VideoDataset',
-    data_source = dict(
+    type='VideoDataset',
+    data_source=dict(
         type='VideoTextDatasource',
-        ann_file = data_root+'douyin_video_224/video_text_pair_rec_val.txt',
-        data_root = data_root+'douyin_video/',
-        ),
+        ann_file=data_root + 'douyin_video_224/video_text_pair_rec_val.txt',
+        data_root=data_root + 'douyin_video/',
+    ),
     pipeline=val_pipeline,
 )
 
 data = dict(
     imgs_per_gpu=2, workers_per_gpu=4, train=train_dataset, val=val_dataset)
 
-
 total_epochs = 30
-optimizer = dict(type='AdamW', lr=5e-5, betas=(0.9, 0.999), weight_decay=0.02,
-                paramwise_options={
-                    'bert.encoder_text': dict(lr_mult=0.1),
-                    'bert.embeddings': dict(lr_mult=0.1),
+optimizer = dict(
+    type='AdamW',
+    lr=4e-4,
+    betas=(0.9, 0.999),
+    weight_decay=0.02,
+    paramwise_options={
+        'bert.encoder_text': dict(lr_mult=0.1),
+        'bert.embeddings': dict(lr_mult=0.1),
     })
 
 optimizer_config = dict(update_interval=8)
@@ -134,12 +141,11 @@ lr_config = dict(
     min_lr=0,
     warmup='linear',
     warmup_by_epoch=True,
-    warmup_iters=2.5
-)
+    warmup_iters=2.5)
 
 checkpoint_config = dict(interval=1)
 
-# eval 
+# eval
 eval_config = dict(initial=False, interval=1, gpu_collect=True)
 eval_pipelines = [
     dict(

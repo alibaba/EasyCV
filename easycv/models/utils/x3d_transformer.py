@@ -17,7 +17,7 @@ class NonLocalModule(nn.Module):
         dim,
         dim_inner,
         pool_size=None,
-        instantiation="softmax",
+        instantiation='softmax',
         zero_init_final_conv=False,
         zero_init_final_norm=True,
         norm_eps=1e-5,
@@ -48,35 +48,26 @@ class NonLocalModule(nn.Module):
         self.dim_inner = dim_inner
         self.pool_size = pool_size
         self.instantiation = instantiation
-        self.use_pool = (
-            False
-            if pool_size is None
-            else any((size > 1 for size in pool_size))
-        )
+        self.use_pool = (False if pool_size is None else any(
+            (size > 1 for size in pool_size)))
         self.norm_eps = norm_eps
         self.norm_momentum = norm_momentum
-        self._construct_nonlocal(
-            zero_init_final_conv, zero_init_final_norm, norm_module
-        )
+        self._construct_nonlocal(zero_init_final_conv, zero_init_final_norm,
+                                 norm_module)
 
-    def _construct_nonlocal(
-        self, zero_init_final_conv, zero_init_final_norm, norm_module
-    ):
+    def _construct_nonlocal(self, zero_init_final_conv, zero_init_final_norm,
+                            norm_module):
         # Three convolution heads: theta, phi, and g.
         self.conv_theta = nn.Conv3d(
-            self.dim, self.dim_inner, kernel_size=1, stride=1, padding=0
-        )
+            self.dim, self.dim_inner, kernel_size=1, stride=1, padding=0)
         self.conv_phi = nn.Conv3d(
-            self.dim, self.dim_inner, kernel_size=1, stride=1, padding=0
-        )
+            self.dim, self.dim_inner, kernel_size=1, stride=1, padding=0)
         self.conv_g = nn.Conv3d(
-            self.dim, self.dim_inner, kernel_size=1, stride=1, padding=0
-        )
+            self.dim, self.dim_inner, kernel_size=1, stride=1, padding=0)
 
         # Final convolution output.
         self.conv_out = nn.Conv3d(
-            self.dim_inner, self.dim, kernel_size=1, stride=1, padding=0
-        )
+            self.dim_inner, self.dim, kernel_size=1, stride=1, padding=0)
         # Zero initializing the final convolution output.
         self.conv_out.zero_init = zero_init_final_conv
 
@@ -115,25 +106,24 @@ class NonLocalModule(nn.Module):
         g = g.view(N, self.dim_inner, -1)
 
         # (N, C, TxHxW) * (N, C, TxHxW) => (N, TxHxW, TxHxW).
-        theta_phi = torch.einsum("nct,ncp->ntp", (theta, phi))
+        theta_phi = torch.einsum('nct,ncp->ntp', (theta, phi))
         # For original Non-local paper, there are two main ways to normalize
         # the affinity tensor:
         #   1) Softmax normalization (norm on exp).
         #   2) dot_product normalization.
-        if self.instantiation == "softmax":
+        if self.instantiation == 'softmax':
             # Normalizing the affinity tensor theta_phi before softmax.
-            theta_phi = theta_phi * (self.dim_inner ** -0.5)
+            theta_phi = theta_phi * (self.dim_inner**-0.5)
             theta_phi = nn.functional.softmax(theta_phi, dim=2)
-        elif self.instantiation == "dot_product":
+        elif self.instantiation == 'dot_product':
             spatial_temporal_dim = theta_phi.shape[2]
             theta_phi = theta_phi / spatial_temporal_dim
         else:
-            raise NotImplementedError(
-                "Unknown norm type {}".format(self.instantiation)
-            )
+            raise NotImplementedError('Unknown norm type {}'.format(
+                self.instantiation))
 
         # (N, TxHxW, TxHxW) * (N, C, TxHxW) => (N, C, TxHxW).
-        theta_phi_g = torch.einsum("ntg,ncg->nct", (theta_phi, g))
+        theta_phi_g = torch.einsum('ntg,ncg->nct', (theta_phi, g))
 
         # (N, C, TxHxW) => (N, C, T, H, W).
         theta_phi_g = theta_phi_g.view(N, self.dim_inner, T, H, W)
@@ -141,8 +131,8 @@ class NonLocalModule(nn.Module):
         p = self.conv_out(theta_phi_g)
         p = self.bn(p)
         return x_identity + p
-    
-    
+
+
 class Swish(nn.Module):
     """Swish activation function: x * sigmoid(x)."""
 
@@ -168,6 +158,7 @@ class SwishEfficient(torch.autograd.Function):
         sigmoid_x = torch.sigmoid(x)
         return grad_output * (sigmoid_x * (1 + x * (1 - sigmoid_x)))
 
+
 class SE(nn.Module):
     """Squeeze-and-Excitation (SE) block w/ Swish: AvgPool, FC, Swish, FC, Sigmoid."""
 
@@ -185,9 +176,8 @@ class SE(nn.Module):
 
         width *= multiplier
         min_width = min_width or divisor
-        width_out = max(
-            min_width, int(width + divisor / 2) // divisor * divisor
-        )
+        width_out = max(min_width,
+                        int(width + divisor / 2) // divisor * divisor)
         if width_out < 0.9 * width:
             width_out += divisor
         return int(width_out)
@@ -309,8 +299,7 @@ class X3DTransform(nn.Module):
             bias=False,
         )
         self.a_bn = norm_module(
-            num_features=dim_inner, eps=self._eps, momentum=self._bn_mmt
-        )
+            num_features=dim_inner, eps=self._eps, momentum=self._bn_mmt)
         self.a_relu = nn.ReLU(inplace=self._inplace_relu)
 
         # Tx3x3, BN, ReLU.
@@ -324,7 +313,7 @@ class X3DTransform(nn.Module):
             bias=False,
             dilation=[1, dilation, dilation],
         )
-        
+
         # from easycv.thirdparty.depthwise_conv3d.depthwise_conv3d import DepthwiseConv3d
         # self.b = DepthwiseConv3d(
         #     dim_inner,
@@ -337,8 +326,7 @@ class X3DTransform(nn.Module):
         #     bias=False,
         # )
         self.b_bn = norm_module(
-            num_features=dim_inner, eps=self._eps, momentum=self._bn_mmt
-        )
+            num_features=dim_inner, eps=self._eps, momentum=self._bn_mmt)
 
         # Apply SE attention or not
         use_se = True if (self._block_idx + 1) % 2 else False
@@ -360,27 +348,26 @@ class X3DTransform(nn.Module):
             bias=False,
         )
         self.c_bn = norm_module(
-            num_features=dim_out, eps=self._eps, momentum=self._bn_mmt
-        )
+            num_features=dim_out, eps=self._eps, momentum=self._bn_mmt)
         self.c_bn.transform_final_bn = True
 
     def forward(self, x):
         for block in self.children():
             x = block(x)
         return x
-    
+
 
 def get_trans_func(name):
     """
     Retrieves the transformation module by name.
     """
     trans_funcs = {
-        "x3d_transform": X3DTransform,
+        'x3d_transform': X3DTransform,
     }
-    assert (
-        name in trans_funcs.keys()
-    ), "Transformation function '{}' not supported".format(name)
+    assert (name in trans_funcs.keys()
+            ), "Transformation function '{}' not supported".format(name)
     return trans_funcs[name]
+
 
 class ResBlock(nn.Module):
     """
@@ -440,7 +427,7 @@ class ResBlock(nn.Module):
         self._eps = eps
         self._bn_mmt = bn_mmt
         self._drop_connect_rate = drop_connect_rate
-        
+
         self._construct(
             dim_in,
             dim_out,
@@ -483,8 +470,7 @@ class ResBlock(nn.Module):
                 dilation=1,
             )
             self.branch1_bn = norm_module(
-                num_features=dim_out, eps=self._eps, momentum=self._bn_mmt
-            )
+                num_features=dim_out, eps=self._eps, momentum=self._bn_mmt)
         self.branch2 = trans_func(
             dim_in,
             dim_out,
@@ -503,9 +489,9 @@ class ResBlock(nn.Module):
     def _drop_connect(self, x, drop_ratio):
         """Apply dropconnect to x"""
         keep_ratio = 1.0 - drop_ratio
-        mask = torch.empty(
-            [x.shape[0], 1, 1, 1, 1], dtype=x.dtype, device=x.device
-        )
+        mask = torch.empty([x.shape[0], 1, 1, 1, 1],
+                           dtype=x.dtype,
+                           device=x.device)
         mask.bernoulli_(keep_ratio)
         x.div_(keep_ratio)
         x.mul_(mask)
@@ -515,7 +501,7 @@ class ResBlock(nn.Module):
         f_x = self.branch2(x)
         if self.training and self._drop_connect_rate > 0.0:
             f_x = self._drop_connect(f_x, self._drop_connect_rate)
-        if hasattr(self, "branch1"):
+        if hasattr(self, 'branch1'):
             x = self.branch1_bn(self.branch1(x)) + f_x
         else:
             x = x + f_x
@@ -548,8 +534,8 @@ class ResStage(nn.Module):
         nonlocal_group,
         nonlocal_pool,
         dilation,
-        instantiation="softmax",
-        trans_func_name="bottleneck_transform",
+        instantiation='softmax',
+        trans_func_name='bottleneck_transform',
         stride_1x1=False,
         inplace_relu=True,
         norm_module=nn.BatchNorm3d,
@@ -601,37 +587,28 @@ class ResStage(nn.Module):
                 linearly increases from input to output blocks.
         """
         super(ResStage, self).__init__()
-        assert all(
-            (
-                num_block_temp_kernel[i] <= num_blocks[i]
-                for i in range(len(temp_kernel_sizes))
-            )
-        )
+        assert all((num_block_temp_kernel[i] <= num_blocks[i]
+                    for i in range(len(temp_kernel_sizes))))
         self.num_blocks = num_blocks
         self.nonlocal_group = nonlocal_group
         self._drop_connect_rate = drop_connect_rate
         self.temp_kernel_sizes = [
-            (temp_kernel_sizes[i] * num_blocks[i])[: num_block_temp_kernel[i]]
-            + [1] * (num_blocks[i] - num_block_temp_kernel[i])
+            (temp_kernel_sizes[i] * num_blocks[i])[:num_block_temp_kernel[i]] +
+            [1] * (num_blocks[i] - num_block_temp_kernel[i])
             for i in range(len(temp_kernel_sizes))
         ]
-        assert (
-            len(
-                {
-                    len(dim_in),
-                    len(dim_out),
-                    len(temp_kernel_sizes),
-                    len(stride),
-                    len(num_blocks),
-                    len(dim_inner),
-                    len(num_groups),
-                    len(num_block_temp_kernel),
-                    len(nonlocal_inds),
-                    len(nonlocal_group),
-                }
-            )
-            == 1
-        )
+        assert (len({
+            len(dim_in),
+            len(dim_out),
+            len(temp_kernel_sizes),
+            len(stride),
+            len(num_blocks),
+            len(dim_inner),
+            len(num_groups),
+            len(num_block_temp_kernel),
+            len(nonlocal_inds),
+            len(nonlocal_group),
+        }) == 1)
         self.num_pathways = len(self.num_blocks)
         self._construct(
             dim_in,
@@ -685,7 +662,8 @@ class ResStage(nn.Module):
                     block_idx=i,
                     drop_connect_rate=self._drop_connect_rate,
                 )
-                self.add_module("pathway{}_res{}".format(pathway, i), res_block)
+                self.add_module('pathway{}_res{}'.format(pathway, i),
+                                res_block)
                 if i in nonlocal_inds[pathway]:
                     nln = NonLocalModule(
                         dim_out[pathway],
@@ -694,21 +672,19 @@ class ResStage(nn.Module):
                         instantiation=instantiation,
                         norm_module=norm_module,
                     )
-                    self.add_module(
-                        "pathway{}_nonlocal{}".format(pathway, i), nln
-                    )
+                    self.add_module('pathway{}_nonlocal{}'.format(pathway, i),
+                                    nln)
 
     def forward(self, inputs):
         output = []
         for pathway in range(self.num_pathways):
             x = inputs
             for i in range(self.num_blocks[pathway]):
-                m = getattr(self, "pathway{}_res{}".format(pathway, i))
+                m = getattr(self, 'pathway{}_res{}'.format(pathway, i))
                 x = m(x)
-                if hasattr(self, "pathway{}_nonlocal{}".format(pathway, i)):
-                    nln = getattr(
-                        self, "pathway{}_nonlocal{}".format(pathway, i)
-                    )
+                if hasattr(self, 'pathway{}_nonlocal{}'.format(pathway, i)):
+                    nln = getattr(self,
+                                  'pathway{}_nonlocal{}'.format(pathway, i))
                     b, c, t, h, w = x.shape
                     if self.nonlocal_group[pathway] > 1:
                         # Fold temporal dimension into batch dimension.

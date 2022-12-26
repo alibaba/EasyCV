@@ -1,10 +1,9 @@
 import torch.nn as nn
+from fvcore.nn.weight_init import c2_msra_fill
 from mmcv.cnn import normal_init
 
-from fvcore.nn.weight_init import c2_msra_fill
 from easycv.models.builder import HEADS
 from .base_head import BaseHead
-
 
 # @HEADS.register_module()
 # class X3DHead(BaseHead):
@@ -85,8 +84,9 @@ from .base_head import BaseHead
 #         cls_score = self.fc2(x)
 #         # [N, num_classes]
 #         return cls_score
-    
-@HEADS.register_module()  
+
+
+@HEADS.register_module()
 class X3DHead(BaseHead):
     """
     X3D head.
@@ -97,19 +97,19 @@ class X3DHead(BaseHead):
     """
 
     def __init__(
-        self,
-        dim_in,
-        dim_inner,
-        dim_out,
-        num_classes,
-        pool_size=None,
-        dropout_rate=0.0,
-        inplace_relu=True,
-        eps=1e-5,
-        bn_mmt=0.1,
-        norm_module=nn.BatchNorm3d,
-        bn_lin5_on=False,
-        loss_cls=dict(type='CrossEntropyLoss'),
+            self,
+            dim_in,
+            dim_inner,
+            dim_out,
+            num_classes,
+            pool_size=None,
+            dropout_rate=0.0,
+            inplace_relu=True,
+            eps=1e-5,
+            bn_mmt=0.1,
+            norm_module=nn.BatchNorm3d,
+            bn_lin5_on=False,
+            loss_cls=dict(type='CrossEntropyLoss'),
     ):
         """
         The `__init__` method of any subclass should also contain these
@@ -156,8 +156,7 @@ class X3DHead(BaseHead):
             bias=False,
         )
         self.conv_5_bn = norm_module(
-            num_features=dim_inner, eps=self.eps, momentum=self.bn_mmt
-        )
+            num_features=dim_inner, eps=self.eps, momentum=self.bn_mmt)
         self.conv_5_relu = nn.ReLU(self.inplace_relu)
 
         if self.pool_size is None:
@@ -175,8 +174,7 @@ class X3DHead(BaseHead):
         )
         if self.bn_lin5_on:
             self.lin_5_bn = norm_module(
-                num_features=dim_out, eps=self.eps, momentum=self.bn_mmt
-            )
+                num_features=dim_out, eps=self.eps, momentum=self.bn_mmt)
         self.lin_5_relu = nn.ReLU(self.inplace_relu)
 
         if self.dropout_rate > 0.0:
@@ -204,11 +202,8 @@ class X3DHead(BaseHead):
                 """
                 c2_msra_fill(m)
             elif isinstance(m, nn.BatchNorm3d):
-                if (
-                    hasattr(m, "transform_final_bn")
-                    and m.transform_final_bn
-                    and zero_init_final_bn
-                ):
+                if (hasattr(m, 'transform_final_bn') and m.transform_final_bn
+                        and zero_init_final_bn):
                     batchnorm_weight = 0.0
                 else:
                     batchnorm_weight = 1.0
@@ -220,8 +215,7 @@ class X3DHead(BaseHead):
                 m.weight.data.normal_(mean=0.0, std=fc_init_std)
                 if m.bias is not None:
                     m.bias.data.zero_()
-                    
-                    
+
     def forward(self, inputs):
         # In its current design the X3D head is only useable for a single
         # pathway input.
@@ -229,7 +223,7 @@ class X3DHead(BaseHead):
         x = self.conv_5(inputs)
         x = self.conv_5_bn(x)
         x = self.conv_5_relu(x)
- 
+
         x = self.avg_pool(x)
 
         x = self.lin_5(x)
@@ -240,9 +234,9 @@ class X3DHead(BaseHead):
         # (N, C, T, H, W) -> (N, T, H, W, C).
         x = x.permute((0, 2, 3, 4, 1))
         # Perform dropout.
-        if hasattr(self, "dropout"):
+        if hasattr(self, 'dropout'):
             x = self.dropout(x)
         x = self.projection(x)
-        
+
         x = x.view(x.shape[0], -1)
         return x

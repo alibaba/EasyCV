@@ -4,6 +4,7 @@ from mmcv.cnn import normal_init
 from easycv.models.builder import HEADS
 from .base_head import BaseHead
 
+
 @HEADS.register_module()
 class I3DHead(BaseHead):
     """Classification head for I3D.

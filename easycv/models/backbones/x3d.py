@@ -3,16 +3,15 @@ import math
 import torch.nn as nn
 from fvcore.nn.weight_init import c2_msra_fill
 
-from ..registry import BACKBONES
-from easycv.models.utils.x3d_transformer import ResStage
 from easycv.models.utils.video_model_stem import VideoModelStem
-
+from easycv.models.utils.x3d_transformer import ResStage
+from ..registry import BACKBONES
 
 _MODEL_STAGE_DEPTH = {50: (3, 4, 6, 3), 101: (3, 4, 23, 3)}
 NUM_GROUPS = 1
 WIDTH_PER_GROUP = 64
 INPUT_CHANNEL_NUM = [3]
-CHANNELWISE_3x3x3 = True 
+CHANNELWISE_3x3x3 = True
 NONLOCAL_LOCATION = [[[]], [[]], [[]], [[]]]
 NONLOCAL_GROUP = [[1], [1], [1], [1]]
 NONLOCAL_POOL = [
@@ -25,8 +24,9 @@ NONLOCAL_POOL = [
     # Res5
     [[1, 2, 2], [1, 2, 2]],
 ]
-NONLOCAL_INSTANTIATION = "dot_product"
+NONLOCAL_INSTANTIATION = 'dot_product'
 RESNET_SPATIAL_DILATIONS = [[1], [1], [1], [1]]
+
 
 class X3DHead(nn.Module):
     """
@@ -45,7 +45,7 @@ class X3DHead(nn.Module):
         num_classes,
         pool_size,
         dropout_rate=0.0,
-        act_func="softmax",
+        act_func='softmax',
         inplace_relu=True,
         eps=1e-5,
         bn_mmt=0.1,
@@ -98,8 +98,7 @@ class X3DHead(nn.Module):
             bias=False,
         )
         self.conv_5_bn = norm_module(
-            num_features=dim_inner, eps=self.eps, momentum=self.bn_mmt
-        )
+            num_features=dim_inner, eps=self.eps, momentum=self.bn_mmt)
         self.conv_5_relu = nn.ReLU(self.inplace_relu)
 
         if self.pool_size is None:
@@ -117,8 +116,7 @@ class X3DHead(nn.Module):
         )
         if self.bn_lin5_on:
             self.lin_5_bn = norm_module(
-                num_features=dim_out, eps=self.eps, momentum=self.bn_mmt
-            )
+                num_features=dim_out, eps=self.eps, momentum=self.bn_mmt)
         self.lin_5_relu = nn.ReLU(self.inplace_relu)
 
         if self.dropout_rate > 0.0:
@@ -128,15 +126,13 @@ class X3DHead(nn.Module):
         self.projection = nn.Linear(dim_out, self.num_classes, bias=True)
 
         # Softmax for evaluation and testing.
-        if self.act_func == "softmax":
+        if self.act_func == 'softmax':
             self.act = nn.Softmax(dim=4)
-        elif self.act_func == "sigmoid":
+        elif self.act_func == 'sigmoid':
             self.act = nn.Sigmoid()
         else:
-            raise NotImplementedError(
-                "{} is not supported as an activation"
-                "function.".format(self.act_func)
-            )
+            raise NotImplementedError('{} is not supported as an activation'
+                                      'function.'.format(self.act_func))
 
     def forward(self, inputs):
         # In its current design the X3D head is only useable for a single
@@ -145,7 +141,7 @@ class X3DHead(nn.Module):
         x = self.conv_5(inputs)
         x = self.conv_5_bn(x)
         x = self.conv_5_relu(x)
- 
+
         x = self.avg_pool(x)
 
         x = self.lin_5(x)
@@ -156,7 +152,7 @@ class X3DHead(nn.Module):
         # (N, C, T, H, W) -> (N, T, H, W, C).
         x = x.permute((0, 2, 3, 4, 1))
         # Perform dropout.
-        if hasattr(self, "dropout"):
+        if hasattr(self, 'dropout'):
             x = self.dropout(x)
         x = self.projection(x)
 
@@ -164,23 +160,25 @@ class X3DHead(nn.Module):
         if not self.training:
             x = self.act(x)
             x = x.mean([1, 2, 3])
-        
+
         x = x.view(x.shape[0], -1)
         return x
-                
-                
+
+
 @BACKBONES.register_module
 class X3D(nn.Module):
-    def __init__(self,
-                 width_factor=2.0,
-                 depth_factor=2.2,
-                 bottlneck_factor=2.25,
-                 dim_c5=2048,
-                 dim_c1=12,
-                #  train_crop_size=160,
-                 num_classes=400,
-                 num_frames=4,
-                 pretrained=None):
+
+    def __init__(
+            self,
+            width_factor=2.0,
+            depth_factor=2.2,
+            bottlneck_factor=2.25,
+            dim_c5=2048,
+            dim_c1=12,
+            #  train_crop_size=160,
+            num_classes=400,
+            num_frames=4,
+            pretrained=None):
         super(X3D, self).__init__()
 
         self.width_factor = width_factor
@@ -198,13 +196,10 @@ class X3D(nn.Module):
 
         exp_stage = 2.0
 
-
         SCALE_RES2 = False
         self.dim_res2 = (
             self._round_width(self.dim_c1, exp_stage, divisor=8)
-            if SCALE_RES2
-            else self.dim_c1
-        )
+            if SCALE_RES2 else self.dim_c1)
         self.dim_res3 = self._round_width(self.dim_res2, exp_stage, divisor=8)
         self.dim_res4 = self._round_width(self.dim_res3, exp_stage, divisor=8)
         self.dim_res5 = self._round_width(self.dim_res4, exp_stage, divisor=8)
@@ -238,11 +233,8 @@ class X3D(nn.Module):
                 """
                 c2_msra_fill(m)
             elif isinstance(m, nn.BatchNorm3d):
-                if (
-                    hasattr(m, "transform_final_bn")
-                    and m.transform_final_bn
-                    and zero_init_final_bn
-                ):
+                if (hasattr(m, 'transform_final_bn') and m.transform_final_bn
+                        and zero_init_final_bn):
                     batchnorm_weight = 0.0
                 else:
                     batchnorm_weight = 1.0
@@ -263,7 +255,7 @@ class X3D(nn.Module):
         width *= multiplier
         min_depth = min_depth or divisor
         new_filters = max(min_depth,
-                            int(width + divisor / 2) // divisor * divisor)
+                          int(width + divisor / 2) // divisor * divisor)
         if new_filters < 0.9 * width:
             new_filters += divisor
         return int(new_filters)
@@ -280,18 +272,18 @@ class X3D(nn.Module):
         (d2, d3, d4, d5) = _MODEL_STAGE_DEPTH[50]
         num_groups = NUM_GROUPS
         width_per_group = WIDTH_PER_GROUP
-        dim_inner = num_groups*width_per_group
-    
+        dim_inner = num_groups * width_per_group
+
         w_mul = self.width_factor
         d_mul = self.depth_factor
         dim_res1 = self._round_width(self.dim_c1, w_mul)
 
         temp_kernel = [
-        [[5]],  # conv1 temporal kernels.
-        [[3]],  # res2 temporal kernels.
-        [[3]],  # res3 temporal kernels.
-        [[3]],  # res4 temporal kernels.
-        [[3]],  # res5 temporal kernels.
+            [[5]],  # conv1 temporal kernels.
+            [[3]],  # res2 temporal kernels.
+            [[3]],  # res3 temporal kernels.
+            [[3]],  # res4 temporal kernels.
+            [[3]],  # res5 temporal kernels.
         ]
         self.s1 = VideoModelStem(
             dim_in=INPUT_CHANNEL_NUM,
@@ -300,7 +292,7 @@ class X3D(nn.Module):
             stride=[[1, 2, 2]],
             padding=[[temp_kernel[0][0][0] // 2, 1, 1]],
             norm_module=self.norm_module,
-            stem_func_name="x3d_stem",
+            stem_func_name='x3d_stem',
         )
 
         # blob_in = s1
@@ -310,9 +302,8 @@ class X3D(nn.Module):
             dim_inner = int(self.bottlneck_factor * dim_out)
 
             n_rep = self._round_repeats(block[0], d_mul)
-            prefix = "s{}".format(
-                stage + 2
-            )  # start w res2 to follow convention
+            prefix = 's{}'.format(stage +
+                                  2)  # start w res2 to follow convention
             s = ResStage(
                 dim_in=[dim_in],
                 dim_out=[dim_out],
@@ -320,26 +311,23 @@ class X3D(nn.Module):
                 temp_kernel_sizes=temp_kernel[1],
                 stride=[block[2]],
                 num_blocks=[n_rep],
-                num_groups=[dim_inner]
-                if CHANNELWISE_3x3x3
-                else [num_groups],
+                num_groups=[dim_inner] if CHANNELWISE_3x3x3 else [num_groups],
                 num_block_temp_kernel=[n_rep],
                 nonlocal_inds=NONLOCAL_LOCATION[0],
                 nonlocal_group=NONLOCAL_GROUP[0],
                 nonlocal_pool=NONLOCAL_POOL[0],
                 instantiation=NONLOCAL_INSTANTIATION,
-                trans_func_name="x3d_transform",
+                trans_func_name='x3d_transform',
                 stride_1x1=False,
                 norm_module=self.norm_module,
                 dilation=RESNET_SPATIAL_DILATIONS[stage],
-                drop_connect_rate=0.0
-                * (stage + 2)
-                / (len(self.block_basis) + 1),
+                drop_connect_rate=0.0 * (stage + 2) /
+                (len(self.block_basis) + 1),
             )
             dim_in = dim_out
             self.add_module(prefix, s)
         # spat_sz = int(math.ceil(self.train_crop_size / 32.0))
-        
+
         # if isinstance(self.num_classes, list):
         #     for idx,num_classes in enumerate(self.num_classes):
         #         prefix = "h{}".format(idx)
@@ -381,6 +369,6 @@ class X3D(nn.Module):
         #     return outs[0]
         # else:
         #     return tuple(outs)
-        for step,module in enumerate(self.children()):
+        for step, module in enumerate(self.children()):
             x = module(x)
         return x

@@ -45,6 +45,7 @@ def get_checkpoint(filename):
         filename = cache_file
     return filename
 
+
 def load_checkpoint(model,
                     filename,
                     map_location='cpu',

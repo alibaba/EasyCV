@@ -4,12 +4,13 @@ import random
 import warnings
 from collections.abc import Sequence
 
-import torch
-import numpy as np
-from mmcv.fileio import FileClient
 import mmcv
+import numpy as np
+import torch
+from mmcv.fileio import FileClient
 
 from easycv.datasets.registry import PIPELINES
+
 
 @PIPELINES.register_module()
 class DecordInit:
@@ -50,7 +51,7 @@ class DecordInit:
         repr_str = (f'{self.__class__.__name__}('
                     f'io_backend={self.io_backend}, '
                     f'num_threads={self.num_threads})')
-        return 
+        return
 
 
 @PIPELINES.register_module()
@@ -90,7 +91,7 @@ class DecordDecode:
 
         return results
 
-    
+
 @PIPELINES.register_module()
 class SampleFrames:
     """Sample frames from the video.
@@ -257,7 +258,8 @@ class SampleFrames:
                 safe_inds = frame_inds < total_frames
                 unsafe_inds = 1 - safe_inds
                 last_ind = np.max(safe_inds * frame_inds, axis=1)
-                new_inds = (safe_inds * frame_inds + (unsafe_inds.T * last_ind).T)
+                new_inds = (
+                    safe_inds * frame_inds + (unsafe_inds.T * last_ind).T)
                 frame_inds = new_inds
             else:
                 raise ValueError('Illegal out_of_bound option.')
@@ -281,8 +283,8 @@ class SampleFrames:
                     f'out_of_bound_opt={self.out_of_bound_opt}, '
                     f'test_mode={self.test_mode})')
         return repr_str
-    
-    
+
+
 def to_tensor(data):
     """Convert objects of various python types to :obj:`torch.Tensor`.
     Supported types are: :class:`numpy.ndarray`, :class:`torch.Tensor`,
@@ -324,8 +326,8 @@ class VideoToTensor:
 
     def __repr__(self):
         return f'{self.__class__.__name__}(keys={self.keys})'
-    
-    
+
+
 @PIPELINES.register_module()
 class FormatShape:
     """Format final imgs shape to the given input_format.
@@ -406,4 +408,4 @@ class FormatShape:
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f"(input_format='{self.input_format}')"
-        return 
+        return

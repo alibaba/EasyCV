@@ -1,7 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
 from easycv.models import builder
 from easycv.models.base import BaseModel
@@ -13,25 +13,24 @@ from easycv.models.builder import MODELS
 class Recognizer3D(BaseModel):
     """3D recognizer model.
     """
-    
-    def __init__(
-        self,
-        backbone,
-        cls_head=None,
-        neck=None,
-        train_cfg=None,
-        test_cfg=None,
-        pretrained=None):
+
+    def __init__(self,
+                 backbone,
+                 cls_head=None,
+                 neck=None,
+                 train_cfg=None,
+                 test_cfg=None,
+                 pretrained=None):
         super(Recognizer3D, self).__init__()
         self.backbone = builder.build_backbone(backbone)
         self.neck = builder.build_neck(neck) if neck else None
         self.cls_head = builder.build_head(cls_head) if cls_head else None
-        
+
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.pretrained = pretrained
         self.activate_fn = nn.Softmax(dim=1)
-        
+
         # aux_info is the list of tensor names beyond 'imgs' and 'label' which
         # will be used in train_step and val_step, data_batch should contain
         # these tensors
@@ -57,18 +56,17 @@ class Recognizer3D(BaseModel):
         #     self.blending = build_from_cfg(train_cfg['blending'], BLENDINGS)
 
         self.init_weights()
-        
-        
+
     @property
     def with_neck(self):
         """bool: whether the recognizer has a neck"""
         return hasattr(self, 'neck') and self.neck is not None
-    
+
     @property
     def with_cls_head(self):
         """bool: whether the recognizer has a cls_head"""
         return hasattr(self, 'cls_head') and self.cls_head is not None
-    
+
     def init_weights(self):
         """Initialize the model network weights."""
         if isinstance(self.pretrained, str):
@@ -80,7 +78,7 @@ class Recognizer3D(BaseModel):
             self.cls_head.init_weights()
         if self.with_neck and hasattr(self.neck, 'init_weights'):
             self.neck.init_weights()
-            
+
     def average_clip(self, cls_score, num_segs=1):
         """Averaging class score over multiple clips.
         Using different averaging types ('score' or 'prob' or None,
@@ -113,7 +111,7 @@ class Recognizer3D(BaseModel):
             cls_score = cls_score.mean(dim=1)
 
         return cls_score
-    
+
     def extract_feat(self, imgs):
         """Extract features through a backbone.
         Args:
@@ -124,7 +122,7 @@ class Recognizer3D(BaseModel):
 
         x = self.backbone(imgs)
         return x
-    
+
     def forward_train(self, imgs, label, **kwargs):
         """Defines the computation performed at every call when training."""
 
@@ -143,7 +141,7 @@ class Recognizer3D(BaseModel):
         losses.update(loss_cls)
 
         return losses
-    
+
     def _do_test(self, imgs):
         """Defines the computation performed at every call when evaluation,
         testing and gradcam."""
@@ -199,7 +197,7 @@ class Recognizer3D(BaseModel):
         cls_score = self.cls_head(feat)
         cls_score = self.average_clip(cls_score, num_segs)
         return cls_score
-    
+
     def forward_test(self, imgs, label=None, **kwargs):
         """Defines the computation performed at every call when evaluation and
         testing."""
@@ -211,7 +209,7 @@ class Recognizer3D(BaseModel):
             result['prob'] = self.activate_fn(cls_score.cpu())
             result['class'] = torch.argmax(result['prob'])
             return result
-        
+
     def train_step(self, data, optimizer):
         """The iteration step during training.
 
@@ -248,4 +246,3 @@ class Recognizer3D(BaseModel):
             num_samples = len(data['imgs'].data)
 
         return dict(loss=loss, log_vars=log_vars, num_samples=num_samples)
-        

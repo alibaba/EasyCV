@@ -4,9 +4,9 @@ from collections.abc import Sequence
 
 import mmcv
 import numpy as np
-from torch.nn.modules.utils import _pair
 import timm.data as tdata
 import torch
+from torch.nn.modules.utils import _pair
 
 from easycv.datasets.registry import PIPELINES
 
@@ -375,7 +375,7 @@ class VideoRandomScale:
     def __call__(self, results):
         scale = self.select_scale(self.scales)
         results['scale'] = scale
-        resize = Resize(scale, **self.kwargs)
+        resize = VideoResize(scale, **self.kwargs)
         results = resize(results)
         return results
 
@@ -1016,9 +1016,9 @@ class VideoRandomRescale:
         short_edge = np.random.randint(self.scale_range[0],
                                        self.scale_range[1] + 1)
         resize = VideoResize((-1, short_edge),
-                        keep_ratio=True,
-                        interpolation=self.interpolation,
-                        lazy=False)
+                             keep_ratio=True,
+                             interpolation=self.interpolation,
+                             lazy=False)
         results = resize(results)
         results['short_edge'] = short_edge
         return results
@@ -1298,10 +1298,10 @@ class VideoColorJitter:
             self.eig_val = eig_val
 
         if eig_vec is None:
-            self.eig_vec = np.array([[-0.5675, 0.7192, 0.4009],
-                                     [-0.5808, -0.0045, -0.8140],
-                                     [-0.5836, -0.6948, 0.4203]],
-                                    dtype=np.float32)
+            self.eig_vec = np.array(
+                [[-0.5675, 0.7192, 0.4009], [-0.5808, -0.0045, -0.8140],
+                 [-0.5836, -0.6948, 0.4203]],
+                dtype=np.float32)
         else:
             self.eig_vec = eig_vec
 

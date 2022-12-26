@@ -4,11 +4,11 @@ model = dict(
     type='Recognizer3D',
     backbone=dict(
         type='SwinTransformer3D',
-        patch_size=(2,4,4),
+        patch_size=(2, 4, 4),
         embed_dim=96,
         depths=[2, 2, 6, 2],
         num_heads=[3, 6, 12, 24],
-        window_size=(8,7,7),
+        window_size=(8, 7, 7),
         mlp_ratio=4.,
         qkv_bias=True,
         qk_scale=None,
@@ -22,14 +22,11 @@ model = dict(
         num_classes=400,
         spatial_type='avg',
         dropout_ratio=0.5),
-    test_cfg = dict(
-        average_clips='prob',
-        max_testing_views=4),
+    test_cfg=dict(average_clips='prob', max_testing_views=4),
     pretrained='swin_tiny_patch4_window7_224_22k.pth')
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_bgr=False)
-
 
 train_pipeline = [
     dict(type='DecordInit'),
@@ -83,25 +80,25 @@ test_pipeline = [
 
 data_root = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/'
 train_dataset = dict(
-    type = 'VideoDataset',
-    data_source = dict(
+    type='VideoDataset',
+    data_source=dict(
         type='VideoDatasource',
-        ann_file = data_root+'kinetics400/test.txt',
-        data_root = data_root,
-        split = ' ', 
-        ),
+        ann_file=data_root + 'kinetics400/test.txt',
+        data_root=data_root,
+        split=' ',
+    ),
     pipeline=train_pipeline,
 )
 
 val_dataset = dict(
-    type = 'VideoDataset',
+    type='VideoDataset',
     imgs_per_gpu=1,
-    data_source = dict(
+    data_source=dict(
         type='VideoDatasource',
-        ann_file = data_root+'kinetics400/test.txt',
-        data_root = data_root,
-        split = ' ', 
-        ),
+        ann_file=data_root + 'kinetics400/test.txt',
+        data_root=data_root,
+        split=' ',
+    ),
     pipeline=val_pipeline,
 )
 
@@ -128,12 +125,11 @@ lr_config = dict(
     min_lr=0,
     warmup='linear',
     warmup_by_epoch=True,
-    warmup_iters=2.5
-)
+    warmup_iters=2.5)
 
 checkpoint_config = dict(interval=1)
 
-# eval 
+# eval
 eval_config = dict(initial=True, interval=1, gpu_collect=True)
 eval_pipelines = [
     dict(

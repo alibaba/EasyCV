@@ -10,7 +10,8 @@ model = dict(
         dim_c5=2048,
         dim_c1=12,
         num_classes=400,
-        num_frames=4,),
+        num_frames=4,
+    ),
     # cls_head=dict(
     #     type='X3DHead',
     #     in_channels=192,
@@ -25,12 +26,10 @@ model = dict(
         dim_out=2048,
         num_classes=400,
         dropout_rate=0.5),
-    test_cfg = dict(
-        average_clips='prob'))
+    test_cfg=dict(average_clips='prob'))
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_bgr=False)
-
 
 train_pipeline = [
     dict(type='DecordInit'),
@@ -85,25 +84,25 @@ test_pipeline = [
 
 data_root = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/'
 train_dataset = dict(
-    type = 'VideoDataset',
-    data_source = dict(
+    type='VideoDataset',
+    data_source=dict(
         type='VideoDatasource',
-        ann_file = data_root+'kinetics400/test.txt',
-        data_root = data_root,
-        split = ' ', 
-        ),
+        ann_file=data_root + 'kinetics400/test.txt',
+        data_root=data_root,
+        split=' ',
+    ),
     pipeline=train_pipeline,
 )
 
 val_dataset = dict(
-    type = 'VideoDataset',
+    type='VideoDataset',
     imgs_per_gpu=1,
-    data_source = dict(
+    data_source=dict(
         type='VideoDatasource',
-        ann_file = data_root+'kinetics400/test.txt',
-        data_root = data_root,
-        split = ' ', 
-        ),
+        ann_file=data_root + 'kinetics400/test.txt',
+        data_root=data_root,
+        split=' ',
+    ),
     pipeline=test_pipeline,
 )
 
@@ -152,12 +151,11 @@ lr_config = dict(
     min_lr=0.0,
     warmup='linear',
     warmup_by_epoch=True,
-    warmup_iters=35
-)
+    warmup_iters=35)
 
 checkpoint_config = dict(interval=5)
 
-# eval 
+# eval
 eval_config = dict(initial=False, interval=5, gpu_collect=True)
 eval_pipelines = [
     dict(

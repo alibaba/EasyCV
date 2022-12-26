@@ -3,11 +3,11 @@ model = dict(
     type='Recognizer3D',
     backbone=dict(
         type='SwinTransformer3D',
-        patch_size=(4,4,4),
+        patch_size=(4, 4, 4),
         embed_dim=96,
         depths=[2, 2, 6, 2],
         num_heads=[3, 6, 12, 24],
-        window_size=(8,7,7),
+        window_size=(8, 7, 7),
         mlp_ratio=4.,
         qkv_bias=True,
         qk_scale=None,
@@ -21,4 +21,4 @@ model = dict(
         num_classes=400,
         spatial_type='avg',
         dropout_ratio=0.5),
-    test_cfg = dict(average_clips='prob'))
+    test_cfg=dict(average_clips='prob'))

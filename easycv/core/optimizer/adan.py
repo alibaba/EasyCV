@@ -16,9 +16,9 @@ import math
 from typing import List
 
 import torch
+from mmcv.runner.optimizer.builder import OPTIMIZERS
 from torch import Tensor
 from torch.optim.optimizer import Optimizer
-from mmcv.runner.optimizer.builder import OPTIMIZERS
 
 
 @OPTIMIZERS.register_module(force=True)
@@ -46,6 +46,7 @@ class Adan(Optimizer):
         foreach (bool): if True would use torch._foreach implementation.
             It's faster but uses slightly more memory. (default: True)
     """
+
     def __init__(self,
                  params,
                  lr=1e-3,
@@ -70,13 +71,14 @@ class Adan(Optimizer):
         if not 0.0 <= betas[2] < 1.0:
             raise ValueError('Invalid beta parameter at index 2: {}'.format(
                 betas[2]))
-        defaults = dict(lr=lr,
-                        betas=betas,
-                        eps=eps,
-                        weight_decay=weight_decay,
-                        max_grad_norm=max_grad_norm,
-                        no_prox=no_prox,
-                        foreach=foreach)
+        defaults = dict(
+            lr=lr,
+            betas=betas,
+            eps=eps,
+            weight_decay=weight_decay,
+            max_grad_norm=max_grad_norm,
+            no_prox=no_prox,
+            foreach=foreach)
         super().__init__(params, defaults)
 
     def __setstate__(self, state):
@@ -113,8 +115,8 @@ class Adan(Optimizer):
             device = self.param_groups[0]['params'][0].device
             global_grad_norm = torch.zeros(1, device=device)
 
-            max_grad_norm = torch.tensor(self.defaults['max_grad_norm'],
-                                         device=device)
+            max_grad_norm = torch.tensor(
+                self.defaults['max_grad_norm'], device=device)
             for group in self.param_groups:
 
                 for p in group['params']:
@@ -234,13 +236,12 @@ def _single_tensor_adan(
         neg_grad_or_diff.add_(grad)
 
         exp_avg.mul_(beta1).add_(grad, alpha=1 - beta1)  # m_t
-        exp_avg_diff.mul_(beta2).add_(neg_grad_or_diff,
-                                      alpha=1 - beta2)  # diff_t
+        exp_avg_diff.mul_(beta2).add_(
+            neg_grad_or_diff, alpha=1 - beta2)  # diff_t
 
         neg_grad_or_diff.mul_(beta2).add_(grad)
-        exp_avg_sq.mul_(beta3).addcmul_(neg_grad_or_diff,
-                                        neg_grad_or_diff,
-                                        value=1 - beta3)  # n_t
+        exp_avg_sq.mul_(beta3).addcmul_(
+            neg_grad_or_diff, neg_grad_or_diff, value=1 - beta3)  # n_t
 
         denom = ((exp_avg_sq).sqrt() / bias_correction3_sqrt).add_(eps)
         step_size_diff = lr * beta2 / bias_correction2
@@ -291,16 +292,14 @@ def _multi_tensor_adan(
     torch._foreach_add_(exp_avgs, grads, alpha=1 - beta1)  # m_t
 
     torch._foreach_mul_(exp_avg_diffs, beta2)
-    torch._foreach_add_(exp_avg_diffs, neg_pre_grads,
-                        alpha=1 - beta2)  # diff_t
+    torch._foreach_add_(
+        exp_avg_diffs, neg_pre_grads, alpha=1 - beta2)  # diff_t
 
     torch._foreach_mul_(neg_pre_grads, beta2)
     torch._foreach_add_(neg_pre_grads, grads)
     torch._foreach_mul_(exp_avg_sqs, beta3)
-    torch._foreach_addcmul_(exp_avg_sqs,
-                            neg_pre_grads,
-                            neg_pre_grads,
-                            value=1 - beta3)  # n_t
+    torch._foreach_addcmul_(
+        exp_avg_sqs, neg_pre_grads, neg_pre_grads, value=1 - beta3)  # n_t
 
     denom = torch._foreach_sqrt(exp_avg_sqs)
     torch._foreach_div_(denom, bias_correction3_sqrt)
@@ -312,16 +311,12 @@ def _multi_tensor_adan(
     if no_prox:
         torch._foreach_mul_(params, 1 - lr * weight_decay)
         torch._foreach_addcdiv_(params, exp_avgs, denom, value=-step_size)
-        torch._foreach_addcdiv_(params,
-                                exp_avg_diffs,
-                                denom,
-                                value=-step_size_diff)
+        torch._foreach_addcdiv_(
+            params, exp_avg_diffs, denom, value=-step_size_diff)
     else:
         torch._foreach_addcdiv_(params, exp_avgs, denom, value=-step_size)
-        torch._foreach_addcdiv_(params,
-                                exp_avg_diffs,
-                                denom,
-                                value=-step_size_diff)
+        torch._foreach_addcdiv_(
+            params, exp_avg_diffs, denom, value=-step_size_diff)
         torch._foreach_div_(params, 1 + lr * weight_decay)
     torch._foreach_zero_(neg_pre_grads)
     torch._foreach_add_(neg_pre_grads, grads, alpha=-1.0)

@@ -251,5 +251,4 @@ MODEL_CONFIG_MASK2FORMER_INS = (
     './configs/segmentation/mask2former/mask2former_r50_8xb2_e50_instance.py')
 MODEL_CONFIG_MASK2FORMER_SEM = (
     './configs/segmentation/mask2former/mask2former_r50_8xb2_e127_semantic.py')
-VIDEO_DATA_SMALL_RAW_LOCAL = os.path.join(
-    BASE_LOCAL_PATH, 'data/video')
+VIDEO_DATA_SMALL_RAW_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/video')

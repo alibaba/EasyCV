@@ -18,7 +18,7 @@ class VideoModelStem(nn.Module):
         eps=1e-5,
         bn_mmt=0.1,
         norm_module=nn.BatchNorm3d,
-        stem_func_name="basic_stem",
+        stem_func_name='basic_stem',
     ):
         """
         The `__init__` method of any subclass should also contain these
@@ -49,18 +49,13 @@ class VideoModelStem(nn.Module):
                 input to the network.
         """
         super(VideoModelStem, self).__init__()
-        assert (
-            len(
-                {
-                    len(dim_in),
-                    len(dim_out),
-                    len(kernel),
-                    len(stride),
-                    len(padding),
-                }
-            )
-            == 1
-        ), "Input pathway dimensions are not consistent."
+        assert (len({
+            len(dim_in),
+            len(dim_out),
+            len(kernel),
+            len(stride),
+            len(padding),
+        }) == 1), 'Input pathway dimensions are not consistent.'
         self.num_pathways = len(dim_in)
         self.kernel = kernel
         self.stride = stride
@@ -85,17 +80,17 @@ class VideoModelStem(nn.Module):
                 self.bn_mmt,
                 norm_module,
             )
-            self.add_module("pathway{}_stem".format(pathway), stem)
+            self.add_module('pathway{}_stem'.format(pathway), stem)
 
     def forward(self, x):
         # assert (
         #     len(x) == self.num_pathways
         # ), "Input tensor does not contain {} pathway".format(self.num_pathways)
         for pathway in range(self.num_pathways):
-            m = getattr(self, "pathway{}_stem".format(pathway))
+            m = getattr(self, 'pathway{}_stem'.format(pathway))
             x = m(x)
         return x
-    
+
 
 class X3DStem(nn.Module):
     """
@@ -171,8 +166,7 @@ class X3DStem(nn.Module):
         )
 
         self.bn = norm_module(
-            num_features=dim_out, eps=self.eps, momentum=self.bn_mmt
-        )
+            num_features=dim_out, eps=self.eps, momentum=self.bn_mmt)
         self.relu = nn.ReLU(self.inplace_relu)
 
     def forward(self, x):

@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
-import numpy as np
 
+import numpy as np
 import torch
 import torch.nn as nn
 
@@ -25,6 +25,7 @@ def top_k_accuracy(scores, labels, topk=(1, )):
         res.append(topk_acc_score)
 
     return res
+
 
 class AvgConsensus(nn.Module):
     """Average consensus module.
