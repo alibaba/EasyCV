@@ -17,7 +17,7 @@ model = dict(
         drop_path_rate=0.1,
         patch_norm=True),
     text=dict(
-        type='ClipBertTwoClassification',
+        type='ClipBertClassification',
         config_text=dict(
             backbone_channel_in_size=2048,
             attention_probs_dropout_prob=0.1,
@@ -35,7 +35,7 @@ model = dict(
             type_vocab_size=2,
             vocab_size=21128,
         ),
-        config_co=dict(
+        config_cross=dict(
             backbone_channel_in_size=2048,
             attention_probs_dropout_prob=0.1,
             hidden_act='gelu',
@@ -52,8 +52,11 @@ model = dict(
             num_labels=282,
         ),
     ),
-    vison_pretrained='swin_tiny_patch4_window7_224_22k.pth',
-    text_pretrained='bert_base_chinese/pytorch_model.bin')
+    vison_pretrained=
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/video/backbone/swin_tiny_patch4_window7_224_22k.pth',
+    text_pretrained=
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/video/bert-base-chinese/pytorch_model.bin'
+)
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_bgr=False)
@@ -155,3 +158,10 @@ eval_pipelines = [
         evaluators=[dict(type='ClsEvaluator', topk=(1, 5))],
     )
 ]
+
+log_config = dict(
+    interval=10,
+    hooks=[
+        dict(type='TextLoggerHook'),
+        # dict(type='TensorboardLoggerHook')
+    ])

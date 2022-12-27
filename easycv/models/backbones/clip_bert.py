@@ -477,16 +477,16 @@ class BertAttention(nn.Module):
 
 class ClipBertBaseModel(BertPreTrainedModel):
 
-    def __init__(self, config_text, config_co):
+    def __init__(self, config_text, config_cross):
         super().__init__(config_text)
         self.config_text = config_text
-        self.config_co = config_co
+        self.config_cross = config_cross
 
         self.embeddings = BertEmbeddings(config_text)
 
         self.encoder_text = BertEncoder(config_text)
-        self.encoder_co = BertEncoder(config_co)
-        self.pooler = BertPooler(config_co)
+        self.encoder_co = BertEncoder(config_cross)
+        self.pooler = BertPooler(config_cross)
 
         self.init_weights()
 
@@ -528,7 +528,7 @@ class ClipBertBaseModel(BertPreTrainedModel):
             embedding_output,
             attention_mask=extended_attention_mask,
             head_mask=self.get_head_mask(
-                None, self.config_co.num_hidden_layers)  # required input
+                None, self.config_cross.num_hidden_layers)  # required input
         )
         sequence_output = encoder_outputs[0]
         pooled_output = self.pooler(sequence_output)
@@ -541,20 +541,20 @@ class ClipBertBaseModel(BertPreTrainedModel):
 
 
 @BACKBONES.register_module()
-class ClipBertTwoClassification(BertPreTrainedModel):
+class ClipBertClassification(BertPreTrainedModel):
 
-    def __init__(self, config_text, config_co):
+    def __init__(self, config_text, config_cross):
         config_text = BertConfig(**config_text)
-        config_co = BertConfig(**config_co)
-        super(ClipBertTwoClassification, self).__init__(config_text)
+        config_cross = BertConfig(**config_cross)
+        super(ClipBertClassification, self).__init__(config_text)
 
-        self.bert = ClipBertBaseModel(config_text, config_co)
+        self.bert = ClipBertBaseModel(config_text, config_cross)
         self.dropout = nn.Dropout(config_text.hidden_dropout_prob)
 
         self.classifier = nn.Sequential(
             nn.Linear(config_text.hidden_size, config_text.hidden_size * 2),
             nn.ReLU(True),
-            nn.Linear(config_text.hidden_size * 2, config_co.num_labels))
+            nn.Linear(config_text.hidden_size * 2, config_cross.num_labels))
 
         self.init_weights()
 
@@ -571,5 +571,26 @@ class ClipBertTwoClassification(BertPreTrainedModel):
         logits = self.classifier(pooled_output)
         return logits
 
-    def init_weights(self):
-        self.apply(self._init_weights)
+    def init_weights(self, pretrained=None):
+        if pretrained == None:
+            self.apply(self._init_weights)
+        else:
+            if isinstance(pretrained, str):
+                loaded_state_dict = torch.load(pretrained, map_location='cpu')
+            else:
+                loaded_state_dict = pretrained
+            model_keys = set([k for k in list(self.state_dict().keys())])
+            load_keys = set(loaded_state_dict.keys())
+
+            toload = {}
+            mismatched_shape_keys = []
+            for k in model_keys:
+                k_rename = k.replace('encoder_text', 'encoder')
+                k_rename = k_rename.replace('encoder_co', 'encoder')
+                if k_rename in load_keys:
+                    if self.state_dict(
+                    )[k].shape != loaded_state_dict[k_rename].shape:
+                        mismatched_shape_keys.append(k)
+                    else:
+                        toload[k] = loaded_state_dict[k_rename]
+            self.load_state_dict(toload, strict=False)

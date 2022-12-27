@@ -1,7 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from .benchmark_mlp import BenchMarkMLP
 from .bninception import BNInception
-from .clip_bert import ClipBertTwoClassification
+from .clip_bert import ClipBertClassification
 from .conv_mae_vit import FastConvMAEViT
 from .conv_vitdet import ConvViTDet
 from .edgevit import EdgeVit

@@ -7,45 +7,7 @@ from torch import nn
 from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
-
-
-def load_state_dict_with_mismatch(model, loaded_state_dict_or_path):
-    """operated in-place, no need to return `model`"""
-
-    if isinstance(loaded_state_dict_or_path, str):
-        loaded_state_dict = torch.load(
-            loaded_state_dict_or_path, map_location='cpu')
-    else:
-        loaded_state_dict = loaded_state_dict_or_path
-    model_keys = set([k for k in list(model.state_dict().keys())])
-    load_keys = set(loaded_state_dict.keys())
-
-    toload = {}
-    mismatched_shape_keys = []
-    for k in model_keys:
-        k_rename = k.replace('encoder_text', 'encoder')
-        k_rename = k_rename.replace('encoder_co', 'encoder')
-        if k_rename in load_keys:
-            if model.state_dict(
-            )[k].shape != loaded_state_dict[k_rename].shape:
-                mismatched_shape_keys.append(k)
-            else:
-                toload[k] = loaded_state_dict[k_rename]
-    # import logging
-    # _LOG_FMT = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s'
-    # _DATE_FMT = '%m/%d/%Y %H:%M:%S'
-    # logging.basicConfig(format=_LOG_FMT, datefmt=_DATE_FMT, level=logging.INFO)
-    # LOGGER = logging.getLogger('__main__')  # this is the global logger
-    # LOGGER.info("You can ignore the keys with `num_batches_tracked` or from task heads")
-    # LOGGER.info("Keys in loaded but not in model:")
-    # diff_keys = load_keys.difference(model_keys)
-    # LOGGER.info(f"In total {len(diff_keys)}, {sorted(diff_keys)}")
-    # LOGGER.info("Keys in model but not in loaded:")
-    # diff_keys = model_keys.difference(load_keys)
-    # LOGGER.info(f"In total {len(diff_keys)}, {sorted(diff_keys)}")
-    # LOGGER.info("Keys in model and loaded, but shape mismatched:")
-    # LOGGER.info(f"In total {len(mismatched_shape_keys)}, {sorted(mismatched_shape_keys)}")
-    model.load_state_dict(toload, strict=False)
+from easycv.utils.checkpoint import get_checkpoint
 
 
 @MODELS.register_module()
@@ -65,23 +27,16 @@ class ClipBertTwoStream(BaseModel):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-        self.vison_pretrained = vison_pretrained
-        self.text_pretrained = text_pretrained
+        self.vison_pretrained = get_checkpoint(vison_pretrained)
+        self.text_pretrained = get_checkpoint(text_pretrained)
         self.loss_cls = builder.build_loss(loss_cls)
         self.activate_fn = nn.Softmax(dim=1)
 
         self.init_weights()
 
     def init_weights(self):
-
-        if self.vison_pretrained != None:
-            self.vision.init_weights(pretrained=self.vison_pretrained)
-        else:
-            self.vision.init_weights()
-        if self.text_pretrained != None:
-            load_state_dict_with_mismatch(self.text, self.text_pretrained)
-        else:
-            self.text.init_weights()
+        self.vision.init_weights(pretrained=self.vison_pretrained)
+        self.text.init_weights(pretrained=self.text_pretrained)
 
     def extract_feat(self, imgs, text_input_ids, text_input_mask):
         imgs = imgs.reshape((-1, ) + imgs.shape[2:])

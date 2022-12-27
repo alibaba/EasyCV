@@ -68,6 +68,7 @@ class DecordDecode:
             results (dict): The resulting dict to be modified and passed
                 to the next transform in pipeline.
         """
+
         container = results['video_reader']
 
         if results['frame_inds'].ndim != 1:
