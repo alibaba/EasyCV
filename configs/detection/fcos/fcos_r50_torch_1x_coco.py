@@ -22,6 +22,7 @@ lr_config = dict(
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=1.0 / 3,
+    warmup_by_epoch=False,
     step=[8, 11])
 
 total_epochs = 12

@@ -16,6 +16,11 @@ CLASSES = [
 
 # dataset settings
 data_root = 'data/coco/'
+train_ann_file = data_root + 'annotations/instances_train2017.json'
+train_img_prefix = data_root + 'train2017/'
+val_ann_file = data_root + 'annotations/instances_val2017.json'
+val_img_prefix = data_root + 'val2017/'
+
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -57,8 +62,8 @@ train_dataset = dict(
     type='DetDataset',
     data_source=dict(
         type='DetSourceCoco',
-        ann_file=data_root + 'annotations/instances_train2017.json',
-        img_prefix=data_root + 'train2017/',
+        ann_file=train_ann_file,
+        img_prefix=train_img_prefix,
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True)
@@ -74,8 +79,8 @@ val_dataset = dict(
     imgs_per_gpu=1,
     data_source=dict(
         type='DetSourceCoco',
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
+        ann_file=val_ann_file,
+        img_prefix=val_img_prefix,
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True)
