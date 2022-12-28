@@ -6,6 +6,7 @@ from torch import nn
 from easycv.models import builder
 from easycv.models.base import BaseModel
 from easycv.models.builder import MODELS
+from easycv.utils.checkpoint import get_checkpoint
 
 
 # Modified from https://github.com/open-mmlab/mmaction2/blob/master/mmaction/models/recognizers/recognizer3d.py
@@ -28,7 +29,7 @@ class Recognizer3D(BaseModel):
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        self.pretrained = pretrained
+        self.pretrained = get_checkpoint(pretrained)
         self.activate_fn = nn.Softmax(dim=1)
 
         # aux_info is the list of tensor names beyond 'imgs' and 'label' which

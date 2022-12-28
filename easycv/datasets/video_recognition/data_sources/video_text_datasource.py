@@ -90,7 +90,7 @@ class VideoTextDatasource(object):
         if self.multi_class and isinstance(input_dict['label'], list):
             onehot = torch.zeros(self.num_classes)
             onehot[input_dict['label']] = 1.
-            input_dict = onehot
+            input_dict['label'] = onehot
         return input_dict
 
     def __len__(self):

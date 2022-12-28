@@ -1,7 +1,9 @@
 albumentations
 dataclasses
+decord
 einops
 future
+fvcore
 h5py
 imgaug
 json_tricks

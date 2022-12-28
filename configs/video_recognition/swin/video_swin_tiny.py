@@ -23,7 +23,9 @@ model = dict(
         spatial_type='avg',
         dropout_ratio=0.5),
     test_cfg=dict(average_clips='prob', max_testing_views=4),
-    pretrained='swin_tiny_patch4_window7_224_22k.pth')
+    pretrained=
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/video/backbone/swin_tiny_patch4_window7_224_22k.pth'
+)
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_bgr=False)
@@ -79,11 +81,13 @@ test_pipeline = [
 ]
 
 data_root = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/'
+train_ann_file = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/kinetics400/test.txt'
+val_ann_file = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/kinetics400/test.txt'
 train_dataset = dict(
     type='VideoDataset',
     data_source=dict(
         type='VideoDatasource',
-        ann_file=data_root + 'kinetics400/test.txt',
+        ann_file=train_ann_file,
         data_root=data_root,
         split=' ',
     ),
@@ -95,7 +99,7 @@ val_dataset = dict(
     imgs_per_gpu=1,
     data_source=dict(
         type='VideoDatasource',
-        ann_file=data_root + 'kinetics400/test.txt',
+        ann_file=val_ann_file,
         data_root=data_root,
         split=' ',
     ),
@@ -106,7 +110,7 @@ data = dict(
     imgs_per_gpu=8, workers_per_gpu=4, train=train_dataset, val=val_dataset)
 
 # optimizer
-total_epochs = 30
+total_epochs = 1
 optimizer = dict(
     type='AdamW',
     lr=1e-3,
@@ -125,7 +129,7 @@ lr_config = dict(
     min_lr=0,
     warmup='linear',
     warmup_by_epoch=True,
-    warmup_iters=2.5)
+    warmup_iters=2)
 
 checkpoint_config = dict(interval=1)
 

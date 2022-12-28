@@ -83,11 +83,14 @@ test_pipeline = [
 ]
 
 data_root = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/'
+train_ann_file = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/kinetics400/test.txt'
+val_ann_file = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/kinetics400/test.txt'
+
 train_dataset = dict(
     type='VideoDataset',
     data_source=dict(
         type='VideoDatasource',
-        ann_file=data_root + 'kinetics400/test.txt',
+        ann_file=train_ann_file,
         data_root=data_root,
         split=' ',
     ),
@@ -99,7 +102,7 @@ val_dataset = dict(
     imgs_per_gpu=1,
     data_source=dict(
         type='VideoDatasource',
-        ann_file=data_root + 'kinetics400/test.txt',
+        ann_file=val_ann_file,
         data_root=data_root,
         split=' ',
     ),

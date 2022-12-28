@@ -20,17 +20,20 @@ class ClipBertTwoStream(BaseModel):
                  test_cfg=None,
                  vison_pretrained=None,
                  text_pretrained=None,
-                 loss_cls=dict(type='CrossEntropyLoss')):
+                 loss_cls=dict(type='CrossEntropyLoss'),
+                 multi_class=False):
         super(ClipBertTwoStream, self).__init__()
         self.vision = builder.build_backbone(vision)
         self.text = builder.build_backbone(text)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        self.multi_class = multi_class
 
         self.vison_pretrained = get_checkpoint(vison_pretrained)
         self.text_pretrained = get_checkpoint(text_pretrained)
         self.loss_cls = builder.build_loss(loss_cls)
-        self.activate_fn = nn.Softmax(dim=1)
+        self.activate_fn = nn.Softmax(
+            dim=1) if not multi_class else nn.Sigmoid()
 
         self.init_weights()
 
@@ -57,7 +60,7 @@ class ClipBertTwoStream(BaseModel):
         losses = dict()
         cls_score = self.extract_feat(imgs, text_input_ids, text_input_mask)
 
-        gt_labels = torch.flatten(label)
+        gt_labels = torch.flatten(label) if label.shape[-1] == 1 else label
         loss_cls = self.loss_cls(cls_score, gt_labels)
         losses['loss_cls'] = loss_cls
 
@@ -77,7 +80,8 @@ class ClipBertTwoStream(BaseModel):
         else:
             result = {}
             result['prob'] = self.activate_fn(cls_score.cpu())
-            result['class'] = torch.argmax(result['prob'])
+            if not self.multi_class:
+                result['class'] = torch.argmax(result['prob'])
             return result
 
     def train_step(self, data, optimizer):
