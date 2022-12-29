@@ -327,7 +327,6 @@ class X3D(nn.Module):
             dim_in = dim_out
             self.add_module(prefix, s)
         # spat_sz = int(math.ceil(self.train_crop_size / 32.0))
-
         # if isinstance(self.num_classes, list):
         #     for idx,num_classes in enumerate(self.num_classes):
         #         prefix = "h{}".format(idx)

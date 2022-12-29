@@ -11,7 +11,7 @@ model = dict(
         dim_c5=2048,
         dim_c1=12,
         num_classes=num_classes,
-        num_frames=4,
+        num_frames=16,
     ),
     cls_head=dict(
         type='X3DHead',
@@ -27,12 +27,12 @@ img_norm_cfg = dict(
 
 train_pipeline = [
     dict(type='DecordInit'),
-    dict(type='SampleFrames', clip_len=4, frame_interval=12, num_clips=1),
+    dict(type='SampleFrames', clip_len=16, frame_interval=5, num_clips=1),
     dict(type='DecordDecode'),
     # dict(type='VideoResize', scale=(-1, 228)),
-    dict(type='VideoRandomRescale', scale_range=(182, 228)),
+    dict(type='VideoRandomRescale', scale_range=(256, 320)),
     dict(type='VideoRandomResizedCrop'),
-    dict(type='VideoResize', scale=(160, 160), keep_ratio=False),
+    dict(type='VideoResize', scale=(224, 224), keep_ratio=False),
     dict(type='VideoFlip', flip_ratio=0.5),
     dict(type='VideoNormalize', **img_norm_cfg),
     dict(type='FormatShape', input_format='NCTHW'),
@@ -44,13 +44,13 @@ val_pipeline = [
     dict(type='DecordInit'),
     dict(
         type='SampleFrames',
-        clip_len=4,
-        frame_interval=12,
+        clip_len=16,
+        frame_interval=5,
         num_clips=1,
         test_mode=True),
     dict(type='DecordDecode'),
-    dict(type='VideoResize', scale=(-1, 228)),
-    dict(type='VideoCenterCrop', crop_size=160),
+    dict(type='VideoResize', scale=(256, 320)),
+    dict(type='VideoCenterCrop', crop_size=224),
     dict(type='VideoFlip', flip_ratio=0),
     dict(type='VideoNormalize', **img_norm_cfg),
     dict(type='FormatShape', input_format='NCTHW'),
@@ -62,13 +62,13 @@ test_pipeline = [
     dict(type='DecordInit'),
     dict(
         type='SampleFrames',
-        clip_len=4,
-        frame_interval=12,
+        clip_len=16,
+        frame_interval=5,
         num_clips=10,
         test_mode=True),
     dict(type='DecordDecode'),
-    dict(type='VideoResize', scale=(-1, 182)),
-    dict(type='VideoThreeCrop', crop_size=182),
+    dict(type='VideoResize', scale=(256, 320)),
+    dict(type='VideoThreeCrop', crop_size=256),
     dict(type='VideoFlip', flip_ratio=0),
     dict(type='VideoNormalize', **img_norm_cfg),
     dict(type='FormatShape', input_format='NCTHW'),
@@ -104,7 +104,7 @@ val_dataset = dict(
 )
 
 data = dict(
-    imgs_per_gpu=128, workers_per_gpu=16, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=16, workers_per_gpu=16, train=train_dataset, val=val_dataset)
 
 # optimizer
 total_epochs = 300
@@ -146,4 +146,4 @@ log_config = dict(
         dict(type='TextLoggerHook'),
         # dict(type='TensorboardLoggerHook')
     ])
-load_from = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/video/x3d_xs/epoch_300.pth'
+load_from = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/video/x3d_m/x3d_m.pth'

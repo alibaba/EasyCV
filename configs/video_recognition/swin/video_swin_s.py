@@ -4,35 +4,40 @@ multi_class = False
 model = dict(
     type='Recognizer3D',
     backbone=dict(
-        type='X3D',
-        width_factor=2.0,
-        depth_factor=2.2,
-        bottlneck_factor=2.25,
-        dim_c5=2048,
-        dim_c1=12,
-        num_classes=num_classes,
-        num_frames=4,
-    ),
+        type='SwinTransformer3D',
+        patch_size=(2, 4, 4),
+        embed_dim=96,
+        depths=[2, 2, 18, 2],
+        num_heads=[3, 6, 12, 24],
+        window_size=(8, 7, 7),
+        mlp_ratio=4.,
+        qkv_bias=True,
+        qk_scale=None,
+        drop_rate=0.,
+        attn_drop_rate=0.,
+        drop_path_rate=0.1,
+        patch_norm=True),
     cls_head=dict(
-        type='X3DHead',
-        dim_in=192,
-        dim_inner=432,
-        dim_out=2048,
+        type='I3DHead',
+        in_channels=768,
         num_classes=num_classes,
-        dropout_rate=0.5),
-    test_cfg=dict(average_clips='prob'))
+        spatial_type='avg',
+        dropout_ratio=0.5),
+    test_cfg=dict(average_clips='prob', max_testing_views=4),
+    pretrained=
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/video/backbone/swin_small_patch4_window7_224_22k.pth'
+)
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_bgr=False)
 
 train_pipeline = [
     dict(type='DecordInit'),
-    dict(type='SampleFrames', clip_len=4, frame_interval=12, num_clips=1),
+    dict(type='SampleFrames', clip_len=32, frame_interval=2, num_clips=1),
     dict(type='DecordDecode'),
-    # dict(type='VideoResize', scale=(-1, 228)),
-    dict(type='VideoRandomRescale', scale_range=(182, 228)),
+    dict(type='VideoResize', scale=(-1, 256)),
     dict(type='VideoRandomResizedCrop'),
-    dict(type='VideoResize', scale=(160, 160), keep_ratio=False),
+    dict(type='VideoResize', scale=(224, 224), keep_ratio=False),
     dict(type='VideoFlip', flip_ratio=0.5),
     dict(type='VideoNormalize', **img_norm_cfg),
     dict(type='FormatShape', input_format='NCTHW'),
@@ -44,13 +49,13 @@ val_pipeline = [
     dict(type='DecordInit'),
     dict(
         type='SampleFrames',
-        clip_len=4,
-        frame_interval=12,
+        clip_len=32,
+        frame_interval=2,
         num_clips=1,
         test_mode=True),
     dict(type='DecordDecode'),
-    dict(type='VideoResize', scale=(-1, 228)),
-    dict(type='VideoCenterCrop', crop_size=160),
+    dict(type='VideoResize', scale=(-1, 256)),
+    dict(type='VideoCenterCrop', crop_size=224),
     dict(type='VideoFlip', flip_ratio=0),
     dict(type='VideoNormalize', **img_norm_cfg),
     dict(type='FormatShape', input_format='NCTHW'),
@@ -62,13 +67,13 @@ test_pipeline = [
     dict(type='DecordInit'),
     dict(
         type='SampleFrames',
-        clip_len=4,
-        frame_interval=12,
-        num_clips=10,
+        clip_len=32,
+        frame_interval=2,
+        num_clips=4,
         test_mode=True),
     dict(type='DecordDecode'),
-    dict(type='VideoResize', scale=(-1, 182)),
-    dict(type='VideoThreeCrop', crop_size=182),
+    dict(type='VideoResize', scale=(-1, 224)),
+    dict(type='VideoThreeCrop', crop_size=224),
     dict(type='VideoFlip', flip_ratio=0),
     dict(type='VideoNormalize', **img_norm_cfg),
     dict(type='FormatShape', input_format='NCTHW'),
@@ -79,7 +84,6 @@ test_pipeline = [
 data_root = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/'
 train_ann_file = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/kinetics400/test.txt'
 val_ann_file = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/kinetics400/test.txt'
-
 train_dataset = dict(
     type='VideoDataset',
     data_source=dict(
@@ -100,37 +104,38 @@ val_dataset = dict(
         data_root=data_root,
         split=' ',
     ),
-    pipeline=test_pipeline,
+    pipeline=val_pipeline,
 )
 
 data = dict(
-    imgs_per_gpu=128, workers_per_gpu=16, train=train_dataset, val=val_dataset)
+    imgs_per_gpu=8, workers_per_gpu=4, train=train_dataset, val=val_dataset)
 
 # optimizer
-total_epochs = 300
-
+total_epochs = 1
 optimizer = dict(
-    type='SGD',
-    lr=0.1,
-    weight_decay=5e-5,
-    momentum=0.9,
-    nesterov=True,
+    type='AdamW',
+    lr=1e-3,
+    weight_decay=0.02,
+    betas=(0.9, 0.999),
     paramwise_options={
-        'bn': dict(weight_decay=0.),
+        'backbone': dict(lr_mult=0.1),
+        'absolute_pos_embed': dict(weight_decay=0.),
+        'relative_position_bias_table': dict(weight_decay=0.),
+        'norm': dict(weight_decay=0.),
     })
-
+optimizer_config = dict(update_interval=8)
 # learning policy
 lr_config = dict(
     policy='CosineAnnealing',
-    min_lr=0.0,
+    min_lr=0,
     warmup='linear',
     warmup_by_epoch=True,
-    warmup_iters=35)
+    warmup_iters=2)
 
-checkpoint_config = dict(interval=5)
+checkpoint_config = dict(interval=1)
 
 # eval
-eval_config = dict(initial=False, interval=5, gpu_collect=True)
+eval_config = dict(initial=False, interval=1, gpu_collect=True)
 eval_pipelines = [
     dict(
         mode='test',
@@ -139,11 +144,3 @@ eval_pipelines = [
         evaluators=[dict(type='ClsEvaluator', topk=(1, 5))],
     )
 ]
-
-log_config = dict(
-    interval=1,
-    hooks=[
-        dict(type='TextLoggerHook'),
-        # dict(type='TensorboardLoggerHook')
-    ])
-load_from = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/video/x3d_xs/epoch_300.pth'

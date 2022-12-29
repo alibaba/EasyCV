@@ -1,5 +1,6 @@
 _base_ = '../../base.py'
-
+num_classes = 400
+multi_class = False
 model = dict(
     type='Recognizer3D',
     backbone=dict(
@@ -19,7 +20,7 @@ model = dict(
     cls_head=dict(
         type='I3DHead',
         in_channels=768,
-        num_classes=400,
+        num_classes=num_classes,
         spatial_type='avg',
         dropout_ratio=0.5),
     test_cfg=dict(average_clips='prob', max_testing_views=4),
@@ -134,7 +135,7 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 
 # eval
-eval_config = dict(initial=True, interval=1, gpu_collect=True)
+eval_config = dict(initial=False, interval=1, gpu_collect=True)
 eval_pipelines = [
     dict(
         mode='test',

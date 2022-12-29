@@ -29,7 +29,8 @@ class Recognizer3D(BaseModel):
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        self.pretrained = get_checkpoint(pretrained)
+        self.pretrained = get_checkpoint(
+            pretrained) if pretrained != None else pretrained
         self.activate_fn = nn.Softmax(dim=1)
 
         # aux_info is the list of tensor names beyond 'imgs' and 'label' which

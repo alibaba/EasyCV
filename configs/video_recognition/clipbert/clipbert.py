@@ -1,5 +1,6 @@
 _base_ = '../../base.py'
-
+num_classes = 1206
+multi_class = True
 model = dict(
     type='ClipBertTwoStream',
     vision=dict(
