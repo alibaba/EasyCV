@@ -1,5 +1,6 @@
 _base_ = '../../base.py'
 
+num_classes = 80
 # model settings s m l x
 model = dict(
     type='YOLOX',
@@ -12,7 +13,7 @@ model = dict(
         model_type='s',
         obj_loss_type='BCE',
         reg_loss_type='giou',
-        num_classes=80,
+        num_classes=num_classes,
         decode_in_inference=True))
 
 # s m l x

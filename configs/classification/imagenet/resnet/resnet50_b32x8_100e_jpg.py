@@ -1,5 +1,6 @@
 _base_ = '../common/dataset/imagenet_classification.py'
 
+num_classes = 1000
 # model settings
 model = dict(
     type='Classification',
@@ -16,7 +17,7 @@ model = dict(
             type='CrossEntropyLossWithLabelSmooth',
             label_smooth=0,
         ),
-        num_classes=1000))
+        num_classes=num_classes))
 
 # optimizer
 optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.0001)

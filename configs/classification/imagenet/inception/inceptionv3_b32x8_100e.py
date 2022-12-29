@@ -1,5 +1,6 @@
 _base_ = 'configs/base.py'
 
+num_classes = 1000
 # model settings
 model = dict(
     type='Classification',
@@ -12,7 +13,7 @@ model = dict(
             type='CrossEntropyLossWithLabelSmooth',
             label_smooth=0,
         ),
-        num_classes=1000))
+        num_classes=num_classes))
 
 class_list = [
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13',
