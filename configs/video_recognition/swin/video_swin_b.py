@@ -111,7 +111,7 @@ data = dict(
     imgs_per_gpu=8, workers_per_gpu=4, train=train_dataset, val=val_dataset)
 
 # optimizer
-total_epochs = 1
+total_epochs = 30
 optimizer = dict(
     type='AdamW',
     lr=3e-4,
