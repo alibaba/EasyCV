@@ -67,16 +67,15 @@ def main():
     # build the model from a config file and a checkpoint file
     model = DetectionPredictor(args.checkpoint, args.config, score_threshold=0)
     tracker = BYTETracker(
-            det_high_thresh=0.2,
-            det_low_thresh=0.05, 
-            match_thresh=1.0,
-            match_thresh_second=1.0, 
-            match_thresh_init=1.0,  
-            track_buffer=2, 
-            frame_rate=25)
+        det_high_thresh=0.2,
+        det_low_thresh=0.05,
+        match_thresh=1.0,
+        match_thresh_second=1.0,
+        match_thresh_init=1.0,
+        track_buffer=2,
+        frame_rate=25)
 
     prog_bar = mmcv.ProgressBar(len(imgs))
-
 
     # test and show/save the images
     track_result = None
@@ -89,9 +88,16 @@ def main():
         detection_scores = result['detection_scores']
         detection_classes = result['detection_classes']
 
-        detection_boxes, detection_scores, detection_classes = detection_result_filter(detection_boxes, detection_scores, detection_classes, target_classes=[0], target_thresholds=[0])
+        detection_boxes, detection_scores, detection_classes = detection_result_filter(
+            detection_boxes,
+            detection_scores,
+            detection_classes,
+            target_classes=[0],
+            target_thresholds=[0])
         if len(detection_boxes) > 0:
-            track_result = tracker.update(detection_boxes, detection_scores, detection_classes) # [id, t, l, b, r, score]
+            track_result = tracker.update(
+                detection_boxes, detection_scores,
+                detection_classes)  # [id, t, l, b, r, score]
 
         if args.output is not None:
             if IN_VIDEO or OUT_VIDEO:
@@ -100,8 +106,9 @@ def main():
                 out_file = osp.join(out_path, img.rsplit(os.sep, 1)[-1])
         else:
             out_file = None
-        # if len(track_result['track_bboxes']) > 0:
-        show_result(img, track_result,
+        show_result(
+            img,
+            track_result,
             score_thr=args.score_thr,
             show=args.show,
             wait_time=int(1000. / fps) if fps else 0,

@@ -8,7 +8,6 @@ from functools import reduce
 import numpy as np
 import random
 import re
-import seaborn as sns
 
 import mmcv
 
@@ -620,10 +619,13 @@ def detection_result_filter(bboxes, scores, classes, target_classes, target_thre
     bboxes_tmp = []
     scores_tmp = []
     classes_tmp = []
-    assert len(target_classes)==len(target_thresholds), "detection post process, class filter need target_classes and target_thresholds both, and should be same length!"
+    assert len(target_classes) == len(
+        target_thresholds
+    ), 'detection post process, class filter need target_classes and target_thresholds both, and should be same length!'
 
     for bidx, bcls in enumerate(classes):
-        if bcls in target_classes and scores[bidx] > target_thresholds[target_classes.index(bcls)]:
+        if bcls in target_classes and scores[bidx] > target_thresholds[
+                target_classes.index(bcls)]:
             bboxes_tmp.append(bboxes[bidx])
             scores_tmp.append(scores[bidx])
             classes_tmp.append(classes[bidx])
@@ -632,8 +634,8 @@ def detection_result_filter(bboxes, scores, classes, target_classes, target_thre
     classes = np.array(classes_tmp)
     return bboxes, scores, classes
 
-def results2outs(bbox_results=None,
-                 **kwargs):
+
+def results2outs(bbox_results=None, **kwargs):
     """Restore the results (list of results of each category) into the results
     of the model forward.
 
@@ -665,23 +667,26 @@ def results2outs(bbox_results=None,
 
     return outputs
 
+
 def random_color(seed):
     """Random a color according to the input seed."""
     random.seed(seed)
+    import seaborn as sns
     colors = sns.color_palette()
     color = random.choice(colors)
     return color
 
+
 def imshow_tracks(img,
-                bboxes,
-                ids,
-                classes=None,
-                score_thr=0.0,
-                thickness=2,
-                font_scale=0.4,
-                show=False,
-                wait_time=0,
-                out_file=None):
+                  bboxes,
+                  ids,
+                  classes=None,
+                  score_thr=0.0,
+                  thickness=2,
+                  font_scale=0.4,
+                  show=False,
+                  wait_time=0,
+                  out_file=None):
     """Show the tracks with opencv."""
     if isinstance(img, str):
         img = mmcv.imread(img)
@@ -706,7 +711,8 @@ def imshow_tracks(img,
             # bbox
             bbox_color = random_color(id)
             bbox_color = [int(255 * _c) for _c in bbox_color][::-1]
-            cv2.rectangle(img, (x1, y1), (x2, y2), bbox_color, thickness=thickness)
+            cv2.rectangle(
+                img, (x1, y1), (x2, y2), bbox_color, thickness=thickness)
 
             # score
             text = '{:.02f}'.format(score)
@@ -738,8 +744,8 @@ def imshow_tracks(img,
 
     return img
 
-def show_result(
-                img,
+
+def show_result(img,
                 result,
                 score_thr=0.0,
                 thickness=1,

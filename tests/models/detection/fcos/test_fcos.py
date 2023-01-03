@@ -7,8 +7,6 @@ from numpy.testing import assert_array_almost_equal
 
 from easycv.predictors.detector import DetectionPredictor
 
-# from easycv.thirdparty.mot.bytetrack.byte_tracker import BYTETracker
-
 
 class FCOSTest(unittest.TestCase):
 
@@ -57,49 +55,57 @@ class FCOSTest(unittest.TestCase):
                       [189.96198, 108.948654, 297.10025, 154.80592]]),
             decimal=1)
 
-        # tracker = BYTETracker(
-        #     det_high_thresh=0.2,
-        #     det_low_thresh=0.05,
-        #     match_thresh=1.0,
-        #     match_thresh_second=1.0,
-        #     match_thresh_init=1.0,
-        #     track_buffer=2,
-        #     frame_rate=25)
-        # track_result = tracker.update(output['detection_boxes'],
-        #                               output['detection_scores'],
-        #                               output['detection_classes'])
+    @unittest.skip('skip bytetrack unittest')
+    def test_bytetrack(self):
+        from easycv.thirdparty.mot.bytetrack.byte_tracker import BYTETracker
+        model_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/fcos/fcos_epoch_12.pth'
+        config_path = 'configs/detection/fcos/fcos_r50_torch_1x_coco.py'
+        img = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/demo/demo.jpg'
+        model = DetectionPredictor(model_path, config_path)
+        output = model(img)[0]
+        tracker = BYTETracker(
+            det_high_thresh=0.2,
+            det_low_thresh=0.05,
+            match_thresh=1.0,
+            match_thresh_second=1.0,
+            match_thresh_init=1.0,
+            track_buffer=2,
+            frame_rate=25)
+        track_result = tracker.update(output['detection_boxes'],
+                                      output['detection_scores'],
+                                      output['detection_classes'])
 
-        # assert_array_almost_equal(
-        #     track_result['track_bboxes'],
-        #     np.array([[
-        #         1.00000000e+00, 2.94000000e+02, 1.16000000e+02, 3.78000000e+02,
-        #         1.49000000e+02, 7.14209914e-01
-        #     ],
-        #               [
-        #                   2.00000000e+00, 4.80000000e+02, 1.10000000e+02,
-        #                   5.23000000e+02, 1.30000000e+02, 6.16470039e-01
-        #               ],
-        #               [
-        #                   3.00000000e+00, 3.98000000e+02, 1.10000000e+02,
-        #                   4.33000000e+02, 1.33000000e+02, 5.85758626e-01
-        #               ],
-        #               [
-        #                   4.00000000e+00, 6.08000000e+02, 1.11000000e+02,
-        #                   6.36000000e+02, 1.37000000e+02, 5.83925486e-01
-        #               ],
-        #               [
-        #                   5.00000000e+00, 5.91000000e+02, 1.09000000e+02,
-        #                   6.19000000e+02, 1.26000000e+02, 5.37827313e-01
-        #               ],
-        #               [
-        #                   6.00000000e+00, 4.31000000e+02, 1.04000000e+02,
-        #                   4.82000000e+02, 1.31000000e+02, 5.12700200e-01
-        #               ],
-        #               [
-        #                   7.00000000e+00, 1.89000000e+02, 1.08000000e+02,
-        #                   2.97000000e+02, 1.54000000e+02, 5.07710576e-01
-        #               ]]),
-        #     decimal=1)
+        assert_array_almost_equal(
+            track_result['track_bboxes'],
+            np.array([[
+                1.00000000e+00, 2.94000000e+02, 1.16000000e+02, 3.78000000e+02,
+                1.49000000e+02, 7.14209914e-01
+            ],
+                      [
+                          2.00000000e+00, 4.80000000e+02, 1.10000000e+02,
+                          5.23000000e+02, 1.30000000e+02, 6.16470039e-01
+                      ],
+                      [
+                          3.00000000e+00, 3.98000000e+02, 1.10000000e+02,
+                          4.33000000e+02, 1.33000000e+02, 5.85758626e-01
+                      ],
+                      [
+                          4.00000000e+00, 6.08000000e+02, 1.11000000e+02,
+                          6.36000000e+02, 1.37000000e+02, 5.83925486e-01
+                      ],
+                      [
+                          5.00000000e+00, 5.91000000e+02, 1.09000000e+02,
+                          6.19000000e+02, 1.26000000e+02, 5.37827313e-01
+                      ],
+                      [
+                          6.00000000e+00, 4.31000000e+02, 1.04000000e+02,
+                          4.82000000e+02, 1.31000000e+02, 5.12700200e-01
+                      ],
+                      [
+                          7.00000000e+00, 1.89000000e+02, 1.08000000e+02,
+                          2.97000000e+02, 1.54000000e+02, 5.07710576e-01
+                      ]]),
+            decimal=1)
 
 
 if __name__ == '__main__':
