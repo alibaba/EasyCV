@@ -2,6 +2,7 @@
 import os
 import unittest
 
+import torch
 from tests.ut_config import VIDEO_DATA_SMALL_RAW_LOCAL
 
 from easycv.core.evaluation.builder import build_evaluator
@@ -47,9 +48,7 @@ class VideoDatasetTest(unittest.TestCase):
         dataset = VideoDataset(data_source_cfg, pipeline)
 
         item = dataset[10]
-        print(item.keys())
-        print(item['imgs'].shape)
-        print(item['label'])
+        self.assertEqual(item['imgs'].shape, torch.Size([1, 3, 32, 224, 224]))
 
     def test_video_text(self):
         data_root = VIDEO_DATA_SMALL_RAW_LOCAL
@@ -87,11 +86,7 @@ class VideoDatasetTest(unittest.TestCase):
         dataset = VideoDataset(data_source_cfg, pipeline)
 
         item = dataset[5]
-        print(item.keys())
-        print(item['imgs'].dtype)
-        print(item['label'])
-        print(item['text_input_ids'])
-        print(item['text_input_mask'])
+        self.assertEqual(item['imgs'].shape, torch.Size([1, 3, 32, 224, 224]))
 
 
 if __name__ == '__main__':
