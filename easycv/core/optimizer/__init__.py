@@ -3,8 +3,6 @@ from distutils.version import LooseVersion
 import torch
 from torch.optim import *
 
-from .adai import Adai
-from .adan import Adan
 from .builder import build_optimizer_constructor
 from .lamb import Lamb
 from .lars import LARS
