@@ -20,7 +20,7 @@ model = dict(
     cls_head=dict(
         type='I3DHead',
         in_channels=1024,
-        num_classes=400,
+        num_classes=multi_class,
         spatial_type='avg',
         dropout_ratio=0.5),
     test_cfg=dict(average_clips='prob', max_testing_views=4),
