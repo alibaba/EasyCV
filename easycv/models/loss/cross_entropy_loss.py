@@ -6,13 +6,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn import BCEWithLogitsLoss
 
 from easycv.framework.errors import ValueError
 from easycv.models.builder import LOSSES
 from easycv.models.loss.utils import weight_reduce_loss
-
-LOSSES.register_module(cls=BCEWithLogitsLoss)
 
 
 def get_class_weight(class_weight):

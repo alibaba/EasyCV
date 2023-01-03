@@ -326,48 +326,8 @@ class X3D(nn.Module):
             )
             dim_in = dim_out
             self.add_module(prefix, s)
-        # spat_sz = int(math.ceil(self.train_crop_size / 32.0))
-        # if isinstance(self.num_classes, list):
-        #     for idx,num_classes in enumerate(self.num_classes):
-        #         prefix = "h{}".format(idx)
-        #         head = X3DHead(
-        #         dim_in=dim_out,
-        #         dim_inner=dim_inner,
-        #         dim_out=self.dim_c5,
-        #         num_classes=num_classes,
-        #         pool_size=[self.num_frames, spat_sz, spat_sz],
-        #         dropout_rate=0.5,
-        #         act_func='softmax',
-        #         bn_lin5_on=False,
-        #         )
-        #         self.add_module(prefix,head)
-        # else:
-        #     self.head = X3DHead(
-        #         dim_in=dim_out,
-        #         dim_inner=dim_inner,
-        #         dim_out=self.dim_c5,
-        #         num_classes=self.num_classes,
-        #         pool_size=[self.num_frames, spat_sz, spat_sz],
-        #         dropout_rate=0.5,
-        #         act_func='softmax',
-        #         bn_lin5_on=False,
-        #     )
 
     def forward(self, x):
-        # outs = []
-        # feature = None
-        # for step,module in enumerate(self.children()):
-        #     if step < len(self.block_basis)+1:
-        #         x = module(x)
-        #         feature = x
-        #         outs.append(x)
-        #     else:
-        #         x = module(feature)
-        #         outs.append(x)
-        # if len(outs) == 1:
-        #     return outs[0]
-        # else:
-        #     return tuple(outs)
         for step, module in enumerate(self.children()):
             x = module(x)
         return x
