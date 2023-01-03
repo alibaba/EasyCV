@@ -1,4 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import logging
+import traceback
+
 import numpy as np
 
 from easycv.datasets.registry import DATASETS
@@ -23,10 +26,14 @@ class VideoDataset(BaseDataset):
             data_source, pipeline, profiling=profiling)
 
     def __getitem__(self, idx):
-
-        data_dict = self.data_source[idx]
-        data_dict = self.pipeline(data_dict)
-
+        try:
+            data_dict = self.data_source[idx]
+            data_dict = self.pipeline(data_dict)
+        except:
+            logging.error(
+                'When parsing line {}, error happened with msg: {}'.format(
+                    idx, traceback.format_exc()))
+            data_dict = None
         if data_dict is None:
             return self.__getitem__(np.random.randint(self.__len__()))
 
