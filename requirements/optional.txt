@@ -10,4 +10,5 @@ lap
 nuscenes-devkit
 open3d
 pyquaternion
+seaborn
 trimesh

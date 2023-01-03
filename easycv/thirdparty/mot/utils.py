@@ -5,7 +5,6 @@ import random
 import cv2
 import mmcv
 import numpy as np
-import seaborn as sns
 
 
 def detection_result_filter(bboxes,
@@ -69,6 +68,7 @@ def results2outs(bbox_results=None, **kwargs):
 def random_color(seed):
     """Random a color according to the input seed."""
     random.seed(seed)
+    import seaborn as sns
     colors = sns.color_palette()
     color = random.choice(colors)
     return color
