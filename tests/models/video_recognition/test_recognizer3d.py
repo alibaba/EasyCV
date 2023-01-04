@@ -70,11 +70,11 @@ class Recognizer3dTest(unittest.TestCase):
             ),
             cls_head=dict(
                 type='X3DHead',
-                in_channels=192,
+                dim_in=192,
+                dim_inner=432,
+                dim_out=2048,
                 num_classes=400,
-                spatial_type='avg',
-                dropout_ratio=0.5,
-                fc1_bias=False),
+                dropout_rate=0.5),
             test_cfg=dict(average_clips='prob'))
 
         model = build_model(model_cfg)
