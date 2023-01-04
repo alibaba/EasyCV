@@ -2,12 +2,12 @@
 import json
 import logging
 import os
-import time
 
 from PIL import Image, ImageFile
 
 from easycv.datasets.registry import DATASOURCES
 from easycv.file import io
+from easycv.file.image import load_image
 from easycv.framework.errors import TypeError
 from easycv.utils.dist_utils import dist_zero_exec
 from .utils import split_listfile_byrank
@@ -105,25 +105,11 @@ class ClsSourceImageList(object):
         return len(self.fns)
 
     def __getitem__(self, idx):
-        img = None
-        try_idx = 0
-
-        while img is None and try_idx < self.max_try:
-            try:
-                img = Image.open(io.open(self.fns[idx], 'rb'))
-                if img.mode != 'RGB':
-                    img = img.convert('RGB')
-            except:
-                # frequent access to oss will cause error, sleep can aviod it
-                time.sleep(1)
-                logging.warning('Try read file fault, %s' % self.fns[idx])
-                img = None
-
-            try_idx += 1
-
+        img = load_image(self.fns[idx], mode='RGB')
         if img is None:
             return self[idx + 1]
 
+        img = Image.fromarray(img)
         label = self.labels[idx]
 
         result_dict = {'img': img, 'gt_labels': label}

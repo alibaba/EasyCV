@@ -40,7 +40,7 @@ class IO(IOLocal):
 
     __name__ = 'IO'
 
-    def __init__(self, max_retry=10):
+    def __init__(self, max_retry=10, retry_wait=0.1, max_retry_wait=30):
 
         super(IO, self).__init__()
 
@@ -49,6 +49,8 @@ class IO(IOLocal):
         self.auth = None
         self.oss_config = None
         self.max_retry = max_retry
+        self.retry_wait = retry_wait
+        self.max_retry_wait = max_retry_wait
 
         if self._is_oss_env_prepared():
             self.access_oss(
@@ -173,6 +175,8 @@ class IO(IOLocal):
             raise FileNotFoundError(full_path)
         bucket, path = self._get_bucket_obj_and_path(full_path)
         num_retry = 0
+        retry_wait = self.retry_wait
+
         data = None
         while num_retry < self.max_retry:
             try:
@@ -195,9 +199,11 @@ class IO(IOLocal):
             except Exception as e:
                 num_retry += 1
                 logging.warning(
-                    f'read exception occur, sleep 3s to retry num_retry/max_retry {num_retry}/{self.max_retry}\n {e}'
+                    f'read exception occur, sleep {retry_wait}s to retry num_retry/max_retry {num_retry}/{self.max_retry}\n {e}'
                 )
-                time.sleep(3)
+                if retry_wait > 0:
+                    time.sleep(retry_wait)
+                    retry_wait = min(retry_wait * 2, self.max_retry_wait)
 
         if data is None:
             raise IOError('Read file error: %s!' % full_path)

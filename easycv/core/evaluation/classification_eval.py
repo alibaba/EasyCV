@@ -25,11 +25,13 @@ class ClsEvaluator(Evaluator):
         '''
 
         Args:
-            top_k: tuple of int, evaluate top_k acc
+            top_k (int, tuple): int or tuple of int, evaluate top_k acc
             dataset_name: eval dataset name
             metric_names: eval metrics name
             neck_num: some model contains multi-neck to support multitask, neck_num means use the no.neck_num  neck output of model to eval
         '''
+        if isinstance(topk, int):
+            topk = (topk, )
         self._topk = topk
         self.dataset_name = dataset_name
         self.neck_num = neck_num

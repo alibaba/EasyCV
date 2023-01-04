@@ -2,12 +2,12 @@
 import logging
 import os
 import random
-import time
 
 from PIL import Image, ImageFile
 
 from easycv.datasets.registry import DATASOURCES
 from easycv.file import io
+from easycv.file.image import load_image
 from easycv.utils.dist_utils import dist_zero_exec
 from .utils import split_listfile_byrank
 
@@ -94,25 +94,11 @@ class ClsSourceImageListByClass(object):
         return_label = []
 
         for path in sample_list:
-            img = None
-            try_idx = 0
-            while not img and try_idx < self.max_try:
-                try:
-                    img = Image.open(
-                        io.open(os.path.join(self.root, path), 'rb'))
-                    if img.mode != 'RGB':
-                        img = img.convert('RGB')
-                except:
-                    logging.warning('Try read file fault, %s' %
-                                    os.path.join(self.root, path))
-                    time.sleep(1)
-                    img = None
-
-                try_idx += 1
-
+            img = load_image(os.path.join(self.root, path), mode='RGB')
             if img is None:
                 return self[idx + 1]
 
+            img = Image.fromarray(img)
             return_img.append(img)
             return_label.append(label)
 

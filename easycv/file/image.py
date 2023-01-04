@@ -1,7 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import io
-import logging
-import time
 
 import cv2
 import numpy as np
@@ -9,9 +7,8 @@ from cv2 import IMREAD_COLOR
 from PIL import Image
 
 from easycv import file
-from easycv.framework.errors import IOError, KeyError, ValueError
-from easycv.utils.constant import MAX_READ_IMAGE_TRY_TIMES
-from .utils import is_oss_path, is_url_path
+from easycv.framework.errors import KeyError, ValueError
+from .utils import is_url_path
 
 try:
     from turbojpeg import TurboJPEG, TJCS_RGB, TJPF_BGR
@@ -81,11 +78,7 @@ def _load_image(fp, mode='BGR', dtype=np.uint8, backend='pillow'):
     return img
 
 
-def load_image(img_path,
-               mode='BGR',
-               dtype=np.uint8,
-               backend='pillow',
-               max_try_times=MAX_READ_IMAGE_TRY_TIMES):
+def load_image(img_path, mode='BGR', dtype=np.uint8, backend='pillow'):
     """Load image file, return np.ndarray.
 
     Args:
@@ -94,7 +87,6 @@ def load_image(img_path,
         dtype : Output data type.
         backend (str): The image decoding backend type. Options are `cv2`, `pillow`, `turbojpeg`.
     """
-    # TODO: functions of multi tries should be in the `io.open`
     img = None
     if is_url_path(img_path):
         from mmcv.fileio.file_client import HTTPBackend
