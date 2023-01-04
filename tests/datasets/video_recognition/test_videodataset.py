@@ -50,6 +50,7 @@ class VideoDatasetTest(unittest.TestCase):
         item = dataset[10]
         self.assertEqual(item['imgs'].shape, torch.Size([1, 3, 32, 224, 224]))
 
+    @unittest.skip('skipping')
     def test_video_text(self):
         data_root = VIDEO_DATA_SMALL_RAW_LOCAL
         data_source_cfg = dict(

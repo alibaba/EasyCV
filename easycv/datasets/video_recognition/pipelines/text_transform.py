@@ -1,5 +1,3 @@
-from transformers import BertTokenizerFast
-
 from easycv.datasets.registry import PIPELINES
 
 
@@ -13,6 +11,7 @@ class TextTokenizer:
         padding='max_length',
         truncation=True,
     ):
+        from transformers import BertTokenizerFast
         self.tokenizer = BertTokenizerFast.from_pretrained(tokenizer_type)
         self.max_length = max_length
         self.padding = padding
