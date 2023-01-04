@@ -23,23 +23,11 @@ def main():
     parser.add_argument(
         '--output', help='output video file (mp4 format) or folder')
     parser.add_argument(
-        '--score-thr',
-        type=float,
-        default=0.0,
-        help='The threshold of score to filter bboxes.')
-    parser.add_argument(
-        '--device', default='cuda:0', help='device used for inference')
-    parser.add_argument(
-        '--show',
-        action='store_true',
-        help='whether show the results on the fly')
-    parser.add_argument(
         '--save_images',
         action='store_true',
         help='Save visualization image results.')
-    parser.add_argument('--fps', help='FPS of the output video')
     args = parser.parse_args()
-    assert args.output or args.show
+    assert args.output
 
     cid_bias = dict()
     mot_list_breaks = []
@@ -66,30 +54,6 @@ def main():
             imgs.sort()
             assert len(imgs) > 0, '{} has no images.'.format(fpath)
             print('start tracking seq: {}'.format(seq))
-            
-        IN_VIDEO = False
-
-        # define output
-        if args.output is not None:
-            if args.output.endswith('.mp4'):
-                OUT_VIDEO = True
-                out_dir = tempfile.TemporaryDirectory()
-                out_path = out_dir.name
-                _out = args.output.rsplit(os.sep, 1)
-                if len(_out) > 1:
-                    os.makedirs(_out[0], exist_ok=True)
-            else:
-                OUT_VIDEO = False
-                out_path = args.output
-                os.makedirs(out_path, exist_ok=True)
-
-        fps = args.fps
-        if args.show or OUT_VIDEO:
-            if fps is None and IN_VIDEO:
-                fps = imgs.fps
-            if not fps:
-                raise ValueError('Please set the FPS for the output video.')
-            fps = int(fps)
 
         # build the model from a config file and a checkpoint file
         det_model = DetectionPredictor(args.det_checkpoint, args.det_config, score_threshold=0)
@@ -103,9 +67,6 @@ def main():
                 track_buffer=2, 
                 frame_rate=25)
 
-        prog_bar = mmcv.ProgressBar(len(imgs))
-
-
         # test and show/save the images
         track_result = None
         mot_features_dict = dict()
@@ -118,7 +79,7 @@ def main():
             detection_classes = result['detection_classes']
             img_metas = result['img_metas']
 
-            detection_boxes, detection_scores, detection_classes = detection_result_filter(detection_boxes, detection_scores, detection_classes, target_classes=[2], target_thresholds=[0])
+            detection_boxes, detection_scores, detection_classes = detection_result_filter(detection_boxes, detection_scores, detection_classes, target_classes=[2], target_thresholds=[0]) # 0: person 2: car
             if len(detection_boxes) > 0:
                 track_result = tracker.update(detection_boxes, detection_scores, detection_classes) # [id, t, l, b, r, score]
 
