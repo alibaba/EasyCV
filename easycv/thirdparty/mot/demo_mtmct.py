@@ -11,7 +11,7 @@ import mmcv
 
 from easycv.predictors import DetectionPredictor, ClassificationPredictor
 from easycv.thirdparty.mot.bytetrack.byte_tracker import BYTETracker
-from easycv.thirdparty.mot.utils import detection_result_filter, show_result, reid_predictor, parse_bias, trajectory_fusion, video2frames, _is_valid_video, sub_cluster, gen_res, get_mtmct_matching_results, save_mtmct_crops, save_mtmct_vis_results
+from easycv.thirdparty.mot.utils import detection_result_filter, show_result, reid_predictor, trajectory_fusion, video2frames, _is_valid_video, sub_cluster, gen_res, get_mtmct_matching_results, save_mtmct_crops, save_mtmct_vis_results
 
 def main():
     parser = ArgumentParser()
@@ -41,8 +41,7 @@ def main():
     args = parser.parse_args()
     assert args.output or args.show
 
-    cid_bias = parse_bias({'c003': 0, 'c004': 0})
-    scene_cluster = list(cid_bias.keys())
+    cid_bias = dict()
     mot_list_breaks = []
     cid_tid_dict = dict()
     # load images
@@ -138,6 +137,7 @@ def main():
                     mot_features_dict[imgname]['feat'] = pred_embeddings[idx]['prob'].squeeze().numpy()
 
         cid = int(re.sub('[a-z,A-Z]', "", seq))
+        cid_bias[cid] = float(0)
         tid_data, mot_list_break = trajectory_fusion(
             mot_features_dict,
             cid,
@@ -149,6 +149,8 @@ def main():
             tid = tracklet['tid']
             if (cid, tid) not in cid_tid_dict:
                 cid_tid_dict[(cid, tid)] = tracklet
+
+    scene_cluster = list(cid_bias.keys())
 
     map_tid = sub_cluster(
         cid_tid_dict,

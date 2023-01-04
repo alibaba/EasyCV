@@ -489,15 +489,6 @@ def video2frames(video_path, outpath, frame_rate=25, **kargs):
     sys.stdout.flush()
     return out_full_path
 
-def parse_bias(cameras_bias):
-    cid_bias = dict()
-    for cameras in cameras_bias.keys():
-        cameras_id = re.sub('[a-z,A-Z]', "", cameras)
-        cameras_id = int(cameras_id)
-        bias = cameras_bias[cameras]
-        cid_bias[cameras_id] = float(bias)
-    return cid_bias
-
 def parse_pt(mot_feature):
     mot_list = dict()
     for line in mot_feature:
