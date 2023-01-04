@@ -2,21 +2,22 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 import os
-import sys
-import cv2
-from functools import reduce
-import numpy as np
 import random
 import re
+import sys
+from functools import reduce
 
+import cv2
 import mmcv
-
+import numpy as np
 from torchvision.transforms import functional as F
+
 
 def get_color(idx):
     idx = idx * 3
     color = ((37 * idx) % 255, (17 * idx) % 255, (29 * idx) % 255)
     return color
+
 
 def plot_tracking(image,
                   tlwhs,
@@ -48,12 +49,16 @@ def plot_tracking(image,
         id_text = 'ID: {}'.format(int(obj_id))
         if ids2names != []:
             assert len(
-                ids2names) == 1, "plot_tracking only supports single classes."
+                ids2names) == 1, 'plot_tracking only supports single classes.'
             id_text = 'ID: {}_'.format(ids2names[0]) + id_text
         _line_thickness = 1 if obj_id <= 0 else line_thickness
         color = get_color(abs(obj_id))
         cv2.rectangle(
-            im, intbox[0:2], intbox[2:4], color=color, thickness=line_thickness)
+            im,
+            intbox[0:2],
+            intbox[2:4],
+            color=color,
+            thickness=line_thickness)
         cv2.putText(
             im,
             id_text, (intbox[0], intbox[1] - 25),
@@ -79,7 +84,9 @@ def plot_tracking(image,
             thickness=line_thickness)
     return im
 
-def get_mtmct_matching_results(pred_mtmct_file, secs_interval=0.5,
+
+def get_mtmct_matching_results(pred_mtmct_file,
+                               secs_interval=0.5,
                                video_fps=20):
     res = np.loadtxt(pred_mtmct_file)  # 'cid, tid, fid, x1, y1, w, h, -1, -1'
     camera_ids = list(map(int, np.unique(res[:, 0])))
@@ -175,12 +182,13 @@ def save_mtmct_crops(cid_tid_fid_res,
                 clip = cv2.resize(clip, (width, height))
 
                 cv2.imwrite(
-                    os.path.join(crops_dir,
-                                 'tid{:06d}_cid{:06d}_fid{:06d}.jpg'.format(
-                                     tid, cid, fid)), clip)
+                    os.path.join(
+                        crops_dir, 'tid{:06d}_cid{:06d}_fid{:06d}.jpg'.format(
+                            tid, cid, fid)), clip)
 
-            print("Finish cropping image of tracked_id {} in camera: {}".format(
-                t_id, c_id))
+            print(
+                'Finish cropping image of tracked_id {} in camera: {}'.format(
+                    t_id, c_id))
 
 
 def save_mtmct_vis_results(camera_results,
@@ -201,7 +209,7 @@ def save_mtmct_vis_results(camera_results,
         os.makedirs(save_dir)
 
     for i, c_id in enumerate(camera_ids):
-        print("Start visualization for camera {} of sequence {}.".format(
+        print('Start visualization for camera {} of sequence {}.'.format(
             c_id, seqs[i]))
         cid_save_dir = os.path.join(save_dir, '{}'.format(seqs[i]))
         if not os.path.exists(cid_save_dir):
@@ -233,18 +241,19 @@ def save_mtmct_vis_results(camera_results,
                 print('Processing frame {}'.format(f_id))
 
         if save_videos:
-            output_video_path = os.path.join(cid_save_dir, '..',
-                                             '{}_mtmct_vis.mp4'.format(seqs[i]))
+            output_video_path = os.path.join(
+                cid_save_dir, '..', '{}_mtmct_vis.mp4'.format(seqs[i]))
             cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
                 cid_save_dir, output_video_path)
             os.system(cmd_str)
             print('Save camera {} video in {}.'.format(seqs[i],
                                                        output_video_path))
 
+
 def parse_pt_gt(mot_feature):
     img_rects = dict()
     for line in mot_feature:
-        fid = int(re.sub('[a-z,A-Z]', "", mot_feature[line]['frame']))
+        fid = int(re.sub('[a-z,A-Z]', '', mot_feature[line]['frame']))
         tid = mot_feature[line]['id']
         rect = list(map(lambda x: int(float(x)), mot_feature[line]['bbox']))
         if fid not in img_rects:
@@ -253,10 +262,8 @@ def parse_pt_gt(mot_feature):
         img_rects[fid].append(rect)
     return img_rects
 
-def gen_res(output_dir_filename,
-            scene_cluster,
-            map_tid,
-            mot_list_breaks):
+
+def gen_res(output_dir_filename, scene_cluster, map_tid, mot_list_breaks):
     f_w = open(output_dir_filename, 'w')
     for idx, mot_feature in enumerate(mot_list_breaks):
         cid = scene_cluster[idx]
@@ -292,6 +299,7 @@ def gen_res(output_dir_filename,
     print('gen_res: write file in {}'.format(output_dir_filename))
     f_w.close()
 
+
 def get_match(cluster_labels):
     cluster_dict = dict()
     cluster = list()
@@ -304,6 +312,7 @@ def get_match(cluster_labels):
         cluster.append(cluster_dict[idx])
     return cluster
 
+
 def combin_feature(cid_tid_dict, sub_cluster):
     for sub_ct in sub_cluster:
         if len(sub_ct) < 2: continue
@@ -311,6 +320,7 @@ def combin_feature(cid_tid_dict, sub_cluster):
         for i in sub_ct:
             cid_tid_dict[i]['mean_feat'] = mean_feat.mean(axis=0)
     return cid_tid_dict
+
 
 def get_cid_tid(cluster_labels, cid_tids):
     cluster = list()
@@ -320,6 +330,7 @@ def get_cid_tid(cluster_labels, cid_tids):
             cid_tid_list.append(cid_tids[label])
         cluster.append(cid_tid_list)
     return cluster
+
 
 def normalize(nparray, axis=0):
     try:
@@ -331,6 +342,7 @@ def normalize(nparray, axis=0):
     nparray = preprocessing.normalize(nparray, norm='l2', axis=axis)
     return nparray
 
+
 def intracam_ignore(st_mask, cid_tids):
     count = len(cid_tids)
     for i in range(count):
@@ -338,6 +350,7 @@ def intracam_ignore(st_mask, cid_tids):
             if cid_tids[i][0] == cid_tids[j][0]:
                 st_mask[i, j] = 0.
     return st_mask
+
 
 def visual_rerank(prb_feats,
                   gal_feats,
@@ -351,6 +364,7 @@ def visual_rerank(prb_feats,
 
     # NOTE: sims here is actually dist, the smaller the more similar
     return 1.0 - sims
+
 
 def get_sim_matrix(cid_tid_dict,
                    cid_tids,
@@ -380,6 +394,7 @@ def get_sim_matrix(cid_tid_dict,
 
     np.fill_diagonal(sim_matrix, 0)
     return sim_matrix
+
 
 def get_labels(cid_tid_dict,
                cid_tids,
@@ -425,6 +440,7 @@ def get_labels(cid_tid_dict,
 
     return labels
 
+
 def sub_cluster(cid_tid_dict,
                 scene_cluster,
                 use_ff=False,
@@ -434,7 +450,7 @@ def sub_cluster(cid_tid_dict,
     cid_tid_dict: all camera_id and track_id
     scene_cluster: like [41, 42, 43, 44, 45, 46] in AIC21 MTMCT S06 test videos
     '''
-    assert (len(scene_cluster) != 0), "Error: scene_cluster length equals 0"
+    assert (len(scene_cluster) != 0), 'Error: scene_cluster length equals 0'
     cid_tids = sorted(
         [key for key in cid_tid_dict.keys() if key[0] in scene_cluster])
     clu = get_labels(
@@ -456,10 +472,13 @@ def sub_cluster(cid_tid_dict,
             cid_tid_label[c] = i + 1
     return cid_tid_label
 
+
 def _is_valid_video(f, extensions=('.mp4', '.avi', '.mov', '.rmvb', '.flv')):
     return f.lower().endswith(extensions)
 
+
 def video2frames(video_path, outpath, frame_rate=25, **kargs):
+
     def _dict2str(kargs):
         cmd_str = ''
         for k, v in kargs.items():
@@ -478,7 +497,8 @@ def video2frames(video_path, outpath, frame_rate=25, **kargs):
 
     cmd = ffmpeg
     cmd = ffmpeg + [
-        ' -i ', video_path, ' -r ', str(frame_rate), ' -f image2 ', outformat
+        ' -i ', video_path, ' -r ',
+        str(frame_rate), ' -f image2 ', outformat
     ]
     cmd = ''.join(cmd) + _dict2str(kargs)
 
@@ -489,10 +509,11 @@ def video2frames(video_path, outpath, frame_rate=25, **kargs):
     sys.stdout.flush()
     return out_full_path
 
+
 def parse_pt(mot_feature):
     mot_list = dict()
     for line in mot_feature:
-        fid = int(re.sub('[a-z,A-Z]', "", mot_feature[line]['frame']))
+        fid = int(re.sub('[a-z,A-Z]', '', mot_feature[line]['frame']))
         tid = mot_feature[line]['id']
         bbox = list(map(lambda x: int(float(x)), mot_feature[line]['bbox']))
         if tid not in mot_list:
@@ -501,6 +522,7 @@ def parse_pt(mot_feature):
         mot_list[tid][fid] = out_dict
     return mot_list
 
+
 def gen_new_mot(mot_list):
     out_dict = dict()
     for tracklet in mot_list:
@@ -508,6 +530,7 @@ def gen_new_mot(mot_list):
         for f in tracklet:
             out_dict[tracklet[f]['imgname']] = tracklet[f]
     return out_dict
+
 
 def trajectory_fusion(mot_feature, cid, cid_bias):
     cur_bias = cid_bias[cid]
@@ -546,6 +569,7 @@ def trajectory_fusion(mot_feature, cid, cid_bias):
         }
     return tid_data, mot_list_break
 
+
 def reid_predictor(detection_results, reid_model):
     img_metas = detection_results['img_metas']
     detection_boxes = detection_results['boxes']  # id, x0, y0, x1, y1, score
@@ -569,6 +593,7 @@ def reid_predictor(detection_results, reid_model):
 
     return pred_embeddings, detection_boxes
 
+
 def decode_image(im_file):
     """read rgb image
     Args:
@@ -586,6 +611,7 @@ def decode_image(im_file):
         im = im_file
     return im
 
+
 def clip_box(xyxy, ori_img_shape):
     H, W = ori_img_shape
     xyxy[:, 0::2] = np.clip(xyxy[:, 0::2], a_min=0, a_max=W)
@@ -596,6 +622,7 @@ def clip_box(xyxy, ori_img_shape):
     keep_idx = np.nonzero(mask)
     return xyxy[keep_idx[0]], keep_idx
 
+
 def get_crops(xyxy, ori_img, w, h):
     crop_imgs = []
     xyxy = xyxy.astype(np.int64)
@@ -605,7 +632,12 @@ def get_crops(xyxy, ori_img, w, h):
         crop_imgs.append(np.array(crop_img))
     return crop_imgs
 
-def detection_result_filter(bboxes, scores, classes, target_classes, target_thresholds=None):
+
+def detection_result_filter(bboxes,
+                            scores,
+                            classes,
+                            target_classes,
+                            target_thresholds=None):
     # post process to filter result
     bboxes_tmp = []
     scores_tmp = []

@@ -1,17 +1,22 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import glob
 import os
 import os.path as osp
-import tempfile
 import re
-import glob
+import tempfile
 from argparse import ArgumentParser
 
 import mmcv
 
-from easycv.predictors import DetectionPredictor, ClassificationPredictor
+from easycv.predictors import ClassificationPredictor, DetectionPredictor
 from easycv.thirdparty.mot.bytetrack.byte_tracker import BYTETracker
-from easycv.thirdparty.mot.utils import detection_result_filter, show_result, reid_predictor, trajectory_fusion, video2frames, _is_valid_video, sub_cluster, gen_res, get_mtmct_matching_results, save_mtmct_crops, save_mtmct_vis_results
+from easycv.thirdparty.mot.utils import (
+    _is_valid_video, detection_result_filter, gen_res,
+    get_mtmct_matching_results, reid_predictor, save_mtmct_crops,
+    save_mtmct_vis_results, show_result, sub_cluster, trajectory_fusion,
+    video2frames)
+
 
 def main():
     parser = ArgumentParser()
@@ -56,16 +61,18 @@ def main():
             print('start tracking seq: {}'.format(seq))
 
         # build the model from a config file and a checkpoint file
-        det_model = DetectionPredictor(args.det_checkpoint, args.det_config, score_threshold=0)
-        reid_model = ClassificationPredictor(args.reid_checkpoint, args.reid_config)
+        det_model = DetectionPredictor(
+            args.det_checkpoint, args.det_config, score_threshold=0)
+        reid_model = ClassificationPredictor(args.reid_checkpoint,
+                                             args.reid_config)
         tracker = BYTETracker(
-                det_high_thresh=0.2,
-                det_low_thresh=0.05, 
-                match_thresh=1.0,
-                match_thresh_second=1.0, 
-                match_thresh_init=1.0,  
-                track_buffer=2, 
-                frame_rate=25)
+            det_high_thresh=0.2,
+            det_low_thresh=0.05,
+            match_thresh=1.0,
+            match_thresh_second=1.0,
+            match_thresh_init=1.0,
+            track_buffer=2,
+            frame_rate=25)
 
         # test and show/save the images
         track_result = None
@@ -79,12 +86,22 @@ def main():
             detection_classes = result['detection_classes']
             img_metas = result['img_metas']
 
-            detection_boxes, detection_scores, detection_classes = detection_result_filter(detection_boxes, detection_scores, detection_classes, target_classes=[2], target_thresholds=[0]) # 0: person 2: car
+            detection_boxes, detection_scores, detection_classes = detection_result_filter(
+                detection_boxes,
+                detection_scores,
+                detection_classes,
+                target_classes=[2],
+                target_thresholds=[0])  # 0: person 2: car
             if len(detection_boxes) > 0:
-                track_result = tracker.update(detection_boxes, detection_scores, detection_classes) # [id, t, l, b, r, score]
+                track_result = tracker.update(
+                    detection_boxes, detection_scores,
+                    detection_classes)  # [id, t, l, b, r, score]
 
-                pred_embeddings, track_bboxes  = reid_predictor({'boxes': track_result['track_bboxes'], 'img_metas': img_metas}, reid_model)
-
+                pred_embeddings, track_bboxes = reid_predictor(
+                    {
+                        'boxes': track_result['track_bboxes'],
+                        'img_metas': img_metas
+                    }, reid_model)
 
                 for idx in range(len(track_bboxes)):
                     _id = int(track_bboxes[idx, 0])
@@ -92,17 +109,16 @@ def main():
 
                     mot_features_dict[imgname] = dict()
                     mot_features_dict[imgname]['bbox'] = track_bboxes[idx, 1:5]
-                    mot_features_dict[imgname]['frame'] = f"{frame_id:06d}"
+                    mot_features_dict[imgname]['frame'] = f'{frame_id:06d}'
                     mot_features_dict[imgname]['id'] = _id
                     mot_features_dict[imgname]['imgname'] = imgname
-                    mot_features_dict[imgname]['feat'] = pred_embeddings[idx]['prob'].squeeze().numpy()
+                    mot_features_dict[imgname]['feat'] = pred_embeddings[idx][
+                        'prob'].squeeze().numpy()
 
-        cid = int(re.sub('[a-z,A-Z]', "", seq))
+        cid = int(re.sub('[a-z,A-Z]', '', seq))
         cid_bias[cid] = float(0)
-        tid_data, mot_list_break = trajectory_fusion(
-            mot_features_dict,
-            cid,
-            cid_bias)
+        tid_data, mot_list_break = trajectory_fusion(mot_features_dict, cid,
+                                                     cid_bias)
         mot_list_breaks.append(mot_list_break)
         # single seq process
         for line in tid_data:
@@ -121,11 +137,7 @@ def main():
         use_st_filter=False)
 
     pred_mtmct_file = os.path.join(args.output, 'mtmct_result.txt')
-    gen_res(
-        pred_mtmct_file,
-        scene_cluster,
-        map_tid,
-        mot_list_breaks)
+    gen_res(pred_mtmct_file, scene_cluster, map_tid, mot_list_breaks)
 
     camera_results, cid_tid_fid_res = get_mtmct_matching_results(
         pred_mtmct_file, secs_interval=0.5, video_fps=20)
