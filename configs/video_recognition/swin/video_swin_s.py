@@ -81,9 +81,9 @@ test_pipeline = [
     dict(type='VideoToTensor', keys=['imgs'])
 ]
 
-data_root = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/'
-train_ann_file = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/kinetics400/test.txt'
-val_ann_file = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/kinetics400/test.txt'
+data_root = 'data/video/'
+train_ann_file = 'data/video/kinetics400/test.txt'
+val_ann_file = 'data/video/kinetics400/test.txt'
 train_dataset = dict(
     type='VideoDataset',
     data_source=dict(

@@ -102,7 +102,7 @@ val_pipeline = [
     dict(type='VideoToTensor', keys=['imgs', 'label'])
 ]
 
-data_root = '/home/yanhaiqiang.yhq/easycv_nfs/easymm/'
+data_root = 'easycv_nfs/easymm/'
 train_dataset = dict(
     type='VideoDataset',
     data_source=dict(

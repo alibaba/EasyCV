@@ -103,9 +103,9 @@ val_pipeline = [
     dict(type='VideoToTensor', keys=['imgs', 'label'])
 ]
 
-data_root = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/video_text_multilabel/'
-train_ann_file = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/video_text_multilabel/test.txt'
-val_ann_file = '/home/yanhaiqiang.yhq/easycv_nfs/data/video/video_text_multilabel/test.txt'
+data_root = 'data/video/video_text_multilabel/'
+train_ann_file = 'data/video/video_text_multilabel/test.txt'
+val_ann_file = 'data/video/video_text_multilabel/test.txt'
 train_dataset = dict(
     type='VideoDataset',
     data_source=dict(
