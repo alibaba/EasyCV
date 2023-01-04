@@ -4,13 +4,9 @@ import sys
 
 import torch
 from torch import nn
+from transformers.modeling_utils import PreTrainedModel
 
 from ..registry import BACKBONES
-
-try:
-    from transformers.modeling_utils import PreTrainedModel
-except ImportError:
-    pass
 
 ACT2FN = {'gelu': nn.GELU(), 'relu': torch.nn.functional.relu}
 
