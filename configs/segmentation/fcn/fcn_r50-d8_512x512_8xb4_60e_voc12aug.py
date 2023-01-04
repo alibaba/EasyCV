@@ -8,7 +8,10 @@ CLASSES = [
 
 # model settings
 num_classes = 21
-norm_cfg = dict(type='SyncBN', requires_grad=True)
+
+# norm_cfg = dict(type='SyncBN', requires_grad=True)  # multi gpus
+norm_cfg = dict(type='BN', requires_grad=True)
+
 model = dict(
     type='EncoderDecoder',
     pretrained='open-mmlab://resnet50_v1c',
@@ -57,6 +60,23 @@ model = dict(
 # dataset settings
 dataset_type = 'SegDataset'
 data_root = 'data/VOCdevkit/VOC2012'
+
+train_img_root = data_root + 'JPEGImages'
+train_label_root = data_root + 'SegmentationClass'
+train_list_file = data_root + 'ImageSets/Segmentation/train.txt'
+
+train_aug_img_root = data_root + 'JPEGImages'
+train_aug_label_root = data_root + 'SegmentationClassAug'
+train_aug_list_file = data_root + 'ImageSets/Segmentation/aug.txt'
+
+val_img_root = data_root + 'JPEGImages'
+val_label_root = data_root + 'SegmentationClass'
+val_list_file = data_root + 'ImageSets/Segmentation/val.txt'
+
+test_img_root = data_root + 'JPEGImages'
+test_label_root = data_root + 'SegmentationClass'
+test_list_file = data_root + 'ImageSets/Segmentation/test.txt'
+
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 crop_size = (512, 512)
@@ -105,15 +125,15 @@ data = dict(
             data_source_list=[
                 dict(
                     type='SegSourceRaw',
-                    img_root=data_root + 'JPEGImages',
-                    label_root=data_root + 'SegmentationClass',
-                    split=data_root + 'ImageSets/Segmentation/train.txt',
+                    img_root=train_img_root,
+                    label_root=train_label_root,
+                    split=train_list_file,
                     classes=CLASSES),
                 dict(
                     type='SegSourceRaw',
-                    img_root=data_root + 'JPEGImages',
-                    label_root=data_root + 'SegmentationClassAug',
-                    split=data_root + 'ImageSets/Segmentation/aug.txt',
+                    img_root=train_aug_img_root,
+                    label_root=train_aug_label_root,
+                    split=train_aug_list_file,
                     classes=CLASSES),
             ]),
         pipeline=train_pipeline),
@@ -123,9 +143,9 @@ data = dict(
         type=dataset_type,
         data_source=dict(
             type='SegSourceRaw',
-            img_root=data_root + 'JPEGImages',
-            label_root=data_root + 'SegmentationClass',
-            split=data_root + 'ImageSets/Segmentation/val.txt',
+            img_root=val_img_root,
+            label_root=val_label_root,
+            split=val_list_file,
             classes=CLASSES,
         ),
         pipeline=test_pipeline),
@@ -133,9 +153,9 @@ data = dict(
         type=dataset_type,
         data_source=dict(
             type='SegSourceRaw',
-            img_root=data_root + 'JPEGImages',
-            label_root=data_root + 'SegmentationClass',
-            split=data_root + 'ImageSets/Segmentation/test.txt',
+            img_root=test_img_root,
+            label_root=test_label_root,
+            split=test_list_file,
             classes=CLASSES,
         ),
         pipeline=test_pipeline))

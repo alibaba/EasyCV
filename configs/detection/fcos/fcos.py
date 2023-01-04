@@ -1,4 +1,5 @@
 # model settings
+num_classes = 80
 model = dict(
     type='Detection',
     pretrained=True,
@@ -21,7 +22,7 @@ model = dict(
         relu_before_extra_convs=True),
     head=dict(
         type='FCOSHead',
-        num_classes=80,
+        num_classes=num_classes,
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
