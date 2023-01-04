@@ -4,10 +4,13 @@ import sys
 
 import torch
 from torch import nn
-from transformers import BertConfig
-from transformers.modeling_utils import PreTrainedModel
 
 from ..registry import BACKBONES
+
+try:
+    from transformers.modeling_utils import PreTrainedModel
+except ImportError:
+    pass
 
 ACT2FN = {'gelu': nn.GELU(), 'relu': torch.nn.functional.relu}
 
@@ -116,7 +119,7 @@ class BertOutput(nn.Module):
 
 
 class BertPreTrainedModel(PreTrainedModel):
-
+    from transformers import BertConfig
     config_class = BertConfig
     # load_tf_weights = load_tf_weights_in_bert
     base_model_prefix = 'bert'
@@ -530,6 +533,7 @@ class ClipBertBaseModel(BertPreTrainedModel):
 class ClipBertClassification(BertPreTrainedModel):
 
     def __init__(self, config_text, config_cross):
+        from transformers import BertConfig
         config_text = BertConfig(**config_text)
         config_cross = BertConfig(**config_cross)
         super(ClipBertClassification, self).__init__(config_text)
