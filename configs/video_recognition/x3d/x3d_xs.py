@@ -20,7 +20,7 @@ model = dict(
         dim_out=2048,
         num_classes=num_classes,
         dropout_rate=0.5),
-    test_cfg=dict(average_clips='prob'))
+    test_cfg=dict(average_clips='score'))
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_bgr=False)

@@ -239,6 +239,8 @@ PRETRAINED_MODEL_WHOLEBODY = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/pose/wholebody/hrnet_w48_coco_wholebody_384x288_dark-f5726563_20200918.pth'
 )
+PRETRAINED_MODEL_X3D_XS = os.path.join(
+    BASE_LOCAL_PATH, 'pretrained_models/video/x3d/epoch_300.pth')
 MODEL_CONFIG_SEGFORMER = (
     './configs/segmentation/segformer/segformer_b0_coco.py')
 SMALL_COCO_WHOLE_BODY_HAND_ROOT = 'data/test/pose/hand/small_whole_body_hand_coco'

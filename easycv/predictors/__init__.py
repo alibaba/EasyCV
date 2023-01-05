@@ -14,4 +14,5 @@ from .ocr import (OCRClsPredictor, OCRDetPredictor, OCRPredictor,
 from .pose_predictor import (TorchPoseTopDownPredictor,
                              TorchPoseTopDownPredictorWithDetector)
 from .segmentation import Mask2formerPredictor, SegmentationPredictor
+from .video_classifier import VideoClassificationPredictor
 from .wholebody_keypoints_predictor import WholeBodyKeypointsPredictor

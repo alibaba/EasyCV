@@ -23,7 +23,7 @@ model = dict(
         num_classes=num_classes,
         spatial_type='avg',
         dropout_ratio=0.5),
-    test_cfg=dict(average_clips='prob', max_testing_views=4),
+    test_cfg=dict(average_clips='score', max_testing_views=4),
     pretrained=
     'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/video/backbone/swin_tiny_patch4_window7_224_22k.pth'
 )
