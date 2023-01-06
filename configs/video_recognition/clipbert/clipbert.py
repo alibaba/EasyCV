@@ -153,7 +153,7 @@ checkpoint_config = dict(interval=1)
 
 # eval
 eval_config = dict(initial=False, interval=1, gpu_collect=True)
-evaluators_type = 'MultiLabelEvaluator'
+evaluators_type = 'ClsEvaluator'
 eval_pipelines = [
     dict(
         mode='test',
