@@ -148,8 +148,8 @@ class ClsEvaluator(Evaluator):
 
 
 @EVALUATORS.register_module
-class MultiClsEvaluator(Evaluator):
-    """ Classification evaluator.
+class MultiLabelEvaluator(Evaluator):
+    """ Multilabel Classification evaluator.
   """
 
     def __init__(self, dataset_name=None, metric_names=['mAP']):
@@ -161,7 +161,7 @@ class MultiClsEvaluator(Evaluator):
         '''
         self.dataset_name = dataset_name
 
-        super(MultiClsEvaluator, self).__init__(dataset_name, metric_names)
+        super(MultiLabelEvaluator, self).__init__(dataset_name, metric_names)
 
     def _evaluate_impl(self, predictions, gt_labels):
         preds = torch.sigmoid(predictions['neck'])
@@ -196,11 +196,6 @@ class MultiClsEvaluator(Evaluator):
             target.shape, 'pred and target should be in the same shape.'
         num_classes = pred.shape[1]
         ap = np.zeros(num_classes)
-        f = open('res.txt', 'w')
-        for k in range(num_classes):
-            ap[k] = self.average_precision(pred[:, k], target[:, k])
-            f.write(str(ap[k]))
-            f.write('\n')
         mean_ap = ap.mean() * 100.0
         return mean_ap
 
@@ -240,4 +235,4 @@ class MultiClsEvaluator(Evaluator):
 
 
 METRICS.register_default_best_metric(ClsEvaluator, 'neck_top1', 'max')
-METRICS.register_default_best_metric(MultiClsEvaluator, 'mAP', 'max')
+METRICS.register_default_best_metric(MultiLabelEvaluator, 'mAP', 'max')

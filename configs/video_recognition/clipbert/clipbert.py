@@ -1,6 +1,6 @@
 _base_ = '../../base.py'
-num_classes = 1206
-multi_class = True
+num_classes = 282
+multi_class = False
 model = dict(
     type='ClipBertTwoStream',
     vision=dict(
@@ -50,7 +50,7 @@ model = dict(
             num_attention_heads=12,
             num_hidden_layers=2,
             pad_token_id=1,
-            num_labels=282,
+            num_labels=num_classes,
         ),
     ),
     vison_pretrained=
@@ -102,13 +102,15 @@ val_pipeline = [
     dict(type='VideoToTensor', keys=['imgs', 'label'])
 ]
 
-data_root = 'easycv_nfs/easymm/'
+data_root = 'easymm/douyin_video/'
+train_ann_file = 'easymm/douyin_video_224/video_text_pair_rec_train.txt'
+val_ann_file = 'easymm/douyin_video_224/video_text_pair_rec_val.txt'
 train_dataset = dict(
     type='VideoDataset',
     data_source=dict(
         type='VideoTextDatasource',
-        ann_file=data_root + 'douyin_video_224/video_text_pair_rec_train.txt',
-        data_root=data_root + 'douyin_video/',
+        ann_file=train_ann_file,
+        data_root=data_root,
     ),
     pipeline=train_pipeline,
 )
@@ -117,8 +119,8 @@ val_dataset = dict(
     type='VideoDataset',
     data_source=dict(
         type='VideoTextDatasource',
-        ann_file=data_root + 'douyin_video_224/video_text_pair_rec_val.txt',
-        data_root=data_root + 'douyin_video/',
+        ann_file=val_ann_file,
+        data_root=data_root,
     ),
     pipeline=val_pipeline,
 )
@@ -151,12 +153,13 @@ checkpoint_config = dict(interval=1)
 
 # eval
 eval_config = dict(initial=False, interval=1, gpu_collect=True)
+evaluators_type = 'MultiLabelEvaluator'
 eval_pipelines = [
     dict(
         mode='test',
         data=data['val'],
         dist_eval=True,
-        evaluators=[dict(type='ClsEvaluator', topk=(1, 5))],
+        evaluators=[dict(type=evaluators_type, topk=(1, 5))],
     )
 ]
 

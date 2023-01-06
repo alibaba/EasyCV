@@ -57,7 +57,6 @@ model = dict(
     'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/video/backbone/swin_tiny_patch4_window7_224_22k.pth',
     text_pretrained=
     'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/video/bert-base-chinese/pytorch_model.bin',
-    loss_cls=dict(type='AsymmetricLoss'),
     multi_class=multi_class)
 
 img_norm_cfg = dict(
@@ -156,12 +155,14 @@ checkpoint_config = dict(interval=1)
 
 # eval
 eval_config = dict(initial=True, interval=1, gpu_collect=True)
+
+evaluators_type = 'MultiLabelEvaluator'
 eval_pipelines = [
     dict(
         mode='test',
         data=data['val'],
         dist_eval=True,
-        evaluators=[dict(type='MultiClsEvaluator')],
+        evaluators=[dict(type=evaluators_type)],
     )
 ]
 

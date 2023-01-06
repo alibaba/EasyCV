@@ -1,3 +1,4 @@
+# modified from https://github.com/SwinTransformer/Video-Swin-Transformer
 from functools import lru_cache, reduce
 from operator import mul
 

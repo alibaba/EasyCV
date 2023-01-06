@@ -1,4 +1,5 @@
 # flake8: noqa
+# modified from https://github.com/jayleicn/ClipBERT
 import math
 import sys
 

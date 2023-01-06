@@ -20,7 +20,6 @@ class ClipBertTwoStream(BaseModel):
                  test_cfg=None,
                  vison_pretrained=None,
                  text_pretrained=None,
-                 loss_cls=dict(type='CrossEntropyLoss'),
                  multi_class=False):
         super(ClipBertTwoStream, self).__init__()
         self.vision = builder.build_backbone(vision)
@@ -31,6 +30,8 @@ class ClipBertTwoStream(BaseModel):
 
         self.vison_pretrained = get_checkpoint(vison_pretrained)
         self.text_pretrained = get_checkpoint(text_pretrained)
+        loss_cls = dict(type='CrossEntropyLoss') if not multi_class else dict(
+            type='AsymmetricLoss')
         self.loss_cls = builder.build_loss(loss_cls)
         self.activate_fn = nn.Softmax(
             dim=1) if not multi_class else nn.Sigmoid()

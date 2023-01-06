@@ -10,6 +10,7 @@ import torch
 from mmcv.fileio import FileClient
 
 from easycv.datasets.registry import PIPELINES
+from easycv.datasets.shared.pipelines.format import to_tensor
 
 
 @PIPELINES.register_module()
@@ -112,9 +113,6 @@ class SampleFrames:
             Default: 'loop'.
         test_mode (bool): Store True when building test or validation dataset.
             Default: False.
-        start_index (None): This argument is deprecated and moved to dataset
-            class (``BaseDataset``, ``VideoDatset``, ``RawframeDataset``, etc),
-            see this: https://github.com/open-mmlab/mmaction2/pull/89.
     """
 
     def __init__(self,
@@ -125,7 +123,6 @@ class SampleFrames:
                  twice_sample=False,
                  out_of_bound_opt='loop',
                  test_mode=False,
-                 start_index=None,
                  frame_uniform=False):
 
         self.clip_len = clip_len
@@ -137,11 +134,6 @@ class SampleFrames:
         self.test_mode = test_mode
         self.frame_uniform = frame_uniform
         assert self.out_of_bound_opt in ['loop', 'repeat_last']
-
-        if start_index is not None:
-            warnings.warn('No longer support "start_index" in "SampleFrames", '
-                          'it should be set in dataset class, see this pr: '
-                          'https://github.com/open-mmlab/mmaction2/pull/89')
 
     def _get_train_clips(self, num_frames):
         """Get clip offsets in train mode.
@@ -283,24 +275,6 @@ class SampleFrames:
                     f'out_of_bound_opt={self.out_of_bound_opt}, '
                     f'test_mode={self.test_mode})')
         return repr_str
-
-
-def to_tensor(data):
-    """Convert objects of various python types to :obj:`torch.Tensor`.
-    Supported types are: :class:`numpy.ndarray`, :class:`torch.Tensor`,
-    :class:`Sequence`, :class:`int` and :class:`float`.
-    """
-    if isinstance(data, torch.Tensor):
-        return data
-    if isinstance(data, np.ndarray):
-        return torch.from_numpy(data)
-    if isinstance(data, Sequence) and not mmcv.is_str(data):
-        return torch.tensor(data)
-    if isinstance(data, int):
-        return torch.LongTensor([data])
-    if isinstance(data, float):
-        return torch.FloatTensor([data])
-    raise TypeError(f'type {type(data)} cannot be converted to tensor.')
 
 
 @PIPELINES.register_module()

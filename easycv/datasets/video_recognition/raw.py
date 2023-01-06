@@ -35,7 +35,7 @@ class VideoDataset(BaseDataset):
                     idx, traceback.format_exc()))
             data_dict = None
         if data_dict is None:
-            return self.__getitem__(np.random.randint(self.__len__()))
+            return self[np.random.randint(len(self))]
 
         return data_dict
 
