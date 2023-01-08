@@ -468,7 +468,15 @@ def _export_moco(model, cfg, filename):
 
 
 def _export_moby(model, cfg, filename):
-    """ export model and preprocess config
+    """ export model and preprocess config:
+        can export backbone only,
+        or export backbone and neck (projector_q),
+        or export backbone, neck (projector_q) and head (predictor)
+
+        Modified by YANG Ruixin
+        GitHub: https://github.com/yang-ruixin
+        Email: yang_ruixin@126.com
+        Date: 2023/01/05
 
     Args:
         model (nn.Module):  model to be exported
@@ -478,8 +486,9 @@ def _export_moby(model, cfg, filename):
     if hasattr(cfg, 'export'):
         export_cfg = cfg.export
     else:
-        export_cfg = dict(export_neck=False)
+        export_cfg = dict(export_neck=False, export_head=False)
     export_neck = export_cfg.get('export_neck', False)
+    export_head = export_cfg.get('export_head', False)
 
     model_config = dict(
         type='Classification',
@@ -492,7 +501,11 @@ def _export_moby(model, cfg, filename):
             num_classes=1000,
         ),
     )
-    if export_neck:
+
+    if export_head:
+        model_config['neck'] = cfg.model.neck
+        model_config['head'] = cfg.model.head
+    elif export_neck:
         model_config['neck'] = cfg.model.neck
 
     img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -510,11 +523,20 @@ def _export_moby(model, cfg, filename):
     meta = dict(config=json.dumps(config))
 
     state_dict = OrderedDict()
+    neck_key = 'projector_q'
+    head_key = 'predictor'
     for k, v in model.state_dict().items():
         if k.startswith('backbone'):
             state_dict[k] = v
-        neck_key = 'projector_q'
-        if export_neck and k.startswith(neck_key):
+
+        if export_head:
+            if k.startswith(neck_key):
+                new_key = k.replace(neck_key, 'neck_0')
+                state_dict[new_key] = v
+            elif k.startswith(head_key):
+                new_key = k.replace(head_key, 'head_0')
+                state_dict[new_key] = v
+        elif export_neck and k.startswith(neck_key):
             new_key = k.replace(neck_key, 'neck_0')
             state_dict[new_key] = v
 
