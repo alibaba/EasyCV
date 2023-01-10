@@ -1,7 +1,7 @@
 _base_ = './fcos_r50_torch_1x_coco.py'
 
-data_root0 = '/apsara/yunji.cjy/tracking/crowdhuman/'
-data_root1 = '/apsara/yunji.cjy/tracking/MOT20/'
+data_root0 = 'data/tracking/crowdhuman/'
+data_root1 = 'data/tracking/MOT20/'
 CLASSES = ('pedestrian', )
 train_dataset = dict(
     data_source=dict(
