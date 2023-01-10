@@ -575,4 +575,13 @@ CONFIG_TEMPLATE_ZOO = {
     # pose
     'TOPDOWN_HRNET': 'configs/config_templates/topdown_hrnet_w48_udp.py',
     'TOPDOWN_LITEHRNET': 'configs/config_templates/topdown_litehrnet_30.py',
+
+    # video_classification
+    'X3D_XS': 'configs/video_recognition/x3d/x3d_xs.py',
+    'X3D_M': 'configs/video_recognition/x3d/x3d_m.py',
+    'X3D_L': 'configs/video_recognition/x3d/x3d_l.py',
+    'VIDEO_SWIN_T': 'configs/video_recognition/swin/video_swin_tiny.py',
+    'VIDEO_SWIN_S': 'configs/video_recognition/swin/video_swin_s.py',
+    'VIDEO_SWIN_B': 'configs/video_recognition/swin/video_swin_b.py',
+    'SWIN_BERT': 'configs/video_recognition/clipbert/clipbert_multilabel.py',
 }

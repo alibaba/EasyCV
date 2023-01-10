@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from .benchmark_mlp import BenchMarkMLP
 from .bninception import BNInception
+from .clip_bert import ClipBertClassification
 from .conv_mae_vit import FastConvMAEViT
 from .conv_vitdet import ConvViTDet
 from .edgevit import EdgeVit
@@ -22,5 +23,7 @@ from .resnet_jit import ResNetJIT
 from .resnext import ResNeXt
 from .shuffle_transformer import ShuffleTransformer
 from .swin_transformer import SwinTransformer
+from .swin_transformer3d import SwinTransformer3D
 from .vision_transformer import VisionTransformer
 from .vitdet import ViTDet
+from .x3d import X3D
