@@ -9,6 +9,8 @@ import mmcv
 from PIL import Image
 from tqdm import tqdm
 
+# python tools/convert_datasets/crowdhuman2coco.py -i /apsarapangu/disk4/easycv_nfs/data/tracking/crowdhuman -o /apsarapangu/disk4/easycv_nfs/data/tracking/crowdhuman/annotations
+
 
 def parse_args():
     parser = argparse.ArgumentParser(

@@ -29,6 +29,9 @@
 #
 #   USELESS classes are not included into the json file.
 #   IGNORES classes are included with `ignore=True`.
+
+# python tools/convert_datasets/mot2coco.py -i /apsara/yunji.cjy/tracking/MOT20 -o /apsara/yunji.cjy/tracking/MOT20/annotations --split-train --convert-det
+
 import argparse
 import os
 import os.path as osp

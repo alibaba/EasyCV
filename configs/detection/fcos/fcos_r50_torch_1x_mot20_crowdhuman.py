@@ -17,8 +17,8 @@ train_dataset = dict(
 
 val_dataset = dict(
     data_source=dict(
-        ann_file=data_root1 + 'annotations/test_cocoformat.json',
-        img_prefix=data_root1 + 'test',
+        ann_file=data_root0 + '/annotations/crowdhuman_val.json',
+        img_prefix=data_root0 + 'val',
         classes=CLASSES))
 
 data = dict(
@@ -36,5 +36,7 @@ eval_pipelines = [
         ],
     )
 ]
+
+checkpoint_config = dict(interval=1)
 
 load_from = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/fcos/fcos_epoch_12.pth'
