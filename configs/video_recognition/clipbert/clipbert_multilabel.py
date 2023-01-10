@@ -98,13 +98,13 @@ val_pipeline = [
     dict(
         type='Collect',
         keys=['imgs', 'label', 'text_input_ids', 'text_input_mask'],
-        meta_keys=[]),
+        meta_keys=['filename']),
     dict(type='VideoToTensor', keys=['imgs', 'label'])
 ]
 
 data_root = 'data/video/video_text_multilabel/'
 train_ann_file = 'data/video/video_text_multilabel/test.txt'
-val_ann_file = 'data/video/video_text_multilabel/test.txt'
+val_ann_file = 'video/video_text_multilabel/test.txt'
 train_dataset = dict(
     type='VideoDataset',
     data_source=dict(

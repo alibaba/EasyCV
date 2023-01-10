@@ -21,7 +21,6 @@ class VideoDataset(BaseDataset):
             pipeline: Pipeline config list
             profiling: If set True, will print pipeline time
         """
-
         super(VideoDataset, self).__init__(
             data_source, pipeline, profiling=profiling)
 
@@ -36,7 +35,6 @@ class VideoDataset(BaseDataset):
             data_dict = None
         if data_dict is None:
             return self[np.random.randint(len(self))]
-
         return data_dict
 
     def evaluate(self, results, evaluators=[], **kwargs):

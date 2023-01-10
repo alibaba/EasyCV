@@ -209,7 +209,10 @@ class Recognizer3D(BaseModel):
         else:
             result = {}
             result['prob'] = self.activate_fn(cls_score.cpu())
-            result['class'] = torch.argmax(result['prob'])
+            if 'filename' in kwargs['img_metas'][0]:
+                result['filename'] = [kwargs['img_metas'][0]['filename']]
+            # result['class'] = torch.argmax(result['prob'])
+            # print(result['class'])
             return result
 
     def train_step(self, data, optimizer):

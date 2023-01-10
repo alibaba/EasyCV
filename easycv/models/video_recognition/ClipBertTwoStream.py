@@ -81,8 +81,10 @@ class ClipBertTwoStream(BaseModel):
         else:
             result = {}
             result['prob'] = self.activate_fn(cls_score.cpu())
-            if not self.multi_class:
-                result['class'] = torch.argmax(result['prob'])
+            if 'filename' in kwargs['img_metas'][0]:
+                result['filename'] = [kwargs['img_metas'][0]['filename']]
+            # if not self.multi_class:
+            #     result['class'] = torch.argmax(result['prob'])
             return result
 
     def train_step(self, data, optimizer):

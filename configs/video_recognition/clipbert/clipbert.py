@@ -98,7 +98,7 @@ val_pipeline = [
     dict(
         type='Collect',
         keys=['imgs', 'label', 'text_input_ids', 'text_input_mask'],
-        meta_keys=[]),
+        meta_keys=['filename']),
     dict(type='VideoToTensor', keys=['imgs', 'label'])
 ]
 
