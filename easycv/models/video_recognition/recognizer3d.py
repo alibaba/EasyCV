@@ -209,7 +209,7 @@ class Recognizer3D(BaseModel):
         else:
             result = {}
             result['prob'] = self.activate_fn(cls_score.cpu())
-            if 'filename' in kwargs['img_metas'][0]:
+            if 'img_metas' in kwargs and 'filename' in kwargs['img_metas'][0]:
                 result['filename'] = [kwargs['img_metas'][0]['filename']]
             # result['class'] = torch.argmax(result['prob'])
             # print(result['class'])

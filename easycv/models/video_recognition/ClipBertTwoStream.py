@@ -81,7 +81,7 @@ class ClipBertTwoStream(BaseModel):
         else:
             result = {}
             result['prob'] = self.activate_fn(cls_score.cpu())
-            if 'filename' in kwargs['img_metas'][0]:
+            if 'img_metas' in kwargs and 'filename' in kwargs['img_metas'][0]:
                 result['filename'] = [kwargs['img_metas'][0]['filename']]
             # if not self.multi_class:
             #     result['class'] = torch.argmax(result['prob'])
