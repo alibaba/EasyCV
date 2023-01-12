@@ -19,6 +19,7 @@ model = dict(
         head_dim=48,
         mlp_ratio=[4] * 4,
         qkv_bias=True,
+        model_size='s',
         num_classes=1000,
         drop_path_rate=0.1,
         sr_ratios=[4, 2, 2, 1]),

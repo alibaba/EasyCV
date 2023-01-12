@@ -260,3 +260,12 @@ timm_models = {
     'dynamic_vit_large_p16':
     'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/timm/vit/L_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.1-sd_0.1--imagenet2012-steps_20k-lr_0.01-res_224.npz',
 }
+
+EdgeVit = {
+    'EdgeVit_xxs':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/edgevit/edgexxs/edgevit_xxs.pth',
+    'EdgeVit_xs':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/edgevit/edgexs/edgevit_xs.pth',
+    'EdgeVit_s':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/edgevit/edges/edgevit_s.pth',
+}

@@ -14,6 +14,7 @@ from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 from easycv.models.utils import ConvMlp, Mlp
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.logger import get_root_logger
+from ..modelzoo import EdgeVit as model_urls
 from ..registry import BACKBONES
 
 
@@ -244,6 +245,7 @@ class EdgeVit(nn.Module):
                  mlp_ratio=[4] * 4,
                  qkv_bias=True,
                  qk_scale=None,
+                 model_size='s',
                  representation_size=None,
                  drop_rate=0.,
                  attn_drop_rate=0.,
@@ -270,6 +272,7 @@ class EdgeVit(nn.Module):
         """
         super().__init__()
         self.num_classes = num_classes
+        self.model_size = model_size
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
         norm_layer = norm_layer or partial(nn.LayerNorm, eps=1e-6)
 
@@ -365,13 +368,16 @@ class EdgeVit(nn.Module):
         self.pretrained = pretrained
         self.init_weights()
 
-    def init_weights(self, pretrained=None):
+        self.default_pretrained_model_path = model_urls.get(
+            self.__class__.__name__ + '_' + self.model_size, None)
+
+    def init_weights(self):
         """Initialize the weights in backbone.
         Args:
             pretrained (str, optional): Path to pre-trained weights.
                 Defaults to None.
         """
-        pretrained = pretrained or self.pretrained
+        pretrained = self.pretrained
 
         def _init_weights(m):
             if isinstance(m, nn.Linear):
