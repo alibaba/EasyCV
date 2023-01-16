@@ -12,3 +12,4 @@ from .pose import TopDown
 from .registry import BACKBONES, HEADS, LOSSES, MODELS, NECKS
 from .segmentation import *
 from .selfsup import *
+from .video_recognition import *

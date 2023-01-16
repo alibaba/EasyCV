@@ -2,6 +2,8 @@
 
 import os
 
+from PIL import Image
+
 from easycv.datasets.registry import DATASOURCES
 from easycv.file.image import load_image
 
@@ -59,7 +61,8 @@ class ClsSourceImageNet1k(object):
     def read_data(self, image_path):
         img_path = os.path.join(self.root, image_path.strip())
         assert os.path.exists(img_path), f'{img_path} is not exists'
-        img = load_image(img_path)
+        img = load_image(img_path, mode='RGB')
+        img = Image.fromarray(img)
         label_key = image_path.split('/')[1]
         assert label_key in self.label_json, f'{label_key} label is not exists'
         label = self.label_json[label_key]

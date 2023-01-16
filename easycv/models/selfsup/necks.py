@@ -473,7 +473,6 @@ class MAENeck(nn.Module):
                 decoder_num_heads,
                 mlp_ratio,
                 qkv_bias=True,
-                qk_scale=None,
                 norm_layer=norm_layer) for _ in range(decoder_depth)
         ])
 

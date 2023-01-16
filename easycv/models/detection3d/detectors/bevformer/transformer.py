@@ -24,6 +24,19 @@ from easycv.models.utils.transformer import (BaseTransformerLayer,
                                              TransformerLayerSequence)
 from . import (CustomMSDeformableAttention, MSDeformableAttention3D,
                TemporalSelfAttention)
+from .attentions.spatial_cross_attention import SpatialCrossAttention
+
+
+@torch.jit.script
+def _rotate(img: torch.Tensor, angle: torch.Tensor, center: torch.Tensor):
+    """torch.jit.trace does not support torchvision.rotate"""
+
+    img = rotate(
+        img,
+        float(angle.item()),
+        center=[int(center[0].item()),
+                int(center[1].item())])
+    return img
 
 
 @TRANSFORMER_LAYER.register_module()
@@ -107,6 +120,7 @@ class BEVFormerLayer(BaseModule):
                  ),
                  batch_first=True,
                  init_cfg=None,
+                 adapt_jit=False,
                  **kwargs):
         super(BEVFormerLayer, self).__init__(init_cfg)
 
@@ -135,6 +149,7 @@ class BEVFormerLayer(BaseModule):
         self.attentions = ModuleList()
 
         index = 0
+        self.adapt_jit = adapt_jit
         for operation_name in operation_order:
             if operation_name in ['self_attn', 'cross_attn']:
                 if 'batch_first' in attn_cfgs[index]:
@@ -142,6 +157,10 @@ class BEVFormerLayer(BaseModule):
                 else:
                     attn_cfgs[index]['batch_first'] = self.batch_first
                 attention = build_attention(attn_cfgs[index])
+                # for export jit model
+                if self.adapt_jit and isinstance(attention,
+                                                 SpatialCrossAttention):
+                    attention = torch.jit.script(attention)
                 # Some custom attentions used as `self_attn`
                 # or `cross_attn` can have different behavior.
                 attention.operation_name = operation_name
@@ -170,7 +189,6 @@ class BEVFormerLayer(BaseModule):
         for _ in range(num_norms):
             self.norms.append(build_norm_layer(norm_cfg, self.embed_dims)[1])
 
-        self.fp16_enabled = False
         assert len(operation_order) == 6
         assert set(operation_order) == set(
             ['self_attn', 'norm', 'cross_attn', 'ffn'])
@@ -249,43 +267,42 @@ class BEVFormerLayer(BaseModule):
             if layer == 'self_attn':
 
                 query = self.attentions[attn_index](
-                    query,
-                    prev_bev,
-                    prev_bev,
-                    identity if self.pre_norm else None,
+                    query=query,
+                    key=prev_bev,
+                    value=prev_bev,
+                    identity=identity if self.pre_norm else None,
                     query_pos=bev_pos,
-                    key_pos=bev_pos,
-                    attn_mask=attn_masks[attn_index],
                     key_padding_mask=query_key_padding_mask,
                     reference_points=ref_2d,
                     spatial_shapes=torch.tensor([[bev_h, bev_w]],
                                                 device=query.device),
                     level_start_index=torch.tensor([0], device=query.device),
-                    **kwargs)
+                )
                 attn_index += 1
                 identity = query
 
             elif layer == 'norm':
+                # fix fp16
+                dtype = query.dtype
                 query = self.norms[norm_index](query)
+                query = query.to(dtype)
                 norm_index += 1
 
             # spaital cross attention
             elif layer == 'cross_attn':
                 query = self.attentions[attn_index](
-                    query,
-                    key,
-                    value,
-                    identity if self.pre_norm else None,
+                    query=query,
+                    key=key,
+                    value=value,
+                    residual=identity if self.pre_norm else None,
                     query_pos=query_pos,
-                    key_pos=key_pos,
                     reference_points=ref_3d,
                     reference_points_cam=reference_points_cam,
-                    mask=mask,
-                    attn_mask=attn_masks[attn_index],
+                    bev_mask=kwargs.get('bev_mask'),
                     key_padding_mask=key_padding_mask,
                     spatial_shapes=spatial_shapes,
                     level_start_index=level_start_index,
-                    **kwargs)
+                )
                 attn_index += 1
                 identity = query
 
@@ -309,7 +326,6 @@ class Detr3DTransformerDecoder(TransformerLayerSequence):
     def __init__(self, *args, return_intermediate=False, **kwargs):
         super(Detr3DTransformerDecoder, self).__init__(*args, **kwargs)
         self.return_intermediate = return_intermediate
-        self.fp16_enabled = False
 
     def forward(self,
                 query,
@@ -317,6 +333,7 @@ class Detr3DTransformerDecoder(TransformerLayerSequence):
                 reference_points=None,
                 reg_branches=None,
                 key_padding_mask=None,
+                attn_mask=None,
                 **kwargs):
         """Forward function for `Detr3DTransformerDecoder`.
         Args:
@@ -346,6 +363,7 @@ class Detr3DTransformerDecoder(TransformerLayerSequence):
                 output,
                 *args,
                 reference_points=reference_points_input,
+                attn_masks=[attn_mask] * layer.num_attn,
                 key_padding_mask=key_padding_mask,
                 **kwargs)
             output = output.permute(1, 0, 2)
@@ -355,13 +373,26 @@ class Detr3DTransformerDecoder(TransformerLayerSequence):
 
                 assert reference_points.shape[-1] == 3
 
-                new_reference_points = torch.zeros_like(reference_points)
-                new_reference_points[..., :2] = tmp[..., :2] + inverse_sigmoid(
-                    reference_points[..., :2], eps=1e-5)
-                new_reference_points[...,
-                                     2:3] = tmp[..., 4:5] + inverse_sigmoid(
-                                         reference_points[..., 2:3], eps=1e-5)
+                # new_reference_points = torch.zeros_like(
+                #     reference_points)  # torch.Size([1, 900, 3])
+                # new_reference_points[..., :2] = tmp[..., :2] + inverse_sigmoid(
+                #     reference_points[..., :2], eps=1e-5)
+                # new_reference_points[...,
+                #                      2:3] = tmp[..., 4:5] + inverse_sigmoid(
+                #                          reference_points[..., 2:3], eps=1e-5)
 
+                # new_reference_points = new_reference_points.sigmoid()
+
+                # reference_points = new_reference_points.detach()
+
+                # remove inplace operation, metric may incorrect when using blade
+                new_reference_points_0_2 = tmp[..., :2] + inverse_sigmoid(
+                    reference_points[..., :2], eps=1e-5)
+                new_reference_points_2_3 = tmp[..., 4:5] + inverse_sigmoid(
+                    reference_points[..., 2:3], eps=1e-5)
+                new_reference_points = torch.cat(
+                    [new_reference_points_0_2, new_reference_points_2_3],
+                    dim=-1)
                 new_reference_points = new_reference_points.sigmoid()
 
                 reference_points = new_reference_points.detach()
@@ -402,7 +433,6 @@ class BEVFormerEncoder(TransformerLayerSequence):
 
         self.num_points_in_pillar = num_points_in_pillar
         self.pc_range = pc_range
-        self.fp16_enabled = False
 
     @staticmethod
     def get_reference_points(H,
@@ -456,12 +486,9 @@ class BEVFormerEncoder(TransformerLayerSequence):
     # This function must use fp32!!!
     @force_fp32(apply_to=('reference_points', 'img_metas'))
     def point_sampling(self, reference_points, pc_range, img_metas):
+        lidar2img = torch.stack([meta['lidar2img'] for meta in img_metas
+                                 ]).to(reference_points.dtype)  # (B, N, 4, 4)
 
-        lidar2img = []
-        for img_meta in img_metas:
-            lidar2img.append(img_meta['lidar2img'])
-        lidar2img = np.asarray(lidar2img)
-        lidar2img = reference_points.new_tensor(lidar2img)  # (B, N, 4, 4)
         reference_points = reference_points.clone()
 
         reference_points[..., 0:1] = reference_points[..., 0:1] * \
@@ -650,7 +677,6 @@ class PerceptionTransformer(BaseModule):
         self.embed_dims = embed_dims
         self.num_feature_levels = num_feature_levels
         self.num_cams = num_cams
-        self.fp16_enabled = False
 
         self.rotate_prev_bev = rotate_prev_bev
         self.use_shift = use_shift
@@ -711,26 +737,28 @@ class PerceptionTransformer(BaseModule):
         bev_pos = bev_pos.flatten(2).permute(2, 0, 1)
 
         # obtain rotation angle and shift with ego motion
-        delta_x = np.array(
+        delta_x = torch.stack(
             [each['can_bus'][0] for each in kwargs['img_metas']])
-        delta_y = np.array(
+        delta_y = torch.stack(
             [each['can_bus'][1] for each in kwargs['img_metas']])
-        ego_angle = np.array([
+        ego_angle = torch.stack([
             each['can_bus'][-2] / np.pi * 180 for each in kwargs['img_metas']
         ])
         grid_length_y = grid_length[0]
         grid_length_x = grid_length[1]
-        translation_length = np.sqrt(delta_x**2 + delta_y**2)
-        translation_angle = np.arctan2(delta_y, delta_x) / np.pi * 180
+        translation_length = torch.sqrt(delta_x**2 + delta_y**2)
+        translation_angle = torch.atan2(delta_y, delta_x) / np.pi * 180
         bev_angle = ego_angle - translation_angle
         shift_y = translation_length * \
-            np.cos(bev_angle / 180 * np.pi) / grid_length_y / bev_h
+            torch.cos(bev_angle / 180 * np.pi) / grid_length_y / bev_h
         shift_x = translation_length * \
-            np.sin(bev_angle / 180 * np.pi) / grid_length_x / bev_w
-        shift_y = shift_y * self.use_shift
-        shift_x = shift_x * self.use_shift
-        shift = bev_queries.new_tensor([shift_x, shift_y
-                                        ]).permute(1, 0)  # xy, bs -> bs, xy
+            torch.sin(bev_angle / 180 * np.pi) / grid_length_x / bev_w
+
+        if not self.use_shift:
+            shift_y = shift_y.new_zeros(shift_y.size())
+            shift_x = shift_x.new_zeros(shift_y.size())
+        shift = torch.stack([shift_x,
+                             shift_y]).permute(1, 0).to(bev_queries.dtype)
 
         if prev_bev is not None:
             if prev_bev.shape[1] == bev_h * bev_w:
@@ -741,19 +769,23 @@ class PerceptionTransformer(BaseModule):
                     rotation_angle = kwargs['img_metas'][i]['can_bus'][-1]
                     tmp_prev_bev = prev_bev[:, i].reshape(bev_h, bev_w,
                                                           -1).permute(2, 0, 1)
-                    tmp_prev_bev = rotate(
+                    tmp_prev_bev = _rotate(
                         tmp_prev_bev,
                         rotation_angle,
-                        center=self.rotate_center)
+                        center=torch.tensor(self.rotate_center))
                     tmp_prev_bev = tmp_prev_bev.permute(1, 2, 0).reshape(
                         bev_h * bev_w, 1, -1)
                     prev_bev[:, i] = tmp_prev_bev[:, 0]
 
         # add can bus signals
-        can_bus = bev_queries.new_tensor(
-            [each['can_bus'] for each in kwargs['img_metas']])  # [:, :]
+        can_bus = torch.stack([
+            each['can_bus'] for each in kwargs['img_metas']
+        ]).to(bev_queries.dtype)
         can_bus = self.can_bus_mlp(can_bus)[None, :, :]
-        bev_queries = bev_queries + can_bus * self.use_can_bus
+        # fix fp16
+        can_bus = can_bus.to(bev_queries.dtype)
+        if self.use_can_bus:
+            bev_queries = bev_queries + can_bus
 
         feat_flatten = []
         spatial_shapes = []
@@ -806,6 +838,7 @@ class PerceptionTransformer(BaseModule):
                 reg_branches=None,
                 cls_branches=None,
                 prev_bev=None,
+                attn_mask=None,
                 **kwargs):
         """Forward function for `Detr3DTransformer`.
         Args:
@@ -873,6 +906,7 @@ class PerceptionTransformer(BaseModule):
             value=bev_embed,
             query_pos=query_pos,
             reference_points=reference_points,
+            attn_mask=attn_mask,
             reg_branches=reg_branches,
             cls_branches=cls_branches,
             spatial_shapes=torch.tensor([[bev_h, bev_w]], device=query.device),

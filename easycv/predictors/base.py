@@ -19,6 +19,7 @@ from easycv.models.builder import build_model
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import Config, mmcv_config_fromfile
 from easycv.utils.constant import CACHE_DIR
+from easycv.utils.logger import get_root_logger
 from easycv.utils.mmlab_utils import (dynamic_adapt_for_mmlab,
                                       remove_adapt_for_mmlab)
 from easycv.utils.registry import build_from_cfg
@@ -125,6 +126,7 @@ class PredictorV2(object):
                  pipelines=None,
                  *args,
                  **kwargs):
+        self.logger = get_root_logger()
         self.model_path = model_path
         self.batch_size = batch_size
         self.save_results = save_results
@@ -147,14 +149,29 @@ class PredictorV2(object):
         if self.cfg is None:
             raise ValueError('Please provide "config_file"!')
 
+        self.pipelines = pipelines
+
+        if self.cfg.get('predict', None) is not None:
+            self._sync_cfg_predict(self.cfg.predict)
+
         # avoid unnecessarily loading backbone weights from url
         if 'model' in self.cfg and 'pretrained' in self.cfg.model:
             self.cfg.model.pretrained = None
 
         self.model = self.prepare_model()
-        self.pipelines = pipelines
         self.processor = self.build_processor()
         self._load_op = None
+
+    def _sync_cfg_predict(self, predict_cfg):
+        if predict_cfg.get('type', None) is not None:
+            assert predict_cfg[
+                'type'] == self.__class__.__name__, f'Predictor name is not equal {predict_cfg["type"]} != {self.__class__.__name__}'
+        for k, v in predict_cfg.items():
+            if k == 'type':
+                continue
+            setattr(self, k, v)
+            self.logger.warning(
+                f'Set "{self.__class__.__name__}.{k}" to "{v}" !')
 
     def _load_cfg_from_ckpt(self, model_path):
         if is_url_path(model_path):

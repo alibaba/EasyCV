@@ -1,14 +1,18 @@
 # Modified from https://github.com/fundamentalvision/BEVFormer.
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import copy
+import pickle
 
+import numpy as np
 import torch
 
+from easycv.core.bbox import get_box_type
 from easycv.core.bbox.bbox_util import bbox3d2result
 from easycv.models.detection3d.detectors.mvx_two_stage import \
     MVXTwoStageDetector
 from easycv.models.detection3d.utils.grid_mask import GridMask
 from easycv.models.registry import MODELS
+from easycv.utils.misc import decode_tensor_to_str, encode_str_to_tensor
 
 
 @MODELS.register_module()
@@ -16,6 +20,8 @@ class BEVFormer(MVXTwoStageDetector):
     """BEVFormer.
     Args:
         video_test_mode (bool): Decide whether to use temporal information during inference.
+        extract_feat_serially (bool): Whether extract history features one by one,
+            to solve the problem of batchnorm corrupt when shape N is too large.
     """
 
     def __init__(self,
@@ -34,7 +40,8 @@ class BEVFormer(MVXTwoStageDetector):
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None,
-                 video_test_mode=False):
+                 video_test_mode=False,
+                 extract_feat_serially=False):
 
         super(BEVFormer,
               self).__init__(pts_voxel_layer, pts_voxel_encoder,
@@ -45,18 +52,18 @@ class BEVFormer(MVXTwoStageDetector):
         self.grid_mask = GridMask(
             True, True, rotate=1, offset=False, ratio=0.5, mode=1, prob=0.7)
         self.use_grid_mask = use_grid_mask
-        self.fp16_enabled = False
+        self.extract_feat_serially = extract_feat_serially
 
         # temporal
         self.video_test_mode = video_test_mode
         self.prev_frame_info = {
             'prev_bev': None,
-            'scene_token': None,
+            'prev_scene_token': None,
             'prev_pos': 0,
             'prev_angle': 0,
         }
 
-    def extract_img_feat(self, img, img_metas, len_queue=None):
+    def extract_img_feat(self, img, len_queue=None):
         """Extract features of images."""
         B = img.size(0)
         if img is not None:
@@ -94,10 +101,10 @@ class BEVFormer(MVXTwoStageDetector):
                     img_feat.view(B, int(BN / B), C, H, W))
         return img_feats_reshaped
 
-    def extract_feat(self, img, img_metas=None, len_queue=None):
+    def extract_feat(self, img, len_queue=None):
         """Extract features from images and points."""
 
-        img_feats = self.extract_img_feat(img, img_metas, len_queue=len_queue)
+        img_feats = self.extract_img_feat(img, len_queue=len_queue)
 
         return img_feats
 
@@ -132,6 +139,27 @@ class BEVFormer(MVXTwoStageDetector):
         dummy_metas = None
         return self.forward_test(img=img, img_metas=[[dummy_metas]])
 
+    def obtain_history_bev_serially(self, imgs_queue, img_metas_list):
+        """Obtain history BEV features iteratively.
+        Extract feature one by one to solve the problem of batchnorm corrupt when shape N is too large.
+        """
+        self.eval()
+
+        with torch.no_grad():
+            prev_bev = None
+            bs, len_queue, num_cams, C, H, W = imgs_queue.shape
+            for i in range(len_queue):
+                img_feats = self.extract_feat(
+                    img=imgs_queue[:, i, ...], len_queue=None)
+                img_metas = [each[i] for each in img_metas_list]
+                if not img_metas[0]['prev_bev_exists']:
+                    prev_bev = None
+                prev_bev = self.pts_bbox_head(
+                    img_feats, img_metas, prev_bev, only_bev=True)
+            self.train()
+
+            return prev_bev
+
     def obtain_history_bev(self, imgs_queue, img_metas_list):
         """Obtain history BEV features iteratively. To save GPU memory, gradients are not calculated.
         """
@@ -147,21 +175,19 @@ class BEVFormer(MVXTwoStageDetector):
                 img_metas = [each[i] for each in img_metas_list]
                 if not img_metas[0]['prev_bev_exists']:
                     prev_bev = None
-                # img_feats = self.extract_feat(img=img, img_metas=img_metas)
                 img_feats = [each_scale[:, i] for each_scale in img_feats_list]
                 prev_bev = self.pts_bbox_head(
                     img_feats, img_metas, prev_bev, only_bev=True)
             self.train()
             return prev_bev
 
-    def forward_train(
-        self,
-        img_metas=None,
-        gt_bboxes_3d=None,
-        gt_labels_3d=None,
-        img=None,
-        gt_bboxes_ignore=None,
-    ):
+    def forward_train(self,
+                      img_metas=None,
+                      gt_bboxes_3d=None,
+                      gt_labels_3d=None,
+                      img=None,
+                      gt_bboxes_ignore=None,
+                      **kwargs):
         """Forward training function.
         Args:
             points (list[torch.Tensor], optional): Points of each sample.
@@ -185,18 +211,24 @@ class BEVFormer(MVXTwoStageDetector):
         Returns:
             dict: Losses of different branches.
         """
+        self._check_inputs(img_metas, img, kwargs)
 
         len_queue = img.size(1)
         prev_img = img[:, :-1, ...]
         img = img[:, -1, ...]
 
         prev_img_metas = copy.deepcopy(img_metas)
-        prev_bev = self.obtain_history_bev(prev_img, prev_img_metas)
+
+        if self.extract_feat_serially:
+            prev_bev = self.obtain_history_bev_serially(
+                prev_img, prev_img_metas)
+        else:
+            prev_bev = self.obtain_history_bev(prev_img, prev_img_metas)
 
         img_metas = [each[len_queue - 1] for each in img_metas]
         if not img_metas[0]['prev_bev_exists']:
             prev_bev = None
-        img_feats = self.extract_feat(img=img, img_metas=img_metas)
+        img_feats = self.extract_feat(img=img)
         losses = dict()
         losses_pts = self.forward_pts_train(img_feats, gt_bboxes_3d,
                                             gt_labels_3d, img_metas,
@@ -205,7 +237,34 @@ class BEVFormer(MVXTwoStageDetector):
         losses.update(losses_pts)
         return losses
 
+    def _check_inputs(self, img_metas, img, kwargs):
+        can_bus_in_kwargs = kwargs.get('can_bus', None) is not None
+        lidar2img_in_kwargs = kwargs.get('lidar2img', None) is not None
+        for batch_i in range(len(img_metas)):
+            for i in range(len(img_metas[batch_i])):
+                if can_bus_in_kwargs:
+                    img_metas[batch_i][i]['can_bus'] = kwargs['can_bus'][
+                        batch_i][i]
+                else:
+                    if isinstance(img_metas[batch_i][i]['can_bus'],
+                                  np.ndarray):
+                        img_metas[batch_i][i]['can_bus'] = torch.from_numpy(
+                            img_metas[batch_i][i]['can_bus']).to(img.device)
+                if lidar2img_in_kwargs:
+                    img_metas[batch_i][i]['lidar2img'] = kwargs['lidar2img'][
+                        batch_i][i]
+                else:
+                    if isinstance(img_metas[batch_i][i]['lidar2img'],
+                                  np.ndarray):
+                        img_metas[batch_i][i]['lidar2img'] = torch.from_numpy(
+                            np.array(img_metas[batch_i][i]['lidar2img'])).to(
+                                img.device)
+        kwargs.pop('can_bus', None)
+        kwargs.pop('lidar2img', None)
+
     def forward_test(self, img_metas, img=None, rescale=True, **kwargs):
+        self._check_inputs(img_metas, img, kwargs)
+
         for var, name in [(img_metas, 'img_metas')]:
             if not isinstance(var, list):
                 raise TypeError('{} must be a list, but got {}'.format(
@@ -213,20 +272,25 @@ class BEVFormer(MVXTwoStageDetector):
         img = [img] if img is None else img
 
         if img_metas[0][0]['scene_token'] != self.prev_frame_info[
-                'scene_token']:
+                'prev_scene_token']:
             # the first sample of each scene is truncated
             self.prev_frame_info['prev_bev'] = None
         # update idx
-        self.prev_frame_info['scene_token'] = img_metas[0][0]['scene_token']
+        self.prev_frame_info['prev_scene_token'] = img_metas[0][0][
+            'scene_token']
 
         # do not use temporal information
         if not self.video_test_mode:
             self.prev_frame_info['prev_bev'] = None
 
         # Get the delta of ego position and angle between two timestamps.
-        tmp_pos = copy.deepcopy(img_metas[0][0]['can_bus'][:3])
-        tmp_angle = copy.deepcopy(img_metas[0][0]['can_bus'][-1])
-        if self.prev_frame_info['prev_bev'] is not None:
+        tmp_pos = img_metas[0][0]['can_bus'][:3].clone()
+        tmp_angle = img_metas[0][0]['can_bus'][-1].clone()
+        # skip init dummy prev_bev
+        if self.prev_frame_info['prev_bev'] is not None and not torch.equal(
+                self.prev_frame_info['prev_bev'],
+                self.prev_frame_info['prev_bev'].new_zeros(
+                    self.prev_frame_info['prev_bev'].size())):
             img_metas[0][0]['can_bus'][:3] -= self.prev_frame_info['prev_pos']
             img_metas[0][0]['can_bus'][-1] -= self.prev_frame_info[
                 'prev_angle']
@@ -268,7 +332,7 @@ class BEVFormer(MVXTwoStageDetector):
 
     def simple_test(self, img_metas, img=None, prev_bev=None, rescale=False):
         """Test function without augmentaiton."""
-        img_feats = self.extract_feat(img=img, img_metas=img_metas)
+        img_feats = self.extract_feat(img=img)
 
         bbox_list = [dict() for i in range(len(img_metas))]
         new_prev_bev, bbox_pts = self.simple_test_pts(
@@ -276,3 +340,102 @@ class BEVFormer(MVXTwoStageDetector):
         for result_dict, pts_bbox in zip(bbox_list, bbox_pts):
             result_dict['pts_bbox'] = pts_bbox
         return new_prev_bev, bbox_list
+
+    def forward_export(self, img, img_metas):
+        error_str = 'Only support batch_size=1 and queue_length=1, please remove axis of batch_size and queue_length!'
+        if len(img.shape) > 4:
+            raise ValueError(error_str)
+        elif len(img.shape) < 4:
+            raise ValueError(
+                'The length of img size must be equal to 4: [num_cameras, img_channel, img_height, img_width]'
+            )
+
+        assert len(
+            img_metas['can_bus'].shape) == 1, error_str  # torch.Size([18])
+        assert len(img_metas['lidar2img'].shape
+                   ) == 3, error_str  # torch.Size([6, 4, 4])
+        assert len(
+            img_metas['img_shape'].shape) == 2, error_str  # torch.Size([6, 3])
+        assert len(img_metas['prev_bev'].shape
+                   ) == 3, error_str  # torch.Size([40000, 1, 256])
+
+        img = img[
+            None, None,
+            ...]  # torch.Size([6, 3, 928, 1600]) -> torch.Size([1, 1, 6, 3, 928, 1600])
+
+        box_type_3d = img_metas.get('box_type_3d', 'LiDAR')
+        if isinstance(box_type_3d, torch.Tensor):
+            box_type_3d = pickle.loads(box_type_3d.cpu().numpy().tobytes())
+        img_metas['box_type_3d'] = get_box_type(box_type_3d)[0]
+        img_metas['scene_token'] = decode_tensor_to_str(
+            img_metas['scene_token'])
+
+        # previous frame info
+        self.prev_frame_info['prev_scene_token'] = decode_tensor_to_str(
+            img_metas.pop('prev_scene_token', None))
+        self.prev_frame_info['prev_bev'] = img_metas.pop('prev_bev', None)
+        self.prev_frame_info['prev_pos'] = img_metas.pop('prev_pos', None)
+        self.prev_frame_info['prev_angle'] = img_metas.pop('prev_angle', None)
+
+        img_metas = [[img_metas]]
+        outputs = self.forward_test(img_metas, img=img)
+        scores_3d = outputs['pts_bbox'][0]['scores_3d']
+        labels_3d = outputs['pts_bbox'][0]['labels_3d']
+        boxes_3d = outputs['pts_bbox'][0]['boxes_3d'].tensor.cpu()
+
+        # info has been updated to the current frame
+        prev_bev = self.prev_frame_info['prev_bev']
+        prev_pos = self.prev_frame_info['prev_pos']
+        prev_angle = self.prev_frame_info['prev_angle']
+        prev_scene_token = encode_str_to_tensor(
+            self.prev_frame_info['prev_scene_token'])
+
+        return scores_3d, labels_3d, boxes_3d, [
+            prev_bev, prev_pos, prev_angle, prev_scene_token
+        ]
+
+    def forward_history_bev(self,
+                            img,
+                            can_bus,
+                            lidar2img,
+                            img_shape,
+                            scene_token,
+                            box_type_3d='LiDAR'):
+        """Experimental api, for export jit model to obtain history bev.
+        """
+        if isinstance(box_type_3d, torch.Tensor):
+            box_type_3d = pickle.loads(box_type_3d.cpu().numpy().tobytes())
+
+        batch_size, len_queue = img.size()[:2]
+        img_metas = []
+        for b_i in range(batch_size):
+            img_metas.append([])
+            for i in range(len_queue):
+                scene_token_str = pickle.loads(
+                    scene_token[b_i][i].cpu().numpy().tobytes())
+                img_metas[b_i].append({
+                    'scene_token':
+                    scene_token_str,
+                    'can_bus':
+                    can_bus[b_i][i],
+                    'lidar2img':
+                    lidar2img[b_i][i],
+                    'img_shape':
+                    img_shape[b_i][i],
+                    'box_type_3d':
+                    get_box_type(box_type_3d)[0],
+                    'prev_bev_exists':
+                    False
+                })
+
+        prev_img = img[:, :-1, ...]
+        img = img[:, -1, ...]
+
+        prev_img_metas = copy.deepcopy(img_metas)
+
+        if self.extract_feat_serially:
+            prev_bev = self.obtain_history_bev_serially(
+                prev_img, prev_img_metas)
+        else:
+            prev_bev = self.obtain_history_bev(prev_img, prev_img_metas)
+        return prev_bev

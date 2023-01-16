@@ -46,8 +46,13 @@ EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focuses
 
 
 ## What's New
+[🔥 2022.12.02]
 
-[🔥 Latest News] We have released our YOLOX-PAI that achieves SOTA results within 40~50 mAP (less than 1ms). And we also provide a convenient and fast export/predictor api for end2end object detection. To get a quick start of YOLOX-PAI, click [here](docs/source/tutorials/yolox.md)!
+* 02/12/2022 EasyCV v0.8.0 was released.
+- bevformer-base NDS increased by 0.8 on nuscenes val, training speed increased by 10%, and inference speed increased by 40%.
+- Support Objects365 pretrain and Adding the DINO++ model can achieve an accuracy of 63.4mAP at a model scale of 200M(Under the same scale, the accuracy is the best).
+
+[🔥 2022.08.31] We have released our YOLOX-PAI that achieves SOTA results within 40~50 mAP (less than 1ms). And we also provide a convenient and fast export/predictor api for end2end object detection. To get a quick start of YOLOX-PAI, click [here](docs/source/tutorials/yolox.md)!
 
 * 31/08/2022 EasyCV v0.6.0 was released.
   -  Release YOLOX-PAI which achieves SOTA results within 40~50 mAP (less than 1ms)
@@ -68,6 +73,8 @@ We have a series of technical articles on the functionalities of EasyCV.
 * [YOLOX-PAI: 加速YOLOX, 比YOLOv6更快更强](https://zhuanlan.zhihu.com/p/560597953)
 * [EasyCV带你复现更好更快的自监督算法-FastConvMAE](https://zhuanlan.zhihu.com/p/566988235)
 * [EasyCV DataHub 提供多领域视觉数据集下载，助力模型生产](https://zhuanlan.zhihu.com/p/572593950)
+* [使用EasyCV Mask2Former轻松实现图像分割](https://zhuanlan.zhihu.com/p/583831421)
+
 
 ## Installation
 
@@ -86,7 +93,7 @@ Please refer to [quick_start.md](docs/source/quick_start.md) for quick start. We
 * [using torchacc](docs/source/tutorials/torchacc.md)
 * [file io for local and oss files](docs/source/tutorials/file.md)
 * [using mmdetection model in EasyCV](docs/source/tutorials/mmdet_models_usage_guide.md)
-
+* [batch prediction tools](docs/source/tutorials/predict.md)
 
 
 

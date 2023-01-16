@@ -1,5 +1,7 @@
 # Modified from https://github.com/fundamentalvision/BEVFormer.
 # Copyright (c) Alibaba, Inc. and its affiliates.
+from typing import Optional
+
 import torch
 import torch.nn as nn
 from mmcv.cnn import xavier_init
@@ -41,7 +43,6 @@ class SpatialCrossAttention(BaseModule):
         self.init_cfg = init_cfg
         self.dropout = nn.Dropout(dropout)
         self.pc_range = pc_range
-        self.fp16_enabled = False
         self.deformable_attention = build_attention(deformable_attention)
         self.embed_dims = embed_dims
         self.num_cams = num_cams
@@ -56,20 +57,21 @@ class SpatialCrossAttention(BaseModule):
     @force_fp32(
         apply_to=('query', 'key', 'value', 'query_pos', 'reference_points_cam')
     )
-    def forward(self,
-                query,
-                key,
-                value,
-                residual=None,
-                query_pos=None,
-                key_padding_mask=None,
-                reference_points=None,
-                spatial_shapes=None,
-                reference_points_cam=None,
-                bev_mask=None,
-                level_start_index=None,
-                flag='encoder',
-                **kwargs):
+    def forward(
+        self,
+        query: torch.Tensor,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        reference_points_cam: torch.Tensor,
+        bev_mask: torch.Tensor,
+        spatial_shapes: torch.Tensor,
+        level_start_index: torch.Tensor,
+        residual: Optional[torch.Tensor] = None,
+        query_pos: Optional[torch.Tensor] = None,
+        key_padding_mask: Optional[torch.Tensor] = None,
+        reference_points: Optional[torch.Tensor] = None,
+        flag: Optional[str] = 'encoder',
+    ):
         """Forward Function of Detr3DCrossAtten.
         Args:
             query (Tensor): Query of Transformer with shape
@@ -108,9 +110,13 @@ class SpatialCrossAttention(BaseModule):
         if value is None:
             value = key
 
-        if residual is None:
-            inp_residual = query
-            slots = torch.zeros_like(query)
+        # if residual is None:
+        #     inp_residual = query
+        #     slots = torch.zeros_like(query)
+        assert residual is None
+        inp_residual = query
+        slots = torch.zeros_like(query)
+
         if query_pos is not None:
             query = query + query_pos
 

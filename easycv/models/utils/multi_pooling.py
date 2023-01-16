@@ -23,10 +23,6 @@ class GeMPooling(nn.Module):
         return F.avg_pool2d(x.clamp(min=eps).pow(p),
                             (x.size(-2), x.size(-1))).pow(1. / p)
 
-    def __repr__(self):
-        return self.__class__.__name__ + '(' + 'p=' + '{:.4f}'.format(
-            self.p.data.tolist()[0]) + ', ' + 'eps=' + str(self.eps) + ')'
-
 
 class MultiPooling(nn.Module):
     """Pooling layers for features from multiple depth.

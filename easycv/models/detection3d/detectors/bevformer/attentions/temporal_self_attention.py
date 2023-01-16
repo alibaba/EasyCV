@@ -63,7 +63,6 @@ class TemporalSelfAttention(BaseModule):
         self.norm_cfg = norm_cfg
         self.dropout = nn.Dropout(dropout)
         self.batch_first = batch_first
-        self.fp16_enabled = False
 
         # you'd better set dim_per_head to a power of 2
         # which is more efficient in the CUDA implementation
@@ -129,8 +128,7 @@ class TemporalSelfAttention(BaseModule):
                 reference_points=None,
                 spatial_shapes=None,
                 level_start_index=None,
-                flag='decoder',
-                **kwargs):
+                flag='decoder'):
         """Forward Function of MultiScaleDeformAttention.
 
         Args:
@@ -235,19 +233,20 @@ class TemporalSelfAttention(BaseModule):
                 f' 2 or 4, but get {reference_points.shape[-1]} instead.')
         if torch.cuda.is_available() and value.is_cuda:
             from easycv.thirdparty.deformable_attention.functions import MSDeformAttnFunction
-
+            if not torch.jit.is_scripting() and not torch.jit.is_tracing():
+                op = MSDeformAttnFunction.apply
+            else:
+                op = torch.ops.custom.ms_deform_attn
             if value.dtype == torch.float16:
-                output = MSDeformAttnFunction.apply(
+                output = op(
                     value.to(torch.float32), spatial_shapes, level_start_index,
                     sampling_locations.to(torch.float32), attention_weights,
                     self.im2col_step)
                 output = output.to(torch.float16)
             else:
-                output = MSDeformAttnFunction.apply(value, spatial_shapes,
-                                                    level_start_index,
-                                                    sampling_locations,
-                                                    attention_weights,
-                                                    self.im2col_step)
+                output = op(value, spatial_shapes, level_start_index,
+                            sampling_locations, attention_weights,
+                            self.im2col_step)
         else:
             output = multi_scale_deformable_attn_pytorch(
                 value, spatial_shapes, sampling_locations, attention_weights)

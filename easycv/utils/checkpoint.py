@@ -14,26 +14,7 @@ from easycv.framework.errors import TypeError
 from easycv.utils.constant import CACHE_DIR
 
 
-def load_checkpoint(model,
-                    filename,
-                    map_location='cpu',
-                    strict=False,
-                    logger=None):
-    """Load checkpoint from a file or URI.
-
-    Args:
-        model (Module): Module to load checkpoint.
-        filename (str): Accept local filepath, URL, ``torchvision://xxx``,
-            ``open-mmlab://xxx``. Please refer to ``docs/model_zoo.md`` for
-            details.
-        map_location (str): Same as :func:`torch.load`.
-        strict (bool): Whether to allow different params for the model and
-            checkpoint.
-        logger (:mod:`logging.Logger` or None): The logger for error message.
-
-    Returns:
-        dict or OrderedDict: The loaded checkpoint.
-    """
+def get_checkpoint(filename):
     if filename.startswith('oss://'):
         _, fname = os.path.split(filename)
         cache_file = os.path.join(CACHE_DIR, fname)
@@ -62,12 +43,42 @@ def load_checkpoint(model,
         ) and torch.distributed.is_initialized():
             torch.distributed.barrier()
         filename = cache_file
+    return filename
+
+
+def load_checkpoint(model,
+                    filename,
+                    map_location='cpu',
+                    strict=False,
+                    logger=None,
+                    revise_keys=[(r'^module\.', '')]):
+    """Load checkpoint from a file or URI.
+
+    Args:
+        model (Module): Module to load checkpoint.
+        filename (str): Accept local filepath, URL, ``torchvision://xxx``,
+            ``open-mmlab://xxx``. Please refer to ``docs/model_zoo.md`` for
+            details.
+        map_location (str): Same as :func:`torch.load`.
+        strict (bool): Whether to allow different params for the model and
+            checkpoint.
+        logger (:mod:`logging.Logger` or None): The logger for error message.
+        revise_keys (list): A list of customized keywords to modify the
+            state_dict in checkpoint. Each item is a (pattern, replacement)
+            pair of the regular expression operations. Default: strip
+            the prefix 'module.' by [(r'^module\\.', '')].
+
+    Returns:
+        dict or OrderedDict: The loaded checkpoint.
+    """
+    filename = get_checkpoint(filename)
     return mmcv_load_checkpoint(
         model,
         filename,
         map_location=map_location,
         strict=strict,
-        logger=logger)
+        logger=logger,
+        revise_keys=revise_keys)
 
 
 def save_checkpoint(model, filename, optimizer=None, meta=None):

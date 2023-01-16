@@ -7,7 +7,6 @@ import numpy as np
 import torch
 from torchvision.transforms import Compose
 
-from easycv.apis.export import reparameterize_models
 from easycv.core.visualization import imshow_bboxes
 from easycv.datasets.registry import PIPELINES
 from easycv.datasets.utils import replace_ImageToTensor
@@ -115,12 +114,6 @@ class DetectionPredictor(PredictorV2):
             out_file=out_file)
 
 
-@deprecated(reason='Please use DetectionPredictor.')
-@PREDICTORS.register_module()
-class DetrPredictor(DetectionPredictor):
-    """"""
-
-
 class _JitProcessorWrapper:
 
     def __init__(self, processor, device) -> None:
@@ -198,6 +191,7 @@ class YoloXPredictor(DetectionPredictor):
             with io.open(self.model_path, 'rb') as infile:
                 model = torch.jit.load(infile, self.device)
         else:
+            from easycv.utils.misc import reparameterize_models
             model = super()._build_model()
             model = reparameterize_models(model)
         return model
@@ -332,7 +326,8 @@ class TorchYoloXPredictor(YoloXPredictor):
           model_config: config string for model to init, in json format
         """
         if model_config:
-            model_config = json.loads(model_config)
+            if isinstance(model_config, str):
+                model_config = json.loads(model_config)
         else:
             model_config = {}
 

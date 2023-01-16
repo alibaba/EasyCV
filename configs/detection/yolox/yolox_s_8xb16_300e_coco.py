@@ -1,5 +1,6 @@
 _base_ = '../../base.py'
 
+num_classes = 80
 # model settings s m l x
 model = dict(
     type='YOLOX',
@@ -12,7 +13,7 @@ model = dict(
         model_type='s',
         obj_loss_type='BCE',
         reg_loss_type='giou',
-        num_classes=80,
+        num_classes=num_classes,
         decode_in_inference=True))
 
 # s m l x
@@ -43,6 +44,10 @@ CLASSES = [
 
 # dataset settings
 data_root = 'data/coco/'
+train_ann_file = data_root + 'annotations/instances_train2017.json'
+train_img_prefix = data_root + 'train2017/'
+test_ann_file = data_root + 'annotations/instances_val2017.json'
+test_img_prefix = data_root + 'val2017/'
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -83,8 +88,8 @@ train_dataset = dict(
     type='DetImagesMixDataset',
     data_source=dict(
         type='DetSourceCoco',
-        ann_file=data_root + 'annotations/instances_train2017.json',
-        img_prefix=data_root + 'train2017/',
+        ann_file=train_ann_file,
+        img_prefix=train_img_prefix,
         pipeline=[
             dict(type='LoadImageFromFile', to_float32=True),
             dict(type='LoadAnnotations', with_bbox=True)
@@ -100,8 +105,8 @@ val_dataset = dict(
     imgs_per_gpu=2,
     data_source=dict(
         type='DetSourceCoco',
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
+        ann_file=test_ann_file,
+        img_prefix=test_img_prefix,
         pipeline=[
             dict(type='LoadImageFromFile', to_float32=True),
             dict(type='LoadAnnotations', with_bbox=True)
@@ -188,4 +193,5 @@ log_config = dict(
         # dict(type='WandbLoggerHookV2'),
     ])
 
+checkpoint_sync_export = True
 export = dict(export_type = 'raw', preprocess_jit = False, batch_size=1, blade_config=dict(enable_fp16=True, fp16_fallback_op_ratio=0.01), use_trt_efficientnms=False)
