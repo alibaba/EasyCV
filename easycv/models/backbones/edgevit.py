@@ -245,14 +245,12 @@ class EdgeVit(nn.Module):
                  mlp_ratio=[4] * 4,
                  qkv_bias=True,
                  qk_scale=None,
-                 model_size='s',
                  representation_size=None,
                  drop_rate=0.,
                  attn_drop_rate=0.,
                  drop_path_rate=0.,
                  norm_layer=partial(nn.LayerNorm, eps=1e-8),
-                 sr_ratios=[4, 2, 2, 1],
-                 pretrained=None):
+                 sr_ratios=[4, 2, 2, 1]):
         """
         Args:
             depth (list): depth of each stage
@@ -272,7 +270,6 @@ class EdgeVit(nn.Module):
         """
         super().__init__()
         self.num_classes = num_classes
-        self.model_size = model_size
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
         norm_layer = norm_layer or partial(nn.LayerNorm, eps=1e-6)
 
@@ -365,19 +362,21 @@ class EdgeVit(nn.Module):
         else:
             self.pre_logits = nn.Identity()
 
-        self.pretrained = pretrained
         self.init_weights()
 
+        size_dict = {
+            'xxs': [1, 1, 3, 2],
+            'xs': [1, 1, 3, 1],
+            's': [1, 2, 5, 3]
+        }
+
         self.default_pretrained_model_path = model_urls.get(
-            self.__class__.__name__ + '_' + self.model_size, None)
+            self.__class__.__name__ + '_' +
+            [k for k, v in size_dict.items() if v == depth][0], None)
 
     def init_weights(self):
         """Initialize the weights in backbone.
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
         """
-        pretrained = self.pretrained
 
         def _init_weights(m):
             if isinstance(m, nn.Linear):
@@ -387,15 +386,6 @@ class EdgeVit(nn.Module):
             elif isinstance(m, nn.LayerNorm):
                 nn.init.constant_(m.bias, 0)
                 nn.init.constant_(m.weight, 1.0)
-
-        if isinstance(pretrained, str):
-            self.apply(_init_weights)
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            self.apply(_init_weights)
-        else:
-            raise TypeError('pretrained must be a str or None')
 
     @torch.jit.ignore
     def no_weight_decay(self):
