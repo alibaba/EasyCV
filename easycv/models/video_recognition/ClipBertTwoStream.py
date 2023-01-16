@@ -28,8 +28,10 @@ class ClipBertTwoStream(BaseModel):
         self.test_cfg = test_cfg
         self.multi_class = multi_class
 
-        self.vison_pretrained = get_checkpoint(vison_pretrained)
-        self.text_pretrained = get_checkpoint(text_pretrained)
+        self.vison_pretrained = get_checkpoint(
+            vison_pretrained) if vison_pretrained else vison_pretrained
+        self.text_pretrained = get_checkpoint(
+            text_pretrained) if text_pretrained else text_pretrained
         loss_cls = dict(type='CrossEntropyLoss') if not multi_class else dict(
             type='AsymmetricLoss')
         self.loss_cls = builder.build_loss(loss_cls)
