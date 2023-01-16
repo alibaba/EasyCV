@@ -8,7 +8,10 @@ from PIL import Image, ImageFile
 from easycv.datasets.registry import PIPELINES
 from easycv.file import io
 from easycv.framework.errors import ValueError
+from easycv.models.builder import build_model
 from easycv.utils.misc import deprecated
+from easycv.utils.mmlab_utils import (dynamic_adapt_for_mmlab,
+                                      remove_adapt_for_mmlab)
 from easycv.utils.registry import build_from_cfg
 from .base import Predictor, PredictorV2
 from .builder import PREDICTORS
@@ -100,10 +103,15 @@ class VideoClassificationPredictor(PredictorV2):
         """
         if self.pipelines is not None:
             pipelines = self.pipelines
-        else:
+        elif 'test_pipeline' in self.cfg:
             pipelines = self.cfg.get('test_pipeline', [])
+        else:
+            pipelines = self.cfg.get('val_pipeline', [])
         for idx, pipeline in enumerate(pipelines):
             if pipeline['type'] == 'Collect' and 'label' in pipeline['keys']:
+                pipeline['keys'].remove('label')
+            if pipeline['type'] == 'VideoToTensor' and 'label' in pipeline[
+                    'keys']:
                 pipeline['keys'].remove('label')
             pipelines[idx] = pipeline
 
@@ -112,6 +120,19 @@ class VideoClassificationPredictor(PredictorV2):
         from easycv.datasets.shared.pipelines.transforms import Compose
         processor = Compose(pipelines)
         return processor
+
+    def _build_model(self):
+        # Use mmdet model
+        dynamic_adapt_for_mmlab(self.cfg)
+        if 'vison_pretrained' in self.cfg.model:
+            self.cfg.model.vison_pretrained = None
+        if 'text_pretrained' in self.cfg.model:
+            self.cfg.model.text_pretrained = None
+
+        model = build_model(self.cfg.model)
+        # remove adapt for mmdet to avoid conflict using mmdet models
+        remove_adapt_for_mmlab(self.cfg)
+        return model
 
     def postprocess(self, inputs, *args, **kwargs):
         """Return top-k results."""
