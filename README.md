@@ -46,6 +46,12 @@ EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focuses
 
 
 ## What's New
+[🔥 2023.01.17]
+
+* 17/01/2023 EasyCV v0.9.0 was released.
+- Support Single-lens MOT
+- Support video recognition (X3D, SWIN-video)
+
 [🔥 2022.12.02]
 
 * 02/12/2022 EasyCV v0.8.0 was released.

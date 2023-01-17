@@ -1,3 +1,24 @@
+# v 0.9.0 (17/01/2023)
+
+## Highlights
+- Support Single-lens MOT ([#258](https://github.com/alibaba/EasyCV/pull/258))
+- Support video recognition (X3D, SWIN-video) ([#256](https://github.com/alibaba/EasyCV/pull/256))
+
+## New Features
+- Add inception config and voc config for FCN and UperNet ([#261](https://github.com/alibaba/EasyCV/pull/261))
+- Add inference time under V100 for the benchmark of deitiii and hydra attention ([#251](https://github.com/alibaba/EasyCV/pull/251))
+- Add bev-blancehybrid benchmark ([#249](https://github.com/alibaba/EasyCV/pull/249))
+
+## Improvements
+- Optimize data source apis ([#254](https://github.com/alibaba/EasyCV/pull/254))
+- Update predict.py to support input model directory ([#252](https://github.com/alibaba/EasyCV/pull/252))
+
+
+## Bug Fixes
+- Fix MAE arg error after timm upgrade ([#255](https://github.com/alibaba/EasyCV/pull/255))
+- Fix export SSL models bug, avoid loading default pretrained backbone model ([#257](https://github.com/alibaba/EasyCV/pull/257))
+- Fix bug can't find config files while easycv is installed ([#253](https://github.com/alibaba/EasyCV/pull/253))
+
 # v 0.8.0 (5/12/2022)
 
 ## Highlights

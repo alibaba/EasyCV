@@ -45,9 +45,15 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 
 ## 最新进展
+[🔥 2023.01.17]
+
+* 17/01/2023 EasyCV v0.9.0 was released.
+- 支持单镜头多目标跟踪。
+- 增加视频识别算法 (X3D, SWIN-video)
+
 [🔥 2022.12.02]
 
-* 02/12/2022 EasyCV v0.8.0 was released.
+* 02/12/2022 EasyCV v0.8.0 版本发布.
 - bevformer-base NDS在nuscenes val上提升0.8，训练速度提升10%，推理速度提升40%。
 - 支持Objects365预训练，加入DINO++模型在200M模型规模下可达到63.4mAP的精度（同等规模下精度最佳）。
 
