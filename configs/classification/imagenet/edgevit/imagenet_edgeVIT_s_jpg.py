@@ -1,7 +1,10 @@
 _base_ = './EdgeVit_b512x8_300e_jpg.py'
+
+load_from = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/edgevit/edges/edgevit_s.pth'
 # model settings
 model = dict(
     type='Classification',
+    pretrained=False,
     train_preprocess=['mixUp'],
     mixup_cfg=dict(
         mixup_alpha=0.8,

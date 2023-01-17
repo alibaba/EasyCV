@@ -1,7 +1,10 @@
 _base_ = './EdgeVit_b512x8_300e_jpg.py'
+
+load_from = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/edgevit/edgexxs/edgevit_xxs.pth'
 # model settings
 model = dict(
     type='Classification',
+    pretrained=False,
     backbone=dict(
         type='EdgeVit',
         depth=[1, 1, 3, 2],
