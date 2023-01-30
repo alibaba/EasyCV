@@ -584,4 +584,7 @@ CONFIG_TEMPLATE_ZOO = {
     'VIDEO_SWIN_S': 'configs/video_recognition/swin/video_swin_s.py',
     'VIDEO_SWIN_B': 'configs/video_recognition/swin/video_swin_b.py',
     'SWIN_BERT': 'configs/video_recognition/clipbert/clipbert_multilabel.py',
+
+    # ocr
+    'OCR': 'configs/ocr/detection/det_model_en.py',
 }
