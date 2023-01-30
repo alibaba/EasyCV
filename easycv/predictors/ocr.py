@@ -22,7 +22,7 @@ class OCRDetPredictor(PredictorV2):
                  save_results=False,
                  save_path=None,
                  pipelines=None,
-                 num_parallel=8,
+                 input_processor_threads=8,
                  mode='BGR',
                  *args,
                  **kwargs):
@@ -35,7 +35,7 @@ class OCRDetPredictor(PredictorV2):
             save_results=save_results,
             save_path=save_path,
             pipelines=pipelines,
-            num_parallel=num_parallel,
+            input_processor_threads=input_processor_threads,
             mode=mode,
             *args,
             **kwargs)
@@ -59,7 +59,7 @@ class OCRRecPredictor(PredictorV2):
                  save_results=False,
                  save_path=None,
                  pipelines=None,
-                 num_parallel=8,
+                 input_processor_threads=8,
                  mode='BGR',
                  *args,
                  **kwargs):
@@ -72,7 +72,7 @@ class OCRRecPredictor(PredictorV2):
             save_results=save_results,
             save_path=save_path,
             pipelines=pipelines,
-            num_parallel=num_parallel,
+            input_processor_threads=input_processor_threads,
             mode=mode,
             *args,
             **kwargs)
@@ -89,7 +89,7 @@ class OCRClsPredictor(PredictorV2):
                  save_results=False,
                  save_path=None,
                  pipelines=None,
-                 num_parallel=8,
+                 input_processor_threads=8,
                  mode='BGR',
                  *args,
                  **kwargs):
@@ -102,7 +102,7 @@ class OCRClsPredictor(PredictorV2):
             save_results=save_results,
             save_path=save_path,
             pipelines=pipelines,
-            num_parallel=num_parallel,
+            input_processor_threads=input_processor_threads,
             mode=mode,
             *args,
             **kwargs)

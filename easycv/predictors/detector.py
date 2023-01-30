@@ -85,7 +85,7 @@ class DetectionPredictor(PredictorV2):
         save_results (bool): Whether to save predict results.
         save_path (str): File path for saving results, only valid when `save_results` is True.
         pipelines (list[dict]): Data pipeline configs.
-        num_parallel (int): Number of processes to process inputs.
+        input_processor_threads (int): Number of processes to process inputs.
         mode (str): The image mode into the model.
     """
 
@@ -98,7 +98,7 @@ class DetectionPredictor(PredictorV2):
                  save_path=None,
                  pipelines=None,
                  score_threshold=0.5,
-                 num_parallel=8,
+                 input_processor_threads=8,
                  mode='BGR',
                  *arg,
                  **kwargs):
@@ -110,7 +110,7 @@ class DetectionPredictor(PredictorV2):
             save_results=save_results,
             save_path=save_path,
             pipelines=pipelines,
-            num_parallel=num_parallel,
+            input_processor_threads=input_processor_threads,
             mode=mode)
         self.score_thresh = score_threshold
         self.CLASSES = self.cfg.get('CLASSES', None)
@@ -120,7 +120,7 @@ class DetectionPredictor(PredictorV2):
             self.cfg,
             pipelines=self.pipelines,
             batch_size=self.batch_size,
-            num_parallel=self.num_parallel,
+            threads=self.input_processor_threads,
             mode=self.mode)
 
     def get_output_processor(self):
@@ -175,7 +175,7 @@ class YoloXInputProcessor(DetInputProcessor):
         model_type (str): "raw" or "jit" or "blade"
         jit_processor_path (str): File of the saved processing operator of torch jit type.
         device (str | torch.device): Support str('cuda' or 'cpu') or torch.device, if is None, detect device automatically.
-        num_parallel (int): Number of processes to process inputs.
+        threads (int): Number of processes to process inputs.
         mode (str): The image mode into the model.
     """
 
@@ -187,7 +187,7 @@ class YoloXInputProcessor(DetInputProcessor):
         model_type='raw',
         jit_processor_path=None,
         device=None,
-        num_parallel=8,
+        threads=8,
         mode='BGR',
     ):
         self.model_type = model_type
@@ -200,7 +200,7 @@ class YoloXInputProcessor(DetInputProcessor):
             cfg,
             pipelines=pipelines,
             batch_size=batch_size,
-            num_parallel=num_parallel,
+            threads=threads,
             mode=mode)
 
     def build_processor(self):
@@ -214,9 +214,9 @@ class YoloXInputProcessor(DetInputProcessor):
             # jit or blade model
             processor = None
             if os.path.exists(self.jit_processor_path):
-                if self.num_parallel > 1:
+                if self.threads > 1:
                     raise ValueError(
-                        'Not support num_parallel>1 for jit processor !')
+                        'Not support threads>1 for jit processor !')
                 # use a preprocess jit model to speed up
                 with io.open(self.jit_processor_path, 'rb') as infile:
                     processor = torch.jit.load(infile, self.device)
@@ -321,7 +321,7 @@ class YoloXPredictor(DetectionPredictor):
         max_det (int): Maximum number of detection output boxes.
         score_thresh (float): Score threshold to filter box.
         nms_thresh (float): Nms threshold to filter box.
-        num_parallel (int): Number of processes to process inputs.
+        input_processor_threads (int): Number of processes to process inputs.
         mode (str): The image mode into the model.
     """
 
@@ -338,7 +338,7 @@ class YoloXPredictor(DetectionPredictor):
                  score_thresh=0.5,
                  nms_thresh=None,
                  test_conf=None,
-                 num_parallel=8,
+                 input_processor_threads=8,
                  mode='BGR'):
         self.max_det = max_det
         self.use_trt_efficientnms = use_trt_efficientnms
@@ -365,7 +365,7 @@ class YoloXPredictor(DetectionPredictor):
             save_path=save_path,
             pipelines=pipelines,
             score_threshold=score_thresh,
-            num_parallel=num_parallel,
+            input_processor_threads=input_processor_threads,
             mode=mode)
 
         self.test_conf = test_conf or self.cfg['model'].get('test_conf', 0.01)
@@ -421,7 +421,7 @@ class YoloXPredictor(DetectionPredictor):
             model_type=self.model_type,
             jit_processor_path=self.jit_processor_path,
             device=self.device,
-            num_parallel=self.num_parallel,
+            threads=self.input_processor_threads,
             mode=self.mode,
         )
 
@@ -445,7 +445,7 @@ class TorchYoloXPredictor(YoloXPredictor):
                  score_thresh=0.5,
                  use_trt_efficientnms=False,
                  model_config=None,
-                 num_parallel=8,
+                 input_processor_threads=8,
                  mode='BGR'):
         """
         Args:
@@ -475,7 +475,7 @@ class TorchYoloXPredictor(YoloXPredictor):
             score_thresh=score_thresh,
             nms_thresh=None,
             test_conf=None,
-            num_parallel=num_parallel,
+            input_processor_threads=input_processor_threads,
             mode=mode)
 
     def predict(self, input_data_list, batch_size=-1, to_numpy=True):

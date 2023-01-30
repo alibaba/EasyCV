@@ -20,7 +20,7 @@ class ClsInputProcessor(InputProcessor):
         pipelines (list[dict]): Data pipeline configs.
         batch_size (int): batch size for forward.
         pil_input (bool): Whether use PIL image. If processor need PIL input, set true, default false.
-        num_parallel (int): Number of processes to process inputs.
+        threads (int): Number of processes to process inputs.
         mode (str): The image mode into the model.
     """
 
@@ -29,14 +29,11 @@ class ClsInputProcessor(InputProcessor):
                  pipelines=None,
                  batch_size=1,
                  pil_input=True,
-                 num_parallel=8,
+                 threads=8,
                  mode='BGR'):
 
         super(ClsInputProcessor, self).__init__(
-            cfg,
-            pipelines=pipelines,
-            batch_size=batch_size,
-            num_parallel=num_parallel)
+            cfg, pipelines=pipelines, batch_size=batch_size, threads=threads)
         self.mode = mode
         self.pil_input = pil_input
 
@@ -126,7 +123,7 @@ class ClassificationPredictor(PredictorV2):
         topk (int): Return top-k results. Default: 1.
         pil_input (bool): Whether use PIL image. If processor need PIL input, set true, default false.
         label_map_path (str): File path of saving labels list.
-        num_parallel (int): Number of processes to process inputs.
+        input_processor_threads (int): Number of processes to process inputs.
         mode (str): The image mode into the model.
     """
 
@@ -141,7 +138,7 @@ class ClassificationPredictor(PredictorV2):
                  topk=1,
                  pil_input=True,
                  label_map_path=None,
-                 num_parallel=8,
+                 input_processor_threads=8,
                  mode='BGR',
                  *args,
                  **kwargs):
@@ -159,7 +156,7 @@ class ClassificationPredictor(PredictorV2):
             save_results=save_results,
             save_path=save_path,
             pipelines=pipelines,
-            num_parallel=num_parallel,
+            input_processor_threads=input_processor_threads,
             mode=mode,
             *args,
             **kwargs)
@@ -169,7 +166,7 @@ class ClassificationPredictor(PredictorV2):
             self.cfg,
             pipelines=self.pipelines,
             batch_size=self.batch_size,
-            num_parallel=self.num_parallel,
+            threads=self.input_processor_threads,
             pil_input=self.pil_input,
             mode=self.mode)
 

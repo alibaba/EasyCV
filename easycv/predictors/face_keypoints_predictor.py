@@ -63,7 +63,7 @@ class FaceKeypointsPredictor(PredictorV2):
         save_results (bool): Whether to save predict results.
         save_path (str): File path for saving results, only valid when `save_results` is True.
         pipelines (list[dict]): Data pipeline configs.
-        num_parallel (int): Number of processes to process inputs.
+        input_processor_threads (int): Number of processes to process inputs.
         mode (str): The image mode into the model.
     """
 
@@ -76,7 +76,7 @@ class FaceKeypointsPredictor(PredictorV2):
         save_results=False,
         save_path=None,
         pipelines=None,
-        num_parallel=8,
+        input_processor_threads=8,
         mode='BGR',
     ):
         super(FaceKeypointsPredictor, self).__init__(
@@ -87,7 +87,7 @@ class FaceKeypointsPredictor(PredictorV2):
             save_results=save_results,
             save_path=save_path,
             pipelines=pipelines,
-            num_parallel=num_parallel,
+            input_processor_threads=input_processor_threads,
             mode=mode)
 
         self.input_size = self.cfg.IMAGE_SIZE

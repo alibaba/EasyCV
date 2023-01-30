@@ -111,7 +111,7 @@ class InputProcessor(object):
         cfg (Config): Config instance.
         pipelines (list[dict]): Data pipeline configs.
         batch_size (int): batch size for forward.
-        num_parallel (int): Number of processes to process inputs.
+        threads (int): Number of processes to process inputs.
         mode (str): The image mode into the model.
     """
 
@@ -119,16 +119,16 @@ class InputProcessor(object):
                  cfg,
                  pipelines=None,
                  batch_size=1,
-                 num_parallel=8,
+                 threads=8,
                  mode='BGR'):
         self.cfg = cfg
         self.pipelines = pipelines
         self.batch_size = batch_size
-        if self.batch_size < num_parallel:
+        if self.batch_size < threads:
             logging.warning(
-                f'``batch_size`` is less than ``num_parallel``, set ``num_parallel`` to {self.batch_size }'
+                f'``batch_size`` is less than ``threads``, set ``threads`` to {self.batch_size }'
             )
-        self.num_parallel = min(self.batch_size, num_parallel)
+        self.threads = min(self.batch_size, threads)
         self.mode = mode
         self.processor = self.build_processor()
         self._load_op = None
@@ -199,16 +199,15 @@ class InputProcessor(object):
         If you need custom ops to load or process a batch samples, you need to reimplement it.
         """
         batch_outputs = []
-        num_parallel = min(self.num_parallel, len(inputs))
-        if num_parallel <= 1:
+        threads = min(self.threads, len(inputs))
+        if threads <= 1:
             for inp in inputs:
                 batch_outputs.append(self.process_single(inp))
         else:
             import concurrent.futures
             batch_outputs_with_idx = []
             futures = []
-            with concurrent.futures.ProcessPoolExecutor(
-                    num_parallel) as executor:
+            with concurrent.futures.ProcessPoolExecutor(threads) as executor:
                 for i, inp in enumerate(inputs):
                     future = executor.submit(self._process_single_for_parallel,
                                              i, inp)
@@ -287,7 +286,7 @@ class PredictorV2(object):
             save_results (bool): Whether to save predict results.
             save_path (str): File path for saving results, only valid when `save_results` is True.
             pipelines (list[dict]): Data pipeline configs.
-            num_parallel (int): Number of processes to process inputs.
+            input_processor_threads (int): Number of processes to process inputs.
             mode (str): The image mode into the model.
         """
 
@@ -299,7 +298,7 @@ class PredictorV2(object):
                  save_results=False,
                  save_path=None,
                  pipelines=None,
-                 num_parallel=8,
+                 input_processor_threads=8,
                  mode='BGR'):
         self.logger = get_root_logger()
         self.model_path = model_path
@@ -308,7 +307,7 @@ class PredictorV2(object):
         self.save_path = save_path
         self.config_file = config_file
         self.pipelines = pipelines
-        self.num_parallel = num_parallel
+        self.input_processor_threads = input_processor_threads
         self.mode = mode
         if self.save_results:
             assert self.save_path is not None
@@ -343,7 +342,7 @@ class PredictorV2(object):
             self.cfg,
             pipelines=self.pipelines,
             batch_size=self.batch_size,
-            num_parallel=self.num_parallel,
+            threads=self.input_processor_threads,
             mode=self.mode)
 
     def get_output_processor(self):

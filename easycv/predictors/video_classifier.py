@@ -20,14 +20,14 @@ class VideoClsInputProcessor(InputProcessor):
                  pipelines=None,
                  with_text=False,
                  batch_size=1,
-                 num_parallel=8,
+                 threads=8,
                  mode='RGB'):
         self.with_text = with_text
         super().__init__(
             cfg,
             pipelines=pipelines,
             batch_size=batch_size,
-            num_parallel=num_parallel,
+            threads=threads,
             mode=mode)
 
     def _load_input(self, input):
@@ -121,7 +121,7 @@ class VideoClassificationPredictor(PredictorV2):
         topk (int): Return top-k results. Default: 1.
         pil_input (bool): Whether use PIL image. If processor need PIL input, set true, default false.
         label_map_path (str): File path of saving labels list.
-        num_parallel (int): Number of processes to process inputs.
+        input_processor_threads (int): Number of processes to process inputs.
         mode (str): The image mode into the model.
     """
 
@@ -137,7 +137,7 @@ class VideoClassificationPredictor(PredictorV2):
                  with_text=False,
                  label_map_path=None,
                  topk=1,
-                 num_parallel=8,
+                 input_processor_threads=8,
                  mode='RGB',
                  *args,
                  **kwargs):
@@ -149,7 +149,7 @@ class VideoClassificationPredictor(PredictorV2):
             save_results=save_results,
             save_path=save_path,
             pipelines=pipelines,
-            num_parallel=num_parallel,
+            input_processor_threads=input_processor_threads,
             mode=mode,
             *args,
             **kwargs)
@@ -191,7 +191,7 @@ class VideoClassificationPredictor(PredictorV2):
             pipelines=self.pipelines,
             with_text=self.with_text,
             batch_size=self.batch_size,
-            num_parallel=self.num_parallel,
+            threads=self.input_processor_threads,
             mode=self.mode)
 
     def get_output_processor(self):

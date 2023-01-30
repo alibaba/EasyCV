@@ -39,7 +39,7 @@ class WholeBodyKptsInputProcessor(InputProcessor):
             cfg,
             pipelines=pipelines,
             batch_size=batch_size,
-            num_parallel=1,
+            threads=1,
             mode=mode)
 
     def process_detection_results(self, det_results, cat_id=0):
@@ -217,7 +217,7 @@ class WholeBodyKeypointsPredictor(PredictorV2):
             device=device,
             save_results=save_results,
             save_path=save_path,
-            num_parallel=1,
+            input_processor_threads=1,
             mode=mode,
             *args,
             **kwargs)

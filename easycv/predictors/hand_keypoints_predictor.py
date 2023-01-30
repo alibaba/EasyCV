@@ -32,7 +32,7 @@ class HandkptsInputProcessor(InputProcessor):
             cfg,
             pipelines=pipelines,
             batch_size=batch_size,
-            num_parallel=1,
+            threads=1,
             mode=mode)
 
     def _load_input(self, input):
@@ -152,7 +152,7 @@ class HandKeypointsPredictor(PredictorV2):
         save_results (bool): Whether to save predict results.
         save_path (str): File path for saving results, only valid when `save_results` is True.
         pipelines (list[dict]): Data pipeline configs.
-        num_parallel (int): Number of processes to process inputs.
+        input_processor_threads (int): Number of processes to process inputs.
         mode (str): The image mode into the model.
     """
 
@@ -179,7 +179,7 @@ class HandKeypointsPredictor(PredictorV2):
             save_results=save_results,
             save_path=save_path,
             pipelines=pipelines,
-            num_parallel=1,
+            input_processor_threads=1,
             mode=mode,
             *args,
             **kwargs)

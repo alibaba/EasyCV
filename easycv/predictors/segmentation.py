@@ -23,7 +23,7 @@ class SegmentationPredictor(PredictorV2):
         save_results (bool): Whether to save predict results.
         save_path (str): File path for saving results, only valid when `save_results` is True.
         pipelines (list[dict]): Data pipeline configs.
-        num_parallel (int): Number of processes to process inputs.
+        input_processor_threads (int): Number of processes to process inputs.
         mode (str): The image mode into the model.
     """
 
@@ -35,7 +35,7 @@ class SegmentationPredictor(PredictorV2):
                  save_results=False,
                  save_path=None,
                  pipelines=None,
-                 num_parallel=8,
+                 input_processor_threads=8,
                  mode='BGR',
                  *args,
                  **kwargs):
@@ -48,7 +48,7 @@ class SegmentationPredictor(PredictorV2):
             save_results=save_results,
             save_path=save_path,
             pipelines=pipelines,
-            num_parallel=num_parallel,
+            input_processor_threads=input_processor_threads,
             mode=mode,
             *args,
             **kwargs)
@@ -185,7 +185,7 @@ class Mask2formerPredictor(SegmentationPredictor):
         save_results (bool): Whether to save predict results.
         save_path (str): File path for saving results, only valid when `save_results` is True.
         pipelines (list[dict]): Data pipeline configs.
-        num_parallel (int): Number of processes to process inputs.
+        input_processor_threads (int): Number of processes to process inputs.
         mode (str): The image mode into the model.
     """
 
@@ -198,7 +198,7 @@ class Mask2formerPredictor(SegmentationPredictor):
                  save_path=None,
                  pipelines=None,
                  task_mode='panoptic',
-                 num_parallel=8,
+                 input_processor_threads=8,
                  mode='BGR',
                  *args,
                  **kwargs):
@@ -210,7 +210,7 @@ class Mask2formerPredictor(SegmentationPredictor):
             save_results=save_results,
             save_path=save_path,
             pipelines=pipelines,
-            num_parallel=num_parallel,
+            input_processor_threads=input_processor_threads,
             mode=mode,
             *args,
             **kwargs)

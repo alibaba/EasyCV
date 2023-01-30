@@ -27,7 +27,7 @@ class BEVFormerInputProcessor(InputProcessor):
         batch_size (int): batch size for forward.
         use_camera (bool): Whether use camera data.
         box_type_3d (str): Box type.
-        num_parallel (int): Number of processes to process inputs.
+        threads (int): Number of processes to process inputs.
     """
 
     def __init__(self,
@@ -37,16 +37,13 @@ class BEVFormerInputProcessor(InputProcessor):
                  use_camera=True,
                  box_type_3d='LiDAR',
                  adapt_jit=False,
-                 num_parallel=8):
+                 threads=8):
         self.use_camera = use_camera
         self.box_type_3d, self.box_mode_3d = get_box_type(box_type_3d)
         self.adapt_jit = adapt_jit
 
         super(BEVFormerInputProcessor, self).__init__(
-            cfg,
-            pipelines=pipelines,
-            batch_size=batch_size,
-            num_parallel=num_parallel)
+            cfg, pipelines=pipelines, batch_size=batch_size, threads=threads)
 
     def _prepare_input_dict(self, data_info):
         from nuscenes.eval.common.utils import Quaternion, quaternion_yaw
@@ -172,7 +169,7 @@ class BEVFormerPredictor(PredictorV2):
         box_type_3d (str): Box type.
         use_camera (bool): Whether use camera data.
         score_threshold (float): Score threshold to filter inference results.
-        num_parallel (int): Number of processes to process inputs.
+        input_processor_threads (int): Number of processes to process inputs.
         mode (str): The image mode into the model.
     """
 
@@ -188,7 +185,7 @@ class BEVFormerPredictor(PredictorV2):
                  use_camera=True,
                  score_threshold=0.1,
                  model_type=None,
-                 num_parallel=8,
+                 input_processor_threads=8,
                  mode='BGR',
                  *arg,
                  **kwargs):
@@ -217,7 +214,7 @@ class BEVFormerPredictor(PredictorV2):
             save_results=save_results,
             save_path=save_path,
             pipelines=pipelines,
-            num_parallel=num_parallel,
+            input_processor_threads=input_processor_threads,
             mode=mode,
             *arg,
             **kwargs)
@@ -245,7 +242,7 @@ class BEVFormerPredictor(PredictorV2):
             use_camera=self.use_camera,
             box_type_3d=self.box_type_3d_str,
             adapt_jit=self.is_jit_model,
-            num_parallel=self.num_parallel)
+            threads=self.input_processor_threads)
 
     def prepare_model(self):
         if self.is_jit_model:
