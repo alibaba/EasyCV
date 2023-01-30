@@ -7,7 +7,7 @@ from easycv.predictors.builder import PREDICTORS, build_predictor
 from ..datasets.pose.data_sources.hand.coco_hand import \
     COCO_WHOLEBODY_HAND_DATASET_INFO
 from ..datasets.pose.data_sources.top_down import DatasetInfo
-from .base import PredictorV2
+from .base import InputProcessor, OutputProcessor, PredictorV2
 from .pose_predictor import _box2cs
 
 HAND_SKELETON = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7],
@@ -16,47 +16,24 @@ HAND_SKELETON = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7],
                  [9, 13], [13, 17]]
 
 
-@PREDICTORS.register_module()
-class HandKeypointsPredictor(PredictorV2):
-    """HandKeypointsPredictor
-
-    Attributes:
-        model_path: path of keypoint model
-        config_file: path or ``Config`` of config file
-        detection_model_config: dict of hand detection model predictor config,
-                                example like ``dict(type="", model_path="", config_file="", ......)``
-        batch_size (int): batch size for forward.
-        device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
-        save_results (bool): Whether to save predict results.
-        save_path (str): File path for saving results, only valid when `save_results` is True.
-        pipelines (list[dict]): Data pipeline configs.
-    """
+class HandkptsInputProcessor(InputProcessor):
 
     def __init__(self,
-                 model_path,
-                 config_file=None,
-                 detection_predictor_config=None,
-                 batch_size=1,
-                 device=None,
-                 save_results=False,
-                 save_path=None,
+                 cfg,
+                 detection_predictor_config,
                  pipelines=None,
-                 *args,
-                 **kwargs):
-        super(HandKeypointsPredictor, self).__init__(
-            model_path,
-            config_file=config_file,
-            batch_size=batch_size,
-            device=device,
-            save_results=save_results,
-            save_path=save_path,
-            pipelines=pipelines,
-            *args,
-            **kwargs)
-        self.dataset_info = DatasetInfo(COCO_WHOLEBODY_HAND_DATASET_INFO)
+                 batch_size=1,
+                 mode='BGR'):
         assert detection_predictor_config is not None, f"{self.__class__.__name__} need 'detection_predictor_config' " \
                                                        f'property to build hand detection model'
         self.detection_predictor = build_predictor(detection_predictor_config)
+        self.dataset_info = DatasetInfo(COCO_WHOLEBODY_HAND_DATASET_INFO)
+        super().__init__(
+            cfg,
+            pipelines=pipelines,
+            batch_size=batch_size,
+            num_parallel=1,
+            mode=mode)
 
     def _load_input(self, input):
         """ load img and convert detection result to topdown style
@@ -77,7 +54,7 @@ class HandKeypointsPredictor(PredictorV2):
         box_id = 0
         det_bbox_result = input['detection_boxes']
         det_bbox_scores = input['detection_scores']
-        img = mmcv.imread(image_path, 'color', self.INPUT_IMAGE_MODE)
+        img = mmcv.imread(image_path, 'color', self.mode)
         for bbox, score in zip(det_bbox_result, det_bbox_scores):
             center, scale = _box2cs(self.cfg.data_cfg['image_size'], bbox)
             # prepare data
@@ -115,14 +92,14 @@ class HandKeypointsPredictor(PredictorV2):
             box_id += 1
         return data_list
 
-    def preprocess_single(self, input):
+    def process_single(self, input):
         results = []
         outputs = self._load_input(input)
         for output in outputs:
             results.append(self.processor(output))
         return results
 
-    def preprocess(self, inputs, *args, **kwargs):
+    def __call__(self, inputs):
         """Process all inputs list. And collate to batch and put to target device.
         If you need custom ops to load or process a batch samples, you need to reimplement it.
         """
@@ -130,14 +107,16 @@ class HandKeypointsPredictor(PredictorV2):
         det_results = self.detection_predictor(inputs, keep_inputs=True)
 
         batch_outputs = []
-        for i in det_results:
-            for res in self.preprocess_single(i, *args, **kwargs):
+        for inp in det_results:
+            for res in self.process_single(inp):
                 batch_outputs.append(res)
         batch_outputs = self._collate_fn(batch_outputs)
-        batch_outputs = self._to_device(batch_outputs)
         return batch_outputs
 
-    def postprocess(self, inputs, *args, **kwargs):
+
+class HandkptsOutputProcessor(OutputProcessor):
+
+    def __call__(self, inputs):
         keypoints = inputs['preds']
         boxes = inputs['boxes']
         for i, bbox in enumerate(boxes):
@@ -157,6 +136,64 @@ class HandKeypointsPredictor(PredictorV2):
                 'boxes': boxes[i]
             })
         return batch_outputs
+
+
+@PREDICTORS.register_module()
+class HandKeypointsPredictor(PredictorV2):
+    """HandKeypointsPredictor
+
+    Attributes:
+        model_path: path of keypoint model
+        config_file: path or ``Config`` of config file
+        detection_model_config: dict of hand detection model predictor config,
+                                example like ``dict(type="", model_path="", config_file="", ......)``
+        batch_size (int): batch size for forward.
+        device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
+        save_results (bool): Whether to save predict results.
+        save_path (str): File path for saving results, only valid when `save_results` is True.
+        pipelines (list[dict]): Data pipeline configs.
+        num_parallel (int): Number of processes to process inputs.
+        mode (str): The image mode into the model.
+    """
+
+    def __init__(self,
+                 model_path,
+                 config_file=None,
+                 detection_predictor_config=None,
+                 batch_size=1,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 pipelines=None,
+                 mode='BGR',
+                 *args,
+                 **kwargs):
+
+        self.detection_predictor_config = detection_predictor_config
+
+        super(HandKeypointsPredictor, self).__init__(
+            model_path,
+            config_file=config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            pipelines=pipelines,
+            num_parallel=1,
+            mode=mode,
+            *args,
+            **kwargs)
+
+    def get_input_processor(self):
+        return HandkptsInputProcessor(
+            self.cfg,
+            self.detection_predictor_config,
+            pipelines=self.pipelines,
+            batch_size=self.batch_size,
+            mode=self.mode)
+
+    def get_output_processor(self):
+        return HandkptsOutputProcessor()
 
     def show_result(self,
                     image_path,

@@ -48,11 +48,19 @@ class YoloXPredictorTest(unittest.TestCase):
         output = outputs[0]
         self._assert_results(output)
 
-    def _base_test_batch(self, model_path, inputs, num_samples, batch_size):
+    def _base_test_batch(self,
+                         model_path,
+                         inputs,
+                         num_samples,
+                         batch_size,
+                         num_parallel=8):
         assert isinstance(inputs, list) and len(inputs) == 1
 
         predictor = YoloXPredictor(
-            model_path=model_path, score_thresh=0.5, batch_size=batch_size)
+            model_path=model_path,
+            score_thresh=0.5,
+            batch_size=batch_size,
+            num_parallel=num_parallel)
         outputs = predictor(inputs * num_samples)
 
         self.assertEqual(len(outputs), num_samples)
@@ -85,7 +93,7 @@ class YoloXPredictorTest(unittest.TestCase):
     def test_batch_jit_pre_trt(self):
         jit_path = PRETRAINED_MODEL_YOLOXS_PRE_NOTRT_JIT_B2
         self._base_test_batch(
-            jit_path, [self.img], num_samples=4, batch_size=2)
+            jit_path, [self.img], num_samples=4, batch_size=2, num_parallel=1)
 
     def test_single_raw_TorchYoloXPredictor(self):
         detection_model_path = PRETRAINED_MODEL_YOLOXS_EXPORT

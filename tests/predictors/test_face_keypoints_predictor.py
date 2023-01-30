@@ -3,7 +3,7 @@
 import unittest
 
 import cv2
-from ut_config import PRETRAINED_MODEL_FACE_2D_KEYPOINTS
+from tests.ut_config import PRETRAINED_MODEL_FACE_2D_KEYPOINTS
 
 from easycv.predictors.face_keypoints_predictor import FaceKeypointsPredictor
 

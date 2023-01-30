@@ -105,10 +105,11 @@ class SegmentationPredictorTest(unittest.TestCase):
         total_samples = 3
         outputs = predict_pipeline(
             [self.img_path] * total_samples, keep_inputs=False)
-        self.assertEqual(outputs, [])
 
         with open(tmp_path, 'rb') as f:
             results = pickle.loads(f.read())
+
+        self.assertEqual(len(results), total_samples)
 
         for res in results:
             self.assertNotIn('inputs', res)

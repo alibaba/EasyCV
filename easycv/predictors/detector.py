@@ -5,21 +5,15 @@ from glob import glob
 
 import numpy as np
 import torch
-from torchvision.transforms import Compose
 
 from easycv.core.visualization import imshow_bboxes
-from easycv.datasets.registry import PIPELINES
 from easycv.datasets.utils import replace_ImageToTensor
 from easycv.file import io
-from easycv.models import build_model
 from easycv.models.detection.utils import postprocess
 from easycv.thirdparty.mtcnn import FaceDetector
 from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.config_tools import mmcv_config_fromfile
-from easycv.utils.constant import CACHE_DIR
 from easycv.utils.misc import deprecated
-from easycv.utils.registry import build_from_cfg
-from .base import PredictorV2
+from .base import InputProcessor, OutputProcessor, PredictorV2
 from .builder import PREDICTORS
 from .classifier import TorchClassifier
 
@@ -29,33 +23,7 @@ except Exception:
     from .interface import PredictorInterface
 
 
-@PREDICTORS.register_module()
-class DetectionPredictor(PredictorV2):
-    """Generic Detection Predictor, it will filter bbox results by ``score_threshold`` .
-    """
-
-    def __init__(self,
-                 model_path,
-                 config_file=None,
-                 batch_size=1,
-                 device=None,
-                 save_results=False,
-                 save_path=None,
-                 pipelines=None,
-                 score_threshold=0.5,
-                 *arg,
-                 **kwargs):
-        super(DetectionPredictor, self).__init__(
-            model_path,
-            config_file=config_file,
-            batch_size=batch_size,
-            device=device,
-            save_results=save_results,
-            save_path=save_path,
-            pipelines=pipelines,
-        )
-        self.score_thresh = score_threshold
-        self.CLASSES = self.cfg.get('CLASSES', None)
+class DetInputProcessor(InputProcessor):
 
     def build_processor(self):
         if self.pipelines is not None:
@@ -70,7 +38,15 @@ class DetectionPredictor(PredictorV2):
 
         return super().build_processor()
 
-    def postprocess_single(self, inputs, *args, **kwargs):
+
+class DetOutputProcessor(OutputProcessor):
+
+    def __init__(self, score_thresh, classes=None):
+        super(DetOutputProcessor, self).__init__()
+        self.score_thresh = score_thresh
+        self.classes = classes
+
+    def process_single(self, inputs):
         if inputs['detection_scores'] is None or len(
                 inputs['detection_scores']) < 1:
             return inputs
@@ -87,8 +63,8 @@ class DetectionPredictor(PredictorV2):
         for _, classes_id in enumerate(inputs['detection_classes']):
             if classes_id is None:
                 class_names.append(None)
-            elif self.CLASSES is not None and len(self.CLASSES) > 0:
-                class_names.append(self.CLASSES[int(classes_id)])
+            elif self.classes is not None and len(self.classes) > 0:
+                class_names.append(self.classes[int(classes_id)])
             else:
                 class_names.append(classes_id)
 
@@ -96,11 +72,65 @@ class DetectionPredictor(PredictorV2):
 
         return inputs
 
+
+@PREDICTORS.register_module()
+class DetectionPredictor(PredictorV2):
+    """Generic Detection Predictor, it will filter bbox results by ``score_threshold`` .
+
+    Args:
+        model_path (str): Path of model path.
+        config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
+        batch_size (int): batch size for forward.
+        device (str | torch.device): Support str('cuda' or 'cpu') or torch.device, if is None, detect device automatically.
+        save_results (bool): Whether to save predict results.
+        save_path (str): File path for saving results, only valid when `save_results` is True.
+        pipelines (list[dict]): Data pipeline configs.
+        num_parallel (int): Number of processes to process inputs.
+        mode (str): The image mode into the model.
+    """
+
+    def __init__(self,
+                 model_path,
+                 config_file=None,
+                 batch_size=1,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 pipelines=None,
+                 score_threshold=0.5,
+                 num_parallel=8,
+                 mode='BGR',
+                 *arg,
+                 **kwargs):
+        super(DetectionPredictor, self).__init__(
+            model_path,
+            config_file=config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            pipelines=pipelines,
+            num_parallel=num_parallel,
+            mode=mode)
+        self.score_thresh = score_threshold
+        self.CLASSES = self.cfg.get('CLASSES', None)
+
+    def get_input_processor(self):
+        return DetInputProcessor(
+            self.cfg,
+            pipelines=self.pipelines,
+            batch_size=self.batch_size,
+            num_parallel=self.num_parallel,
+            mode=self.mode)
+
+    def get_output_processor(self):
+        return DetOutputProcessor(self.score_thresh, self.CLASSES)
+
     def visualize(self, img, results, show=False, out_file=None):
         """Only support show one sample now."""
         bboxes = results['detection_boxes']
         labels = results['detection_class_names']
-        img = self._load_input(img)['img']
+        img = self.input_processor._load_input(img)['img']
         imshow_bboxes(
             img,
             bboxes,
@@ -135,77 +165,43 @@ class _JitProcessorWrapper:
         return results
 
 
-@PREDICTORS.register_module()
-class YoloXPredictor(DetectionPredictor):
-    """Detection predictor for Yolox."""
+class YoloXInputProcessor(DetInputProcessor):
+    """Input processor for yolox.
 
-    def __init__(self,
-                 model_path,
-                 config_file=None,
-                 batch_size=1,
-                 use_trt_efficientnms=False,
-                 device=None,
-                 save_results=False,
-                 save_path=None,
-                 pipelines=None,
-                 max_det=100,
-                 score_thresh=0.5,
-                 nms_thresh=None,
-                 test_conf=None,
-                 *arg,
-                 **kwargs):
-        self.max_det = max_det
-        self.use_trt_efficientnms = use_trt_efficientnms
+    Args:
+        cfg (Config): Config instance.
+        pipelines (list[dict]): Data pipeline configs.
+        batch_size (int): batch size for forward.
+        model_type (str): "raw" or "jit" or "blade"
+        jit_processor_path (str): File of the saved processing operator of torch jit type.
+        device (str | torch.device): Support str('cuda' or 'cpu') or torch.device, if is None, detect device automatically.
+        num_parallel (int): Number of processes to process inputs.
+        mode (str): The image mode into the model.
+    """
 
-        if model_path.endswith('jit'):
-            self.model_type = 'jit'
-        elif model_path.endswith('blade'):
-            self.model_type = 'blade'
-        else:
-            self.model_type = 'raw'
+    def __init__(
+        self,
+        cfg,
+        pipelines=None,
+        batch_size=1,
+        model_type='raw',
+        jit_processor_path=None,
+        device=None,
+        num_parallel=8,
+        mode='BGR',
+    ):
+        self.model_type = model_type
+        self.jit_processor_path = jit_processor_path
+        self.device = device
+        if self.device is None:
+            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-        if self.model_type == 'blade' or self.use_trt_efficientnms:
-            import torch_blade
-
-        if self.model_type != 'raw' and config_file is None:
-            config_file = model_path + '.config.json'
-
-        super(YoloXPredictor, self).__init__(
-            model_path,
-            config_file=config_file,
-            batch_size=batch_size,
-            device=device,
-            save_results=save_results,
-            save_path=save_path,
+        super().__init__(
+            cfg,
             pipelines=pipelines,
-            score_threshold=score_thresh)
-
-        self.test_conf = test_conf or self.cfg['model'].get('test_conf', 0.01)
-        self.nms_thre = nms_thresh or self.cfg['model'].get('nms_thre', 0.65)
-        self.CLASSES = self.cfg.get('CLASSES', None) or self.cfg.get(
-            'classes', None)
-        assert self.CLASSES is not None
-
-    def _build_model(self):
-        if self.model_type != 'raw':
-            with io.open(self.model_path, 'rb') as infile:
-                model = torch.jit.load(infile, self.device)
-        else:
-            from easycv.utils.misc import reparameterize_models
-            model = super()._build_model()
-            model = reparameterize_models(model)
-        return model
-
-    def prepare_model(self):
-        """Build model from config file by default.
-        If the model is not loaded from a configuration file, e.g. torch jit model, you need to reimplement it.
-        """
-        model = self._build_model()
-        model.to(self.device)
-        model.eval()
-        if self.model_type == 'raw':
-            load_checkpoint(model, self.model_path, map_location='cpu')
-        return model
+            batch_size=batch_size,
+            num_parallel=num_parallel,
+            mode=mode)
 
     def build_processor(self):
         self.jit_preprocess = False
@@ -217,31 +213,32 @@ class YoloXPredictor(DetectionPredictor):
         if self.model_type != 'raw' and self.jit_preprocess:
             # jit or blade model
             processor = None
-            preprocess_path = '.'.join(
-                self.model_path.split('.')[:-1] + ['preprocess'])
-            if os.path.exists(preprocess_path):
+            if os.path.exists(self.jit_processor_path):
+                if self.num_parallel > 1:
+                    raise ValueError(
+                        'Not support num_parallel>1 for jit processor !')
                 # use a preprocess jit model to speed up
-                with io.open(preprocess_path, 'rb') as infile:
+                with io.open(self.jit_processor_path, 'rb') as infile:
                     processor = torch.jit.load(infile, self.device)
             return _JitProcessorWrapper(processor, self.device)
         else:
             return super().build_processor()
 
-    def forward(self, inputs):
-        """Model forward.
-        If you need refactor model forward, you need to reimplement it.
-        """
-        if self.model_type != 'raw':
-            with torch.no_grad():
-                outputs = self.model(inputs['img'])
-                outputs = {'results': outputs}  # convert to dict format
-        else:
-            outputs = super().forward(inputs)
 
-        if 'img_metas' not in outputs:
-            outputs['img_metas'] = inputs['img_metas']
+class YoloXOutputProcessor(DetOutputProcessor):
 
-        return outputs
+    def __init__(self,
+                 score_thresh=0.5,
+                 model_type='raw',
+                 test_conf=0.01,
+                 nms_thre=0.65,
+                 use_trt_efficientnms=False,
+                 classes=None):
+        super().__init__(score_thresh, classes)
+        self.model_type = model_type
+        self.test_conf = test_conf
+        self.nms_thre = nms_thre
+        self.use_trt_efficientnms = use_trt_efficientnms
 
     def post_assign(self, outputs, img_metas):
         detection_boxes = []
@@ -277,7 +274,7 @@ class YoloXPredictor(DetectionPredictor):
         }
         return test_outputs
 
-    def postprocess_single(self, inputs):
+    def process_single(self, inputs):
         det_out = inputs
         img_meta = det_out['img_metas']
 
@@ -296,16 +293,146 @@ class YoloXPredictor(DetectionPredictor):
                 else:
                     det_out = self.post_assign(
                         postprocess(
-                            results.unsqueeze(0), len(self.CLASSES),
+                            results.unsqueeze(0), len(self.classes),
                             self.test_conf, self.nms_thre),
                         img_metas=[img_meta])
             det_out['detection_scores'] = det_out['detection_scores'][0]
             det_out['detection_boxes'] = det_out['detection_boxes'][0]
             det_out['detection_classes'] = det_out['detection_classes'][0]
 
-        resuts = super().postprocess_single(det_out)
+        resuts = super().process_single(det_out)
         resuts['ori_img_shape'] = list(img_meta['ori_img_shape'][:2])
         return resuts
+
+
+@PREDICTORS.register_module()
+class YoloXPredictor(DetectionPredictor):
+    """Detection predictor for Yolox.
+
+    Args:
+        model_path (str): Path of model path.
+        config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
+        batch_size (int): batch size for forward.
+        use_trt_efficientnms (bool): Whether used tensorrt efficient nms operation in the saved model.
+        device (str | torch.device): Support str('cuda' or 'cpu') or torch.device, if is None, detect device automatically.
+        save_results (bool): Whether to save predict results.
+        save_path (str): File path for saving results, only valid when `save_results` is True.
+        pipelines (list[dict]): Data pipeline configs.
+        max_det (int): Maximum number of detection output boxes.
+        score_thresh (float): Score threshold to filter box.
+        nms_thresh (float): Nms threshold to filter box.
+        num_parallel (int): Number of processes to process inputs.
+        mode (str): The image mode into the model.
+    """
+
+    def __init__(self,
+                 model_path,
+                 config_file=None,
+                 batch_size=1,
+                 use_trt_efficientnms=False,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 pipelines=None,
+                 max_det=100,
+                 score_thresh=0.5,
+                 nms_thresh=None,
+                 test_conf=None,
+                 num_parallel=8,
+                 mode='BGR'):
+        self.max_det = max_det
+        self.use_trt_efficientnms = use_trt_efficientnms
+
+        if model_path.endswith('jit'):
+            self.model_type = 'jit'
+        elif model_path.endswith('blade'):
+            self.model_type = 'blade'
+        else:
+            self.model_type = 'raw'
+
+        if self.model_type == 'blade' or self.use_trt_efficientnms:
+            import torch_blade
+
+        if self.model_type != 'raw' and config_file is None:
+            config_file = model_path + '.config.json'
+
+        super(YoloXPredictor, self).__init__(
+            model_path,
+            config_file=config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            pipelines=pipelines,
+            score_threshold=score_thresh,
+            num_parallel=num_parallel,
+            mode=mode)
+
+        self.test_conf = test_conf or self.cfg['model'].get('test_conf', 0.01)
+        self.nms_thre = nms_thresh or self.cfg['model'].get('nms_thre', 0.65)
+        self.CLASSES = self.cfg.get('CLASSES', None) or self.cfg.get(
+            'classes', None)
+        assert self.CLASSES is not None
+        self.jit_processor_path = '.'.join(
+            self.model_path.split('.')[:-1] + ['preprocess'])
+
+    def _build_model(self):
+        if self.model_type != 'raw':
+            with io.open(self.model_path, 'rb') as infile:
+                model = torch.jit.load(infile, self.device)
+        else:
+            from easycv.utils.misc import reparameterize_models
+            model = super()._build_model()
+            model = reparameterize_models(model)
+        return model
+
+    def prepare_model(self):
+        """Build model from config file by default.
+        If the model is not loaded from a configuration file, e.g. torch jit model, you need to reimplement it.
+        """
+        model = self._build_model()
+        model.to(self.device)
+        model.eval()
+        if self.model_type == 'raw':
+            load_checkpoint(model, self.model_path, map_location='cpu')
+        return model
+
+    def model_forward(self, inputs):
+        """Model forward.
+        If you need refactor model forward, you need to reimplement it.
+        """
+        if self.model_type != 'raw':
+            with torch.no_grad():
+                outputs = self.model(inputs['img'])
+                outputs = {'results': outputs}  # convert to dict format
+        else:
+            outputs = super().model_forward(inputs)
+
+        if 'img_metas' not in outputs:
+            outputs['img_metas'] = inputs['img_metas']
+
+        return outputs
+
+    def get_input_processor(self):
+        return YoloXInputProcessor(
+            self.cfg,
+            pipelines=self.pipelines,
+            batch_size=self.batch_size,
+            model_type=self.model_type,
+            jit_processor_path=self.jit_processor_path,
+            device=self.device,
+            num_parallel=self.num_parallel,
+            mode=self.mode,
+        )
+
+    def get_output_processor(self):
+        return YoloXOutputProcessor(
+            score_thresh=self.score_thresh,
+            model_type=self.model_type,
+            test_conf=self.test_conf,
+            nms_thre=self.nms_thre,
+            use_trt_efficientnms=self.use_trt_efficientnms,
+            classes=self.CLASSES)
 
 
 @deprecated(reason='Please use YoloXPredictor.')
@@ -317,7 +444,9 @@ class TorchYoloXPredictor(YoloXPredictor):
                  max_det=100,
                  score_thresh=0.5,
                  use_trt_efficientnms=False,
-                 model_config=None):
+                 model_config=None,
+                 num_parallel=8,
+                 mode='BGR'):
         """
         Args:
           model_path: model file path
@@ -345,7 +474,9 @@ class TorchYoloXPredictor(YoloXPredictor):
             max_det=max_det,
             score_thresh=score_thresh,
             nms_thresh=None,
-            test_conf=None)
+            test_conf=None,
+            num_parallel=num_parallel,
+            mode=mode)
 
     def predict(self, input_data_list, batch_size=-1, to_numpy=True):
         return super().__call__(input_data_list)

@@ -7,9 +7,7 @@ from easycv.datasets.pose.data_sources.wholebody.wholebody_coco_source import \
     WHOLEBODY_COCO_DATASET_INFO
 from easycv.datasets.pose.pipelines.transforms import bbox_cs2xyxy
 from easycv.predictors.builder import PREDICTORS, build_predictor
-from easycv.predictors.detector import TorchYoloXPredictor
-from .base import PredictorV2
-from .pose_predictor import _box2cs
+from .base import InputProcessor, OutputProcessor, PredictorV2
 
 SKELETON = [[15, 13], [13, 11], [16, 14], [14, 12], [11, 12], [5, 11], [6, 12],
             [5, 6], [5, 7], [6, 8], [7, 9], [8, 10], [1, 2], [0, 1], [0, 2],
@@ -25,44 +23,24 @@ SKELETON = [[15, 13], [13, 11], [16, 14], [14, 12], [11, 12], [5, 11], [6, 12],
             [131, 132]]
 
 
-@PREDICTORS.register_module()
-class WholeBodyKeypointsPredictor(PredictorV2):
-    """WholeBodyKeypointsPredictor
-
-    Attributes:
-        model_path: path of keypoint model
-        config_file: path or ``Config`` of config file
-        detection_model_config: dict of hand detection model predictor config,
-                                example like ``dict(type="", model_path="", config_file="", ......)``
-        batch_size: batch_size to infer
-        save_results: bool
-        save_path: path of result image
-        bbox_thr: bounding box threshold
-    """
+class WholeBodyKptsInputProcessor(InputProcessor):
 
     def __init__(self,
-                 model_path,
-                 config_file=None,
-                 detection_predictor_config=None,
-                 batch_size=1,
-                 device=None,
-                 save_results=False,
-                 save_path=None,
+                 cfg,
+                 detection_predictor_config,
                  bbox_thr=None,
-                 *args,
-                 **kwargs):
-        super(WholeBodyKeypointsPredictor, self).__init__(
-            model_path,
-            config_file=config_file,
-            batch_size=batch_size,
-            device=device,
-            save_results=save_results,
-            save_path=save_path,
-            *args,
-            **kwargs)
-        self.bbox_thr = bbox_thr
-        self.dataset_info = DatasetInfo(WHOLEBODY_COCO_DATASET_INFO)
+                 pipelines=None,
+                 batch_size=1,
+                 mode='BGR'):
         self.detection_predictor = build_predictor(detection_predictor_config)
+        self.dataset_info = DatasetInfo(WHOLEBODY_COCO_DATASET_INFO)
+        self.bbox_thr = bbox_thr
+        super().__init__(
+            cfg,
+            pipelines=pipelines,
+            batch_size=batch_size,
+            num_parallel=1,
+            mode=mode)
 
     def process_detection_results(self, det_results, cat_id=0):
         """Process det results, and return a list of bboxes.
@@ -165,7 +143,7 @@ class WholeBodyKeypointsPredictor(PredictorV2):
 
         return output_person_info
 
-    def preprocess_single(self, input):
+    def process_single(self, input):
         results = []
         outputs = self._load_input(input)
 
@@ -173,13 +151,13 @@ class WholeBodyKeypointsPredictor(PredictorV2):
             results.append(self.processor(output))
         return results
 
-    def preprocess(self, inputs, *args, **kwargs):
+    def __call__(self, inputs):
         """Process all inputs list. And collate to batch and put to target device.
         If you need custom ops to load or process a batch samples, you need to reimplement it.
         """
         batch_outputs = []
-        for i in inputs:
-            for res in self.preprocess_single(i, *args, **kwargs):
+        for inp in inputs:
+            for res in self.process_single(inp):
                 batch_outputs.append(res)
 
         batch_outputs = self._collate_fn(batch_outputs)
@@ -187,10 +165,12 @@ class WholeBodyKeypointsPredictor(PredictorV2):
             i[j] for i in batch_outputs['img_metas']._data
             for j in range(len(i))
         ]]
-        batch_outputs = self._to_device(batch_outputs)
         return batch_outputs
 
-    def postprocess(self, inputs, *args, **kwargs):
+
+class WholeBodyKptsOutputProcessor(OutputProcessor):
+
+    def __call__(self, inputs):
         output = {}
         output['keypoints'] = inputs['preds'][:, :, :2]
         output['boxes'] = inputs['boxes']
@@ -200,6 +180,61 @@ class WholeBodyKeypointsPredictor(PredictorV2):
             output['boxes'][i][:4] = bbox_cs2xyxy(center, scale)
         output['boxes'] = output['boxes'][:, :4]
         return output
+
+
+@PREDICTORS.register_module()
+class WholeBodyKeypointsPredictor(PredictorV2):
+    """WholeBodyKeypointsPredictor
+
+    Attributes:
+        model_path: path of keypoint model
+        config_file: path or ``Config`` of config file
+        detection_model_config: dict of hand detection model predictor config,
+                                example like ``dict(type="", model_path="", config_file="", ......)``
+        batch_size: batch_size to infer
+        save_results: bool
+        save_path: path of result image
+        bbox_thr: bounding box threshold
+        mode (str): the image mode into the model
+    """
+
+    def __init__(self,
+                 model_path,
+                 config_file=None,
+                 detection_predictor_config=None,
+                 batch_size=1,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 bbox_thr=None,
+                 mode='BGR',
+                 *args,
+                 **kwargs):
+        super(WholeBodyKeypointsPredictor, self).__init__(
+            model_path,
+            config_file=config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            num_parallel=1,
+            mode=mode,
+            *args,
+            **kwargs)
+        self.bbox_thr = bbox_thr
+        self.detection_predictor_config = detection_predictor_config
+
+    def get_input_processor(self):
+        return WholeBodyKptsInputProcessor(
+            cfg=self.cfg,
+            detection_predictor_config=self.detection_predictor_config,
+            bbox_thr=self.bbox_thr,
+            pipelines=self.pipelines,
+            batch_size=self.batch_size,
+            mode=self.mode)
+
+    def get_output_processor(self):
+        return WholeBodyKptsOutputProcessor()
 
     def show_result(self,
                     image_path,

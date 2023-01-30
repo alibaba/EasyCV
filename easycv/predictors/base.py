@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import json
+import logging
 import os
 import pickle
 
@@ -103,6 +104,179 @@ class Predictor(object):
         return output
 
 
+class InputProcessor(object):
+    """Base input processor for processing input samples.
+
+    Args:
+        cfg (Config): Config instance.
+        pipelines (list[dict]): Data pipeline configs.
+        batch_size (int): batch size for forward.
+        num_parallel (int): Number of processes to process inputs.
+        mode (str): The image mode into the model.
+    """
+
+    def __init__(self,
+                 cfg,
+                 pipelines=None,
+                 batch_size=1,
+                 num_parallel=8,
+                 mode='BGR'):
+        self.cfg = cfg
+        self.pipelines = pipelines
+        self.batch_size = batch_size
+        if self.batch_size < num_parallel:
+            logging.warning(
+                f'``batch_size`` is less than ``num_parallel``, set ``num_parallel`` to {self.batch_size }'
+            )
+        self.num_parallel = min(self.batch_size, num_parallel)
+        self.mode = mode
+        self.processor = self.build_processor()
+        self._load_op = None
+
+    def build_processor(self):
+        """Build processor to process loaded input.
+        If you need custom preprocessing ops, you need to reimplement it.
+        """
+        if self.pipelines is not None:
+            pipelines = self.pipelines
+        else:
+            pipelines = self.cfg.get('test_pipeline', [])
+
+        pipelines = [build_from_cfg(p, PIPELINES) for p in pipelines]
+
+        from easycv.datasets.shared.pipelines.transforms import Compose
+        processor = Compose(pipelines)
+        return processor
+
+    def _load_input(self, input):
+        """Load image from file or numpy or PIL object.
+        Args:
+            input: File path or numpy or PIL object.
+        Returns:
+           {
+                'filename': filename,
+                'img': img,
+                'img_shape': img_shape,
+                'img_fields': ['img']
+            }
+        """
+        if self._load_op is None:
+            load_cfg = dict(type='LoadImage', mode=self.mode)
+            self._load_op = build_from_cfg(load_cfg, PIPELINES)
+
+        if not isinstance(input, str):
+            if isinstance(input, np.ndarray):
+                # Only support RGB mode if input is np.ndarray.
+                input = cv2.cvtColor(input, cv2.COLOR_RGB2BGR)
+            sample = self._load_op({'img': input})
+        else:
+            sample = self._load_op({'filename': input})
+
+        return sample
+
+    def _collate_fn(self, inputs):
+        """Prepare the input just before the forward function.
+        Puts each data field into a tensor with outer dimension batch size
+        """
+        return collate(inputs, samples_per_gpu=self.batch_size)
+
+    def process_single(self, input):
+        """Process single input sample.
+        If you need custom ops to load or process a single input sample, you need to reimplement it.
+        """
+        input = self._load_input(input)
+        return self.processor(input)
+
+    def _process_single_for_parallel(self, i, *args, **kwargs):
+        # Fix hang issue with multi processes, refer to: https://github.com/pytorch/vision/issues/7068.
+        # Torch dataloder also set num_threads to 1 when num_workers>0, refer to: torch.utilss.data._utils.worker._worker_loop
+        # set_num_threads only valid in subprocesses, no need to reset for the main process
+        torch.set_num_threads(1)
+        return i, self.process_single(*args, **kwargs)
+
+    def __call__(self, inputs):
+        """Process all inputs list. And collate to batch and put to target device.
+        If you need custom ops to load or process a batch samples, you need to reimplement it.
+        """
+        batch_outputs = []
+        num_parallel = min(self.num_parallel, len(inputs))
+        if num_parallel <= 1:
+            for inp in inputs:
+                batch_outputs.append(self.process_single(inp))
+        else:
+            import concurrent.futures
+            batch_outputs_with_idx = []
+            futures = []
+            with concurrent.futures.ProcessPoolExecutor(
+                    num_parallel) as executor:
+                for i, inp in enumerate(inputs):
+                    future = executor.submit(self._process_single_for_parallel,
+                                             i, inp)
+                    futures.append(future)
+
+                for future in concurrent.futures.as_completed(futures):
+                    batch_outputs_with_idx.append(future.result())
+            batch_outputs_with_idx = sorted(
+                batch_outputs_with_idx, key=lambda item: item[0])
+            batch_outputs = [out[1] for out in batch_outputs_with_idx]
+
+        return self._collate_fn(batch_outputs)
+
+
+class OutputProcessor(object):
+    """Base output processor for processing model outputs.
+    """
+
+    def __init__(self):
+        pass
+
+    def _get_batch_size(self, inputs):
+        for k, batch_v in inputs.items():
+            if isinstance(batch_v, dict):
+                batch_size = self._get_batch_size(batch_v)
+            elif batch_v is not None:
+                batch_size = len(batch_v)
+                break
+            else:
+                batch_size = 1
+
+        return batch_size
+
+    def _extract_ith_result(self, inputs, i, out_i):
+        for k, batch_v in inputs.items():
+            if isinstance(batch_v, dict):
+                out_i[k] = {}
+                self._extract_ith_result(batch_v, i, out_i[k])
+            elif batch_v is not None:
+                out_i[k] = batch_v[i]
+            else:
+                out_i[k] = None
+        return out_i
+
+    def process_single(self, inputs):
+        """Process outputs of single sample.
+        If you need add some processing ops, you need to reimplement it.
+        """
+        return inputs
+
+    def __call__(self, inputs):
+        """Process model batch outputs.
+        The "inputs" should be dict format as follows:
+            {
+                "key1": torch.Tensor or list, the first dimension should be batch_size,
+                "key2": torch.Tensor or list, the first dimension should be batch_size,
+                ...
+            }
+        """
+        outputs = []
+        batch_size = self._get_batch_size(inputs)
+        for i in range(batch_size):
+            out_i = self._extract_ith_result(inputs, i, {})
+            out_i = self.process_single(out_i)
+            outputs.append(out_i)
+        return outputs
+
+
 class PredictorV2(object):
     """Base predict pipeline.
         Args:
@@ -113,8 +287,9 @@ class PredictorV2(object):
             save_results (bool): Whether to save predict results.
             save_path (str): File path for saving results, only valid when `save_results` is True.
             pipelines (list[dict]): Data pipeline configs.
+            num_parallel (int): Number of processes to process inputs.
+            mode (str): The image mode into the model.
         """
-    INPUT_IMAGE_MODE = 'BGR'  # the image mode into the model
 
     def __init__(self,
                  model_path,
@@ -124,14 +299,17 @@ class PredictorV2(object):
                  save_results=False,
                  save_path=None,
                  pipelines=None,
-                 *args,
-                 **kwargs):
+                 num_parallel=8,
+                 mode='BGR'):
         self.logger = get_root_logger()
         self.model_path = model_path
         self.batch_size = batch_size
         self.save_results = save_results
         self.save_path = save_path
         self.config_file = config_file
+        self.pipelines = pipelines
+        self.num_parallel = num_parallel
+        self.mode = mode
         if self.save_results:
             assert self.save_path is not None
         self.device = device
@@ -149,8 +327,6 @@ class PredictorV2(object):
         if self.cfg is None:
             raise ValueError('Please provide "config_file"!')
 
-        self.pipelines = pipelines
-
         if self.cfg.get('predict', None) is not None:
             self._sync_cfg_predict(self.cfg.predict)
 
@@ -159,8 +335,19 @@ class PredictorV2(object):
             self.cfg.model.pretrained = None
 
         self.model = self.prepare_model()
-        self.processor = self.build_processor()
-        self._load_op = None
+        self.input_processor = None
+        self.output_processor = None
+
+    def get_input_processor(self):
+        return InputProcessor(
+            self.cfg,
+            pipelines=self.pipelines,
+            batch_size=self.batch_size,
+            num_parallel=self.num_parallel,
+            mode=self.mode)
+
+    def get_output_processor(self):
+        return OutputProcessor()
 
     def _sync_cfg_predict(self, predict_cfg):
         if predict_cfg.get('type', None) is not None:
@@ -207,68 +394,7 @@ class PredictorV2(object):
         remove_adapt_for_mmlab(self.cfg)
         return model
 
-    def build_processor(self):
-        """Build processor to process loaded input.
-        If you need custom preprocessing ops, you need to reimplement it.
-        """
-        if self.pipelines is not None:
-            pipelines = self.pipelines
-        else:
-            pipelines = self.cfg.get('test_pipeline', [])
-
-        pipelines = [build_from_cfg(p, PIPELINES) for p in pipelines]
-
-        from easycv.datasets.shared.pipelines.transforms import Compose
-        processor = Compose(pipelines)
-        return processor
-
-    def _load_input(self, input):
-        """Load image from file or numpy or PIL object.
-        Args:
-            input: File path or numpy or PIL object.
-        Returns:
-           {
-                'filename': filename,
-                'img': img,
-                'img_shape': img_shape,
-                'img_fields': ['img']
-            }
-        """
-        if self._load_op is None:
-            load_cfg = dict(type='LoadImage', mode=self.INPUT_IMAGE_MODE)
-            self._load_op = build_from_cfg(load_cfg, PIPELINES)
-
-        if not isinstance(input, str):
-            if isinstance(input, np.ndarray):
-                # Only support RGB mode if input is np.ndarray.
-                input = cv2.cvtColor(input, cv2.COLOR_RGB2BGR)
-            sample = self._load_op({'img': input})
-        else:
-            sample = self._load_op({'filename': input})
-
-        return sample
-
-    def preprocess_single(self, input):
-        """Preprocess single input sample.
-        If you need custom ops to load or process a single input sample, you need to reimplement it.
-        """
-        input = self._load_input(input)
-        return self.processor(input)
-
-    def preprocess(self, inputs, *args, **kwargs):
-        """Process all inputs list. And collate to batch and put to target device.
-        If you need custom ops to load or process a batch samples, you need to reimplement it.
-        """
-        batch_outputs = []
-        for i in inputs:
-            batch_outputs.append(self.preprocess_single(i, *args, **kwargs))
-
-        batch_outputs = self._collate_fn(batch_outputs)
-        batch_outputs = self._to_device(batch_outputs)
-
-        return batch_outputs
-
-    def forward(self, inputs):
+    def model_forward(self, inputs):
         """Model forward.
         If you need refactor model forward, you need to reimplement it.
         """
@@ -276,92 +402,43 @@ class PredictorV2(object):
             outputs = self.model(**inputs, mode='test')
         return outputs
 
-    def _get_batch_size(self, inputs):
-        for k, batch_v in inputs.items():
-            if isinstance(batch_v, dict):
-                batch_size = self._get_batch_size(batch_v)
-            elif batch_v is not None:
-                batch_size = len(batch_v)
-                break
-            else:
-                batch_size = 1
-
-        return batch_size
-
-    def _extract_ith_result(self, inputs, i, out_i):
-        for k, batch_v in inputs.items():
-            if isinstance(batch_v, dict):
-                out_i[k] = {}
-                self._extract_ith_result(batch_v, i, out_i[k])
-            elif batch_v is not None:
-                out_i[k] = batch_v[i]
-            else:
-                out_i[k] = None
-        return out_i
-
-    def postprocess(self, inputs, *args, **kwargs):
-        """Process model batch outputs.
-        The "inputs" should be dict format as follows:
-            {
-                "key1": torch.Tensor or list, the first dimension should be batch_size,
-                "key2": torch.Tensor or list, the first dimension should be batch_size,
-                ...
-            }
-        """
-        outputs = []
-        batch_size = self._get_batch_size(inputs)
-        for i in range(batch_size):
-            out_i = self._extract_ith_result(inputs, i, {})
-            out_i = self.postprocess_single(out_i, *args, **kwargs)
-            outputs.append(out_i)
-        return outputs
-
-    def postprocess_single(self, inputs, *args, **kwargs):
-        """Process outputs of single sample.
-        If you need add some processing ops, you need to reimplement it.
-        """
-        return inputs
-
-    def _collate_fn(self, inputs):
-        """Prepare the input just before the forward function.
-        Puts each data field into a tensor with outer dimension batch size
-        """
-        return collate(inputs, samples_per_gpu=self.batch_size)
-
     def _to_device(self, inputs):
         target_gpus = [-1] if str(
             self.device) == 'cpu' else [torch.cuda.current_device()]
         _, kwargs = scatter_kwargs(None, inputs, target_gpus=target_gpus)
         return kwargs[0]
 
-    @staticmethod
-    def dump(obj, save_path, mode='wb'):
+    def dump(self, obj, save_path, mode='wb'):
         with open(save_path, mode) as f:
             f.write(pickle.dumps(obj))
 
     def __call__(self, inputs, keep_inputs=False):
-        # TODO: fault tolerance
+        if self.input_processor is None:
+            self.input_processor = self.get_input_processor()
+        if self.output_processor is None:
+            self.output_processor = self.get_output_processor()
 
+        # TODO: fault tolerance
         if isinstance(inputs, (str, np.ndarray, ImageFile.ImageFile)):
             inputs = [inputs]
 
         results_list = []
         for i in range(0, len(inputs), self.batch_size):
-            batch = inputs[i:min(len(inputs), i + self.batch_size)]
-            batch_outputs = self.preprocess(batch)
-            batch_outputs = self.forward(batch_outputs)
-            results = self.postprocess(batch_outputs)
-            # assert len(results) == len(
-            #     batch), f'Mismatch size {len(results)} != {len(batch)}'
+            batch_inputs = inputs[i:min(len(inputs), i + self.batch_size)]
+            batch_outputs = self.input_processor(batch_inputs)
+            batch_outputs = self._to_device(batch_outputs)
+            batch_outputs = self.model_forward(batch_outputs)
+            results = self.output_processor(batch_outputs)
             if keep_inputs:
-                for i in range(len(batch)):
-                    results[i].update({'inputs': batch[i]})
-            # if dump, the outputs will not added to the return value to prevent taking up too much memory
-            if self.save_results:
-                self.dump(results, self.save_path, mode='ab+')
+                for i in range(len(batch_inputs)):
+                    results[i].update({'inputs': batch_inputs[i]})
+            if isinstance(results, list):
+                results_list.extend(results)
             else:
-                if isinstance(results, list):
-                    results_list.extend(results)
-                else:
-                    results_list.append(results)
+                results_list.append(results)
+
+        # TODO: support append to file
+        if self.save_results:
+            self.dump(results_list, self.save_path)
+
         return results_list

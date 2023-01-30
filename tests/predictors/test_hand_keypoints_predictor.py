@@ -2,7 +2,7 @@
 
 import unittest
 
-from ut_config import PRETRAINED_MODEL_HAND_KEYPOINTS
+from tests.ut_config import PRETRAINED_MODEL_HAND_KEYPOINTS
 
 from easycv.predictors.hand_keypoints_predictor import HandKeypointsPredictor
 from easycv.utils.config_tools import mmcv_config_fromfile

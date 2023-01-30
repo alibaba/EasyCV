@@ -12,84 +12,41 @@ from easycv.datasets.registry import PIPELINES
 from easycv.datasets.shared.pipelines.format import to_tensor
 from easycv.datasets.shared.pipelines.transforms import Compose
 from easycv.framework.errors import ValueError
-from easycv.predictors.base import PredictorV2
+from easycv.predictors.base import InputProcessor, PredictorV2
 from easycv.predictors.builder import PREDICTORS
 from easycv.utils.misc import encode_str_to_tensor
 from easycv.utils.registry import build_from_cfg
 
 
-@PREDICTORS.register_module()
-class BEVFormerPredictor(PredictorV2):
-    """Predictor for BEVFormer.
+class BEVFormerInputProcessor(InputProcessor):
+    """Process inputs for BEVFormer model.
 
     Args:
-        model_path (str): Path of model path.
-        config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
-        batch_size (int): batch size for forward.
-        device (str | torch.device): Support str('cuda' or 'cpu') or torch.device, if is None, detect device automatically.
-        save_results (bool): Whether to save predict results.
-        save_path (str): File path for saving results, only valid when `save_results` is True.
+        cfg (Config): Config instance.
         pipelines (list[dict]): Data pipeline configs.
-        box_type_3d (str): Box type.
+        batch_size (int): batch size for forward.
         use_camera (bool): Whether use camera data.
-        score_threshold (float): Score threshold to filter inference results.
+        box_type_3d (str): Box type.
+        num_parallel (int): Number of processes to process inputs.
     """
 
     def __init__(self,
-                 model_path,
-                 config_file=None,
-                 batch_size=1,
-                 device=None,
-                 save_results=False,
-                 save_path=None,
+                 cfg,
                  pipelines=None,
-                 box_type_3d='LiDAR',
+                 batch_size=1,
                  use_camera=True,
-                 score_threshold=0.1,
-                 model_type=None,
-                 *arg,
-                 **kwargs):
-        if batch_size > 1:
-            raise ValueError(
-                f'Only support batch_size=1 now, but get batch_size={batch_size}'
-            )
-        self.model_type = model_type
-        if self.model_type is None:
-            if model_path.endswith('jit'):
-                self.model_type = 'jit'
-            elif model_path.endswith('blade'):
-                self.model_type = 'blade'
-        self.is_jit_model = self.model_type in ['jit', 'blade']
-
-        super(BEVFormerPredictor, self).__init__(
-            model_path,
-            config_file=config_file,
-            batch_size=batch_size,
-            device=device,
-            save_results=save_results,
-            save_path=save_path,
-            pipelines=pipelines,
-            *arg,
-            **kwargs)
-        self.box_type_3d, self.box_mode_3d = get_box_type(box_type_3d)
-        self.CLASSES = self.cfg.get('CLASSES', None)
+                 box_type_3d='LiDAR',
+                 adapt_jit=False,
+                 num_parallel=8):
         self.use_camera = use_camera
-        self.score_threshold = score_threshold
-        self.result_key = 'pts_bbox'
+        self.box_type_3d, self.box_mode_3d = get_box_type(box_type_3d)
+        self.adapt_jit = adapt_jit
 
-        # The initial prev_bev should be the weight of self.model.pts_bbox_head.bev_embedding, but the weight cannot be taken out from the blade model.
-        # So we using the dummy data as the the initial value, and it will not be used, just to adapt to jit and blade models.
-        # init_prev_bev = self.model.pts_bbox_head.bev_embedding.weight.clone().detach()
-        # init_prev_bev = init_prev_bev[:, None, :],  # [40000, 256] -> [40000, 1, 256]
-        dummy_prev_bev = torch.rand(
-            [self.cfg.bev_h * self.cfg.bev_w, 1,
-             self.cfg.embed_dim]).to(self.device)
-        self.prev_frame_info = {
-            'prev_bev': dummy_prev_bev.to(self.device),
-            'prev_scene_token': encode_str_to_tensor('dummy_prev_scene_token'),
-            'prev_pos': torch.tensor(0),
-            'prev_angle': torch.tensor(0),
-        }
+        super(BEVFormerInputProcessor, self).__init__(
+            cfg,
+            pipelines=pipelines,
+            batch_size=batch_size,
+            num_parallel=num_parallel)
 
     def _prepare_input_dict(self, data_info):
         from nuscenes.eval.common.utils import Quaternion, quaternion_yaw
@@ -161,8 +118,8 @@ class BEVFormerPredictor(PredictorV2):
         result = load_pipelines(input_dict)
         return result
 
-    def preprocess_single(self, input):
-        """Preprocess single input sample.
+    def process_single(self, input):
+        """Process single input sample.
         Args:
             input (str): Pickle file path, the content format is the same with the infos file of nusences.
         """
@@ -170,7 +127,7 @@ class BEVFormerPredictor(PredictorV2):
         result = self._prepare_input_dict(data_info)
         result = self.processor(result)
 
-        if self.is_jit_model:
+        if self.adapt_jit:
             result['can_bus'] = DC(
                 to_tensor(result['img_metas'][0]._data['can_bus']),
                 cpu_only=False)
@@ -199,9 +156,96 @@ class BEVFormerPredictor(PredictorV2):
 
         return result
 
-    def postprocess_single(self, inputs, *args, **kwargs):
-        # TODO: filter results by score_threshold
-        return super().postprocess_single(inputs, *args, **kwargs)
+
+@PREDICTORS.register_module()
+class BEVFormerPredictor(PredictorV2):
+    """Predictor for BEVFormer.
+
+    Args:
+        model_path (str): Path of model path.
+        config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
+        batch_size (int): batch size for forward.
+        device (str | torch.device): Support str('cuda' or 'cpu') or torch.device, if is None, detect device automatically.
+        save_results (bool): Whether to save predict results.
+        save_path (str): File path for saving results, only valid when `save_results` is True.
+        pipelines (list[dict]): Data pipeline configs.
+        box_type_3d (str): Box type.
+        use_camera (bool): Whether use camera data.
+        score_threshold (float): Score threshold to filter inference results.
+        num_parallel (int): Number of processes to process inputs.
+        mode (str): The image mode into the model.
+    """
+
+    def __init__(self,
+                 model_path,
+                 config_file=None,
+                 batch_size=1,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 pipelines=None,
+                 box_type_3d='LiDAR',
+                 use_camera=True,
+                 score_threshold=0.1,
+                 model_type=None,
+                 num_parallel=8,
+                 mode='BGR',
+                 *arg,
+                 **kwargs):
+        if batch_size > 1:
+            raise ValueError(
+                f'Only support batch_size=1 now, but get batch_size={batch_size}'
+            )
+        self.model_type = model_type
+        if self.model_type is None:
+            if model_path.endswith('jit'):
+                self.model_type = 'jit'
+            elif model_path.endswith('blade'):
+                self.model_type = 'blade'
+        self.is_jit_model = self.model_type in ['jit', 'blade']
+        self.use_camera = use_camera
+        self.score_threshold = score_threshold
+        self.result_key = 'pts_bbox'
+        self.box_type_3d_str = box_type_3d
+        self.box_type_3d, self.box_mode_3d = get_box_type(box_type_3d)
+
+        super(BEVFormerPredictor, self).__init__(
+            model_path,
+            config_file=config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            pipelines=pipelines,
+            num_parallel=num_parallel,
+            mode=mode,
+            *arg,
+            **kwargs)
+
+        self.CLASSES = self.cfg.get('CLASSES', None)
+        # The initial prev_bev should be the weight of self.model.pts_bbox_head.bev_embedding, but the weight cannot be taken out from the blade model.
+        # So we using the dummy data as the the initial value, and it will not be used, just to adapt to jit and blade models.
+        # init_prev_bev = self.model.pts_bbox_head.bev_embedding.weight.clone().detach()
+        # init_prev_bev = init_prev_bev[:, None, :],  # [40000, 256] -> [40000, 1, 256]
+        dummy_prev_bev = torch.rand(
+            [self.cfg.bev_h * self.cfg.bev_w, 1,
+             self.cfg.embed_dim]).to(self.device)
+        self.prev_frame_info = {
+            'prev_bev': dummy_prev_bev.to(self.device),
+            'prev_scene_token': encode_str_to_tensor('dummy_prev_scene_token'),
+            'prev_pos': torch.tensor(0),
+            'prev_angle': torch.tensor(0),
+        }
+
+    def get_input_processor(self):
+        return BEVFormerInputProcessor(
+            self.cfg,
+            pipelines=self.pipelines,
+            batch_size=self.batch_size,
+            use_camera=self.use_camera,
+            box_type_3d=self.box_type_3d_str,
+            adapt_jit=self.is_jit_model,
+            num_parallel=self.num_parallel)
 
     def prepare_model(self):
         if self.is_jit_model:
@@ -209,7 +253,7 @@ class BEVFormerPredictor(PredictorV2):
             return model
         return super().prepare_model()
 
-    def forward(self, inputs):
+    def model_forward(self, inputs):
         if self.is_jit_model:
             with torch.no_grad():
                 img = inputs['img'][0][0]
@@ -244,7 +288,7 @@ class BEVFormerPredictor(PredictorV2):
                 }],
             }
             return outputs
-        return super().forward(inputs)
+        return super().model_forward(inputs)
 
     def visualize(self, inputs, results, out_dir, show=False, pipeline=None):
         raise NotImplementedError
