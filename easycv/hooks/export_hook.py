@@ -110,7 +110,7 @@ class ExportHook(Hook):
             os.path.join(
                 origin_tar_path.split('/')[-1].split('.')[0],
                 'detection/english_det.pth'))
-        shutil.copyfile(finetune_model_path, origin_model_path)
+        shutil.copy(finetune_model_path, origin_model_path)
         print('Complete copyfile!')
 
         # compress targz
