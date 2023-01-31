@@ -97,9 +97,11 @@ class ExportHook(Hook):
                     code.write(r.content)
             except:
                 pass
+        print('Complete file download!')
 
         # decompression targz
         untar(origin_targz_path, work_dir)
+        print('Complete untar!')
 
         # finetune model replace origin model
         finetune_model_path = export_local_ckpt
@@ -109,6 +111,7 @@ class ExportHook(Hook):
                 origin_tar_path.split('/')[-1].split('.')[0],
                 'detection/english_det.pth'))
         shutil.copyfile(finetune_model_path, origin_model_path)
+        print('Complete copyfile!')
 
         # compress targz
         finetune_folder_path = os.path.join(
@@ -118,6 +121,7 @@ class ExportHook(Hook):
             work_dir,
             origin_tar_path.split('/')[-1].split('.')[0] + '_finetune.tar.gz')
         make_targz(finetune_targz_path, finetune_folder_path)
+        print('Complete make_targz!')
 
     @master_only
     def after_train_iter(self, runner):
