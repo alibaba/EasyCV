@@ -1,7 +1,7 @@
 _base_ = ['configs/base.py']
 
 # character_dict_path = 'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/ocr/dict/ic15_dict.txt'
-character_dict_path = '../../model/ocr_en/en_dict.txt'
+character_dict_path = '../../model/tmp/ocr_en/en_dict.txt'
 model = dict(
     type='OCRRecNet',
     backbone=dict(

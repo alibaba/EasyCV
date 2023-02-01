@@ -88,7 +88,7 @@ class ExportHook(Hook):
         origin_tar_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/pai_test/eas_test/easycv/ocr_en.tar.gz'
         r = requests.get(origin_tar_path)
         # download config in current dir
-        work_dir = self.work_dir
+        work_dir = '/tmp'
         origin_targz_path = os.path.join(work_dir,
                                          origin_tar_path.split('/')[-1])
         while not os.path.exists(origin_targz_path):
@@ -100,7 +100,7 @@ class ExportHook(Hook):
         print('Complete file download!')
 
         # decompression targz
-        untar(origin_targz_path, work_dir)
+        os.system(f'tar -zxvf {origin_targz_path} -C {work_dir}')
         print('Complete untar!')
 
         # finetune model replace origin model
@@ -120,7 +120,8 @@ class ExportHook(Hook):
         finetune_targz_path = os.path.join(
             work_dir,
             origin_tar_path.split('/')[-1].split('.')[0] + '_finetune.tar.gz')
-        make_targz(finetune_targz_path, finetune_folder_path)
+        os.system(f'tar -zcvf {finetune_targz_path} {finetune_folder_path}')
+        shutil.copy(finetune_targz_path, self.work_dir)
         print('Complete make_targz!')
 
     @master_only

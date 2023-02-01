@@ -108,9 +108,9 @@ val_pipeline = [
         meta_keys=['ori_img_shape', 'polys', 'ignore_tags']),
 ]
 
-data_root = 'ocr/det/icdar2015/text_localization/'
-train_ann_file = 'ocr/det/icdar2015/text_localization/train_icdar2015_label.txt'
-val_ann_file = 'ocr/det/icdar2015/text_localization/test_icdar2015_label.txt'
+data_root = '/apsarapangu/disk1/yunji.cjy/data/icdar2015/'
+train_ann_file = '/apsarapangu/disk1/yunji.cjy/data/icdar2015/train_icdar2015_label.txt'
+val_ann_file = '/apsarapangu/disk1/yunji.cjy/data/icdar2015/test_icdar2015_label.txt'
 
 train_dataset = dict(
     type='OCRDetDataset',
