@@ -2,8 +2,8 @@
 
 import unittest
 
-from ut_config import (PRETRAINED_MODEL_WHOLEBODY,
-                       PRETRAINED_MODEL_WHOLEBODY_DETECTION)
+from tests.ut_config import (PRETRAINED_MODEL_WHOLEBODY,
+                             PRETRAINED_MODEL_WHOLEBODY_DETECTION)
 
 from easycv.predictors.wholebody_keypoints_predictor import \
     WholeBodyKeypointsPredictor

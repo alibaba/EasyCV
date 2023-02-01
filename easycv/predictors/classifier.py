@@ -3,72 +3,39 @@ import math
 
 import numpy as np
 import torch
-from PIL import Image, ImageFile
+from PIL import Image
 
 from easycv.file import io
 from easycv.framework.errors import ValueError
 from easycv.utils.misc import deprecated
-from .base import Predictor, PredictorV2
+from .base import InputProcessor, OutputProcessor, Predictor, PredictorV2
 from .builder import PREDICTORS
 
 
-@PREDICTORS.register_module()
-class ClassificationPredictor(PredictorV2):
-    """Predictor for classification.
+class ClsInputProcessor(InputProcessor):
+    """Process inputs for classification models.
+
     Args:
-        model_path (str): Path of model path.
-        config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
-        batch_size (int): batch size for forward.
-        device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
-        save_results (bool): Whether to save predict results.
-        save_path (str): File path for saving results, only valid when `save_results` is True.
+        cfg (Config): Config instance.
         pipelines (list[dict]): Data pipeline configs.
-        topk (int): Return top-k results. Default: 1.
+        batch_size (int): batch size for forward.
         pil_input (bool): Whether use PIL image. If processor need PIL input, set true, default false.
-        label_map_path (str): File path of saving labels list.
+        threads (int): Number of processes to process inputs.
+        mode (str): The image mode into the model.
     """
 
     def __init__(self,
-                 model_path,
-                 config_file=None,
-                 batch_size=1,
-                 device=None,
-                 save_results=False,
-                 save_path=None,
+                 cfg,
                  pipelines=None,
-                 topk=1,
+                 batch_size=1,
                  pil_input=True,
-                 label_map_path=None,
-                 *args,
-                 **kwargs):
-        super(ClassificationPredictor, self).__init__(
-            model_path,
-            config_file=config_file,
-            batch_size=batch_size,
-            device=device,
-            save_results=save_results,
-            save_path=save_path,
-            pipelines=pipelines,
-            *args,
-            **kwargs)
-        self.topk = topk
+                 threads=8,
+                 mode='BGR'):
+
+        super(ClsInputProcessor, self).__init__(
+            cfg, pipelines=pipelines, batch_size=batch_size, threads=threads)
+        self.mode = mode
         self.pil_input = pil_input
-
-        # Adapt to torchvision transforms which process PIL inputs.
-        if self.pil_input:
-            self.INPUT_IMAGE_MODE = 'RGB'
-
-        if label_map_path is None:
-            if 'CLASSES' in self.cfg:
-                class_list = self.cfg.get('CLASSES', [])
-            elif 'class_list' in self.cfg:
-                class_list = self.cfg.get('class_list', [])
-            else:
-                class_list = []
-        else:
-            with io.open(label_map_path, 'r') as f:
-                class_list = f.readlines()
-        self.label_map = [i.strip() for i in class_list]
 
     def _load_input(self, input):
         """Load image from file or numpy or PIL object.
@@ -86,8 +53,8 @@ class ClassificationPredictor(PredictorV2):
             results = {}
             if isinstance(input, str):
                 img = Image.open(input)
-                if img.mode.upper() != self.INPUT_IMAGE_MODE.upper():
-                    img = img.convert(self.INPUT_IMAGE_MODE.upper())
+                if img.mode.upper() != self.mode.upper():
+                    img = img.convert(self.mode.upper())
                 results['filename'] = input
             else:
                 if isinstance(input, np.ndarray):
@@ -103,7 +70,22 @@ class ClassificationPredictor(PredictorV2):
 
         return super()._load_input(input)
 
-    def postprocess(self, inputs, *args, **kwargs):
+
+class ClsOutputProcessor(OutputProcessor):
+    """Output processor for processing classification model outputs.
+
+    Args:
+        topk (int): Return top-k results. Default: 1.
+        label_map (dict): Dict of class id to class name.
+
+    """
+
+    def __init__(self, topk=1, label_map={}):
+        self.topk = topk
+        self.label_map = label_map
+        super(ClsOutputProcessor, self).__init__()
+
+    def __call__(self, inputs):
         """Return top-k results."""
         output_prob = inputs['prob'].data.cpu()
         topk_class = torch.topk(output_prob, self.topk).indices.numpy()
@@ -125,6 +107,84 @@ class ClassificationPredictor(PredictorV2):
 
             batch_results.append(result)
         return batch_results
+
+
+@PREDICTORS.register_module()
+class ClassificationPredictor(PredictorV2):
+    """Predictor for classification.
+    Args:
+        model_path (str): Path of model path.
+        config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
+        batch_size (int): batch size for forward.
+        device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
+        save_results (bool): Whether to save predict results.
+        save_path (str): File path for saving results, only valid when `save_results` is True.
+        pipelines (list[dict]): Data pipeline configs.
+        topk (int): Return top-k results. Default: 1.
+        pil_input (bool): Whether use PIL image. If processor need PIL input, set true, default false.
+        label_map_path (str): File path of saving labels list.
+        input_processor_threads (int): Number of processes to process inputs.
+        mode (str): The image mode into the model.
+    """
+
+    def __init__(self,
+                 model_path,
+                 config_file=None,
+                 batch_size=1,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 pipelines=None,
+                 topk=1,
+                 pil_input=True,
+                 label_map_path=None,
+                 input_processor_threads=8,
+                 mode='BGR',
+                 *args,
+                 **kwargs):
+        self.topk = topk
+        self.pil_input = pil_input
+        self.label_map_path = label_map_path
+
+        if self.pil_input:
+            mode = 'RGB'
+        super(ClassificationPredictor, self).__init__(
+            model_path,
+            config_file=config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            pipelines=pipelines,
+            input_processor_threads=input_processor_threads,
+            mode=mode,
+            *args,
+            **kwargs)
+
+    def get_input_processor(self):
+        return ClsInputProcessor(
+            self.cfg,
+            pipelines=self.pipelines,
+            batch_size=self.batch_size,
+            threads=self.input_processor_threads,
+            pil_input=self.pil_input,
+            mode=self.mode)
+
+    def get_output_processor(self):
+        # Adapt to torchvision transforms which process PIL inputs.
+        if self.label_map_path is None:
+            if 'CLASSES' in self.cfg:
+                class_list = self.cfg.get('CLASSES', [])
+            elif 'class_list' in self.cfg:
+                class_list = self.cfg.get('class_list', [])
+            else:
+                class_list = []
+        else:
+            with io.open(self.label_map_path, 'r') as f:
+                class_list = f.readlines()
+        self.label_map = [i.strip() for i in class_list]
+
+        return ClsOutputProcessor(topk=self.topk, label_map=self.label_map)
 
 
 try:
