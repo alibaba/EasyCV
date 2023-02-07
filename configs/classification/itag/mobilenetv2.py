@@ -5,8 +5,9 @@ _base_ = '../imagenet/common/classification_base.py'
 #                      hosts='', # your oss hosts
 #                      buckets=[]) # your oss bucket name
 
-CLASSES = ['label1', 'label2',
-           'label3']  # replace with your true lables of itag manifest file
+# Ensure the CLASSES definition is in one line, for adapt to its replacement by user_config_params.
+# yapf:disable
+CLASSES = ['label1', 'label2', 'label3']  # replace with your true lables of itag manifest file
 num_classes = 3
 # model settings
 model = dict(
