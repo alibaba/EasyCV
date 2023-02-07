@@ -210,13 +210,17 @@ class TorchClassifier(PredictorInterface):
       model_config: config string for model to init, in json format
     """
         self.predictor = Predictor(model_path)
-        if 'class_list' not in self.predictor.cfg and label_map_path is None:
+        if 'class_list' not in self.predictor.cfg and \
+            'CLASSES' not in self.predictor.cfg and \
+                label_map_path is None:
             raise ValueError(
-                "label_map_path need to be set, when ckpt doesn't contain class_list"
+                "'label_map_path' need to be set, when ckpt doesn't contain key 'class_list' and 'CLASSES'!"
             )
 
         if label_map_path is None:
             class_list = self.predictor.cfg.get('class_list', [])
+            if len(class_list) < 1:
+                class_list = self.predictor.cfg.get('CLASSES', [])
             self.label_map = [i.strip() for i in class_list]
         else:
             class_list = open(label_map_path).readlines()

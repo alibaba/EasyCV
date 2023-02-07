@@ -5,8 +5,8 @@ _base_ = '../imagenet/common/classification_base.py'
 #                      hosts='', # your oss hosts
 #                      buckets=[]) # your oss bucket name
 
-class_list = ['label1', 'label2',
-              'label3']  # replace with your true lables of itag manifest file
+CLASSES = ['label1', 'label2',
+           'label3']  # replace with your true lables of itag manifest file
 num_classes = 3
 # model settings
 model = dict(
@@ -53,7 +53,7 @@ data = dict(
         data_source=dict(
             type=data_source_type,
             list_file=train_itag_file,
-            class_list=class_list,
+            class_list=CLASSES,
         ),
         pipeline=train_pipeline),
     val=dict(
@@ -61,7 +61,7 @@ data = dict(
         data_source=dict(
             type=data_source_type,
             list_file=test_itag_file,
-            class_list=class_list),
+            class_list=CLASSES),
         pipeline=test_pipeline))
 
 eval_config = dict(initial=False, interval=1, gpu_collect=True)

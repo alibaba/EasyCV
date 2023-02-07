@@ -116,6 +116,8 @@ def _export_cls(model, cfg, filename):
         class_list = io.open(label_map_path).readlines()
     elif hasattr(cfg, 'class_list'):
         class_list = cfg.class_list
+    elif hasattr(cfg, 'CLASSES'):
+        class_list = cfg.CLASSES
 
     model_config = dict(
         type='Classification',
