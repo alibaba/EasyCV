@@ -22,8 +22,8 @@ model = dict(
         ),
         num_classes=num_classes))
 
-data_train_list = '/your/itag/train/file.manifest'  # or oss://your_bucket/data/train.manifest
-data_test_list = '/your/itag/test/file.manifest'  # oss://your_bucket/data/test.manifest
+train_manifest_file = '/your/itag/train/file.manifest'  # or oss://your_bucket/data/train.manifest
+test_manifest_file = '/your/itag/test/file.manifest'  # oss://your_bucket/data/test.manifest
 
 image_size2 = 224
 image_size1 = int((256 / 224) * image_size2)
@@ -52,7 +52,7 @@ data = dict(
         type=dataset_type,
         data_source=dict(
             type=data_source_type,
-            list_file=data_train_list,
+            list_file=train_manifest_file,
             class_list=class_list,
         ),
         pipeline=train_pipeline),
@@ -60,7 +60,7 @@ data = dict(
         type=dataset_type,
         data_source=dict(
             type=data_source_type,
-            list_file=data_test_list,
+            list_file=test_manifest_file,
             class_list=class_list),
         pipeline=test_pipeline))
 
