@@ -162,9 +162,9 @@ def main():
     else:
         cfg.oss_work_dir = None
 
-    if args.resume_from is not None:
+    if args.resume_from is not None and len(args.resume_from) > 0:
         cfg.resume_from = args.resume_from
-    if args.load_from is not None:
+    if args.load_from is not None and len(args.load_from) > 0:
         cfg.load_from = args.load_from
 
     # dynamic adapt mmdet models
