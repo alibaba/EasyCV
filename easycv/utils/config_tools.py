@@ -100,7 +100,10 @@ class WrapperConfig(Config):
                 key = line.split('=')[0].strip()
                 # Check whether it is a first-order parameter
                 if match_length_before == match_length_after == 0 and first_order_params and key in first_order_params:
-                    value = first_order_params[key]
+                    if 'class_list' in key:
+                        value = update_class_list(first_order_params[key])
+                    else:
+                        value = first_order_params[key]
                     # repr() is used to convert the data into a string form (in the form of a Python expression) suitable for the interpreter to read
                     line = ' '.join([key, '=', repr(value)]) + '\n'
 
@@ -263,7 +266,7 @@ def init_path(ori_filename):
     return ori_filename, easycv_root
 
 
-def update_class_list(cfg_dict, class_list_params):
+def update_class_list(class_list_params):
     """
         class_list_params (list): class_list_params[1] is num_classes.
         class_list_params[0] supports three ways to build parameters.
@@ -271,21 +274,20 @@ def update_class_list(cfg_dict, class_list_params):
         list parameter construction method: '[0, 1, 2]' or '[person, dog, cat]'
         '' parameter construction method: The default setting is str(0) - str(num_classes - 1)
     """
-    if class_list_params is not None:
-        class_list, num_classes = class_list_params[0], class_list_params[1]
-        if '.txt' in class_list:
-            cfg_dict['class_list'] = []
-            with open(class_list, 'r', encoding='utf-8') as f:
-                # Setting encoding explicitly to resolve coding issue on windows
-                lines = f.readlines()
-                for line in lines:
-                    line = line.strip().strip(',').replace(' ', '').split(',')
-                    cfg_dict['class_list'].extend(line)
-        elif len(class_list) > 0:
-            cfg_dict['class_list'] = list(map(str, class_list))
-        else:
-            cfg_dict['class_list'] = list(map(str, range(0, num_classes)))
-    return cfg_dict
+    class_list, num_classes = class_list_params[0], class_list_params[1]
+    if '.txt' in class_list:
+        value = []
+        with open(class_list, 'r', encoding='utf-8') as f:
+            # Setting encoding explicitly to resolve coding issue on windows
+            lines = f.readlines()
+            for line in lines:
+                line = line.strip().strip(',').replace(' ', '').split(',')
+                value.extend(line)
+    elif len(class_list) > 0:
+        value = list(map(str, class_list))
+    else:
+        value = list(map(str, range(0, num_classes)))
+    return value
 
 
 # gen mmcv.Config
@@ -307,13 +309,14 @@ def pai_config_fromfile(ori_filename,
     ori_filename, easycv_root = init_path(ori_filename)
 
     if user_config_params is not None:
-        # set class_list
+        # set class_list to [class_list, num_classes]
         class_list_params = None
         if 'class_list' in user_config_params:
-            class_list = user_config_params.pop('class_list')
+            class_list = user_config_params['class_list']
             for key, value in user_config_params.items():
                 if 'num_classes' in key:
                     class_list_params = [class_list, value]
+                    user_config_params['class_list'] = class_list_params
                     break
 
         # grouping params
@@ -325,9 +328,6 @@ def pai_config_fromfile(ori_filename,
     # replace first-order parameters
     cfg_dict, cfg_text = mmcv_file2dict_base(
         ori_filename, first_order_params, easycv_root=easycv_root)
-
-    # update class_list
-    cfg_dict = update_class_list(cfg_dict, class_list_params)
 
     # add export config
     cfg_dict['export'] = dict(export_neck=True)

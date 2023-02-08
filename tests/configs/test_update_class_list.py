@@ -12,50 +12,39 @@ class AdaptPaiParamsTest(unittest.TestCase):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
     def test_update_class_list_0(self):
-        cfg_dict = {}
         class_list_params = ['', 8]
-        cfg_dict = update_class_list(
-            cfg_dict, class_list_params=class_list_params)
+        value = update_class_list(class_list_params)
 
-        self.assertEqual(cfg_dict['class_list'],
-                         ['0', '1', '2', '3', '4', '5', '6', '7'])
+        self.assertEqual(value, ['0', '1', '2', '3', '4', '5', '6', '7'])
 
     def test_update_class_list_1(self):
-        cfg_dict = {}
         class_list_params = [['person', 'cat', 'dog'], 8]
-        cfg_dict = update_class_list(
-            cfg_dict, class_list_params=class_list_params)
+        value = update_class_list(class_list_params)
 
-        self.assertEqual(cfg_dict['class_list'], ['person', 'cat', 'dog'])
+        self.assertEqual(value, ['person', 'cat', 'dog'])
 
     def test_update_class_list_2(self):
-        cfg_dict = {}
         class_list_params = [[0, 1, 2], 8]
-        cfg_dict = update_class_list(
-            cfg_dict, class_list_params=class_list_params)
+        value = update_class_list(class_list_params)
 
-        self.assertEqual(cfg_dict['class_list'], ['0', '1', '2'])
+        self.assertEqual(value, ['0', '1', '2'])
 
     def test_update_class_list_3(self):
-        cfg_dict = {}
         class_list_params = [
             osp.join(CLASS_LIST_TEST, 'class_list_int_test.txt'), 8
         ]
-        cfg_dict = update_class_list(
-            cfg_dict, class_list_params=class_list_params)
+        value = update_class_list(class_list_params)
 
-        self.assertEqual(cfg_dict['class_list'],
+        self.assertEqual(value,
                          ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
 
     def test_update_class_list_4(self):
-        cfg_dict = {}
         class_list_params = [
             osp.join(CLASS_LIST_TEST, 'class_list_str_test.txt'), 8
         ]
-        cfg_dict = update_class_list(
-            cfg_dict, class_list_params=class_list_params)
+        value = update_class_list(class_list_params)
 
-        self.assertEqual(cfg_dict['class_list'], [
+        self.assertEqual(value, [
             'airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog',
             'horse', 'ship', 'truck'
         ])
