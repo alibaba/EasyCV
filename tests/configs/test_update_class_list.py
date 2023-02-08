@@ -6,7 +6,7 @@ from tests.ut_config import CLASS_LIST_TEST
 from easycv.utils.config_tools import update_class_list
 
 
-class AdaptPaiParamsTest(unittest.TestCase):
+class UpdateClassListTest(unittest.TestCase):
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
