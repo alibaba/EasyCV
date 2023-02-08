@@ -36,7 +36,8 @@ class ClsSourceImageList(object):
                  delimeter=' ',
                  split_huge_listfile_byrank=False,
                  split_label_balance=False,
-                 cache_path='data/'):
+                 cache_path='data/',
+                 class_list=None):
 
         ImageFile.LOAD_TRUNCATED_IMAGES = True
         # DistributedMPSampler need this attr

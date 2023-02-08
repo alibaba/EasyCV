@@ -102,10 +102,10 @@ class_list = [
 ]
 
 data_source_type = 'ClsSourceImageList'
-data_train_list = 'data/imagenet_raw/meta/train_labeled.txt'
-data_train_root = 'data/imagenet_raw/train/'
-data_test_list = 'data/imagenet_raw/meta/val_labeled.txt'
-data_test_root = 'data/imagenet_raw/validation/'
+data_train_list = '/apsarapangu/disk1/yunji.cjy/data/imagenet_raw/meta/train_labeled.txt'
+data_train_root = '/apsarapangu/disk1/yunji.cjy/data/imagenet_raw/train/'
+data_test_list = '/apsarapangu/disk1/yunji.cjy/data/imagenet_raw/meta/val_labeled.txt'
+data_test_root = '/apsarapangu/disk1/yunji.cjy/data/imagenet_raw/validation/'
 image_size2 = 224
 image_size1 = int((256 / 224) * image_size2)
 
@@ -134,14 +134,16 @@ data = dict(
         data_source=dict(
             list_file=data_train_list,
             root=data_train_root,
-            type=data_source_type),
+            type=data_source_type,
+            class_list=class_list),
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
         data_source=dict(
             list_file=data_test_list,
             root=data_test_root,
-            type=data_source_type),
+            type=data_source_type,
+            class_list=class_list),
         pipeline=test_pipeline))
 
 eval_config = dict(initial=False, interval=1, gpu_collect=True)

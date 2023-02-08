@@ -247,37 +247,15 @@ def grouping_params(user_config_params):
     return first_order_params, multi_order_params
 
 
-def adapt_pai_params(cfg_dict, class_list_params=None):
+def adapt_pai_params(cfg_dict):
     """
-    The user passes in the class_list_params.
-
     Args:
         cfg_dict (dict): All parameters of cfg.
-        class_list_params (list): class_list_params[1] is num_classes.
-        class_list_params[0] supports three ways to build parameters.
-        str(.txt) parameter construction method: 0, 1, 2 or 0, \n, 1, \n, 2\n or 0, \n, 1, 2 or person, dog, cat.
-        list parameter construction method: '[0, 1, 2]' or '[person, dog, cat]'
-        '' parameter construction method: The default setting is str(0) - str(num_classes - 1)
 
     Returns:
         cfg_dict (dict): Add the cfg of export and oss.
 
     """
-    if class_list_params is not None:
-        class_list, num_classes = class_list_params[0], class_list_params[1]
-        if '.txt' in class_list:
-            cfg_dict['class_list'] = []
-            with open(class_list, 'r', encoding='utf-8') as f:
-                # Setting encoding explicitly to resolve coding issue on windows
-                lines = f.readlines()
-                for line in lines:
-                    line = line.strip().strip(',').replace(' ', '').split(',')
-                    cfg_dict['class_list'].extend(line)
-        elif len(class_list) > 0:
-            cfg_dict['class_list'] = list(map(str, class_list))
-        else:
-            cfg_dict['class_list'] = list(map(str, range(0, num_classes)))
-
     # export config
     cfg_dict['export'] = dict(export_neck=True)
     cfg_dict['checkpoint_sync_export'] = True
@@ -327,20 +305,11 @@ def pai_config_fromfile(ori_filename,
     ori_filename, easycv_root = init_path(ori_filename)
 
     if user_config_params is not None:
-        # set class_list
-        class_list_params = None
-        if 'class_list' in user_config_params:
-            class_list = user_config_params.pop('class_list')
-            for key, value in user_config_params.items():
-                if 'num_classes' in key:
-                    class_list_params = [class_list, value]
-                    break
-
         # grouping params
         first_order_params, multi_order_params = grouping_params(
             user_config_params)
     else:
-        class_list_params, first_order_params, multi_order_params = None, None, None
+        first_order_params, multi_order_params = None, None
 
     # replace first-order parameters
     cfg_dict, cfg_text = mmcv_file2dict_base(
@@ -348,7 +317,7 @@ def pai_config_fromfile(ori_filename,
 
     # Add export and oss ​​related configuration to adapt to pai platform
     if model_type:
-        cfg_dict = adapt_pai_params(cfg_dict, class_list_params)
+        cfg_dict = adapt_pai_params(cfg_dict)
 
     if cfg_dict.get('custom_imports', None):
         import_modules_from_strings(**cfg_dict['custom_imports'])
