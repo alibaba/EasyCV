@@ -68,6 +68,10 @@ BASE_LOCAL_PATH = os.path.expanduser('~/easycv_nfs/')
 TMP_DIR_OSS = os.path.join(BASE_OSS_PATH, 'tmp')
 TMP_DIR_LOCAL = os.path.join(BASE_LOCAL_PATH, 'tmp')
 
+CLS_DATA_ITAG_OSS = os.path.join(
+    BASE_OSS_PATH,
+    'local_backup/easycv_nfs/data/classification/cls_itagtest/cls_itagtest.manifest'
+)
 CLS_DATA_NPY_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/classification/npy/')
 SMALL_IMAGENET_RAW_LOCAL = os.path.join(
     BASE_LOCAL_PATH, 'data/classification/small_imagenet_raw')
