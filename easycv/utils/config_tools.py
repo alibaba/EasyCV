@@ -82,6 +82,7 @@ class WrapperConfig(Config):
             fileBasename=file_basename,
             fileBasenameNoExtension=file_basename_no_extension,
             fileExtname=file_extname)
+        class_list_traced = False
         with open(filename, encoding='utf-8') as f:
             # Setting encoding explicitly to resolve coding issue on windows
             left_match, right_match = '{([', '])}'
@@ -98,12 +99,22 @@ class WrapperConfig(Config):
                 match_length_after = len(match_list)
 
                 key = line.split('=')[0].strip()
-                # Check whether it is a first-order parameter
-                if match_length_before == match_length_after == 0 and first_order_params and key in first_order_params:
-                    if 'class_list' in key:
-                        value = update_class_list(first_order_params[key])
+                # Check whether it is class_list
+                if (key == 'class_list' or class_list_traced
+                    ) and 'class_list' in first_order_params:
+                    class_list_traced = True
+                    if match_length_before == match_length_after == 0:
+                        class_list_traced = False
+                        value = update_class_list(
+                            first_order_params['class_list'])
+                        # repr() is used to convert the data into a string form (in the form of a Python expression) suitable for the interpreter to read
+                        line = ' '.join(['class_list', '=',
+                                         repr(value)]) + '\n'
                     else:
-                        value = first_order_params[key]
+                        continue
+                # Check whether it is a first-order parameter
+                elif match_length_before == match_length_after == 0 and first_order_params and key in first_order_params:
+                    value = first_order_params[key]
                     # repr() is used to convert the data into a string form (in the form of a Python expression) suitable for the interpreter to read
                     line = ' '.join([key, '=', repr(value)]) + '\n'
 
