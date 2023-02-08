@@ -320,7 +320,7 @@ def pai_config_fromfile(ori_filename,
     ori_filename, easycv_root = init_path(ori_filename)
 
     if user_config_params is not None:
-        # set class_list to [class_list, num_classes]
+        # class_list set to [class_list, num_classes]
         class_list_params = None
         if 'class_list' in user_config_params:
             class_list = user_config_params['class_list']
@@ -329,6 +329,9 @@ def pai_config_fromfile(ori_filename,
                     class_list_params = [class_list, value]
                     user_config_params['class_list'] = class_list_params
                     break
+            assert len(
+                user_config_params['class_list']
+            ) == 2, 'class_list need to set to [class_list, num_classes]!'
 
         # grouping params
         first_order_params, multi_order_params = grouping_params(
