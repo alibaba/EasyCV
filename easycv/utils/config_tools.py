@@ -281,12 +281,16 @@ def update_class_list(class_list_params):
     """
         class_list_params (list): class_list_params[1] is num_classes.
         class_list_params[0] supports three ways to build parameters.
-        str parameter construction method: 0, 1, 2 or 0, \n, 1, \n, 2\n or 0, \n, 1, 2 or person, dog, cat.
-        list parameter construction method: '[0, 1, 2]' or '[person, dog, cat]'
         '' parameter construction method: The default setting is str(0) - str(num_classes - 1)
+        list parameter construction method: '[0, 1, 2]' or '[person, dog, cat]'
+        str(file path) parameter construction method: 0, 1, 2 or 0, \n, 1, \n, 2\n or 0, \n, 1, 2 or person, dog, cat.
     """
     class_list, num_classes = class_list_params[0], class_list_params[1]
-    if '.txt' in class_list:
+    if len(class_list) == 0:
+        value = list(map(str, range(0, num_classes)))
+    elif isinstance(class_list, list):
+        value = list(map(str, class_list))
+    else:
         value = []
         with open(class_list, 'r', encoding='utf-8') as f:
             # Setting encoding explicitly to resolve coding issue on windows
@@ -294,10 +298,6 @@ def update_class_list(class_list_params):
             for line in lines:
                 line = line.strip().strip(',').replace(' ', '').split(',')
                 value.extend(line)
-    elif len(class_list) > 0:
-        value = list(map(str, class_list))
-    else:
-        value = list(map(str, range(0, num_classes)))
     return value
 
 
