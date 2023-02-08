@@ -247,21 +247,29 @@ def grouping_params(user_config_params):
     return first_order_params, multi_order_params
 
 
-def adapt_pai_params(cfg_dict, class_list_params=None):
-    """
-    The user passes in the class_list_params.
+def init_path(ori_filename):
+    easycv_root = osp.dirname(easycv.__file__)  # easycv package root path
+    if not osp.exists(osp.join(easycv_root, 'configs')):
+        if osp.exists(osp.join(osp.dirname(easycv_root), 'configs')):
+            easycv_root = osp.dirname(easycv_root)
+        else:
+            raise ValueError('easycv root does not exist!')
+    parse_ori_filename = ori_filename.split('/')
+    if parse_ori_filename[0] == 'configs' or parse_ori_filename[
+            0] == 'benchmarks':
+        if osp.exists(osp.join(easycv_root, ori_filename)):
+            ori_filename = osp.join(easycv_root, ori_filename)
 
-    Args:
-        cfg_dict (dict): All parameters of cfg.
+    return ori_filename, easycv_root
+
+
+def update_class_list(cfg_dict, class_list_params):
+    """
         class_list_params (list): class_list_params[1] is num_classes.
         class_list_params[0] supports three ways to build parameters.
-        str(.txt) parameter construction method: 0, 1, 2 or 0, \n, 1, \n, 2\n or 0, \n, 1, 2 or person, dog, cat.
+        str parameter construction method: 0, 1, 2 or 0, \n, 1, \n, 2\n or 0, \n, 1, 2 or person, dog, cat.
         list parameter construction method: '[0, 1, 2]' or '[person, dog, cat]'
         '' parameter construction method: The default setting is str(0) - str(num_classes - 1)
-
-    Returns:
-        cfg_dict (dict): Add the cfg of export and oss.
-
     """
     if class_list_params is not None:
         class_list, num_classes = class_list_params[0], class_list_params[1]
@@ -277,35 +285,7 @@ def adapt_pai_params(cfg_dict, class_list_params=None):
             cfg_dict['class_list'] = list(map(str, class_list))
         else:
             cfg_dict['class_list'] = list(map(str, range(0, num_classes)))
-
-    # export config
-    cfg_dict['export'] = dict(export_neck=True)
-    cfg_dict['checkpoint_sync_export'] = True
-    # oss config
-    cfg_dict['oss_sync_config'] = dict(
-        other_file_list=['**/events.out.tfevents*', '**/*log*'])
-    cfg_dict['oss_io_config'] = dict(
-        ak_id='your oss ak id',
-        ak_secret='your oss ak secret',
-        hosts='oss-cn-zhangjiakou.aliyuncs.com',
-        buckets=['your_bucket_2'])
     return cfg_dict
-
-
-def init_path(ori_filename):
-    easycv_root = osp.dirname(easycv.__file__)  # easycv package root path
-    if not osp.exists(osp.join(easycv_root, 'configs')):
-        if osp.exists(osp.join(osp.dirname(easycv_root), 'configs')):
-            easycv_root = osp.dirname(easycv_root)
-        else:
-            raise ValueError('easycv root does not exist!')
-    parse_ori_filename = ori_filename.split('/')
-    if parse_ori_filename[0] == 'configs' or parse_ori_filename[
-            0] == 'benchmarks':
-        if osp.exists(osp.join(easycv_root, ori_filename)):
-            ori_filename = osp.join(easycv_root, ori_filename)
-
-    return ori_filename, easycv_root
 
 
 # gen mmcv.Config
@@ -346,9 +326,22 @@ def pai_config_fromfile(ori_filename,
     cfg_dict, cfg_text = mmcv_file2dict_base(
         ori_filename, first_order_params, easycv_root=easycv_root)
 
-    # Add export and oss ​​related configuration to adapt to pai platform
+    # update class_list
+    cfg_dict = update_class_list(cfg_dict, class_list_params)
+
+    # add export config
+    cfg_dict['export'] = dict(export_neck=True)
+    cfg_dict['checkpoint_sync_export'] = True
+
+    # add oss config
     if model_type:
-        cfg_dict = adapt_pai_params(cfg_dict, class_list_params)
+        cfg_dict['oss_sync_config'] = dict(
+            other_file_list=['**/events.out.tfevents*', '**/*log*'])
+        cfg_dict['oss_io_config'] = dict(
+            ak_id='your oss ak id',
+            ak_secret='your oss ak secret',
+            hosts='oss-cn-zhangjiakou.aliyuncs.com',
+            buckets=['your_bucket_2'])
 
     if cfg_dict.get('custom_imports', None):
         import_modules_from_strings(**cfg_dict['custom_imports'])
