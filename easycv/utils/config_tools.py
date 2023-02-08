@@ -82,29 +82,44 @@ class WrapperConfig(Config):
             fileBasename=file_basename,
             fileBasenameNoExtension=file_basename_no_extension,
             fileExtname=file_extname)
+
         with open(filename, encoding='utf-8') as f:
             # Setting encoding explicitly to resolve coding issue on windows
             left_match, right_match = '{([', '])}'
             match_list = []
             line_list = []
+            first_order_params_traced = None
             for line in f:
                 # Push and pop control regular item matching
-                match_length_before = len(match_list)
                 for single_str in line:
                     if single_str in left_match:
                         match_list.append(single_str)
                     if single_str in right_match:
                         match_list.pop()
-                match_length_after = len(match_list)
+                match_length = len(match_list)
 
                 key = line.split('=')[0].strip()
-                # Check whether it is a first-order parameter
-                if match_length_before == match_length_after == 0 and first_order_params and key in first_order_params:
-                    value = first_order_params[key]
-                    # repr() is used to convert the data into a string form (in the form of a Python expression) suitable for the interpreter to read
-                    line = ' '.join([key, '=', repr(value)]) + '\n'
 
-                line_list.append(line)
+                # Check whether it is a first-order parameter
+                if first_order_params_traced is None and len(key) > 0:
+                    first_order_params_traced = key
+
+                if first_order_params_traced is not None:
+                    if first_order_params_traced in first_order_params:
+                        if match_length == 0:
+                            value = first_order_params[
+                                first_order_params_traced]
+                            # repr() is used to convert the data into a string form (in the form of a Python expression) suitable for the interpreter to read
+                            line = ' '.join(
+                                [first_order_params_traced, '=',
+                                 repr(value)]) + '\n'
+                            line_list.append(line)
+                            first_order_params_traced = None
+                    else:
+                        line_list.append(line)
+                        if match_length == 0:
+                            first_order_params_traced = None
+
             config_file = ''.join(line_list)
 
         for key, value in support_templates.items():
