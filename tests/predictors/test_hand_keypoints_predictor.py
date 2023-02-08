@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
+import tempfile
 import unittest
 
 from tests.ut_config import BASE_LOCAL_PATH, PRETRAINED_MODEL_HAND_KEYPOINTS
@@ -19,10 +20,14 @@ class HandKeypointsPredictorTest(unittest.TestCase):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
         self.image_path = os.path.join(BASE_LOCAL_PATH,
                                        'data/pose/hand/data/hand.jpg')
-        self.save_image_path = os.path.join(
-            BASE_LOCAL_PATH, 'data/pose/hand/data/hand_result.jpg')
+        self.save_image_path = tempfile.NamedTemporaryFile(suffix='.jpg').name
         self.model_path = PRETRAINED_MODEL_HAND_KEYPOINTS
         self.model_config_path = 'configs/pose/hand/hrnet_w18_coco_wholebody_hand_256x256_dark.py'
+
+    def tearDown(self) -> None:
+        if os.path.exists(self.save_image_path):
+            os.remove(self.save_image_path)
+        return super().tearDown()
 
     def test_single(self):
         config = mmcv_config_fromfile(self.model_config_path)
