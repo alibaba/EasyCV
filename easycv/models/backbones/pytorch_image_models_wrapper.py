@@ -93,6 +93,8 @@ class PytorchImageModelWrapper(nn.Module):
         if 'num_classes' not in kwargs:
             kwargs['num_classes'] = 0
 
+        self.num_classes = kwargs['num_classes']
+
         # create model by timm
         if model_name in timm_model_names:
             self.model = timm.create_model(model_name, False, '', scriptable,
@@ -128,7 +130,12 @@ class PytorchImageModelWrapper(nn.Module):
                             self.model.__module__)
                         return load_pretrained(
                             self.model,
-                            default_cfg={'url': default_pretrained_model_path},
+                            default_cfg={
+                                'url': default_pretrained_model_path,
+                                'classifier': 'head',
+                                'num_classes': 1000
+                            },
+                            num_classes=self.num_classes,
                             filter_fn=backbone_module.checkpoint_filter_fn
                             if hasattr(backbone_module, 'checkpoint_filter_fn')
                             else None,
