@@ -1,9 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
+import os
 import unittest
 
 import cv2
-from tests.ut_config import PRETRAINED_MODEL_FACE_2D_KEYPOINTS
+from tests.ut_config import BASE_LOCAL_PATH, PRETRAINED_MODEL_FACE_2D_KEYPOINTS
 
 from easycv.predictors.face_keypoints_predictor import FaceKeypointsPredictor
 
@@ -12,8 +12,11 @@ class FaceKeypointsPredictorWithoutDetectorTest(unittest.TestCase):
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
-        self.image_path = './data/test/face_2d_keypoints/data/002258.png'
-        self.save_image_path = './data/test/face_2d_keypoints/data/result_002258.png'
+        self.image_path = os.path.join(
+            BASE_LOCAL_PATH, 'data/pose/face_2d_keypoints/data/002258.png')
+        self.save_image_path = os.path.join(
+            BASE_LOCAL_PATH,
+            'data/pose/face_2d_keypoints/data/result_002258.png')
         self.model_path = PRETRAINED_MODEL_FACE_2D_KEYPOINTS
         self.model_config_path = './configs/face/face_96x96_wingloss.py'
 
