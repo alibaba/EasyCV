@@ -167,13 +167,12 @@ def train_model(model,
         runner.register_hook(DistSamplerSeedHook())
 
     # register eval hooks
-    validate = False
-    if 'eval_pipelines' in cfg:
+    if validate:
+        assert 'eval_pipelines' in cfg, 'Please create "eval_pipelines" when do evaluation!'
         if isinstance(cfg.eval_pipelines, dict):
             cfg.eval_pipelines = [cfg.eval_pipelines]
-        if len(cfg.eval_pipelines) > 0:
-            validate = True
-            runner.logger.info('open validate hook')
+        assert len(cfg.eval_pipelines) > 0
+        runner.logger.info('open validate hook')
 
     best_metric_name = [
     ]  # default is eval_pipe.evaluators[0]['type'] + eval_dataset_name + [metric_names]
