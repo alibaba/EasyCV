@@ -42,6 +42,14 @@ class ClsSourceImageList(object):
         ImageFile.LOAD_TRUNCATED_IMAGES = True
         # DistributedMPSampler need this attr
         self.has_labels = True
+        self.class_list = class_list
+        if self.class_list is None:
+            logging.warning(
+                'It is recommended to specify the ``class_list`` parameter!')
+            self.label_dict = {}
+        else:
+            self.label_dict = dict(
+                zip(self.class_list, range(len(self.class_list))))
 
         if isinstance(list_file, str):
             assert isinstance(root, str), 'list_file is str, root must be str'
@@ -72,12 +80,13 @@ class ClsSourceImageList(object):
         self.fns = []
         self.labels = []
         for l, r in zip(list_file, root):
-            fns, labels = self.parse_list_file(l, r, delimeter)
+            fns, labels = self.parse_list_file(l, r, delimeter,
+                                               self.label_dict)
             self.fns += fns
             self.labels += labels
 
     @staticmethod
-    def parse_list_file(list_file, root, delimeter):
+    def parse_list_file(list_file, root, delimeter, label_dict={}):
         with io.open(list_file, 'r') as f:
             lines = f.readlines()
 
@@ -90,8 +99,11 @@ class ClsSourceImageList(object):
                 fns.append(os.path.join(root, splits[0]))
             else:
                 fns.append(splits[0])
-            # must be int,other with mmcv collect will crash
-            label = [int(i) for i in splits[1:]]
+            if len(label_dict) == 0:
+                # must be int,other with mmcv collect will crash
+                label = [int(i) for i in splits[1:]]
+            else:
+                label = [label_dict[i] for i in splits[1:]]
             labels.append(
                 label[0]) if len(label) == 1 else labels.append(label)
 
