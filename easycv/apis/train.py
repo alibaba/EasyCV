@@ -168,11 +168,15 @@ def train_model(model,
 
     # register eval hooks
     if validate:
-        assert 'eval_pipelines' in cfg, 'Please create "eval_pipelines" when do evaluation!'
-        if isinstance(cfg.eval_pipelines, dict):
-            cfg.eval_pipelines = [cfg.eval_pipelines]
-        assert len(cfg.eval_pipelines) > 0
-        runner.logger.info('open validate hook')
+        if 'eval_pipelines' not in cfg:
+            runner.logger.warning(
+                'Not find `eval_pipelines` in cfg, skip validation!')
+            validate = False
+        else:
+            if isinstance(cfg.eval_pipelines, dict):
+                cfg.eval_pipelines = [cfg.eval_pipelines]
+            assert len(cfg.eval_pipelines) > 0
+            runner.logger.info('open validate hook')
 
     best_metric_name = [
     ]  # default is eval_pipe.evaluators[0]['type'] + eval_dataset_name + [metric_names]
