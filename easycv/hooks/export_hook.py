@@ -51,44 +51,44 @@ class ExportHook(Hook):
             filename=export_local_ckpt,
             model=model)
 
-        origin_tar_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/pai_test/eas_test/easycv/ocr_en.tar.gz'
-        r = requests.get(origin_tar_path)
-        # download config in current dir
-        work_dir = '/tmp'
-        origin_targz_path = os.path.join(work_dir,
-                                         origin_tar_path.split('/')[-1])
-        while not os.path.exists(origin_targz_path):
-            try:
-                with open(origin_targz_path, 'wb') as code:
-                    code.write(r.content)
-            except:
-                pass
-        print('Complete file download!')
+        # origin_tar_path = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/pai_test/eas_test/easycv/ocr_en.tar.gz'
+        # r = requests.get(origin_tar_path)
+        # # download config in current dir
+        # work_dir = '/tmp'
+        # origin_targz_path = os.path.join(work_dir,
+        #                                  origin_tar_path.split('/')[-1])
+        # while not os.path.exists(origin_targz_path):
+        #     try:
+        #         with open(origin_targz_path, 'wb') as code:
+        #             code.write(r.content)
+        #     except:
+        #         pass
+        # print('Complete file download!')
 
-        # decompression targz
-        os.system(f'tar -zxvf {origin_targz_path} -C {work_dir}')
-        print('Complete untar!')
+        # # decompression targz
+        # os.system(f'tar -zxvf {origin_targz_path} -C {work_dir}')
+        # print('Complete untar!')
 
-        # finetune model replace origin model
-        finetune_model_path = export_local_ckpt
-        origin_model_path = os.path.join(
-            work_dir,
-            os.path.join(
-                origin_tar_path.split('/')[-1].split('.')[0],
-                'detection/english_det.pth'))
-        shutil.copy(finetune_model_path, origin_model_path)
-        print('Complete copyfile!')
+        # # finetune model replace origin model
+        # finetune_model_path = export_local_ckpt
+        # origin_model_path = os.path.join(
+        #     work_dir,
+        #     os.path.join(
+        #         origin_tar_path.split('/')[-1].split('.')[0],
+        #         'detection/english_det.pth'))
+        # shutil.copy(finetune_model_path, origin_model_path)
+        # print('Complete copyfile!')
 
-        # compress targz
-        finetune_folder_path = os.path.join(
-            work_dir,
-            origin_tar_path.split('/')[-1].split('.')[0])
-        finetune_targz_path = os.path.join(
-            work_dir,
-            origin_tar_path.split('/')[-1].split('.')[0] + '_finetune.tar.gz')
-        os.system(f'tar -zcvf {finetune_targz_path} {finetune_folder_path}')
-        shutil.copy(finetune_targz_path, self.work_dir)
-        print('Complete make_targz!')
+        # # compress targz
+        # finetune_folder_path = os.path.join(
+        #     work_dir,
+        #     origin_tar_path.split('/')[-1].split('.')[0])
+        # finetune_targz_path = os.path.join(
+        #     work_dir,
+        #     origin_tar_path.split('/')[-1].split('.')[0] + '_finetune.tar.gz')
+        # os.system(f'tar -zcvf {finetune_targz_path} {finetune_folder_path}')
+        # shutil.copy(finetune_targz_path, self.work_dir)
+        # print('Complete make_targz!')
 
     @master_only
     def after_train_iter(self, runner):
