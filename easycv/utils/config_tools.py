@@ -344,8 +344,9 @@ def pai_config_fromfile(ori_filename,
         ori_filename, first_order_params, easycv_root=easycv_root)
 
     # export config
-    cfg_dict['export'] = dict(export_neck=True)
-    cfg_dict['checkpoint_sync_export'] = True
+    if cfg_dict.get('export', None) is None:
+        cfg_dict['export'] = dict(export_neck=True)
+        cfg_dict['checkpoint_sync_export'] = True
 
     # Add export and oss ​​related configuration to adapt to pai platform
     if model_type:
