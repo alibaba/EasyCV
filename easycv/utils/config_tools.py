@@ -33,11 +33,9 @@ def traverse_replace(d, key, value):
 
 class WrapperConfig(Config):
     """A facility for config and config files.
-
     It supports common file formats as configs: python/json/yaml. The interface
     is the same as a dict object and also allows access config values as
     attributes.
-
     Example:
         >>> cfg = Config(dict(a=1, b=dict(b1=[0, 1])))
         >>> cfg.a
@@ -63,15 +61,12 @@ class WrapperConfig(Config):
         """
         Override Config._substitute_predefined_vars.
         Supports first-order parameter reuse to avoid rebuilding custom config.py templates.
-
         Args:
             filename (str): Original script file.
             temp_config_name (str): Template script file.
             first_order_params (dict): first-order parameters.
-
         Returns:
             No return value.
-
         """
         file_dirname = osp.dirname(filename)
         file_basename = osp.basename(filename)
@@ -82,29 +77,44 @@ class WrapperConfig(Config):
             fileBasename=file_basename,
             fileBasenameNoExtension=file_basename_no_extension,
             fileExtname=file_extname)
+
         with open(filename, encoding='utf-8') as f:
             # Setting encoding explicitly to resolve coding issue on windows
             left_match, right_match = '{([', '])}'
             match_list = []
             line_list = []
+            first_order_params_traced = None
             for line in f:
                 # Push and pop control regular item matching
-                match_length_before = len(match_list)
                 for single_str in line:
                     if single_str in left_match:
                         match_list.append(single_str)
                     if single_str in right_match:
                         match_list.pop()
-                match_length_after = len(match_list)
+                match_length = len(match_list)
 
                 key = line.split('=')[0].strip()
-                # Check whether it is a first-order parameter
-                if match_length_before == match_length_after == 0 and first_order_params and key in first_order_params:
-                    value = first_order_params[key]
-                    # repr() is used to convert the data into a string form (in the form of a Python expression) suitable for the interpreter to read
-                    line = ' '.join([key, '=', repr(value)]) + '\n'
 
-                line_list.append(line)
+                # Check whether it is a first-order parameter
+                if first_order_params_traced is None and len(key) > 0:
+                    first_order_params_traced = key
+
+                if first_order_params_traced is not None:
+                    if first_order_params_traced in first_order_params:
+                        if match_length == 0:
+                            value = first_order_params[
+                                first_order_params_traced]
+                            # repr() is used to convert the data into a string form (in the form of a Python expression) suitable for the interpreter to read
+                            line = ' '.join(
+                                [first_order_params_traced, '=',
+                                 repr(value)]) + '\n'
+                            line_list.append(line)
+                            first_order_params_traced = None
+                    else:
+                        line_list.append(line)
+                        if match_length == 0:
+                            first_order_params_traced = None
+
             config_file = ''.join(line_list)
 
         for key, value in support_templates.items():
@@ -120,14 +130,11 @@ def check_base_cfg_path(base_cfg_name='configs/base.py',
                         easycv_root=None):
     """
     Concatenate paths by parsing path rules.
-
     for example(pseudo-code):
         1. 'configs' in base_cfg_name or 'benchmarks' in base_cfg_name:
         base_cfg_name = easycv_root + base_cfg_name
-
         2. 'configs' not in base_cfg_name and 'benchmarks' not in base_cfg_name:
         base_cfg_name = father_cfg_name + base_cfg_name
-
     """
     parse_base_cfg = base_cfg_name.split('/')
     if parse_base_cfg[0] == 'configs' or parse_base_cfg[0] == 'benchmarks':
@@ -247,37 +254,13 @@ def grouping_params(user_config_params):
     return first_order_params, multi_order_params
 
 
-def adapt_pai_params(cfg_dict, class_list_params=None):
+def adapt_pai_params(cfg_dict):
     """
-    The user passes in the class_list_params.
-
     Args:
         cfg_dict (dict): All parameters of cfg.
-        class_list_params (list): class_list_params[1] is num_classes.
-        class_list_params[0] supports three ways to build parameters.
-        str(.txt) parameter construction method: 0, 1, 2 or 0, \n, 1, \n, 2\n or 0, \n, 1, 2 or person, dog, cat.
-        list parameter construction method: '[0, 1, 2]' or '[person, dog, cat]'
-        '' parameter construction method: The default setting is str(0) - str(num_classes - 1)
-
     Returns:
         cfg_dict (dict): Add the cfg of export and oss.
-
     """
-    if class_list_params is not None:
-        class_list, num_classes = class_list_params[0], class_list_params[1]
-        if '.txt' in class_list:
-            cfg_dict['class_list'] = []
-            with open(class_list, 'r', encoding='utf-8') as f:
-                # Setting encoding explicitly to resolve coding issue on windows
-                lines = f.readlines()
-                for line in lines:
-                    line = line.strip().strip(',').replace(' ', '').split(',')
-                    cfg_dict['class_list'].extend(line)
-        elif len(class_list) > 0:
-            cfg_dict['class_list'] = list(map(str, class_list))
-        else:
-            cfg_dict['class_list'] = list(map(str, range(0, num_classes)))
-
     # export config
     cfg_dict['export'] = dict(export_neck=True)
     cfg_dict['checkpoint_sync_export'] = True
@@ -327,20 +310,11 @@ def pai_config_fromfile(ori_filename,
     ori_filename, easycv_root = init_path(ori_filename)
 
     if user_config_params is not None:
-        # set class_list
-        class_list_params = None
-        if 'class_list' in user_config_params:
-            class_list = user_config_params.pop('class_list')
-            for key, value in user_config_params.items():
-                if 'num_classes' in key:
-                    class_list_params = [class_list, value]
-                    break
-
         # grouping params
         first_order_params, multi_order_params = grouping_params(
             user_config_params)
     else:
-        class_list_params, first_order_params, multi_order_params = None, None, None
+        first_order_params, multi_order_params = None, None
 
     # replace first-order parameters
     cfg_dict, cfg_text = mmcv_file2dict_base(
@@ -348,7 +322,7 @@ def pai_config_fromfile(ori_filename,
 
     # Add export and oss ​​related configuration to adapt to pai platform
     if model_type:
-        cfg_dict = adapt_pai_params(cfg_dict, class_list_params)
+        cfg_dict = adapt_pai_params(cfg_dict)
 
     if cfg_dict.get('custom_imports', None):
         import_modules_from_strings(**cfg_dict['custom_imports'])
@@ -380,7 +354,6 @@ def get_config_class_value(cfg_dict, ori_key, dict_mem_helper):
 def config_dict_edit(ori_cfg_dict, cfg_dict, reg, dict_mem_helper):
     """
     edit ${configs.variables} in config dict to solve dependicies in config
-
     ori_cfg_dict: to find the true value of ${configs.variables}
     cfg_dict: for find leafs of dict by recursive
     reg: Regular expression pattern for find all ${configs.variables} in leafs of dict
@@ -456,7 +429,6 @@ def rebuild_config(cfg, user_config_params):
     """
     # rebuild config by user config params,
     modify config by user config params & replace ${configs.variables} by true value
-
     return: Config
     """
     print(user_config_params)
