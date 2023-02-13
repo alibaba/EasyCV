@@ -132,16 +132,18 @@ data = dict(
     train=dict(
         type=dataset_type,
         data_source=dict(
+            type=data_source_type,
             list_file=data_train_list,
             root=data_train_root,
-            type=data_source_type),
+            class_list=class_list),
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
         data_source=dict(
+            type=data_source_type,
             list_file=data_test_list,
             root=data_test_root,
-            type=data_source_type),
+            class_list=class_list),
         pipeline=test_pipeline))
 
 eval_config = dict(initial=False, interval=1, gpu_collect=True)
