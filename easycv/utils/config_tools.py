@@ -91,11 +91,12 @@ class WrapperConfig(Config):
             first_order_params_traced = None
             for line in f:
                 # Push and pop control regular item matching
-                for single_str in line:
-                    if single_str in left_match:
-                        match_list.append(single_str)
-                    if single_str in right_match:
-                        match_list.pop()
+                if not line.strip().startswith('#'):
+                    for single_str in line:
+                        if single_str in left_match:
+                            match_list.append(single_str)
+                        if single_str in right_match:
+                            match_list.pop()
                 match_length = len(match_list)
 
                 key = line.split('=')[0].strip()
