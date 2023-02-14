@@ -28,10 +28,10 @@ TRAIN_CONFIGS = [{
     'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py',
     'cfg_options': {
         **_COMMON_OPTIONS,
-        'data.train.data_source.root':'',
-        'data.train.data_source.list_file':CLS_TRAIN_TEST,
+        'data.train.data_source.root': '',
+        'data.train.data_source.list_file': CLS_TRAIN_TEST,
         'data.val.data_source.root': '',
-        'data.val.data_source.list_file':CLS_TRAIN_TEST,
+        'data.val.data_source.list_file': CLS_TRAIN_TEST,
         'data.train.data_source.class_list': ['ok', 'ng'],
         'data.val.data_source.class_list': ['ok', 'ng'],
     }
@@ -39,7 +39,8 @@ TRAIN_CONFIGS = [{
     'config_file':
     'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py',
     'cfg_options': {
-        **_COMMON_OPTIONS, 'data.train.data_source.root': '',
+        **_COMMON_OPTIONS,
+        'data.train.data_source.root': '',
         'data.train.data_source.list_file': CLS_TRAIN_TEST,
         'data.val.data_source.root': '',
         'data.val.data_source.list_file': CLS_TRAIN_TEST,
@@ -51,10 +52,11 @@ TRAIN_CONFIGS = [{
     'config_file':
     'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py',
     'cfg_options': {
-        **_COMMON_OPTIONS, 'data_train_root': '',
-        'data_train_list':CLS_TRAIN_TEST,
+        **_COMMON_OPTIONS,
+        'data_train_root': '',
+        'data_train_list': CLS_TRAIN_TEST,
         'data_test_root': '',
-        'data_test_list':CLS_TRAIN_TEST,
+        'data_test_list': CLS_TRAIN_TEST,
         'image_resize2': [224, 224],
         'save_epochs': 1,
         'eval_epochs': 1,
