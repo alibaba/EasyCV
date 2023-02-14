@@ -3,7 +3,7 @@
 import cv2
 
 from easycv.predictors.builder import PREDICTORS
-from .base import PredictorV2
+from .base import OutputProcessor, PredictorV2
 
 face_contour_point_index = [
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
@@ -19,52 +19,26 @@ mouth_outer_point_index = [84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 84]
 mouth_inter_point_index = [96, 97, 98, 99, 100, 101, 102, 103, 96]
 
 
-@PREDICTORS.register_module()
-class FaceKeypointsPredictor(PredictorV2):
-    """Predict pipeline for face keypoint
+class FaceKptsOutputProcessor(OutputProcessor):
+    """Process the output of face keypoints models.
+
     Args:
-        model_path (str): Path of model path
-        config_file (str): config file path for model and processor to init. Defaults to None.
-        batch_size (int): batch size for forward.
-        device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
-        save_results (bool): Whether to save predict results.
-        save_path (str): File path for saving results, only valid when `save_results` is True.
-        pipelines (list[dict]): Data pipeline configs.
+        input_size (int): Target image size.
     """
 
-    def __init__(self,
-                 model_path,
-                 config_file,
-                 batch_size=1,
-                 device=None,
-                 save_results=False,
-                 save_path=None,
-                 pipelines=None):
-        super(FaceKeypointsPredictor, self).__init__(
-            model_path,
-            config_file,
-            batch_size=batch_size,
-            device=device,
-            save_results=save_results,
-            save_path=save_path,
-            pipelines=pipelines)
+    def __init__(self, input_size, point_number):
+        self.input_size = input_size
+        self.point_number = point_number
 
-        self.input_size = self.cfg.IMAGE_SIZE
-        self.point_number = self.cfg.POINT_NUMBER
-
-    def preprocess(self, inputs, *args, **kwargs):
-        batch_outputs = super().preprocess(inputs, *args, **kwargs)
-        self.img_metas = batch_outputs['img_metas']
-        return batch_outputs
-
-    def postprocess(self, inputs, *args, **kwargs):
+    def __call__(self, inputs):
         results = []
 
+        img_metas = inputs['img_metas']
         points = inputs['point'].cpu().numpy()
         poses = inputs['pose'].cpu().numpy()
 
         for idx, point in enumerate(points):
-            h, w, c = self.img_metas[idx]['img_shape']
+            h, w, c = img_metas[idx]['img_shape']
             scale_h = h / self.input_size
             scale_w = w / self.input_size
 
@@ -76,6 +50,57 @@ class FaceKeypointsPredictor(PredictorV2):
             results.append({'point': point, 'pose': poses[idx]})
 
         return results
+
+
+@PREDICTORS.register_module()
+class FaceKeypointsPredictor(PredictorV2):
+    """Predict pipeline for face keypoint
+    Args:
+        model_path (str): Path of model path
+        config_file (str): config file path for model and processor to init. Defaults to None.
+        batch_size (int): batch size for forward.
+        device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
+        save_results (bool): Whether to save predict results.
+        save_path (str): File path for saving results, only valid when `save_results` is True.
+        pipelines (list[dict]): Data pipeline configs.
+        input_processor_threads (int): Number of processes to process inputs.
+        mode (str): The image mode into the model.
+    """
+
+    def __init__(
+        self,
+        model_path,
+        config_file,
+        batch_size=1,
+        device=None,
+        save_results=False,
+        save_path=None,
+        pipelines=None,
+        input_processor_threads=8,
+        mode='BGR',
+    ):
+        super(FaceKeypointsPredictor, self).__init__(
+            model_path,
+            config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            pipelines=pipelines,
+            input_processor_threads=input_processor_threads,
+            mode=mode)
+
+        self.input_size = self.cfg.IMAGE_SIZE
+        self.point_number = self.cfg.POINT_NUMBER
+
+    def model_forward(self, inputs):
+        outputs = super().model_forward(inputs)
+        outputs['img_metas'] = inputs['img_metas']
+        return outputs
+
+    def get_output_processor(self):
+        return FaceKptsOutputProcessor(
+            input_size=self.input_size, point_number=self.point_number)
 
     def show_result(self, img, points, scale=4.0, save_path=None):
         """Draw `result` over `img`.

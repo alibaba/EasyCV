@@ -1,5 +1,6 @@
 _base_ = '../common/dataset/imagenet_classification.py'
 
+num_classes = 1000
 # model settings
 model = dict(
     type='Classification',
@@ -10,11 +11,11 @@ model = dict(
         prob=0.5,
         mode='batch',
         label_smoothing=0.1,
-        num_classes=1000),
+        num_classes=num_classes),
     backbone=dict(
         type='PytorchImageModelWrapper',
         model_name='swin_tiny_patch4_window7_224',
-        num_classes=1000,
+        num_classes=num_classes,
     ),
     head=dict(
         type='ClsHead',

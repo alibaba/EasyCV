@@ -66,12 +66,13 @@ class ClsEvaluator(Evaluator):
                 'Inconsistent length for results and labels, {} vs {}'.format(
                 scores.size(0), target.size(0))
             num = scores.size(0)
-            _, pred = scores.topk(
-                max(self._topk), dim=1, largest=True, sorted=True)
 
             # Avoid topk values greater than the number of categories
             self._topk = np.array(list(self._topk))
             self._topk = np.clip(self._topk, 1, scores.shape[-1])
+
+            _, pred = scores.topk(
+                max(self._topk), dim=1, largest=True, sorted=True)
 
             pred = pred.t()
             correct = pred.eq(target.view(1, -1).expand_as(pred))  # KxN
@@ -136,8 +137,8 @@ class ClsEvaluator(Evaluator):
                     valid_true.append(self.class_list[sub_target.argmax()])
                     valid_pred.append(self.class_list[sub_predict.argmax()])
 
-                matrix = confusion_matrix(valid_true, valid_pred,
-                                          self.class_list)
+                matrix = confusion_matrix(
+                    valid_true, valid_pred, labels=self.class_list)
 
                 print_log(
                     'recall:{}\nprecision:{}\nattend:{}\nTP:{}\nFN:{}\nFP:{}\nTN:{}\nrecall/mean:{}\nprecision/mean:{}\nF1/mean:{}\nconfusion_matrix:{}\n'

@@ -167,12 +167,15 @@ def train_model(model,
         runner.register_hook(DistSamplerSeedHook())
 
     # register eval hooks
-    validate = False
-    if 'eval_pipelines' in cfg:
-        if isinstance(cfg.eval_pipelines, dict):
-            cfg.eval_pipelines = [cfg.eval_pipelines]
-        if len(cfg.eval_pipelines) > 0:
-            validate = True
+    if validate:
+        if 'eval_pipelines' not in cfg:
+            runner.logger.warning(
+                'Not find `eval_pipelines` in cfg, skip validation!')
+            validate = False
+        else:
+            if isinstance(cfg.eval_pipelines, dict):
+                cfg.eval_pipelines = [cfg.eval_pipelines]
+            assert len(cfg.eval_pipelines) > 0
             runner.logger.info('open validate hook')
 
     best_metric_name = [

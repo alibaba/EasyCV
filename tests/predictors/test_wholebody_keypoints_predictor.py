@@ -1,9 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
+import os
 import unittest
 
-from ut_config import (PRETRAINED_MODEL_WHOLEBODY,
-                       PRETRAINED_MODEL_WHOLEBODY_DETECTION)
+from tests.ut_config import (BASE_LOCAL_PATH, PRETRAINED_MODEL_WHOLEBODY,
+                             PRETRAINED_MODEL_WHOLEBODY_DETECTION)
 
 from easycv.predictors.wholebody_keypoints_predictor import \
     WholeBodyKeypointsPredictor
@@ -16,7 +16,8 @@ class WholeBodyKeypointsPredictorTest(unittest.TestCase):
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
-        self.image_path = 'data/test/pose/wholebody/data/img_test_wholebody.jpg'
+        self.image_path = os.path.join(
+            BASE_LOCAL_PATH, 'data/pose/wholebody/data/img_test_wholebody.jpg')
         self.save_image_path = 'img_test_wholebody_ret.jpg'
         self.model_path = PRETRAINED_MODEL_WHOLEBODY
         self.model_config_path = 'configs/pose/wholebody/hrnet_w48_coco_wholebody_384x288_dark_plus.py'
