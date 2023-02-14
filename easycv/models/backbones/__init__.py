@@ -27,3 +27,4 @@ from .swin_transformer3d import SwinTransformer3D
 from .vision_transformer import VisionTransformer
 from .vitdet import ViTDet
 from .x3d import X3D
+from .stdc import STDCNet,STDCContextPathNet
