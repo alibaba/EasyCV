@@ -72,6 +72,7 @@ CLS_DATA_ITAG_OSS = os.path.join(
     BASE_OSS_PATH,
     'local_backup/easycv_nfs/data/classification/cls_itagtest/cls_itagtest.manifest'
 )
+CLS_TRAIN_TEST = os.path.join(BASE_LOCAL_PATH, 'data/classification/class_list_test/cls_itagtest_imagelist.txt')
 CLS_DATA_NPY_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/classification/npy/')
 SMALL_IMAGENET_RAW_LOCAL = os.path.join(
     BASE_LOCAL_PATH, 'data/classification/small_imagenet_raw')

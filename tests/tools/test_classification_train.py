@@ -6,7 +6,7 @@ import sys
 import tempfile
 import unittest
 
-from tests.ut_config import SMALL_IMAGENET_RAW_LOCAL
+from tests.ut_config import CLS_TRAIN_TEST
 
 from easycv.file import io
 from easycv.utils.config_tools import mmcv_config_fromfile, pai_config_fromfile
@@ -15,12 +15,12 @@ from easycv.utils.test_util import run_in_subprocess
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 logging.basicConfig(level=logging.INFO)
-SMALL_IMAGENET_DATA_ROOT = SMALL_IMAGENET_RAW_LOCAL + '/'
 _COMMON_OPTIONS = {
     'checkpoint_config.interval': 1,
     'total_epochs': 1,
     'data.imgs_per_gpu': 8,
-    'model.backbone.norm_cfg.type': 'BN'
+    'model.backbone.norm_cfg.type': 'BN',
+    'model.head.num_classes': 2,
 }
 
 TRAIN_CONFIGS = [{
@@ -28,43 +28,37 @@ TRAIN_CONFIGS = [{
     'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py',
     'cfg_options': {
         **_COMMON_OPTIONS,
-        'data.train.data_source.root':
-        SMALL_IMAGENET_DATA_ROOT + 'train/',
-        'data.train.data_source.list_file':
-        SMALL_IMAGENET_DATA_ROOT + 'meta/train_labeled_200.txt',
-        'data.val.data_source.root':
-        SMALL_IMAGENET_DATA_ROOT + 'validation/',
-        'data.val.data_source.list_file':
-        SMALL_IMAGENET_DATA_ROOT + 'meta/val_labeled_100.txt',
+        'data.train.data_source.root':'',
+        'data.train.data_source.list_file':CLS_TRAIN_TEST,
+        'data.val.data_source.root': '',
+        'data.val.data_source.list_file':CLS_TRAIN_TEST,
+        'data.train.data_source.class_list': ['ok', 'ng'],
+        'data.val.data_source.class_list': ['ok', 'ng'],
     }
 }, {
     'config_file':
     'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py',
     'cfg_options': {
-        **_COMMON_OPTIONS, 'data.train.data_source.root':
-        SMALL_IMAGENET_DATA_ROOT + 'train/',
-        'data.train.data_source.list_file':
-        SMALL_IMAGENET_DATA_ROOT + 'meta/train_labeled_200.txt',
-        'data.val.data_source.root':
-        SMALL_IMAGENET_DATA_ROOT + 'validation/',
-        'data.val.data_source.list_file':
-        SMALL_IMAGENET_DATA_ROOT + 'meta/val_labeled_100.txt',
-        'model.train_preprocess': ['randomErasing', 'mixUp']
+        **_COMMON_OPTIONS, 'data.train.data_source.root': '',
+        'data.train.data_source.list_file': CLS_TRAIN_TEST,
+        'data.val.data_source.root': '',
+        'data.val.data_source.list_file': CLS_TRAIN_TEST,
+        'model.train_preprocess': ['randomErasing', 'mixUp'],
+        'data.train.data_source.class_list': ['ok', 'ng'],
+        'data.val.data_source.class_list': ['ok', 'ng'],
     }
 }, {
     'config_file':
     'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py',
     'cfg_options': {
-        **_COMMON_OPTIONS, 'data_train_root':
-        SMALL_IMAGENET_DATA_ROOT + 'train/',
-        'data_train_list':
-        SMALL_IMAGENET_DATA_ROOT + 'meta/train_labeled_200.txt',
-        'data_test_root': SMALL_IMAGENET_DATA_ROOT + 'validation/',
-        'data_test_list':
-        SMALL_IMAGENET_DATA_ROOT + 'meta/val_labeled_100.txt',
+        **_COMMON_OPTIONS, 'data_train_root': '',
+        'data_train_list':CLS_TRAIN_TEST,
+        'data_test_root': '',
+        'data_test_list':CLS_TRAIN_TEST,
         'image_resize2': [224, 224],
         'save_epochs': 1,
-        'eval_epochs': 1
+        'eval_epochs': 1,
+        'class_list': ['ok', 'ng'],
     }
 }]
 
