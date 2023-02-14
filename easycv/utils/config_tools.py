@@ -262,9 +262,6 @@ def adapt_pai_params(cfg_dict):
     Returns:
         cfg_dict (dict): Add the cfg of export and oss.
     """
-    # export config
-    cfg_dict['export'] = dict(export_neck=True)
-    cfg_dict['checkpoint_sync_export'] = True
     # oss config
     cfg_dict['oss_sync_config'] = dict(
         other_file_list=['**/events.out.tfevents*', '**/*log*'])
@@ -320,6 +317,11 @@ def pai_config_fromfile(ori_filename,
     # replace first-order parameters
     cfg_dict, cfg_text = mmcv_file2dict_base(
         ori_filename, first_order_params, easycv_root=easycv_root)
+
+    # export config
+    if cfg_dict.get('export', None) is None:
+        cfg_dict['export'] = dict(export_neck=True)
+        cfg_dict['checkpoint_sync_export'] = True
 
     # Add export and oss ​​related configuration to adapt to pai platform
     if model_type:
