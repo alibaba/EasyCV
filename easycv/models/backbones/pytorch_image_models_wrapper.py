@@ -56,13 +56,10 @@ _MODEL_MAP = {
 @BACKBONES.register_module
 class PytorchImageModelWrapper(nn.Module):
     """Support Backbones From pytorch-image-models.
-
     The PyTorch community has lots of awesome contributions for image models. PyTorch Image Models (timm) is
     a collection of image models, aim to pull together a wide variety of SOTA models with ability to reproduce
     ImageNet training results.
-
     Model pages can be found at https://rwightman.github.io/pytorch-image-models/models/
-
     References: https://github.com/rwightman/pytorch-image-models
     """
 
@@ -93,6 +90,8 @@ class PytorchImageModelWrapper(nn.Module):
         if 'num_classes' not in kwargs:
             kwargs['num_classes'] = 0
 
+        self.num_classes = kwargs['num_classes']
+
         # create model by timm
         if model_name in timm_model_names:
             self.model = timm.create_model(model_name, False, '', scriptable,
@@ -105,7 +104,6 @@ class PytorchImageModelWrapper(nn.Module):
         Args:
             if pretrained == True, load model from default path;
             if pretrained == False or None, load from init weights.
-
             if model_name in timm_model_names, load model from timm default path;
             if model_name in _MODEL_MAP, load model from easycv default path
         """
@@ -128,7 +126,12 @@ class PytorchImageModelWrapper(nn.Module):
                             self.model.__module__)
                         return load_pretrained(
                             self.model,
-                            default_cfg={'url': default_pretrained_model_path},
+                            default_cfg={
+                                'url': default_pretrained_model_path,
+                                'classifier': 'head',
+                                'num_classes': 1000
+                            },
+                            num_classes=self.num_classes,
                             filter_fn=backbone_module.checkpoint_filter_fn
                             if hasattr(backbone_module, 'checkpoint_filter_fn')
                             else None,
