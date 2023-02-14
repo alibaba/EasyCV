@@ -17,7 +17,7 @@ import os
 import scipy.io
 import yaml
 import math
-from model import ft_net, ft_net_dense, ft_net_hr, ft_net_swin, ft_net_swinv2, ft_net_efficient, ft_net_NAS, ft_net_convnext, PCB, PCB_test
+from model import ft_net, ft_net_dense, ft_net_hr, ft_net_swin, ft_net_swinv2, ft_net_efficient, ft_net_NAS, ft_net_convnext
 from torch.nn.utils import fuse_conv_bn_eval
 #fp16
 try:
@@ -37,7 +37,6 @@ parser.add_argument('--linear_num', default=512, type=int, help='feature dimensi
 parser.add_argument('--use_dense', action='store_true', help='use densenet121' )
 parser.add_argument('--use_efficient', action='store_true', help='use efficient-b4' )
 parser.add_argument('--use_hr', action='store_true', help='use hr18 net' )
-parser.add_argument('--PCB', action='store_true', help='use PCB' )
 parser.add_argument('--fp16', action='store_true', help='use fp16.' )
 parser.add_argument('--ibn', action='store_true', help='use ibn.' )
 
@@ -48,7 +47,6 @@ config_path = os.path.join('./model',opt.name,'opts.yaml')
 with open(config_path, 'r') as stream:
         config = yaml.load(stream, Loader=yaml.FullLoader) # for the new pyyaml via 'conda install pyyaml'
 opt.fp16 = config['fp16'] 
-opt.PCB = config['PCB']
 opt.use_dense = config['use_dense']
 opt.use_NAS = config['use_NAS']
 opt.stride = config['stride']
@@ -111,25 +109,7 @@ data_transforms = transforms.Compose([
         transforms.Resize((h, w), interpolation=3),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ############### Ten Crop        
-        #transforms.TenCrop(224),
-        #transforms.Lambda(lambda crops: torch.stack(
-         #   [transforms.ToTensor()(crop) 
-          #      for crop in crops]
-           # )),
-        #transforms.Lambda(lambda crops: torch.stack(
-         #   [transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(crop)
-          #       for crop in crops]
-          # ))
 ])
-
-if opt.PCB:
-    data_transforms = transforms.Compose([
-        transforms.Resize((384,192), interpolation=3),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) 
-    ])
-    h, w = 384, 192
 
 
 data_dir = test_dir
@@ -139,14 +119,6 @@ dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=opt.
                                             shuffle=False, num_workers=16) for x in ['gallery','query']}
 class_names = image_datasets['query'].classes
 use_gpu = torch.cuda.is_available()
-
-######################################################################
-# Load model
-#---------------------------
-def load_network(network):
-    save_path = '/home/yunji.cjy/projects/reid/epoch_60.pth'
-    network.load_state_dict(torch.load(save_path))
-    return network
 
 
 ######################################################################
@@ -181,9 +153,6 @@ def extract_feature(model,dataloaders):
         print(count)
         ff = torch.FloatTensor(n,opt.linear_num).zero_().cuda()
 
-        if opt.PCB:
-            ff = torch.FloatTensor(n,2048,6).zero_().cuda() # we have six parts
-
         for i in range(2):
             if(i==1):
                 img = fliplr(img)
@@ -191,16 +160,8 @@ def extract_feature(model,dataloaders):
             outputs = model(input_img) 
             ff += outputs
         # norm feature
-        if opt.PCB:
-            # feature size (n,2048,6)
-            # 1. To treat every part equally, I calculate the norm for every 2048-dim part feature.
-            # 2. To keep the cosine score==1, sqrt(6) is added to norm the whole feature (2048*6).
-            fnorm = torch.norm(ff, p=2, dim=1, keepdim=True) * np.sqrt(6) 
-            ff = ff.div(fnorm.expand_as(ff))
-            ff = ff.view(ff.size(0), -1)
-        else:
-            fnorm = torch.norm(ff, p=2, dim=1, keepdim=True)
-            ff = ff.div(fnorm.expand_as(ff))
+        fnorm = torch.norm(ff, p=2, dim=1, keepdim=True)
+        ff = ff.div(fnorm.expand_as(ff))
 
         
         if iter == 0:
@@ -269,26 +230,11 @@ elif opt.use_hr:
 else:
     model_structure = ft_net(opt.nclasses, stride = opt.stride, ibn = opt.ibn, linear_num=opt.linear_num)
 
-if opt.PCB:
-    model_structure = PCB(opt.nclasses)
-
-#if opt.fp16:
-#    model_structure = network_to_half(model_structure)
-
-model = load_network(model_structure)
+model_path = '/home/yunji.cjy/projects/reid/epoch_60.pth'
+model = model_structure.load_state_dict(torch.load(model_path))
 
 # Remove the final fc layer and classifier layer
-if opt.PCB:
-    #if opt.fp16:
-    #    model = PCB_test(model[1])
-    #else:
-        model = PCB_test(model)
-else:
-    #if opt.fp16:
-        #model[1].model.fc = nn.Sequential()
-        #model[1].classifier = nn.Sequential()
-    #else:
-        model.classifier.classifier = nn.Sequential()
+model.classifier.classifier = nn.Sequential()
 
 # Change to test mode
 model = model.eval()
