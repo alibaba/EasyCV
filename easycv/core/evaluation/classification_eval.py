@@ -137,8 +137,8 @@ class ClsEvaluator(Evaluator):
                     valid_true.append(self.class_list[sub_target.argmax()])
                     valid_pred.append(self.class_list[sub_predict.argmax()])
 
-                matrix = confusion_matrix(valid_true, valid_pred,
-                                          self.class_list)
+                matrix = confusion_matrix(
+                    valid_true, valid_pred, labels=self.class_list)
 
                 print_log(
                     'recall:{}\nprecision:{}\nattend:{}\nTP:{}\nFN:{}\nFP:{}\nTN:{}\nrecall/mean:{}\nprecision/mean:{}\nF1/mean:{}\nconfusion_matrix:{}\n'
