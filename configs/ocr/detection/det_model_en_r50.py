@@ -95,13 +95,14 @@ val_pipeline = [
         meta_keys=['ori_img_shape', 'polys', 'ignore_tags']),
 ]
 
+data_root = 'ocr/det/icdar2015/text_localization/'
+train_ann_file = 'ocr/det/icdar2015/text_localization/train_icdar2015_label.txt'
+val_ann_file = 'ocr/det/icdar2015/text_localization/test_icdar2015_label.txt'
+
 train_dataset = dict(
     type='OCRDetDataset',
     data_source=dict(
-        type='OCRDetSource',
-        label_file=
-        'ocr/det/icdar2015/text_localization/train_icdar2015_label.txt',
-        data_dir='ocr/det/icdar2015/text_localization'),
+        type='OCRDetSource', label_file=train_ann_file, data_dir=data_root),
     pipeline=train_pipeline)
 
 val_dataset = dict(
@@ -109,9 +110,8 @@ val_dataset = dict(
     imgs_per_gpu=2,
     data_source=dict(
         type='OCRDetSource',
-        label_file=
-        'ocr/det/icdar2015/text_localization/test_icdar2015_label.txt',
-        data_dir='ocr/det/icdar2015/text_localization',
+        label_file=val_ann_file,
+        data_dir=data_root,
         test_mode=True),
     pipeline=val_pipeline)
 

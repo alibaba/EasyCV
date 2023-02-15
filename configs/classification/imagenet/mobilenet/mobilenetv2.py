@@ -1,6 +1,21 @@
-_base_ = '../classification_base.py'
+_base_ = '../common/classification_base.py'
 
-class_list = [
+num_classes = 1000
+# model settings
+model = dict(
+    type='Classification',
+    backbone=dict(type='MobileNetV2'),
+    head=dict(
+        type='ClsHead',
+        with_avg_pool=True,
+        in_channels=1280,
+        loss_config=dict(
+            type='CrossEntropyLossWithLabelSmooth',
+            label_smooth=0,
+        ),
+        num_classes=num_classes))
+
+CLASSES = [
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13',
     '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25',
     '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36', '37',
@@ -134,16 +149,14 @@ data = dict(
         data_source=dict(
             list_file=data_train_list,
             root=data_train_root,
-            type=data_source_type,
-            class_list=class_list),
+            type=data_source_type),
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
         data_source=dict(
             list_file=data_test_list,
             root=data_test_root,
-            type=data_source_type,
-            class_list=class_list),
+            type=data_source_type),
         pipeline=test_pipeline))
 
 eval_config = dict(initial=False, interval=1, gpu_collect=True)
@@ -152,8 +165,18 @@ eval_pipelines = [
         mode='test',
         data=data['val'],
         dist_eval=True,
-        evaluators=[
-            dict(type='ClsEvaluator', topk=(1, 5), class_list=class_list)
-        ],
+        evaluators=[dict(type='ClsEvaluator', topk=(1, ), class_list=CLASSES)],
     )
 ]
+
+# optimizer
+optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.0001)
+
+# learning policy
+lr_config = dict(policy='step', step=[30, 60, 90])
+checkpoint_config = dict(interval=5)
+
+# runtime settings
+total_epochs = 100
+checkpoint_sync_export = True
+export = dict(export_neck=True)
