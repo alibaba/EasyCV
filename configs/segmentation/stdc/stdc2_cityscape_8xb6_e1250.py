@@ -1,4 +1,4 @@
-_base_ = ['configs/segmentation/stdc/stdc1.py']
+_base_ = ['configs/segmentation/stdc/stdc1_cityscape_8xb6_e1250.py']
 
 model = dict(
     backbone=dict(backbone_cfg=dict(stdc_type='STDCNet2')),
