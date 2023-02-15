@@ -1,5 +1,4 @@
-# Copyright (c) OpenMMLab. All rights reserved.
-"""Modified from https://github.com/MichaelFan01/STDC-Seg."""
+# Modified from https://github.com/open-mmlab/mmsegmentation/blob/master/mmseg/models/backbones/stdc.py
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

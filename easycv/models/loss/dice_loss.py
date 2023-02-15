@@ -1,6 +1,4 @@
-# Copyright (c) OpenMMLab. All rights reserved.
-"""Modified from https://github.com/LikeLy-Journey/SegmenTron/blob/master/
-segmentron/solver/loss.py (Apache-2.0 License)"""
+# Borrowed from https://github.com/open-mmlab/mmsegmentation/blob/master/mmseg/models/losses/dice_loss.py
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

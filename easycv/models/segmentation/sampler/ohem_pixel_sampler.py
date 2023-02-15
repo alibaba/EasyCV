@@ -1,4 +1,4 @@
-# Copyright (c) OpenMMLab. All rights reserved.
+# Borrowed from https://github.com/open-mmlab/mmsegmentation/blob/master/mmseg
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

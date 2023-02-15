@@ -1,4 +1,4 @@
-# Copyright (c) OpenMMLab. All rights reserved.
+# Modified from https://github.com/open-mmlab/mmsegmentation/blob/master/mmseg/models/decode_heads/stdc_head.py
 import torch
 import torch.nn.functional as F
 
