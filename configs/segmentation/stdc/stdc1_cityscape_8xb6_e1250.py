@@ -1,16 +1,15 @@
 _base_ = ['configs/base.py']
-checkpoint = 'https://download.openmmlab.com/mmsegmentation/v0.5/pretrain/stdc/stdc1_20220308-5368626c.pth'
+
+# warning batch_size need >= 2
 # model
 norm_cfg = dict(type='BN', requires_grad=True)
 model = dict(
     type='EncoderDecoder',
-    pretrained=None,
     backbone=dict(
         type='STDCContextPathNet',
         backbone_cfg=dict(
             type='STDCNet',
             stdc_type='STDCNet1',
-            init_cfg=dict(type='Pretrained', checkpoint=checkpoint),
             in_channels=3,
             channels=(32, 64, 256, 512, 1024),
             bottleneck_type='cat',
@@ -83,14 +82,17 @@ model = dict(
             ]),
     ],
     train_cfg=dict(),
-    test_cfg=dict(mode='whole')
-    )
+    test_cfg=dict(mode='whole'),
+    pretrained=
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/segmentation/stdc/pretrain/stdc1_easycv.pth'
+)
 
 # dataset
-CLASSES = ['road', 'sidewalk', 'building', 'wall', 'fence', 'pole',
-            'traffic light', 'traffic sign', 'vegetation', 'terrain', 'sky',
-            'person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
-            'bicycle']
+CLASSES = [
+    'road', 'sidewalk', 'building', 'wall', 'fence', 'pole', 'traffic light',
+    'traffic sign', 'vegetation', 'terrain', 'sky', 'person', 'rider', 'car',
+    'truck', 'bus', 'train', 'motorcycle', 'bicycle'
+]
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 crop_size = (512, 1024)
@@ -139,8 +141,9 @@ train_label_root = data_root + 'gtFine/train/'
 val_img_root = data_root + 'leftImg8bit/val/'
 val_label_root = data_root + 'gtFine/val/'
 data = dict(
-    imgs_per_gpu=12,
-    workers_per_gpu=8,
+    imgs_per_gpu=6,
+    workers_per_gpu=4,
+    persistent_workers=True,
     train=dict(
         type=dataset_type,
         ignore_index=255,
@@ -159,14 +162,12 @@ data = dict(
             img_root=val_img_root,
             label_root=val_label_root,
             classes=CLASSES),
-        pipeline=test_pipeline)
-    )
+        pipeline=test_pipeline))
 
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0005)
 optimizer_config = dict()
 # learning policy
-# lr_config = dict(policy='poly', power=0.9, min_lr=1e-4, by_epoch=False)
 lr_config = dict(
     policy='CosineAnnealing',
     min_lr=1e-4,
@@ -177,7 +178,7 @@ lr_config = dict(
     by_epoch=False)
 
 # runtime settings
-total_epochs = 645
+total_epochs = 1250
 checkpoint_config = dict(interval=10)
 eval_config = dict(interval=10, gpu_collect=False)
 eval_pipelines = [
@@ -191,3 +192,7 @@ eval_pipelines = [
         ],
     )
 ]
+
+# export config
+export = dict(export_neck=True)
+checkpoint_sync_export = True

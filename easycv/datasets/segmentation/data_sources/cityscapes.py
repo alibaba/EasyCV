@@ -1,33 +1,36 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import os
-import logging
 import copy
-from easycv.file.image import load_image as _load_img
+import logging
+import os
+import subprocess
 
 import numpy as np
 
 from easycv.datasets.registry import DATASOURCES
-from .raw import SegSourceRaw
 from easycv.file import io
+from easycv.file.image import load_image as _load_img
+from .raw import SegSourceRaw
 
-def load_image(img_path):
-    img = _load_img(img_path, mode='BGR')
-    result = {
-        'img': img.astype(np.float32),
-        'img_shape': img.shape,  # h, w, c
-        'ori_shape': img.shape,
-    }
-    return result
-
-def load_seg_map(seg_path, reduce_zero_label):
-    gt_semantic_seg = _load_img(seg_path, mode='P')
+try:
     import cityscapesscripts.helpers.labels as CSLabels
+except ModuleNotFoundError as e:
+    res = subprocess.call('pip install cityscapesscripts', shell=True)
+    if res != 0:
+        info_string = (
+            '\n\nAuto install failed! Please install cityscapesscripts with the following commands :\n'
+            '\t`pip install cityscapesscripts`\n')
+        raise ModuleNotFoundError(info_string)
+
+
+def load_seg_map_cityscape(seg_path, reduce_zero_label):
+    gt_semantic_seg = _load_img(seg_path, mode='P')
     gt_semantic_seg_copy = gt_semantic_seg.copy()
     for labels in CSLabels.labels:
         gt_semantic_seg_copy[gt_semantic_seg == labels.id] = labels.trainId
-    gt_semantic_seg_copy[gt_semantic_seg_copy>=19] = 255
 
     return {'gt_semantic_seg': gt_semantic_seg_copy}
+
+
 @DATASOURCES.register_module
 class SegSourceCityscapes(SegSourceRaw):
     """Cityscapes datasource
@@ -42,14 +45,14 @@ class SegSourceCityscapes(SegSourceRaw):
                [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
                [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100],
                [0, 80, 100], [0, 0, 230], [119, 11, 32]]
-    
+
     def __init__(self,
                  img_suffix='_leftImg8bit.png',
                  label_suffix='_gtFine_labelIds.png',
                  **kwargs):
         super(SegSourceCityscapes, self).__init__(
             img_suffix=img_suffix, label_suffix=label_suffix, **kwargs)
-    
+
     def __getitem__(self, idx):
         result_dict = self.samples_list[idx]
         load_success = True
@@ -60,10 +63,16 @@ class SegSourceCityscapes(SegSourceRaw):
 
             if not self.cache_at_init:
                 if result_dict.get('img', None) is None:
-                    result_dict.update(load_image(result_dict['filename']))
+                    img = _load_img(result_dict['filename'], mode='BGR')
+                    result = {
+                        'img': img.astype(np.float32),
+                        'img_shape': img.shape,  # h, w, c
+                        'ori_shape': img.shape,
+                    }
+                    result_dict.update(result)
                 if result_dict.get('gt_semantic_seg', None) is None:
                     result_dict.update(
-                        load_seg_map(
+                        load_seg_map_cityscape(
                             result_dict['seg_filename'],
                             reduce_zero_label=self.reduce_zero_label))
                 if self.cache_on_the_fly:
@@ -85,7 +94,7 @@ class SegSourceCityscapes(SegSourceRaw):
             result_dict = self[(idx + 1) % self.num_samples]
 
         return result_dict
-    
+
     def get_source_iterator(self):
 
         self.img_files = [
@@ -96,7 +105,8 @@ class SegSourceCityscapes(SegSourceRaw):
 
         self.label_files = []
         for img_path in self.img_files:
-            img_name = img_path.replace(self.img_root,'')[:-len(self.img_suffix[0])]
+            img_name = img_path.replace(self.img_root,
+                                        '')[:-len(self.img_suffix[0])]
             find_label_path = False
             for label_format in self.label_suffix:
                 lable_path = os.path.join(self.label_root,

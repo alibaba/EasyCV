@@ -29,7 +29,7 @@ class SegmentationPredictor(PredictorV2):
 
     def __init__(self,
                  model_path,
-                 config_file,
+                 config_file=None,
                  batch_size=1,
                  device=None,
                  save_results=False,
@@ -54,7 +54,7 @@ class SegmentationPredictor(PredictorV2):
             **kwargs)
 
         self.CLASSES = self.cfg.CLASSES
-        self.PALETTE = self.cfg.PALETTE
+        self.PALETTE = self.cfg.get('PALETTE', None)
 
     def show_result(self,
                     img,
@@ -90,7 +90,8 @@ class SegmentationPredictor(PredictorV2):
 
         img = mmcv.imread(img)
         img = img.copy()
-        seg = result[0]
+        # seg = result[0]
+        seg = result
         if palette is None:
             if self.PALETTE is None:
                 # Get random state before set seed,
