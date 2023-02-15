@@ -6,8 +6,8 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.runner.base_module import BaseModule, ModuleList, Sequential
 
-from ..registry import BACKBONES
 from easycv.models import builder
+from ..registry import BACKBONES
 
 
 class AttentionRefinementModule(BaseModule):
@@ -53,6 +53,7 @@ class AttentionRefinementModule(BaseModule):
         x_atten = self.atten_conv_layer(x)
         x_out = x * x_atten
         return x_out
+
 
 class STDCModule(BaseModule):
     """STDCModule.
@@ -439,7 +440,6 @@ class STDCContextPathNet(BaseModule):
         avg = F.adaptive_avg_pool2d(outs[-1], 1)
         avg_feat = self.conv_avg(avg)
 
-        
         feature_up = F.interpolate(
             avg_feat,
             size=outs[-1].shape[2:],

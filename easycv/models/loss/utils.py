@@ -26,6 +26,7 @@ def get_class_weight(class_weight):
 
     return class_weight
 
+
 def reduce_loss(loss, reduction):
     """Reduce loss as specified.
 

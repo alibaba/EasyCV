@@ -252,10 +252,10 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         for loss_decode in losses_decode:
             if loss_decode.loss_name not in loss:
                 loss[loss_decode.loss_name] = loss_decode(
-                    seg_logit, seg_label,  ignore_index=self.ignore_index)
+                    seg_logit, seg_label, ignore_index=self.ignore_index)
             else:
                 loss[loss_decode.loss_name] += loss_decode(
-                    seg_logit, seg_label,  ignore_index=self.ignore_index)
+                    seg_logit, seg_label, ignore_index=self.ignore_index)
 
         loss['acc_seg'] = accuracy(
             seg_logit, seg_label, ignore_index=self.ignore_index)
