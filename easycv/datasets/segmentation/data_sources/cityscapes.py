@@ -105,8 +105,7 @@ class SegSourceCityscapes(SegSourceRaw):
 
         self.label_files = []
         for img_path in self.img_files:
-            if self.img_root[-1] != '/':
-                self.img_root += '/'
+            self.img_root = os.path.join(self.img_root, '')
             img_name = img_path.replace(self.img_root,
                                         '')[:-len(self.img_suffix[0])]
             find_label_path = False
