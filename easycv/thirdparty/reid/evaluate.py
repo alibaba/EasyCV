@@ -59,7 +59,7 @@ def compute_mAP(index, good_index, junk_index):
     return ap, cmc
 
 ######################################################################
-result = scipy.io.loadmat('pytorch_result.mat')
+result = scipy.io.loadmat('easycv/thirdparty/reid/pytorch_result.mat')
 query_feature = torch.FloatTensor(result['query_f'])
 query_cam = result['query_cam'][0]
 query_label = result['query_label'][0]
