@@ -1,5 +1,7 @@
 _base_ = './imagenet_resnet50_jpg.py'
 
+checkpoint_sync_export = True
+export = dict(export_neck=True)
 class_list = None
 total_epochs = 60
 model = dict(

@@ -9,8 +9,8 @@ import scipy.io
 from easycv.predictors.classifier import ClassificationPredictor
 
 parser = argparse.ArgumentParser(description='Test')
-parser.add_argument('config', help='config file')
-parser.add_argument('checkpoint', help='checkpoint file')
+parser.add_argument('--config', default=None, help='config file')
+parser.add_argument('--checkpoint', help='checkpoint file')
 parser.add_argument('--test_dir',default='../Market/pytorch',type=str, help='./test_data')
 parser.add_argument('--batchsize', default=256, type=int, help='batchsize')
 args = parser.parse_args()
