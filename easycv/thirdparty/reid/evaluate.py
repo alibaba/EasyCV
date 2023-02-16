@@ -1,8 +1,12 @@
 import scipy.io
 import torch
 import numpy as np
-#import time
+import argparse
 import os
+
+parser = argparse.ArgumentParser(description='Test')
+parser.add_argument('inference_result', help='inference result file')
+args = parser.parse_args()
 
 #######################################################################
 # Evaluate
@@ -59,7 +63,7 @@ def compute_mAP(index, good_index, junk_index):
     return ap, cmc
 
 ######################################################################
-result = scipy.io.loadmat('easycv/thirdparty/reid/pytorch_result.mat')
+result = scipy.io.loadmat(args.inference_result)
 query_feature = torch.FloatTensor(result['query_f'])
 query_cam = result['query_cam'][0]
 query_label = result['query_label'][0]

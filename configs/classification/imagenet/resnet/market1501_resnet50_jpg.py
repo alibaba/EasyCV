@@ -2,7 +2,10 @@ _base_ = './imagenet_resnet50_jpg.py'
 
 class_list = None
 total_epochs = 60
-model = dict(head=dict(num_classes=751))
+model = dict(
+    neck=dict(
+        type='ReIDNeck', in_channels=2048, out_channels=512, dropout=0.5),
+    head=dict(in_channels=512, num_classes=751))
 optimizer = dict(
     type='SGD',
     lr=0.05,

@@ -340,3 +340,55 @@ class HRFuseScales(nn.Module):
                 self.increase_layers[i + 1](x[i + 1])
 
         return [self.final_layer(feat)]
+
+
+@NECKS.register_module
+class ReIDNeck(nn.Module):
+    '''ReID neck: Include Linear, bn, relu, dropout
+    '''
+
+    def __init__(self,
+                 in_channels,
+                 dropout,
+                 relu=False,
+                 norm=True,
+                 out_channels=512):
+        """ Init FaceIDNeck, faceid neck doesn't pool for input feature map, doesn't support dynamic input
+
+        Args:
+            in_channels: Int - input feature map channels
+            out_channels: Int - output feature map channels
+            map_shape: Int or list(int,...), input feature map (w,h) or w when w=h,
+            dropout_ratio : float, drop out ratio
+            with_norm : normalize output feature or not
+            bn_type : SyncBN or BN
+        """
+        super(ReIDNeck, self).__init__()
+
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+
+        add_block = []
+        if out_channels > 0:
+            add_block += [nn.Linear(in_channels, out_channels)]
+        else:
+            out_channels = in_channels
+        if norm:
+            add_block += [nn.BatchNorm1d(out_channels)]
+        if relu:
+            add_block += [nn.LeakyReLU(0.1)]
+        if dropout > 0:
+            add_block += [nn.Dropout(p=dropout)]
+        add_block = nn.Sequential(*add_block)
+
+        self.add_block = add_block
+
+    def init_weights(self, init_linear='kaiming'):
+        _init_weights(self, init_linear)
+
+    def forward(self, x):
+        x = x[0]
+        x = self.avgpool(x)
+        x = x.view(x.size(0), x.size(1))
+        x = self.add_block(x)
+
+        return [x]

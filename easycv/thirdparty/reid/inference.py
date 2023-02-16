@@ -9,9 +9,11 @@ import scipy.io
 from easycv.predictors.classifier import ClassificationPredictor
 
 parser = argparse.ArgumentParser(description='Test')
+parser.add_argument('config', help='config file')
+parser.add_argument('checkpoint', help='checkpoint file')
 parser.add_argument('--test_dir',default='../Market/pytorch',type=str, help='./test_data')
 parser.add_argument('--batchsize', default=256, type=int, help='batchsize')
-cfg = parser.parse_args()
+args = parser.parse_args()
 
 def fliplr(img):
     '''flip horizontal'''
@@ -50,17 +52,16 @@ def extract_feature(model, image_dir):
     image_feature = image_feature.div(image_feature_norm.expand_as(image_feature))
     return image_feature, image_cam, image_label
 
-######################################################################
-# build model
-gallery_dir = os.path.join(cfg.test_dir, 'gallery')
-query_dir = os.path.join(cfg.test_dir, 'query')
-config_file = 'configs/classification/imagenet/resnet/market1501_resnet50_jpg.py'
-checkpoint = '/home/yunji.cjy/projects/reid/epoch_60.pth'
-model = ClassificationPredictor(
-    model_path=checkpoint,
-    config_file=config_file,
-    batch_size=cfg.batchsize)
+gallery_dir = os.path.join(args.test_dir, 'gallery')
+query_dir = os.path.join(args.test_dir, 'query')
 
+# build model
+model = ClassificationPredictor(
+    model_path=args.checkpoint,
+    config_file=args.config,
+    batch_size=args.batchsize)
+
+# extract features
 since = time.time()
 gallery_feature, gallery_cam, gallery_label = extract_feature(model, gallery_dir)
 query_feature, query_cam, query_label = extract_feature(model, query_dir)
@@ -69,9 +70,10 @@ time_elapsed = time.time() - since
 print('Training complete in {:.0f}m {:.2f}s'.format(
             time_elapsed // 60, time_elapsed % 60))
 
-# Save to Matlab for check
+# save inference result
+inference_result_path = os.path.join(os.path.dirname(args.checkpoint), 'pytorch_result.mat')
 result = {'gallery_f':gallery_feature.numpy(),'gallery_label':gallery_label,'gallery_cam':gallery_cam,'query_f':query_feature.numpy(),'query_label':query_label,'query_cam':query_cam}
-scipy.io.savemat('easycv/thirdparty/reid/pytorch_result.mat',result)
+scipy.io.savemat(inference_result_path, result)
 
-result = 'easycv/thirdparty/reid/result.txt'
-os.system('python easycv/thirdparty/reid/evaluate.py | tee -a %s'%result)
+# evaluate
+os.system(f'python easycv/thirdparty/reid/evaluate.py {inference_result_path}')
