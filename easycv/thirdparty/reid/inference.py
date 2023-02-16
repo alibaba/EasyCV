@@ -41,19 +41,19 @@ def file_name_walk(file_dir):
                 image_path_list.append(os.path.join(root, name))
     return image_path_list
 
+def extract_feature(model, image_dir):
+    image_path = file_name_walk(image_dir)
+    image_cam, image_label = get_id(image_path)
+    image_feature = model(image_path, mode='extract')
+    image_feature = torch.cat(image_feature, 0)
+    image_feature_norm = torch.norm(image_feature, p=2, dim=1, keepdim=True)
+    image_feature = image_feature.div(image_feature_norm.expand_as(image_feature))
+    return image_feature, image_cam, image_label
+
 ######################################################################
-# prepare dataset
-gallery_path = file_name_walk('/apsarapangu/disk2/yunji.cjy/Market1501/pytorch/gallery')
-query_path = file_name_walk('/apsarapangu/disk2/yunji.cjy/Market1501/pytorch/query')
-
-gallery_cam,gallery_label = get_id(gallery_path)
-query_cam,query_label = get_id(query_path)
-
-######################################################################
-# extract features
-print('-------test-----------')
-
-# Extract feature
+# build model
+gallery_dir = os.path.join(cfg.test_dir, 'gallery')
+query_dir = os.path.join(cfg.test_dir, 'query')
 config_file = 'configs/classification/imagenet/resnet/market1501_resnet50_jpg.py'
 checkpoint = '/home/yunji.cjy/projects/reid/epoch_60.pth'
 model = ClassificationPredictor(
@@ -62,14 +62,8 @@ model = ClassificationPredictor(
     batch_size=cfg.batchsize)
 
 since = time.time()
-gallery_feature = model(gallery_path, mode='extract')
-query_feature = model(query_path, mode='extract')
-gallery_feature = torch.cat(gallery_feature, 0)
-query_feature = torch.cat(query_feature, 0)
-gallery_feature_norm = torch.norm(gallery_feature, p=2, dim=1, keepdim=True)
-gallery_feature = gallery_feature.div(gallery_feature_norm.expand_as(gallery_feature))
-query_feature_norm = torch.norm(query_feature, p=2, dim=1, keepdim=True)
-query_feature = query_feature.div(query_feature_norm.expand_as(query_feature))
+gallery_feature, gallery_cam, gallery_label = extract_feature(model, gallery_dir)
+query_feature, query_cam, query_label = extract_feature(model, query_dir)
 print(gallery_feature.size(), query_feature.size())
 time_elapsed = time.time() - since
 print('Training complete in {:.0f}m {:.2f}s'.format(
@@ -78,3 +72,6 @@ print('Training complete in {:.0f}m {:.2f}s'.format(
 # Save to Matlab for check
 result = {'gallery_f':gallery_feature.numpy(),'gallery_label':gallery_label,'gallery_cam':gallery_cam,'query_f':query_feature.numpy(),'query_label':query_label,'query_cam':query_cam}
 scipy.io.savemat('easycv/thirdparty/reid/pytorch_result.mat',result)
+
+result = 'easycv/thirdparty/reid/result.txt'
+os.system('python easycv/thirdparty/reid/evaluate.py | tee -a %s'%result)
