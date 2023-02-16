@@ -11,6 +11,7 @@ from easycv.framework.errors import TypeError
 from easycv.models.builder import build_loss
 from easycv.models.utils.ops import resize_tensor
 from easycv.utils.logger import print_log
+from ..sampler import build_pixel_sampler
 
 
 # Modified from https://github.com/open-mmlab/mmsegmentation/blob/master/mmseg/models/decode_heads/decode_head.py
@@ -69,6 +70,7 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
                      type='CrossEntropyLoss',
                      use_sigmoid=False,
                      loss_weight=1.0),
+                 sampler=None,
                  ignore_index=255,
                  align_corners=False,
                  init_cfg=dict(
@@ -96,6 +98,11 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         else:
             raise TypeError(f'loss_decode must be a dict or sequence of dict,\
                 but got {type(loss_decode)}')
+
+        if sampler is not None:
+            self.sampler = build_pixel_sampler(sampler, context=self)
+        else:
+            self.sampler = None
 
         self.conv_seg = nn.Conv2d(channels, num_classes, kernel_size=1)
         if dropout_ratio > 0:
@@ -232,7 +239,10 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
             size=seg_label.shape[2:],
             mode='bilinear',
             align_corners=self.align_corners)
-
+        if self.sampler is not None:
+            seg_weight = self.sampler.sample(seg_logit, seg_label)
+        else:
+            seg_weight = None
         seg_label = seg_label.squeeze(1)
 
         if not isinstance(self.loss_decode, nn.ModuleList):

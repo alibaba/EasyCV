@@ -159,6 +159,8 @@ SEG_DATA_SMALL_COCO_STUFF_10K = os.path.join(
     BASE_LOCAL_PATH, 'data/segmentation/small_coco_stuff/small_coco_stuff10k')
 SEG_DATA_SAMLL_COCO_STUFF_164K = os.path.join(
     BASE_LOCAL_PATH, 'data/segmentation/small_coco_stuff/small_coco_stuff164k')
+SEG_DATA_SAMLL_CITYSCAPES = os.path.join(BASE_LOCAL_PATH,
+                                         'data/segmentation/small_cityscapes')
 
 # OCR data
 SMALL_OCR_CLS_DATA = os.path.join(BASE_LOCAL_PATH, 'data/ocr/small_ocr_cls')
