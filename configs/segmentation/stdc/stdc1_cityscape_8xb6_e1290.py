@@ -178,7 +178,7 @@ lr_config = dict(
     by_epoch=False)
 
 # runtime settings
-total_epochs = 1250
+total_epochs = 1290
 checkpoint_config = dict(interval=10)
 eval_config = dict(interval=10, gpu_collect=False)
 eval_pipelines = [
