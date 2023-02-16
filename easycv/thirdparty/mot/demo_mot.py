@@ -66,7 +66,7 @@ def main():
         fps = int(fps)
 
     # build the model from a config file and a checkpoint file
-    model = DetectionPredictor(args.checkpoint, args.config, score_threshold=0)
+    model = DetectionPredictor(args.checkpoint, args.config, score_threshold=0.2) # detr-like score_threshold set to 0
     tracker = BYTETracker(
         det_high_thresh=0.2,
         det_low_thresh=0.05,
