@@ -79,7 +79,7 @@ def main():
         # build the model from a config file and a checkpoint file
         print('build det model and reid model!')
         det_model = DetectionPredictor(
-            args.det_checkpoint, args.det_config, score_threshold=0)
+            args.det_checkpoint, args.det_config, score_threshold=0.2) # detr-like score_threshold set to 0
         reid_model = ClassificationPredictor(args.reid_checkpoint,
                                              args.reid_config)
         tracker = BYTETracker(
