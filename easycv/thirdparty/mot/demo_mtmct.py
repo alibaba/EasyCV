@@ -5,6 +5,7 @@ import os
 import os.path as osp
 import re
 import tempfile
+from tqdm import tqdm
 from argparse import ArgumentParser
 
 import mmcv
@@ -94,7 +95,7 @@ def main():
         print('start tracking!')
         track_result = None
         mot_features_dict = dict()
-        for frame_id, img in enumerate(imgs):
+        for frame_id, img in tqdm(enumerate(imgs)):
             result = det_model(img)[0]
 
             detection_boxes = result['detection_boxes']
