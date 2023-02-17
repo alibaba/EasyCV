@@ -426,7 +426,6 @@ class PredictorV2(object):
             batch_inputs = inputs[i:min(len(inputs), i + self.batch_size)]
             batch_outputs = self.input_processor(batch_inputs)
             batch_outputs = self._to_device(batch_outputs)
-            batch_outputs = self.model_forward(batch_outputs, mode=mode)
             if mode == 'extract':
                 batch_outputs = self.model_forward(batch_outputs, mode=mode)
                 results = batch_outputs['neck']
