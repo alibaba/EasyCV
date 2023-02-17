@@ -31,9 +31,14 @@ def main():
         '--save_images',
         action='store_true',
         help='Save visualization image results.')
+    parser.add_argument(
+    '--use_folder',
+    action='store_true',
+    help='Enter the video images folder')
     args = parser.parse_args()
     assert args.output
 
+    cid = 0
     cid_bias = dict()
     mot_list_breaks = []
     cid_tid_dict = dict()
@@ -41,30 +46,37 @@ def main():
     seqs = os.listdir(args.input)
     for seq in sorted(seqs):
         fpath = os.path.join(args.input, seq)
-        if os.path.isfile(fpath) and _is_valid_video(fpath):
-            seq = seq.split('.')[-2]
-            print('start tracking seq: {}'.format(seq))
-            seq_dir = os.path.join(args.input, seq)
-            if not os.path.exists(seq_dir):
-                print('ffmpeg processing of video {}'.format(fpath))
-                frames_path = video2frames(
-                    video_path=fpath, outpath=args.input, frame_rate=25)
-            else:
-                print('ffmpeg has been successfully run. The {} directory already exists'.format(seq_dir))
-
-            fpath = seq_dir
-            if os.path.isdir(fpath) == False:
-                print('{} is not a image folder.'.format(fpath))
-                continue
-            assert os.path.isdir(fpath), '{} should be a directory'.format(
-                fpath)
+        if args.use_folder:
+            print('use image folder!')
             imgs = glob.glob(os.path.join(fpath, '*.jpg'))
             imgs.sort()
             assert len(imgs) > 0, '{} has no images.'.format(fpath)
         else:
-            continue
+            if os.path.isfile(fpath) and _is_valid_video(fpath):
+                seq = seq.split('.')[-2]
+                print('start tracking seq: {}'.format(seq))
+                seq_dir = os.path.join(args.input, seq)
+                if not os.path.exists(seq_dir):
+                    print('ffmpeg processing of video {}'.format(fpath))
+                    frames_path = video2frames(
+                        video_path=fpath, outpath=args.input, frame_rate=25)
+                else:
+                    print('ffmpeg has been successfully run. The {} directory already exists'.format(seq_dir))
+
+                fpath = seq_dir
+                if os.path.isdir(fpath) == False:
+                    print('{} is not a image folder.'.format(fpath))
+                    continue
+                assert os.path.isdir(fpath), '{} should be a directory'.format(
+                    fpath)
+                imgs = glob.glob(os.path.join(fpath, '*.jpg'))
+                imgs.sort()
+                assert len(imgs) > 0, '{} has no images.'.format(fpath)
+            else:
+                continue
 
         # build the model from a config file and a checkpoint file
+        print('build det model and reid model!')
         det_model = DetectionPredictor(
             args.det_checkpoint, args.det_config, score_threshold=0)
         reid_model = ClassificationPredictor(args.reid_checkpoint,
@@ -79,10 +91,10 @@ def main():
             frame_rate=25)
 
         # test and show/save the images
+        print('start tracking!')
         track_result = None
         mot_features_dict = dict()
         for frame_id, img in enumerate(imgs):
-
             result = det_model(img)[0]
 
             detection_boxes = result['detection_boxes']
@@ -94,7 +106,7 @@ def main():
                 detection_boxes,
                 detection_scores,
                 detection_classes,
-                target_classes=[2], # 0: person 2: car
+                target_classes=[0], # 0: person 2: car
                 target_thresholds=[0])
             if len(detection_boxes) > 0:
                 track_result = tracker.update(
@@ -118,7 +130,6 @@ def main():
                     mot_features_dict[imgname]['imgname'] = imgname
                     mot_features_dict[imgname]['feat'] = pred_embeddings[idx].squeeze().numpy()
 
-        cid = int(re.sub('[a-z,A-Z]', '', seq))
         cid_bias[cid] = float(0)
         tid_data, mot_list_break = trajectory_fusion(mot_features_dict, cid,
                                                      cid_bias)
@@ -129,6 +140,8 @@ def main():
             tid = tracklet['tid']
             if (cid, tid) not in cid_tid_dict:
                 cid_tid_dict[(cid, tid)] = tracklet
+        
+        cid += 1
 
     scene_cluster = list(cid_bias.keys())
 
