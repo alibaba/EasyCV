@@ -229,9 +229,11 @@ class Mask2formerPredictor(SegmentationPredictor):
             outputs = self.model.forward(**inputs, mode='test', encode=False)
         return outputs
 
-    def show_panoptic(self, img, masks, labels):
+    def show_panoptic(self, img, masks, labels_ids, **kwargs):
         palette = np.asarray(self.cfg.PALETTE)
-        palette = palette[labels % 1000]
+        # ids have already convert to label in process_single function
+        # palette = palette[labels_ids % 1000]
+        palette = palette[labels_ids]
         panoptic_result = draw_masks(img, masks, palette)
         return panoptic_result
 
