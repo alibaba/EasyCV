@@ -21,15 +21,22 @@ data_train_list = '/apsarapangu/disk2/yunji.cjy/Market1501/pytorch/meta/train_al
 data_train_root = ''
 data_test_list = '/apsarapangu/disk2/yunji.cjy/Market1501/pytorch/meta/val.txt'
 data_test_root = ''
-image_size2 = 224
-image_size1 = int((256 / 224) * image_size2)
+image_size = (256, 128)
 
 dataset_type = 'ClsDataset'
 img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
+train_pipeline = [
+    dict(type='Resize', size=image_size, interpolation=3),
+    dict(type='Pad', padding=10),
+    dict(type='RandomCrop', size=image_size),
+    dict(type='RandomHorizontalFlip'),
+    dict(type='ToTensor'),
+    dict(type='Normalize', **img_norm_cfg),
+    dict(type='Collect', keys=['img', 'gt_labels'])
+]
 test_pipeline = [
-    dict(type='Resize', size=image_size1),
-    dict(type='CenterCrop', size=image_size2),
+    dict(type='Resize', size=image_size, interpolation=3),
     dict(type='ToTensor'),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Collect', keys=['img', 'gt_labels'])
@@ -37,10 +44,13 @@ test_pipeline = [
 
 data = dict(
     train=dict(
+        type=dataset_type,
         data_source=dict(
             list_file=data_train_list,
             root=data_train_root,
-            class_list=class_list)),
+            type=data_source_type,
+            class_list=class_list),
+        pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
         data_source=dict(
