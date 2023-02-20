@@ -14,7 +14,7 @@ from easycv.thirdparty.mot.utils import detection_result_filter, show_result
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument('config', help='config file')
+    parser.add_argument('--config', default=None, help='config file')
     parser.add_argument('--input', help='input video file or folder')
     parser.add_argument(
         '--output', help='output video file (mp4 format) or folder')

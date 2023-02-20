@@ -38,5 +38,7 @@ eval_pipelines = [
 ]
 
 checkpoint_config = dict(interval=1)
+checkpoint_sync_export = True
+export = dict(export_neck=True)
 
 load_from = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/fcos/fcos_epoch_12.pth'
