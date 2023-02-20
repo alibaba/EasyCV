@@ -17,9 +17,9 @@ optimizer = dict(
 lr_config = dict(step=[40], gamma=0.1)
 
 data_source_type = 'ClsSourceImageList'
-data_train_list = '/apsarapangu/disk2/yunji.cjy/Market1501/pytorch/meta/train_all.txt'
+data_train_list = 'data/Market1501/pytorch/meta/train_all.txt'
 data_train_root = ''
-data_test_list = '/apsarapangu/disk2/yunji.cjy/Market1501/pytorch/meta/val.txt'
+data_test_list = 'data/Market1501/pytorch/meta/val.txt'
 data_test_root = ''
 image_size = (256, 128)
 

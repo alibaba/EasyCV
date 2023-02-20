@@ -808,4 +808,4 @@ def show_result(img,
         show=show,
         out_file=out_file,
         wait_time=wait_time)
-    return 
+    return img
