@@ -10,6 +10,7 @@ from functools import reduce
 import cv2
 import mmcv
 import numpy as np
+import torch
 from torchvision.transforms import functional as F
 
 
@@ -590,6 +591,10 @@ def reid_predictor(detection_results, reid_model):
     batch_crop_imgs = get_crops(pred_xyxys, ori_image, w, h)
 
     pred_embeddings = reid_model(batch_crop_imgs, mode='extract')
+    if len(pred_embeddings) > 1:
+        pred_embeddings = torch.cat(pred_embeddings, 0)
+    pred_embeddings_norm = torch.norm(pred_embeddings, p=2, dim=1, keepdim=True)
+    pred_embeddings = pred_embeddings.div(pred_embeddings_norm.expand_as(pred_embeddings))
 
     return pred_embeddings, detection_boxes
 

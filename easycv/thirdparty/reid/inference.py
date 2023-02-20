@@ -15,12 +15,6 @@ parser.add_argument('--test_dir',default='../Market/pytorch',type=str, help='./t
 parser.add_argument('--batchsize', default=256, type=int, help='batchsize')
 args = parser.parse_args()
 
-def fliplr(img):
-    '''flip horizontal'''
-    inv_idx = torch.arange(img.size(3)-1,-1,-1).long()  # N x C x H x W
-    img_flip = img.index_select(3,inv_idx)
-    return img_flip
-
 def get_id(img_path):
     camera_id = []
     labels = []
@@ -47,7 +41,8 @@ def extract_feature(model, image_dir):
     image_path = file_name_walk(image_dir)
     image_cam, image_label = get_id(image_path)
     image_feature = model(image_path, mode='extract')
-    image_feature = torch.cat(image_feature, 0)
+    if len(image_feature) > 1:
+        image_feature = torch.cat(image_feature, 0)
     image_feature_norm = torch.norm(image_feature, p=2, dim=1, keepdim=True)
     image_feature = image_feature.div(image_feature_norm.expand_as(image_feature))
     return image_feature, image_cam, image_label
@@ -71,7 +66,7 @@ print('Training complete in {:.0f}m {:.2f}s'.format(
             time_elapsed // 60, time_elapsed % 60))
 
 # save inference result
-inference_result_path = os.path.join(os.path.dirname(args.checkpoint), 'pytorch_result.mat')
+inference_result_path = '/tmp/pytorch_result.mat'
 result = {'gallery_f':gallery_feature.numpy(),'gallery_label':gallery_label,'gallery_cam':gallery_cam,'query_f':query_feature.numpy(),'query_label':query_label,'query_cam':query_cam}
 scipy.io.savemat(inference_result_path, result)
 

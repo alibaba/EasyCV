@@ -107,7 +107,7 @@ def main():
                 out_file = osp.join(out_path, img.rsplit(os.sep, 1)[-1])
         else:
             out_file = None
-        # if len(track_result['track_bboxes']) > 0:
+
         show_result(
             img,
             track_result,
