@@ -92,7 +92,8 @@ IMAGENET_LABEL_TXT = os.path.join(
 CLS_DATA_NPY_OSS = os.path.join(BASE_OSS_PATH, 'data/classification/npy/')
 SMALL_IMAGENET_TFRECORD_OSS = os.path.join(
     BASE_OSS_PATH, 'data/classification/small_imagenet_tfrecord/')
-SMALL_MARKET1501 = os.path.join(BASE_LOCAL_PATH, 'data/tracking/small_Market1501')
+SMALL_MARKET1501 = os.path.join(BASE_LOCAL_PATH,
+                                'data/tracking/small_Market1501')
 
 IO_DATA_TXTX_OSS = os.path.join(BASE_OSS_PATH, 'data/io_test_dir/txts/')
 IO_DATA_MULTI_DIRS_OSS = os.path.join(BASE_OSS_PATH,

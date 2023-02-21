@@ -132,6 +132,7 @@ class ReIDPredictorTest(unittest.TestCase):
         CMC = CMC / len(query_label)  # average CMC
         mAP = ap / len(query_label)
         assert_array_almost_equal(
-            CMC[:10].tolist(), [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+            CMC[:10].tolist(),
+            [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
             decimal=1)
         assert_array_almost_equal(mAP, 0.9925018971878582)
