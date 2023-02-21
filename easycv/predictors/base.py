@@ -90,11 +90,9 @@ class Predictor(object):
 
     def predict_batch(self, image_batch, **forward_kwargs):
         """ predict using batched data
-
     Args:
       image_batch(torch.Tensor): tensor with shape [N, 3, H, W]
       forward_kwargs: kwargs for additional parameters
-
     Return:
       output: the output of model.forward, list or tuple
     """
@@ -106,7 +104,6 @@ class Predictor(object):
 
 class InputProcessor(object):
     """Base input processor for processing input samples.
-
     Args:
         cfg (Config): Config instance.
         pipelines (list[dict]): Data pipeline configs.
@@ -393,12 +390,12 @@ class PredictorV2(object):
         remove_adapt_for_mmlab(self.cfg)
         return model
 
-    def model_forward(self, inputs, mode='test'):
+    def model_forward(self, inputs):
         """Model forward.
         If you need refactor model forward, you need to reimplement it.
         """
         with torch.no_grad():
-            outputs = self.model(**inputs, mode=mode)
+            outputs = self.model(**inputs, mode='test')
         return outputs
 
     def _to_device(self, inputs):
@@ -411,10 +408,10 @@ class PredictorV2(object):
         with open(save_path, mode) as f:
             f.write(pickle.dumps(obj))
 
-    def __call__(self, inputs, keep_inputs=False, mode='test'):
+    def __call__(self, inputs, keep_inputs=False):
         if self.input_processor is None:
             self.input_processor = self.get_input_processor()
-        if self.output_processor is None and mode != 'extract':
+        if self.output_processor is None:
             self.output_processor = self.get_output_processor()
 
         # TODO: fault tolerance
@@ -426,12 +423,8 @@ class PredictorV2(object):
             batch_inputs = inputs[i:min(len(inputs), i + self.batch_size)]
             batch_outputs = self.input_processor(batch_inputs)
             batch_outputs = self._to_device(batch_outputs)
-            if mode == 'extract':
-                batch_outputs = self.model_forward(batch_outputs, mode=mode)
-                results = batch_outputs['neck']
-            else:
-                batch_outputs = self.model_forward(batch_outputs)
-                results = self.output_processor(batch_outputs)
+            batch_outputs = self.model_forward(batch_outputs)
+            results = self.output_processor(batch_outputs)
             if keep_inputs:
                 for i in range(len(batch_inputs)):
                     results[i].update({'inputs': batch_inputs[i]})
