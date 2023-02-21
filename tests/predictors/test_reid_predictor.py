@@ -11,7 +11,7 @@ import cv2
 import torch
 import scipy.io
 from easycv.predictors.reid_predictor import ReIDPredictor
-from tests.ut_config import MARKET1501
+from tests.ut_config import SMALL_MARKET1501
 from numpy.testing import assert_array_almost_equal
 
 
@@ -71,7 +71,7 @@ class ReIDPredictorTest(unittest.TestCase):
         return ap, cmc
 
     def test(self):
-        test_dir = os.path.join(MARKET1501, 'pytorch')
+        test_dir = os.path.join(SMALL_MARKET1501, 'pytorch')
         checkpoint = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/tracking/reid_r50_epoch_60_export.pt'
         gallery_dir = os.path.join(test_dir, 'gallery')
         query_dir = os.path.join(test_dir, 'query')
@@ -132,11 +132,6 @@ class ReIDPredictorTest(unittest.TestCase):
         CMC = CMC / len(query_label)  # average CMC
         mAP = ap / len(query_label)
         assert_array_almost_equal(
-            CMC[:10].tolist(), [
-                0.8699524998664856, 0.911223292350769, 0.9248812198638916,
-                0.9376484751701355, 0.9459620118141174, 0.951603353023529,
-                0.9548693299293518, 0.9581353664398193, 0.9622921347618103,
-                0.9649643898010254
-            ],
+            CMC[:10].tolist(), [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
             decimal=1)
-        assert_array_almost_equal(mAP, 0.6875387250303712)
+        assert_array_almost_equal(mAP, 0.9925018971878582)

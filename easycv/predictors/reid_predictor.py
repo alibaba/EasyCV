@@ -122,10 +122,7 @@ class ReIDPredictor(ClassificationPredictor):
             else:
                 results_list.append(results)
 
-        if len(results_list) > 1:
-            image_feature = torch.cat(results_list, 0)
-        else:
-            image_feature = results_list
+        image_feature = torch.cat(results_list, 0)
         image_feature_norm = torch.norm(
             image_feature, p=2, dim=1, keepdim=True)
         image_feature = image_feature.div(
