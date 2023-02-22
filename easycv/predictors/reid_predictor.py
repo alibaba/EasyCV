@@ -97,7 +97,7 @@ class ReIDPredictor(ClassificationPredictor):
         return image_path_list
 
     def __call__(self, inputs, keep_inputs=False):
-        if os.path.isdir(inputs):
+        if not isinstance(inputs, list):
             inputs = self.file_name_walk(inputs)
             img_cam, img_label = self.get_id(inputs)
         else:
