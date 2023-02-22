@@ -95,7 +95,7 @@ class ReIDPredictorTest(unittest.TestCase):
         print('Training complete in {:.0f}m {:.2f}s'.format(
             time_elapsed // 60, time_elapsed % 60))
 
-        inference_result = '/tmp/pytorch_result.mat'
+        inference_result = './pytorch_result.mat'
         result = {
             'gallery_f': gallery_feature.numpy(),
             'gallery_label': gallery_label,
