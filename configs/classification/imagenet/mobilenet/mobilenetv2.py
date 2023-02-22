@@ -15,8 +15,6 @@ model = dict(
         ),
         num_classes=num_classes))
 
-img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-
 eval_config = dict(initial=False, interval=1, gpu_collect=True)
 
 # optimizer
