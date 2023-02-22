@@ -13,6 +13,7 @@ from .ocr import (OCRClsPredictor, OCRDetPredictor, OCRPredictor,
                   OCRRecPredictor)
 from .pose_predictor import (TorchPoseTopDownPredictor,
                              TorchPoseTopDownPredictorWithDetector)
+from .reid_predictor import ReIDPredictor
 from .segmentation import Mask2formerPredictor, SegmentationPredictor
 from .video_classifier import VideoClassificationPredictor
 from .wholebody_keypoints_predictor import WholeBodyKeypointsPredictor

@@ -10,11 +10,11 @@ from argparse import ArgumentParser
 
 import mmcv
 
-from easycv.predictors import ClassificationPredictor, DetectionPredictor
+from easycv.predictors import ClassificationPredictor, DetectionPredictor, ReIDPredictor
 from easycv.thirdparty.mot.bytetrack.byte_tracker import BYTETracker
 from easycv.thirdparty.mot.utils import (
     _is_valid_video, detection_result_filter, gen_res,
-    get_mtmct_matching_results, reid_predictor, save_mtmct_crops,
+    get_mtmct_matching_results, mtmct_reid_predictor, save_mtmct_crops,
     save_mtmct_vis_results, show_result, sub_cluster, trajectory_fusion,
     video2frames)
 
@@ -80,8 +80,8 @@ def main():
         print('build det model and reid model!')
         det_model = DetectionPredictor(
             args.det_checkpoint, args.det_config, score_threshold=0.2) # detr-like score_threshold set to 0
-        reid_model = ClassificationPredictor(args.reid_checkpoint,
-                                             args.reid_config)
+        reid_model = ReIDPredictor(args.reid_checkpoint,
+                                             args.reid_config, batch_size=256)
         tracker = BYTETracker(
             det_high_thresh=0.2,
             det_low_thresh=0.05,
@@ -114,7 +114,7 @@ def main():
                     detection_boxes, detection_scores,
                     detection_classes)  # [id, t, l, b, r, score]
 
-                pred_embeddings, track_bboxes = reid_predictor(
+                pred_embeddings, track_bboxes = mtmct_reid_predictor(
                     {
                         'boxes': track_result['track_bboxes'],
                         'img_metas': img_metas

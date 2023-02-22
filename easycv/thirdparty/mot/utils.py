@@ -571,7 +571,7 @@ def trajectory_fusion(mot_feature, cid, cid_bias):
     return tid_data, mot_list_break
 
 
-def reid_predictor(detection_results, reid_model):
+def mtmct_reid_predictor(detection_results, reid_model):
     img_metas = detection_results['img_metas']
     detection_boxes = detection_results['boxes']  # id, x0, y0, x1, y1, score
     pred_xyxys = detection_boxes[:, 1:5]
@@ -590,11 +590,7 @@ def reid_predictor(detection_results, reid_model):
     ori_image = decode_image(filename)
     batch_crop_imgs = get_crops(pred_xyxys, ori_image, w, h)
 
-    pred_embeddings = reid_model(batch_crop_imgs, mode='extract')
-    if len(pred_embeddings) > 1:
-        pred_embeddings = torch.cat(pred_embeddings, 0)
-    pred_embeddings_norm = torch.norm(pred_embeddings, p=2, dim=1, keepdim=True)
-    pred_embeddings = pred_embeddings.div(pred_embeddings_norm.expand_as(pred_embeddings))
+    pred_embeddings = reid_model(batch_crop_imgs)['img_feature']
 
     return pred_embeddings, detection_boxes
 

@@ -96,9 +96,12 @@ class ReIDPredictor(ClassificationPredictor):
                     image_path_list.append(os.path.join(root, name))
         return image_path_list
 
-    def __call__(self, inputs_dir, keep_inputs=False):
-        inputs = self.file_name_walk(inputs_dir)
-        img_cam, img_label = self.get_id(inputs)
+    def __call__(self, inputs, keep_inputs=False):
+        if os.path.isdir(inputs):
+            inputs = self.file_name_walk(inputs)
+            img_cam, img_label = self.get_id(inputs)
+        else:
+            img_cam, img_label = None, None
 
         if self.input_processor is None:
             self.input_processor = self.get_input_processor()
