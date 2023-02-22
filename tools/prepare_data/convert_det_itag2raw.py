@@ -203,7 +203,6 @@ def parse_class_list(class_path):
 def write_raw_label(f, sample_dict):
     w, h = sample_dict['img_size'][0], sample_dict['img_size'][1]
     for box, label in zip(sample_dict['gt_bboxes'], sample_dict['gt_labels']):
-        print(box, label)
         plt, prb = box[:2], box[2:]
         cx, cy, bw, bh = (plt[0] + prb[0]) / 2 / w, (
             plt[1] + prb[1]) / 2 / h, (prb[0] - plt[0]) / w, (prb[1] -
