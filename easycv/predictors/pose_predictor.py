@@ -391,6 +391,29 @@ class TorchPoseTopDownPredictor(PredictorInterface):
 
         return all_pose_results
 
+    def show_result(self,
+                    image_path,
+                    keypoints,
+                    radius=4,
+                    thickness=1,
+                    kpt_score_thr=0.3,
+                    bbox_color='green',
+                    show=False,
+                    save_path=None):
+        vis_result = vis_pose_result(
+            self.model,
+            image_path,
+            keypoints['pose_results'],
+            dataset_info=self.dataset_info,
+            radius=radius,
+            thickness=thickness,
+            kpt_score_thr=kpt_score_thr,
+            bbox_color=bbox_color,
+            show=show,
+            out_file=save_path)
+
+        return vis_result
+
 
 @PREDICTORS.register_module()
 class TorchPoseTopDownPredictorWithDetector(PredictorInterface):
