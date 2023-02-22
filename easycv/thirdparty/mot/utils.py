@@ -571,7 +571,7 @@ def trajectory_fusion(mot_feature, cid, cid_bias):
     return tid_data, mot_list_break
 
 
-def mtmct_reid_predictor(detection_results, reid_model):
+def prepare_crop_imgs(detection_results):
     img_metas = detection_results['img_metas']
     detection_boxes = detection_results['boxes']  # id, x0, y0, x1, y1, score
     pred_xyxys = detection_boxes[:, 1:5]
@@ -590,9 +590,7 @@ def mtmct_reid_predictor(detection_results, reid_model):
     ori_image = decode_image(filename)
     batch_crop_imgs = get_crops(pred_xyxys, ori_image, w, h)
 
-    pred_embeddings = reid_model(batch_crop_imgs)['img_feature']
-
-    return pred_embeddings, detection_boxes
+    return batch_crop_imgs, detection_boxes
 
 
 def decode_image(im_file):

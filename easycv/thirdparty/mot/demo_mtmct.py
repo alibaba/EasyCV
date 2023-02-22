@@ -14,7 +14,7 @@ from easycv.predictors import ClassificationPredictor, DetectionPredictor, ReIDP
 from easycv.thirdparty.mot.bytetrack.byte_tracker import BYTETracker
 from easycv.thirdparty.mot.utils import (
     _is_valid_video, detection_result_filter, gen_res,
-    get_mtmct_matching_results, mtmct_reid_predictor, save_mtmct_crops,
+    get_mtmct_matching_results, prepare_crop_imgs, save_mtmct_crops,
     save_mtmct_vis_results, show_result, sub_cluster, trajectory_fusion,
     video2frames)
 
@@ -114,11 +114,13 @@ def main():
                     detection_boxes, detection_scores,
                     detection_classes)  # [id, t, l, b, r, score]
 
-                pred_embeddings, track_bboxes = mtmct_reid_predictor(
+                batch_crop_imgs, track_bboxes = prepare_crop_imgs(
                     {
                         'boxes': track_result['track_bboxes'],
                         'img_metas': img_metas
-                    }, reid_model)
+                    })
+                
+                pred_embeddings = reid_model(batch_crop_imgs)['img_feature']
 
                 for idx in range(len(track_bboxes)):
                     _id = int(track_bboxes[idx, 0])
