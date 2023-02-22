@@ -4,6 +4,7 @@ import os
 import os.path as osp
 import tempfile
 from argparse import ArgumentParser
+import glob
 
 import mmcv
 
@@ -15,10 +16,10 @@ from easycv.thirdparty.mot.utils import detection_result_filter, show_result
 def main():
     parser = ArgumentParser()
     parser.add_argument('--config', default=None, help='config file')
+    parser.add_argument('--checkpoint', help='checkpoint file')
     parser.add_argument('--input', help='input video file or folder')
     parser.add_argument(
         '--output', help='output video file (mp4 format) or folder')
-    parser.add_argument('--checkpoint', help='checkpoint file')
     parser.add_argument(
         '--score-thr',
         type=float,
@@ -35,14 +36,13 @@ def main():
     assert args.output or args.show
     # load images
     if osp.isdir(args.input):
-        imgs = sorted(
-            filter(lambda x: x.endswith(('.jpg', '.png', '.jpeg')),
-                   os.listdir(args.input)),
-            key=lambda x: int(x.split('.')[0]))
+        imgs = glob.glob(os.path.join(args.input, '*.jpg'))
+        imgs.sort()
         IN_VIDEO = False
     else:
         imgs = mmcv.VideoReader(args.input)
         IN_VIDEO = True
+
     # define output
     if args.output is not None:
         if args.output.endswith('.mp4'):
@@ -59,8 +59,6 @@ def main():
 
     fps = args.fps
     if args.show or OUT_VIDEO:
-        if fps is None and IN_VIDEO:
-            fps = imgs.fps
         if not fps:
             raise ValueError('Please set the FPS for the output video.')
         fps = int(fps)
@@ -80,9 +78,7 @@ def main():
 
     # test and show/save the images
     track_result = None
-    for idx, img in enumerate(imgs):
-        if isinstance(img, str):
-            img = osp.join(args.input, img)
+    for frame_id, img in enumerate(imgs):
         result = model(img)[0]
 
         detection_boxes = result['detection_boxes']
@@ -102,7 +98,7 @@ def main():
 
         if args.output is not None:
             if IN_VIDEO or OUT_VIDEO:
-                out_file = osp.join(out_path, f'{idx:06d}.jpg')
+                out_file = osp.join(out_path, f'{frame_id:06d}.jpg')
             else:
                 out_file = osp.join(out_path, img.rsplit(os.sep, 1)[-1])
         else:
@@ -115,6 +111,7 @@ def main():
             show=args.show,
             wait_time=int(1000. / fps) if fps else 0,
             out_file=out_file)
+
         prog_bar.update()
 
     if args.output and OUT_VIDEO:

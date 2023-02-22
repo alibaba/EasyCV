@@ -5,7 +5,6 @@ import os
 import os.path as osp
 import re
 import tempfile
-from tqdm import tqdm
 from argparse import ArgumentParser
 
 import mmcv
@@ -91,11 +90,13 @@ def main():
             track_buffer=2,
             frame_rate=25)
 
+        prog_bar = mmcv.ProgressBar(len(imgs))
+
         # test and show/save the images
         print('start tracking!')
         track_result = None
         mot_features_dict = dict()
-        for frame_id, img in tqdm(enumerate(imgs)):
+        for frame_id, img in enumerate(imgs):
             result = det_model(img)[0]
 
             detection_boxes = result['detection_boxes']
@@ -132,6 +133,8 @@ def main():
                     mot_features_dict[imgname]['id'] = _id
                     mot_features_dict[imgname]['imgname'] = imgname
                     mot_features_dict[imgname]['feat'] = pred_embeddings[idx].squeeze().numpy()
+            
+            prog_bar.update()
 
         cid_bias[cid] = float(0)
         tid_data, mot_list_break = trajectory_fusion(mot_features_dict, cid,
