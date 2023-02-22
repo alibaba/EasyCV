@@ -425,19 +425,20 @@ class TorchPoseTopDownPredictorWithDetector(PredictorInterface):
     }
 
     def __init__(
-        self,
-        model_path,
-        model_config={
-            'pose': {
-                'bbox_thr': 0.3,
-                'format': 'xywh'
+            self,
+            model_path,
+            model_config={
+                'pose': {
+                    'bbox_thr': 0.3,
+                    'format': 'xywh'
+                },
+                'detection': {
+                    'model_type': None,
+                    'reserved_classes': [],
+                    'score_thresh': 0.0,
+                }
             },
-            'detection': {
-                'model_type': None,
-                'reserved_classes': [],
-                'score_thresh': 0.0,
-            }
-        }):
+            return_vis_data=False):
         """
         init model
 
@@ -469,6 +470,7 @@ class TorchPoseTopDownPredictorWithDetector(PredictorInterface):
                 detection_model_path, **model_config['detection'])
         self.pose_predictor = TorchPoseTopDownPredictor(
             pose_model_path, model_config=model_config['pose'])
+        self.return_vis_data = return_vis_data
 
     def process_det_results(self,
                             outputs,
@@ -486,6 +488,10 @@ class TorchPoseTopDownPredictorWithDetector(PredictorInterface):
         for i in range(len(outputs)):
             output = outputs[i]
             cur_data = {'img': input_data_list[i], 'detection_results': []}
+            if output['detection_boxes'] is None or len(
+                    output['detection_boxes']) < 1:
+                filter_outputs.append(cur_data)
+                continue
             for j, class_name in enumerate(output['detection_class_names']):
                 if class_name in reserved_classes:
                     cur_data['detection_results'].append({
@@ -523,6 +529,14 @@ class TorchPoseTopDownPredictorWithDetector(PredictorInterface):
                                           self.reserved_classes)
         pose_output = self.pose_predictor.predict(
             output, return_heatmap=return_heatmap)
+        if self.return_vis_data:
+            for i, img in enumerate(input_data_list):
+                if len(pose_output[i]['pose_results']) > 0:
+                    vis_result = self.pose_predictor.show_result(
+                        image_path=img,
+                        keypoints=pose_output[i],
+                    )
+                    pose_output[i]['vis_result'] = vis_result
 
         return pose_output
 
