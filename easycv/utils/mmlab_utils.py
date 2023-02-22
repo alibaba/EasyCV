@@ -371,8 +371,9 @@ def dynamic_adapt_for_mmlab(cfg):
 
 def remove_adapt_for_mmlab(cfg):
     mmlab_modules_cfg = cfg.get('mmlab_modules', [])
-    adapter = MMAdapter(mmlab_modules_cfg)
-    adapter.reset_mm_registry()
+    if len(mmlab_modules_cfg) > 1:
+        adapter = MMAdapter(mmlab_modules_cfg)
+        adapter.reset_mm_registry()
 
 
 def fix_dc_pin_memory():
