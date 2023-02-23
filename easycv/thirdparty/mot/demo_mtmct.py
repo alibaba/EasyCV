@@ -28,10 +28,6 @@ def main():
     parser.add_argument(
         '--output', help='output video file (mp4 format) or folder')
     parser.add_argument(
-        '--save_images',
-        action='store_true',
-        help='Save visualization image results.')
-    parser.add_argument(
     '--use_folder',
     action='store_true',
     help='Enter the video images folder')
@@ -173,7 +169,7 @@ def main():
         camera_results,
         images_dir=args.input,
         save_dir=save_dir,
-        save_videos=args.save_images)
+        save_videos=True)
 
 
 if __name__ == '__main__':

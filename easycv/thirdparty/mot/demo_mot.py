@@ -20,20 +20,8 @@ def main():
     parser.add_argument('--input', help='input video file or folder')
     parser.add_argument(
         '--output', help='output video file (mp4 format) or folder')
-    parser.add_argument(
-        '--score-thr',
-        type=float,
-        default=0.0,
-        help='The threshold of score to filter bboxes.')
-    parser.add_argument(
-        '--device', default='cuda:0', help='device used for inference')
-    parser.add_argument(
-        '--show',
-        action='store_true',
-        help='whether show the results on the fly')
-    parser.add_argument('--fps', help='FPS of the output video')
     args = parser.parse_args()
-    assert args.output or args.show
+
     # load images
     if osp.isdir(args.input):
         imgs = glob.glob(os.path.join(args.input, '*.jpg'))
@@ -107,9 +95,9 @@ def main():
         show_result(
             img,
             track_result,
-            score_thr=args.score_thr,
-            show=args.show,
-            wait_time=int(1000. / fps) if fps else 0,
+            score_thr=0,
+            show=False,
+            wait_time=int(1000. / 24),
             out_file=out_file)
 
         prog_bar.update()
