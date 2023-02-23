@@ -8,7 +8,7 @@ from matplotlib.patches import Polygon
 
 from easycv.core.visualization.image import imshow_bboxes
 from easycv.predictors.builder import PREDICTORS
-from .base import PredictorV2
+from .base import OutputProcessor, PredictorV2
 
 
 @PREDICTORS.register_module()
@@ -23,16 +23,20 @@ class SegmentationPredictor(PredictorV2):
         save_results (bool): Whether to save predict results.
         save_path (str): File path for saving results, only valid when `save_results` is True.
         pipelines (list[dict]): Data pipeline configs.
+        input_processor_threads (int): Number of processes to process inputs.
+        mode (str): The image mode into the model.
     """
 
     def __init__(self,
                  model_path,
-                 config_file,
+                 config_file=None,
                  batch_size=1,
                  device=None,
                  save_results=False,
                  save_path=None,
                  pipelines=None,
+                 input_processor_threads=8,
+                 mode='BGR',
                  *args,
                  **kwargs):
 
@@ -44,11 +48,13 @@ class SegmentationPredictor(PredictorV2):
             save_results=save_results,
             save_path=save_path,
             pipelines=pipelines,
+            input_processor_threads=input_processor_threads,
+            mode=mode,
             *args,
             **kwargs)
 
         self.CLASSES = self.cfg.CLASSES
-        self.PALETTE = self.cfg.PALETTE
+        self.PALETTE = self.cfg.get('PALETTE', None)
 
     def show_result(self,
                     img,
@@ -84,7 +90,8 @@ class SegmentationPredictor(PredictorV2):
 
         img = mmcv.imread(img)
         img = img.copy()
-        seg = result[0]
+        # seg = result[0]
+        seg = result
         if palette is None:
             if self.PALETTE is None:
                 # Get random state before set seed,
@@ -126,64 +133,31 @@ class SegmentationPredictor(PredictorV2):
             return img
 
 
-@PREDICTORS.register_module()
-class Mask2formerPredictor(SegmentationPredictor):
-    """Predictor for Mask2former.
+class Mask2formerOutputProcessor(OutputProcessor):
+    """Process the output of Mask2former.
 
     Args:
-        model_path (str): Path of model path.
-        config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
-        batch_size (int): batch size for forward.
-        device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
-        save_results (bool): Whether to save predict results.
-        save_path (str): File path for saving results, only valid when `save_results` is True.
-        pipelines (list[dict]): Data pipeline configs.
+        task_mode (str): Support task in ['panoptic', 'instance', 'semantic'].
+        classes (list): Classes name list.
     """
 
-    def __init__(self,
-                 model_path,
-                 config_file=None,
-                 batch_size=1,
-                 device=None,
-                 save_results=False,
-                 save_path=None,
-                 pipelines=None,
-                 task_mode='panoptic',
-                 *args,
-                 **kwargs):
-        super(Mask2formerPredictor, self).__init__(
-            model_path,
-            config_file,
-            batch_size=batch_size,
-            device=device,
-            save_results=save_results,
-            save_path=save_path,
-            pipelines=pipelines,
-            *args,
-            **kwargs)
+    def __init__(self, task_mode, classes):
+        super(Mask2formerOutputProcessor, self).__init__()
         self.task_mode = task_mode
-        self.class_name = self.cfg.CLASSES
-        self.PALETTE = self.cfg.PALETTE
+        self.classes = classes
 
-    def forward(self, inputs):
-        """Model forward.
-        """
-        with torch.no_grad():
-            outputs = self.model.forward(**inputs, mode='test', encode=False)
-        return outputs
-
-    def postprocess_single(self, inputs, *args, **kwargs):
+    def process_single(self, inputs):
         output = {}
         if self.task_mode == 'panoptic':
             pan_results = inputs['pan_results']
             # keep objects ahead
             ids = np.unique(pan_results)[::-1]
-            legal_indices = ids != len(self.CLASSES)  # for VOID label
+            legal_indices = ids != len(self.classes)  # for VOID label
             ids = ids[legal_indices]
             labels = np.array([id % 1000 for id in ids], dtype=np.int64)
             segms = (pan_results[None] == ids[:, None, None])
             masks = [it.astype(np.int) for it in segms]
-            labels_txt = np.array(self.CLASSES)[labels].tolist()
+            labels_txt = np.array(self.classes)[labels].tolist()
 
             output['masks'] = masks
             output['labels'] = labels_txt
@@ -199,9 +173,67 @@ class Mask2formerPredictor(SegmentationPredictor):
             raise ValueError(f'Not support model {self.task_mode}')
         return output
 
-    def show_panoptic(self, img, masks, labels):
+
+@PREDICTORS.register_module()
+class Mask2formerPredictor(SegmentationPredictor):
+    """Predictor for Mask2former.
+
+    Args:
+        model_path (str): Path of model path.
+        config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
+        batch_size (int): batch size for forward.
+        device (str): Support 'cuda' or 'cpu', if is None, detect device automatically.
+        save_results (bool): Whether to save predict results.
+        save_path (str): File path for saving results, only valid when `save_results` is True.
+        pipelines (list[dict]): Data pipeline configs.
+        input_processor_threads (int): Number of processes to process inputs.
+        mode (str): The image mode into the model.
+    """
+
+    def __init__(self,
+                 model_path,
+                 config_file=None,
+                 batch_size=1,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 pipelines=None,
+                 task_mode='panoptic',
+                 input_processor_threads=8,
+                 mode='BGR',
+                 *args,
+                 **kwargs):
+        super(Mask2formerPredictor, self).__init__(
+            model_path,
+            config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            pipelines=pipelines,
+            input_processor_threads=input_processor_threads,
+            mode=mode,
+            *args,
+            **kwargs)
+        self.task_mode = task_mode
+        self.class_name = self.cfg.CLASSES
+        self.PALETTE = self.cfg.PALETTE
+
+    def get_output_processor(self):
+        return Mask2formerOutputProcessor(self.task_mode, self.CLASSES)
+
+    def model_forward(self, inputs):
+        """Model forward.
+        """
+        with torch.no_grad():
+            outputs = self.model.forward(**inputs, mode='test', encode=False)
+        return outputs
+
+    def show_panoptic(self, img, masks, labels_ids, **kwargs):
         palette = np.asarray(self.cfg.PALETTE)
-        palette = palette[labels % 1000]
+        # ids have already convert to label in process_single function
+        # palette = palette[labels_ids % 1000]
+        palette = palette[labels_ids]
         panoptic_result = draw_masks(img, masks, palette)
         return panoptic_result
 

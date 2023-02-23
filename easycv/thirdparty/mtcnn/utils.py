@@ -148,14 +148,14 @@ def get_image_boxes(bounding_boxes, img, size=24):
         bounding_boxes, width, height
     )
     img_boxes = np.zeros((num_boxes, 3, size, size), "float32")
+    img_array = np.asarray(img, "uint8")
 
     for i in range(num_boxes):
         img_box = np.zeros((h[i], w[i], 3), "uint8")
 
-        img_array = np.asarray(img, "uint8")
         img_box[dy[i] : (edy[i] + 1), dx[i] : (edx[i] + 1), :] = img_array[
             y[i] : (ey[i] + 1), x[i] : (ex[i] + 1), :
-        ]
+        ].copy()
 
         # resize
         img_box = Image.fromarray(img_box)

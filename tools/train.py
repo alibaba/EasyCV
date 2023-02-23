@@ -58,6 +58,10 @@ def parse_args():
     parser.add_argument(
         '--pretrained', default=None, help='pretrained model file')
     parser.add_argument(
+        '--no_validate',
+        action='store_true',
+        help='whether not to evaluate the checkpoint during training')
+    parser.add_argument(
         '--gpus',
         type=int,
         default=1,
@@ -84,7 +88,6 @@ def parse_args():
         type=int,
         default=29500,
         help='port only works when launcher=="slurm"')
-
     parser.add_argument(
         '--model_type',
         type=str,
@@ -149,9 +152,11 @@ def main():
         torch.backends.cudnn.benchmark = True
 
     # update configs according to CLI args
-    # if args.work_dir is not None and cfg.get('work_dir', None) is None:
     if args.work_dir is not None:
         cfg.work_dir = args.work_dir
+
+    if cfg.get('work_dir', None) is None:
+        cfg.work_dir = './work_dir'
 
     # if `work_dir` is oss path, redirect `work_dir` to local path, add `oss_work_dir` point to oss path,
     # and use osssync hook to upload log and ckpt in work_dir to oss_work_dir
@@ -162,9 +167,9 @@ def main():
     else:
         cfg.oss_work_dir = None
 
-    if args.resume_from is not None:
+    if args.resume_from is not None and len(args.resume_from) > 0:
         cfg.resume_from = args.resume_from
-    if args.load_from is not None:
+    if args.load_from is not None and len(args.load_from) > 0:
         cfg.load_from = args.load_from
 
     # dynamic adapt mmdet models
@@ -306,6 +311,7 @@ def main():
         distributed=distributed,
         timestamp=timestamp,
         meta=meta,
+        validate=(not args.no_validate),
         use_fp16=args.fp16)
 
 

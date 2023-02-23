@@ -157,7 +157,6 @@ class EncoderDecoder(BaseModel):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
-
         x = self.extract_feat(img)
         losses = dict()
         loss_decode = self._decode_head_forward_train(x, img_metas,

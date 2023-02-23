@@ -5,17 +5,9 @@ import os
 
 import cv2
 import numpy as np
-import torch
 from PIL import Image, ImageDraw, ImageFont
-from torchvision.transforms import Compose
 
-from easycv.datasets.registry import PIPELINES
-from easycv.file import io
-from easycv.models import build_model
 from easycv.predictors.builder import PREDICTORS
-from easycv.predictors.interface import PredictorInterface
-from easycv.utils.checkpoint import load_checkpoint
-from easycv.utils.registry import build_from_cfg
 from .base import PredictorV2
 
 
@@ -30,6 +22,8 @@ class OCRDetPredictor(PredictorV2):
                  save_results=False,
                  save_path=None,
                  pipelines=None,
+                 input_processor_threads=8,
+                 mode='BGR',
                  *args,
                  **kwargs):
 
@@ -41,6 +35,8 @@ class OCRDetPredictor(PredictorV2):
             save_results=save_results,
             save_path=save_path,
             pipelines=pipelines,
+            input_processor_threads=input_processor_threads,
+            mode=mode,
             *args,
             **kwargs)
 
@@ -63,6 +59,8 @@ class OCRRecPredictor(PredictorV2):
                  save_results=False,
                  save_path=None,
                  pipelines=None,
+                 input_processor_threads=8,
+                 mode='BGR',
                  *args,
                  **kwargs):
 
@@ -74,6 +72,8 @@ class OCRRecPredictor(PredictorV2):
             save_results=save_results,
             save_path=save_path,
             pipelines=pipelines,
+            input_processor_threads=input_processor_threads,
+            mode=mode,
             *args,
             **kwargs)
 
@@ -89,6 +89,8 @@ class OCRClsPredictor(PredictorV2):
                  save_results=False,
                  save_path=None,
                  pipelines=None,
+                 input_processor_threads=8,
+                 mode='BGR',
                  *args,
                  **kwargs):
 
@@ -100,6 +102,8 @@ class OCRClsPredictor(PredictorV2):
             save_results=save_results,
             save_path=save_path,
             pipelines=pipelines,
+            input_processor_threads=input_processor_threads,
+            mode=mode,
             *args,
             **kwargs)
 

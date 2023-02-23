@@ -68,6 +68,13 @@ BASE_LOCAL_PATH = os.path.expanduser('~/easycv_nfs/')
 TMP_DIR_OSS = os.path.join(BASE_OSS_PATH, 'tmp')
 TMP_DIR_LOCAL = os.path.join(BASE_LOCAL_PATH, 'tmp')
 
+CLS_DATA_ITAG_OSS = os.path.join(
+    BASE_OSS_PATH,
+    'local_backup/easycv_nfs/data/classification/cls_itagtest/cls_itagtest.manifest'
+)
+CLS_TRAIN_TEST = os.path.join(
+    BASE_LOCAL_PATH,
+    'data/classification/class_list_test/cls_itagtest_imagelist.txt')
 CLS_DATA_NPY_LOCAL = os.path.join(BASE_LOCAL_PATH, 'data/classification/npy/')
 SMALL_IMAGENET_RAW_LOCAL = os.path.join(
     BASE_LOCAL_PATH, 'data/classification/small_imagenet_raw')
@@ -85,6 +92,8 @@ IMAGENET_LABEL_TXT = os.path.join(
 CLS_DATA_NPY_OSS = os.path.join(BASE_OSS_PATH, 'data/classification/npy/')
 SMALL_IMAGENET_TFRECORD_OSS = os.path.join(
     BASE_OSS_PATH, 'data/classification/small_imagenet_tfrecord/')
+SMALL_MARKET1501 = os.path.join(BASE_LOCAL_PATH,
+                                'data/tracking/small_Market1501')
 
 IO_DATA_TXTX_OSS = os.path.join(BASE_OSS_PATH, 'data/io_test_dir/txts/')
 IO_DATA_MULTI_DIRS_OSS = os.path.join(BASE_OSS_PATH,
@@ -152,6 +161,8 @@ SEG_DATA_SMALL_COCO_STUFF_10K = os.path.join(
     BASE_LOCAL_PATH, 'data/segmentation/small_coco_stuff/small_coco_stuff10k')
 SEG_DATA_SAMLL_COCO_STUFF_164K = os.path.join(
     BASE_LOCAL_PATH, 'data/segmentation/small_coco_stuff/small_coco_stuff164k')
+SEG_DATA_SAMLL_CITYSCAPES = os.path.join(BASE_LOCAL_PATH,
+                                         'data/segmentation/small_cityscapes')
 
 # OCR data
 SMALL_OCR_CLS_DATA = os.path.join(BASE_LOCAL_PATH, 'data/ocr/small_ocr_cls')
@@ -243,10 +254,12 @@ PRETRAINED_MODEL_X3D_XS = os.path.join(
     BASE_LOCAL_PATH, 'pretrained_models/video/x3d/epoch_300.pth')
 MODEL_CONFIG_SEGFORMER = (
     './configs/segmentation/segformer/segformer_b0_coco.py')
-SMALL_COCO_WHOLE_BODY_HAND_ROOT = 'data/test/pose/hand/small_whole_body_hand_coco'
+SMALL_COCO_WHOLE_BODY_HAND_ROOT = os.path.join(
+    BASE_LOCAL_PATH, 'data/pose/hand/small_whole_body_hand_coco')
 SMALL_NUSCENES_PATH = os.path.join(
     BASE_LOCAL_PATH, 'data/detection3d/nuScenes/nuscenes-v1.0-mini')
-SMALL_COCO_WHOLEBODY_ROOT = 'data/test/pose/wholebody/data'
+SMALL_COCO_WHOLEBODY_ROOT = os.path.join(BASE_LOCAL_PATH,
+                                         'data/pose/wholebody/data')
 MODEL_CONFIG_MASK2FORMER_PAN = (
     './configs/segmentation/mask2former/mask2former_r50_8xb2_e50_panoptic.py')
 MODEL_CONFIG_MASK2FORMER_INS = (

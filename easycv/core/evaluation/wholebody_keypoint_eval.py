@@ -1,14 +1,18 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Adapt from
 # https://github.com/open-mmlab/mmpose/blob/master/mmpose/datasets/datasets/base/kpt_2d_sview_rgb_img_top_down_dataset.py
+import json
+import os
+import tempfile
+
 import numpy as np
+from xtcocotools.coco import COCO
 from xtcocotools.cocoeval import COCOeval
 
+from easycv.utils.json_utils import MyEncoder
 from .builder import EVALUATORS
 from .coco_evaluation import CoCoPoseTopDownEvaluator
 from .metric_registry import METRICS
-from .top_down_eval import (keypoint_auc, keypoint_epe, keypoint_nme,
-                            keypoint_pck_accuracy)
 
 
 @EVALUATORS.register_module
@@ -16,7 +20,7 @@ class WholeBodyKeyPointEvaluator(CoCoPoseTopDownEvaluator):
     """ KeyPoint evaluator.
     """
 
-    def __init__(self, dataset_name=None, metric_names=['AP']):
+    def __init__(self, dataset_name=None, metric_names=['AP'], **kwargs):
         """
 
         Args:
@@ -24,11 +28,18 @@ class WholeBodyKeyPointEvaluator(CoCoPoseTopDownEvaluator):
             metric_names: eval metrics name
         """
         super(WholeBodyKeyPointEvaluator,
-              self).__init__(dataset_name, metric_names)
+              self).__init__(dataset_name, metric_names, **kwargs)
         self.metric = metric_names
         self.dataset_name = dataset_name
+        self.body_num = kwargs.get('body_num', 17)
+        self.foot_num = kwargs.get('foot_num', 6)
+        self.face_num = kwargs.get('face_num', 68)
+        self.left_hand_num = kwargs.get('left_hand_num', 21)
+        self.right_hand_num = kwargs.get('right_hand_num', 21)
 
-    def _coco_keypoint_results_one_category_kernel(self, data_pack):
+    def _coco_keypoint_results_one_category_kernel(self,
+                                                   data_pack,
+                                                   num_joints=None):
         """Get coco keypoint results."""
         cat_id = data_pack['cat_id']
         keypoints = data_pack['keypoints']
@@ -40,8 +51,7 @@ class WholeBodyKeyPointEvaluator(CoCoPoseTopDownEvaluator):
 
             _key_points = np.array(
                 [img_kpt['keypoints'] for img_kpt in img_kpts])
-            key_points = _key_points.reshape(-1,
-                                             self.ann_info['num_joints'] * 3)
+            key_points = _key_points.reshape(-1, num_joints * 3)
 
             cuts = np.cumsum([
                 0, self.body_num, self.foot_num, self.face_num,
@@ -65,9 +75,19 @@ class WholeBodyKeyPointEvaluator(CoCoPoseTopDownEvaluator):
 
         return cat_results
 
-    def _do_python_keypoint_eval(self, res_file):
+    def _do_python_keypoint_eval(self, results, groundtruth, sigmas=None):
         """Keypoint evaluation using COCOAPI."""
-        coco_det = self.coco.loadRes(res_file)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            groundtruth_file = os.path.join(
+                tmp_dir, 'groundtruth_wholebody_keypoints.json')
+            with open(groundtruth_file, 'w') as f:
+                json.dump(groundtruth, f, sort_keys=True, indent=4)
+            coco = COCO(groundtruth_file)
+
+            res_file = os.path.join(tmp_dir, 'result_wholebody_keypoints.json')
+            with open(res_file, 'w') as f:
+                json.dump(results, f, sort_keys=True, indent=4, cls=MyEncoder)
+            coco_det = coco.loadRes(res_file)
 
         cuts = np.cumsum([
             0, self.body_num, self.foot_num, self.face_num, self.left_hand_num,
@@ -75,10 +95,10 @@ class WholeBodyKeyPointEvaluator(CoCoPoseTopDownEvaluator):
         ])
 
         coco_eval = COCOeval(
-            self.coco,
+            coco,
             coco_det,
             'keypoints_body',
-            self.sigmas[cuts[0]:cuts[1]],
+            sigmas[cuts[0]:cuts[1]],
             use_area=True)
         coco_eval.params.useSegm = None
         coco_eval.evaluate()
@@ -86,10 +106,10 @@ class WholeBodyKeyPointEvaluator(CoCoPoseTopDownEvaluator):
         coco_eval.summarize()
 
         coco_eval = COCOeval(
-            self.coco,
+            coco,
             coco_det,
             'keypoints_foot',
-            self.sigmas[cuts[1]:cuts[2]],
+            sigmas[cuts[1]:cuts[2]],
             use_area=True)
         coco_eval.params.useSegm = None
         coco_eval.evaluate()
@@ -97,10 +117,10 @@ class WholeBodyKeyPointEvaluator(CoCoPoseTopDownEvaluator):
         coco_eval.summarize()
 
         coco_eval = COCOeval(
-            self.coco,
+            coco,
             coco_det,
             'keypoints_face',
-            self.sigmas[cuts[2]:cuts[3]],
+            sigmas[cuts[2]:cuts[3]],
             use_area=True)
         coco_eval.params.useSegm = None
         coco_eval.evaluate()
@@ -108,10 +128,10 @@ class WholeBodyKeyPointEvaluator(CoCoPoseTopDownEvaluator):
         coco_eval.summarize()
 
         coco_eval = COCOeval(
-            self.coco,
+            coco,
             coco_det,
             'keypoints_lefthand',
-            self.sigmas[cuts[3]:cuts[4]],
+            sigmas[cuts[3]:cuts[4]],
             use_area=True)
         coco_eval.params.useSegm = None
         coco_eval.evaluate()
@@ -119,10 +139,10 @@ class WholeBodyKeyPointEvaluator(CoCoPoseTopDownEvaluator):
         coco_eval.summarize()
 
         coco_eval = COCOeval(
-            self.coco,
+            coco,
             coco_det,
             'keypoints_righthand',
-            self.sigmas[cuts[4]:cuts[5]],
+            sigmas[cuts[4]:cuts[5]],
             use_area=True)
         coco_eval.params.useSegm = None
         coco_eval.evaluate()
@@ -130,11 +150,7 @@ class WholeBodyKeyPointEvaluator(CoCoPoseTopDownEvaluator):
         coco_eval.summarize()
 
         coco_eval = COCOeval(
-            self.coco,
-            coco_det,
-            'keypoints_wholebody',
-            self.sigmas,
-            use_area=True)
+            coco, coco_det, 'keypoints_wholebody', sigmas, use_area=True)
         coco_eval.params.useSegm = None
         coco_eval.evaluate()
         coco_eval.accumulate()

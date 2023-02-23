@@ -21,3 +21,5 @@ lr_config = dict(policy='step', step=[8])
 total_epochs = 18
 
 checkpoint_config = dict(interval=1)
+
+load_form = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/dino/dino_5sc_swinl_obj365/epoch_22.pth'

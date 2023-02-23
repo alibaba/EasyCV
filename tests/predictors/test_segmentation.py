@@ -105,10 +105,11 @@ class SegmentationPredictorTest(unittest.TestCase):
         total_samples = 3
         outputs = predict_pipeline(
             [self.img_path] * total_samples, keep_inputs=False)
-        self.assertEqual(outputs, [])
 
         with open(tmp_path, 'rb') as f:
             results = pickle.loads(f.read())
+
+        self.assertEqual(len(results), total_samples)
 
         for res in results:
             self.assertNotIn('inputs', res)
@@ -144,10 +145,7 @@ class Mask2formerPredictorTest(unittest.TestCase):
             predict_out[0]['labels_ids'].tolist(),
             [71, 69, 39, 39, 39, 128, 127, 122, 118, 115, 111, 104, 84, 83])
 
-        pan_img = predictor.show_panoptic(
-            img,
-            masks=predict_out[0]['masks'],
-            labels=predict_out[0]['labels_ids'])
+        pan_img = predictor.show_panoptic(img, **predict_out[0])
         cv2.imwrite('pan_out.jpg', pan_img)
 
     def test_panoptic_batch(self):
@@ -167,10 +165,7 @@ class Mask2formerPredictorTest(unittest.TestCase):
             self.assertListEqual(predict_out[i]['labels_ids'].tolist(), [
                 71, 69, 39, 39, 39, 128, 127, 122, 118, 115, 111, 104, 84, 83
             ])
-            pan_img = predictor.show_panoptic(
-                img,
-                masks=predict_out[i]['masks'],
-                labels=predict_out[i]['labels_ids'])
+            pan_img = predictor.show_panoptic(img, **predict_out[i])
             cv2.imwrite(save_name, pan_img)
 
     def test_instance_single(self):
