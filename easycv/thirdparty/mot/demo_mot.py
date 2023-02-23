@@ -45,12 +45,6 @@ def main():
             out_path = args.output
             os.makedirs(out_path, exist_ok=True)
 
-    fps = args.fps
-    if args.show or OUT_VIDEO:
-        if not fps:
-            raise ValueError('Please set the FPS for the output video.')
-        fps = int(fps)
-
     # build the model from a config file and a checkpoint file
     model = DetectionPredictor(args.checkpoint, args.config, score_threshold=0.2) # detr-like score_threshold set to 0
     tracker = BYTETracker(
@@ -62,6 +56,7 @@ def main():
         track_buffer=2,
         frame_rate=25)
 
+    fps = 24
     prog_bar = mmcv.ProgressBar(len(imgs))
 
     # test and show/save the images
@@ -97,7 +92,7 @@ def main():
             track_result,
             score_thr=0,
             show=False,
-            wait_time=int(1000. / 24),
+            wait_time=int(1000. / fps),
             out_file=out_file)
 
         prog_bar.update()
