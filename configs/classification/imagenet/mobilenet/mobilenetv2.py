@@ -15,8 +15,6 @@ model = dict(
         ),
         num_classes=num_classes))
 
-eval_config = dict(initial=False, interval=1, gpu_collect=True)
-
 # optimizer
 optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.0001)
 
