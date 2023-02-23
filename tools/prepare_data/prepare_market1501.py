@@ -7,7 +7,7 @@ def generate_query(download_path, save_path):
     # -----------------------------------------
     # query
     query_path = os.path.join(download_path, 'query')
-    query_save_path = os.path.join(save_path, '/query')
+    query_save_path = os.path.join(save_path, 'query')
     if not os.path.isdir(query_save_path):
         os.mkdir(query_save_path)
 
