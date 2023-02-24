@@ -3,6 +3,7 @@ import logging
 import traceback
 
 import numpy as np
+import torch
 
 from easycv.datasets.registry import DATASETS
 from easycv.datasets.shared.base import BaseDataset
@@ -42,7 +43,15 @@ class VideoDataset(BaseDataset):
         """
         assert len(evaluators) == 1, \
             'classification evaluation only support one evaluator'
-        gt_labels = results.pop('label')
+        if results.get('label', None) is not None:
+            gt_labels = results.pop('label')
+        else:
+            gt_labels = []
+            for i in range(len(self.data_source)):
+                label = self.data_source.video_infos[i]['label']
+                gt_labels.append(label)
+            gt_labels = torch.Tensor(gt_labels)
+
         eval_res = evaluators[0].evaluate(results, gt_labels)
 
         return eval_res

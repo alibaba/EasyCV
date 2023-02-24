@@ -50,11 +50,17 @@ class ClsEvaluator(Evaluator):
             a dict,  each key is metric_name, value is metric value
         '''
         eval_res = OrderedDict()
+
+        if isinstance(gt_labels, dict):
+            assert len(gt_labels) == 1
+            gt_labels = list(gt_labels.values())[0]
+
         target = gt_labels.long()
 
         # if self.neck_num is not None:
         if self.neck_num is None:
-            predictions = {'neck': predictions['neck']}
+            if len(predictions) > 1:
+                predictions = {'neck': predictions['neck']}
         else:
             predictions = {
                 'neck_%d_0' % self.neck_num:
