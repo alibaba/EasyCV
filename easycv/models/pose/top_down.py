@@ -5,6 +5,7 @@ import warnings
 
 import mmcv
 import numpy as np
+import torch
 from mmcv.image import imwrite
 from mmcv.utils.misc import deprecated_api_warning
 from mmcv.visualization.image import imshow
@@ -136,6 +137,11 @@ class TopDown(BaseModel):
                 output_heatmap = (output_heatmap +
                                   output_flipped_heatmap) * 0.5
 
+        if torch.jit.is_scripting() or torch.jit.is_tracing():
+            return output_heatmap
+
+        output_heatmap = output_heatmap.numpy()
+
         if self.with_keypoint:
             keypoint_result = self.keypoint_head.decode(
                 img_metas, output_heatmap, img_size=[img_width, img_height])
@@ -148,6 +154,9 @@ class TopDown(BaseModel):
                 result['output_heatmap'] = output_heatmap
 
         return result
+
+    def forward_export(self, img, img_metas, return_heatmap=False):
+        return self.forward_test(img, img_metas, return_heatmap=return_heatmap)
 
     @deprecated_api_warning({'pose_limb_color': 'pose_link_color'},
                             cls_name='TopDown')
