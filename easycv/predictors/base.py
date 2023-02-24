@@ -90,11 +90,9 @@ class Predictor(object):
 
     def predict_batch(self, image_batch, **forward_kwargs):
         """ predict using batched data
-
     Args:
       image_batch(torch.Tensor): tensor with shape [N, 3, H, W]
       forward_kwargs: kwargs for additional parameters
-
     Return:
       output: the output of model.forward, list or tuple
     """
@@ -106,7 +104,6 @@ class Predictor(object):
 
 class InputProcessor(object):
     """Base input processor for processing input samples.
-
     Args:
         cfg (Config): Config instance.
         pipelines (list[dict]): Data pipeline configs.
