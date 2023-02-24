@@ -134,8 +134,9 @@ class TopDown(BaseModel):
             if self.with_keypoint:
                 output_flipped_heatmap = self.keypoint_head.inference_model(
                     features_flipped, img_metas[0]['flip_pairs'])
-                output_heatmap = (output_heatmap +
-                                  output_flipped_heatmap) * 0.5
+                # remove inplace operation for blade, it will cause calculation errors
+                _tmp = (output_heatmap + output_flipped_heatmap) * 0.5
+                output_heatmap = _tmp
 
         if torch.jit.is_scripting() or torch.jit.is_tracing():
             return output_heatmap
