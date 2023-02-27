@@ -23,9 +23,10 @@ class MOTPredictorTest(unittest.TestCase):
     @unittest.skip('skip mot unittest')
     def test(self):
         checkpoint = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/tracking/fcos_r50_epoch_12_export.pt'
-        output = './result.mp4'
+        output = None  # './result.mp4'
         imgs_folder = TEST_MOT_DIR
 
-        model = MOTPredictor(checkpoint, score_threshold=0.2)
+        model = MOTPredictor(checkpoint, save_path=output, score_threshold=0.2)
 
-        model(imgs_folder, output)
+        track_result_list = model(imgs_folder)
+        print(track_result_list)

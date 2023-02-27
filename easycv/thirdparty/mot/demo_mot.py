@@ -13,9 +13,10 @@ def main():
         '--output', help='output video file (mp4 format) or folder')
     args = parser.parse_args()
 
-    model = MOTPredictor(args.checkpoint, args.config, score_threshold=0.2)
+    model = MOTPredictor(args.checkpoint, args.config, save_path=args.output, score_threshold=0.2)
 
-    model(args.input, args.output)
+    track_result_list = model(args.input)
+    print(track_result_list)
 
 
 if __name__ == '__main__':

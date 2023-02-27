@@ -6,8 +6,8 @@ import os.path as osp
 import tempfile
 from argparse import ArgumentParser
 
-import mmcv
 import cv2
+import mmcv
 
 from easycv.predictors import DetectionPredictor
 from easycv.thirdparty.mot.bytetrack.byte_tracker import BYTETracker
@@ -68,8 +68,9 @@ class MOTPredictor(PredictorV2):
             track_buffer=2,
             frame_rate=25)
         self.fps = fps
+        self.output = save_path
 
-    def __call__(self, input, output):
+    def __call__(self, input):
         # define input
         if osp.isdir(input):
             imgs = glob.glob(os.path.join(input, '*.jpg'))
@@ -80,22 +81,23 @@ class MOTPredictor(PredictorV2):
             IN_VIDEO = True
 
         # define output
-        if output is not None:
-            if output.endswith('.mp4'):
+        if self.output is not None:
+            if self.output.endswith('.mp4'):
                 OUT_VIDEO = True
                 out_dir = tempfile.TemporaryDirectory()
                 out_path = out_dir.name
-                _out = output.rsplit(os.sep, 1)
+                _out = self.output.rsplit(os.sep, 1)
                 if len(_out) > 1:
                     os.makedirs(_out[0], exist_ok=True)
             else:
                 OUT_VIDEO = False
-                out_path = output
+                out_path = self.output
                 os.makedirs(out_path, exist_ok=True)
 
         prog_bar = mmcv.ProgressBar(len(imgs))
 
         # test and show/save the images
+        track_result = None
         track_result_list = []
         for frame_id, img in enumerate(imgs):
             if osp.isdir(input):
@@ -113,15 +115,16 @@ class MOTPredictor(PredictorV2):
                 detection_boxes,
                 detection_scores,
                 detection_classes,
-                target_classes=[2],
+                target_classes=[0],
                 target_thresholds=[0])
             if len(detection_boxes) > 0:
                 track_result = self.tracker.update(
                     detection_boxes, detection_scores,
                     detection_classes)  # [id, t, l, b, r, score]
-                track_result_list.append(track_result.insert(0, timestamp))
+                track_result['timestamp'] = timestamp
+                track_result_list.append(track_result)
 
-            if output is not None:
+            if self.output is not None:
                 if IN_VIDEO or OUT_VIDEO:
                     out_file = osp.join(out_path, f'{frame_id:06d}.jpg')
                 else:
@@ -139,9 +142,12 @@ class MOTPredictor(PredictorV2):
 
             prog_bar.update()
 
-        if output and OUT_VIDEO:
-            print(f'making the output video at {output} with a FPS of {self.fps}')
-            mmcv.frames2video(out_path, output, fps=self.fps, fourcc='mp4v')
+        if self.output and OUT_VIDEO:
+            print(
+                f'making the output video at {self.output} with a FPS of {self.fps}'
+            )
+            mmcv.frames2video(
+                out_path, self.output, fps=self.fps, fourcc='mp4v')
             out_dir.cleanup()
-        
+
         return track_result_list
