@@ -95,7 +95,7 @@ SMALL_IMAGENET_TFRECORD_OSS = os.path.join(
 SMALL_MARKET1501 = os.path.join(BASE_LOCAL_PATH,
                                 'data/tracking/small_Market1501')
 TEST_MOT_DIR = os.path.join(BASE_LOCAL_PATH,
-                            'data/tracking/MOT20/train/MOT20-01/img1')
+                            'data/tracking/mot20_1.mp4')
 
 IO_DATA_TXTX_OSS = os.path.join(BASE_OSS_PATH, 'data/io_test_dir/txts/')
 IO_DATA_MULTI_DIRS_OSS = os.path.join(BASE_OSS_PATH,

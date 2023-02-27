@@ -10,7 +10,7 @@ def main():
     parser.add_argument('--checkpoint', help='checkpoint file')
     parser.add_argument('--input', help='input video file or folder')
     parser.add_argument(
-        '--output', help='output video file (mp4 format) or folder')
+        '--output', help='output video file (mp4 format) or folder or None')
     args = parser.parse_args()
 
     model = MOTPredictor(args.checkpoint, args.config, save_path=args.output, score_threshold=0.2)
