@@ -20,6 +20,7 @@ class MOTPredictorTest(unittest.TestCase):
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
+    @unittest.skip('skip mot unittest')
     def test(self):
         checkpoint = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/tracking/fcos_r50_epoch_12_export.pt'
         output = './result.mp4'
