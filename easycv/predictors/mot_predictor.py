@@ -7,6 +7,7 @@ import tempfile
 from argparse import ArgumentParser
 
 import mmcv
+import cv2
 
 from easycv.predictors import DetectionPredictor
 from easycv.thirdparty.mot.bytetrack.byte_tracker import BYTETracker
@@ -42,6 +43,7 @@ class MOTPredictor(PredictorV2):
                  score_threshold=0.5,
                  input_processor_threads=8,
                  mode='BGR',
+                 fps=24,
                  *arg,
                  **kwargs):
         super(MOTPredictor, self).__init__(
@@ -65,6 +67,7 @@ class MOTPredictor(PredictorV2):
             match_thresh_init=1.0,
             track_buffer=2,
             frame_rate=25)
+        self.fps = fps
 
     def __call__(self, input, output):
         # define input
@@ -90,12 +93,16 @@ class MOTPredictor(PredictorV2):
                 out_path = output
                 os.makedirs(out_path, exist_ok=True)
 
-        fps = 24
         prog_bar = mmcv.ProgressBar(len(imgs))
 
         # test and show/save the images
-        track_result = None
+        track_result_list = []
         for frame_id, img in enumerate(imgs):
+            if osp.isdir(input):
+                timestamp = frame_id
+            else:
+                timestamp = imgs.vcap.get(cv2.CAP_PROP_POS_MSEC)
+
             result = self.model(img)[0]
 
             detection_boxes = result['detection_boxes']
@@ -106,12 +113,13 @@ class MOTPredictor(PredictorV2):
                 detection_boxes,
                 detection_scores,
                 detection_classes,
-                target_classes=[0],
+                target_classes=[2],
                 target_thresholds=[0])
             if len(detection_boxes) > 0:
                 track_result = self.tracker.update(
                     detection_boxes, detection_scores,
                     detection_classes)  # [id, t, l, b, r, score]
+                track_result_list.append(track_result.insert(0, timestamp))
 
             if output is not None:
                 if IN_VIDEO or OUT_VIDEO:
@@ -126,12 +134,14 @@ class MOTPredictor(PredictorV2):
                 track_result,
                 score_thr=0,
                 show=False,
-                wait_time=int(1000. / fps),
+                wait_time=int(1000. / self.fps),
                 out_file=out_file)
 
             prog_bar.update()
 
         if output and OUT_VIDEO:
-            print(f'making the output video at {output} with a FPS of {fps}')
-            mmcv.frames2video(out_path, output, fps=fps, fourcc='mp4v')
+            print(f'making the output video at {output} with a FPS of {self.fps}')
+            mmcv.frames2video(out_path, output, fps=self.fps, fourcc='mp4v')
             out_dir.cleanup()
+        
+        return track_result_list
