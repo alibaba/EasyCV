@@ -11,7 +11,7 @@ from .feature_extractor import (TorchFaceAttrExtractor,
 from .hand_keypoints_predictor import HandKeypointsPredictor
 from .ocr import (OCRClsPredictor, OCRDetPredictor, OCRPredictor,
                   OCRRecPredictor)
-from .pose_predictor import (TorchPoseTopDownPredictor,
+from .pose_predictor import (PoseTopDownPredictor,
                              TorchPoseTopDownPredictorWithDetector)
 from .reid_predictor import ReIDPredictor
 from .segmentation import Mask2formerPredictor, SegmentationPredictor

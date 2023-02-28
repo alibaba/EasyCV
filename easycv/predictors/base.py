@@ -285,7 +285,7 @@ class PredictorV2(object):
             pipelines (list[dict]): Data pipeline configs.
             input_processor_threads (int): Number of processes to process inputs.
             mode (str): The image mode into the model.
-        """
+    """
 
     def __init__(self,
                  model_path,
