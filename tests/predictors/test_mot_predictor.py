@@ -24,7 +24,7 @@ class MOTPredictorTest(unittest.TestCase):
     def test(self):
         checkpoint = 'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/data/tracking/fcos_r50_epoch_12_export.pt'
         output = None  # output video file (mp4 format) or folder or None
-        imgs = TEST_MOT_DIR # input video file or folder
+        imgs = TEST_MOT_DIR  # input video file or folder
 
         model = MOTPredictor(checkpoint, save_path=output, score_threshold=0.2)
 
