@@ -80,7 +80,7 @@ class MOTPredictor(PredictorV2):
                 tmp.append({'filename': input})
             inputs = tmp
 
-        result = []
+        results = []
         for i in range(len(inputs)):
             # define input
             input = inputs[i]['filename']
@@ -115,13 +115,14 @@ class MOTPredictor(PredictorV2):
                 if osp.isdir(input):
                     timestamp = frame_id
                 else:
-                    timestamp = imgs.vcap.get(cv2.CAP_PROP_POS_MSEC)
+                    seconds = imgs.vcap.get(cv2.CAP_PROP_POS_MSEC) / 1000
+                    timestamp = seconds
 
-                result = self.model(img)[0]
+                detection_results = self.model(img)[0]
 
-                detection_boxes = result['detection_boxes']
-                detection_scores = result['detection_scores']
-                detection_classes = result['detection_classes']
+                detection_boxes = detection_results['detection_boxes']
+                detection_scores = detection_results['detection_scores']
+                detection_classes = detection_results['detection_classes']
 
                 detection_boxes, detection_scores, detection_classes = detection_result_filter(
                     detection_boxes,
@@ -145,16 +146,18 @@ class MOTPredictor(PredictorV2):
                 else:
                     out_file = None
 
-                show_result(
-                    img,
-                    track_result,
-                    score_thr=0,
-                    show=False,
-                    wait_time=int(1000. / self.fps),
-                    out_file=out_file)
+                if out_file is not None:
+                    show_result(
+                        img,
+                        track_result,
+                        score_thr=0,
+                        show=False,
+                        wait_time=int(1000. / self.fps),
+                        out_file=out_file)
 
                 prog_bar.update()
 
+            print(track_result_list)
             if self.output and OUT_VIDEO:
                 print(
                     f'making the output video at {self.output} with a FPS of {self.fps}'
@@ -163,6 +166,6 @@ class MOTPredictor(PredictorV2):
                     out_path, self.output, fps=self.fps, fourcc='mp4v')
                 out_dir.cleanup()
 
-            result.append(track_result_list)
+            results.append(track_result_list)
 
-        return result
+        return results
