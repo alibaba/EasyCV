@@ -104,7 +104,6 @@ jobs:
           # do not uncomments, casue faild in Online UT, install requirements by yourself on UT machine
           # pip install -r requirements.txt
           #run test
-          pip install cython_bbox
           export CUDA_VISIBLE_DEVICES=6
           source ~/workspace/anaconda2/etc/profile.d/conda.sh
           conda activate torch1.8.1_blade
