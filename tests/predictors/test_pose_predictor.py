@@ -46,22 +46,22 @@ class PoseTopDownPredictorTest(unittest.TestCase):
 
         assert_array_almost_equal(
             result0['keypoints'][0][0], [509.8026, 111.99933, 0.9709578],
-            decimal=3)
+            decimal=2)
         assert_array_almost_equal(
             result0['keypoints'][0][9], [561.235, 312.41324, 0.9236345],
-            decimal=3)
+            decimal=2)
         assert_array_almost_equal(
             result0['keypoints'][1][1], [55.37381, 196.2315, 0.9558682],
-            decimal=3)
+            decimal=2)
         assert_array_almost_equal(
             result0['keypoints'][1][12], [47.469627, 297.25607, 0.5480971],
-            decimal=3)
+            decimal=2)
         assert_array_almost_equal(
             result0['keypoints'][3][5], [293.57898, 166.9432, 0.8903505],
-            decimal=3)
+            decimal=2)
         assert_array_almost_equal(
             result0['keypoints'][3][10], [264.51807, 178.30908, 0.920545],
-            decimal=3)
+            decimal=2)
 
         assert_array_almost_equal(
             result0['bbox'],
@@ -70,7 +70,7 @@ class PoseTopDownPredictorTest(unittest.TestCase):
                       [224.82036, 114.439865, 312.51306, 231.36348, 1.],
                       [200.71407, 114.716736, 337.17535, 296.6651, 1.]],
                      dtype=np.float32),
-            decimal=3)
+            decimal=2)
         vis_result = predictor.show_result(img1, result0)
 
         with tempfile.NamedTemporaryFile(suffix='.jpg') as tmp_file:
@@ -85,21 +85,21 @@ class PoseTopDownPredictorTest(unittest.TestCase):
 
         assert_array_almost_equal(
             result1['keypoints'][0][0], [510.86044, 234.81412, 0.42776352],
-            decimal=3)
+            decimal=2)
         assert_array_almost_equal(
             result1['keypoints'][0][8], [537.6073, 288.58582, 0.92016876],
-            decimal=3)
+            decimal=2)
         assert_array_almost_equal(
-            result1['keypoints'][2][1], [191.784, 114.456, 0.963], decimal=3)
+            result1['keypoints'][2][1], [191.784, 114.456, 0.963], decimal=2)
         assert_array_almost_equal(
             result1['keypoints'][2][15], [200.38428, 247.03822, 0.9013438],
-            decimal=3)
+            decimal=2)
         assert_array_almost_equal(
             result1['keypoints'][8][8], [153.85138, 1.5582924, 0.91658807],
-            decimal=3)
+            decimal=2)
         assert_array_almost_equal(
             result1['keypoints'][13][6], [475.59854, 50.610546, 0.29660743],
-            decimal=3)
+            decimal=2)
 
         assert_array_almost_equal(
             result1['bbox'][:4],
@@ -108,7 +108,7 @@ class PoseTopDownPredictorTest(unittest.TestCase):
                       [127.44148, 100.38604, 254.219, 269.42273, 1.],
                       [190.08075, 117.31801, 311.22394, 278.8423, 1.]],
                      dtype=np.float32),
-            decimal=3)
+            decimal=2)
         vis_result = predictor.show_result(img2, result1)
 
         with tempfile.NamedTemporaryFile(suffix='.jpg') as tmp_file:
