@@ -1,5 +1,6 @@
 albumentations
 cityscapesscripts
+cython_bbox
 dataclasses
 decord
 einops
