@@ -70,85 +70,90 @@ class MOTPredictor(PredictorV2):
         self.fps = fps
         self.output = save_path
 
-    def __call__(self, input):
-        # define input
-        input = input[0]
-        if osp.isdir(input):
-            imgs = glob.glob(os.path.join(input, '*.jpg'))
-            imgs.sort()
-            IN_VIDEO = False
-        else:
-            imgs = mmcv.VideoReader(input)
-            IN_VIDEO = True
-
-        # define output
-        if self.output is not None:
-            if self.output.endswith('.mp4'):
-                OUT_VIDEO = True
-                out_dir = tempfile.TemporaryDirectory()
-                out_path = out_dir.name
-                _out = self.output.rsplit(os.sep, 1)
-                if len(_out) > 1:
-                    os.makedirs(_out[0], exist_ok=True)
-            else:
-                OUT_VIDEO = False
-                out_path = self.output
-                os.makedirs(out_path, exist_ok=True)
-
-        prog_bar = mmcv.ProgressBar(len(imgs))
-
-        # test and show/save the images
-        track_result = None
-        track_result_list = []
-        for frame_id, img in enumerate(imgs):
+    def __call__(self, inputs):
+        result = []
+        for i in range(len(inputs)):
+            # define input
+            input = inputs[i]
             if osp.isdir(input):
-                timestamp = frame_id
+                imgs = glob.glob(os.path.join(input, '*.jpg'))
+                imgs.sort()
+                IN_VIDEO = False
             else:
-                timestamp = imgs.vcap.get(cv2.CAP_PROP_POS_MSEC)
+                imgs = mmcv.VideoReader(input)
+                IN_VIDEO = True
 
-            result = self.model(img)[0]
-
-            detection_boxes = result['detection_boxes']
-            detection_scores = result['detection_scores']
-            detection_classes = result['detection_classes']
-
-            detection_boxes, detection_scores, detection_classes = detection_result_filter(
-                detection_boxes,
-                detection_scores,
-                detection_classes,
-                target_classes=[0],
-                target_thresholds=[0])
-            if len(detection_boxes) > 0:
-                track_result = self.tracker.update(
-                    detection_boxes, detection_scores,
-                    detection_classes)  # [id, t, l, b, r, score]
-                track_result['timestamp'] = timestamp
-                track_result_list.append(track_result)
-
+            # define output
             if self.output is not None:
-                if IN_VIDEO or OUT_VIDEO:
-                    out_file = osp.join(out_path, f'{frame_id:06d}.jpg')
+                if self.output.endswith('.mp4'):
+                    OUT_VIDEO = True
+                    out_dir = tempfile.TemporaryDirectory()
+                    out_path = out_dir.name
+                    _out = self.output.rsplit(os.sep, 1)
+                    if len(_out) > 1:
+                        os.makedirs(_out[0], exist_ok=True)
                 else:
-                    out_file = osp.join(out_path, img.rsplit(os.sep, 1)[-1])
-            else:
-                out_file = None
+                    OUT_VIDEO = False
+                    out_path = self.output
+                    os.makedirs(out_path, exist_ok=True)
 
-            show_result(
-                img,
-                track_result,
-                score_thr=0,
-                show=False,
-                wait_time=int(1000. / self.fps),
-                out_file=out_file)
+            prog_bar = mmcv.ProgressBar(len(imgs))
 
-            prog_bar.update()
+            # test and show/save the images
+            track_result = None
+            track_result_list = []
+            for frame_id, img in enumerate(imgs):
+                if osp.isdir(input):
+                    timestamp = frame_id
+                else:
+                    timestamp = imgs.vcap.get(cv2.CAP_PROP_POS_MSEC)
 
-        if self.output and OUT_VIDEO:
-            print(
-                f'making the output video at {self.output} with a FPS of {self.fps}'
-            )
-            mmcv.frames2video(
-                out_path, self.output, fps=self.fps, fourcc='mp4v')
-            out_dir.cleanup()
+                result = self.model(img)[0]
 
-        return [track_result_list]
+                detection_boxes = result['detection_boxes']
+                detection_scores = result['detection_scores']
+                detection_classes = result['detection_classes']
+
+                detection_boxes, detection_scores, detection_classes = detection_result_filter(
+                    detection_boxes,
+                    detection_scores,
+                    detection_classes,
+                    target_classes=[0],
+                    target_thresholds=[0])
+                if len(detection_boxes) > 0:
+                    track_result = self.tracker.update(
+                        detection_boxes, detection_scores,
+                        detection_classes)  # [id, t, l, b, r, score]
+                    track_result['timestamp'] = timestamp
+                    track_result_list.append(track_result)
+
+                if self.output is not None:
+                    if IN_VIDEO or OUT_VIDEO:
+                        out_file = osp.join(out_path, f'{frame_id:06d}.jpg')
+                    else:
+                        out_file = osp.join(out_path,
+                                            img.rsplit(os.sep, 1)[-1])
+                else:
+                    out_file = None
+
+                show_result(
+                    img,
+                    track_result,
+                    score_thr=0,
+                    show=False,
+                    wait_time=int(1000. / self.fps),
+                    out_file=out_file)
+
+                prog_bar.update()
+
+            if self.output and OUT_VIDEO:
+                print(
+                    f'making the output video at {self.output} with a FPS of {self.fps}'
+                )
+                mmcv.frames2video(
+                    out_path, self.output, fps=self.fps, fourcc='mp4v')
+                out_dir.cleanup()
+
+            result.append(track_result_list)
+
+        return result
