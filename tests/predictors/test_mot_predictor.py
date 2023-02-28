@@ -28,5 +28,5 @@ class MOTPredictorTest(unittest.TestCase):
 
         model = MOTPredictor(checkpoint, save_path=output, score_threshold=0.2)
 
-        track_result_list = model(imgs)
+        track_result_list = model([imgs])
         print(track_result_list)

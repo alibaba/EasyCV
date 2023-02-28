@@ -72,6 +72,7 @@ class MOTPredictor(PredictorV2):
 
     def __call__(self, input):
         # define input
+        input = input[0]
         if osp.isdir(input):
             imgs = glob.glob(os.path.join(input, '*.jpg'))
             imgs.sort()
@@ -150,4 +151,4 @@ class MOTPredictor(PredictorV2):
                 out_path, self.output, fps=self.fps, fourcc='mp4v')
             out_dir.cleanup()
 
-        return track_result_list
+        return [track_result_list]

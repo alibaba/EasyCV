@@ -15,7 +15,7 @@ def main():
 
     model = MOTPredictor(args.checkpoint, args.config, save_path=args.output, score_threshold=0.2)
 
-    track_result_list = model(args.input)
+    track_result_list = model([args.input])
     print(track_result_list)
 
 
