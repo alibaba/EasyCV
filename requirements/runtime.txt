@@ -9,6 +9,7 @@ fvcore
 h5py
 imgaug
 json_tricks
+lap
 lmdb
 numba
 numpy
@@ -23,6 +24,7 @@ pycocotools
 pytorch_metric_learning>=0.9.89
 rapidfuzz
 scikit-image
+seaborn
 sklearn
 tensorboard
 thop
