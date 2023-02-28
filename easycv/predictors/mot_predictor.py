@@ -71,10 +71,19 @@ class MOTPredictor(PredictorV2):
         self.output = save_path
 
     def __call__(self, inputs):
+        # support list(dict(str)) as input
+        if isinstance(inputs, str):
+            inputs = [{'filename': inputs}]
+        elif isinstance(inputs, list) and not isinstance(inputs[0], dict):
+            tmp = []
+            for input in inputs:
+                tmp.append({'filename': input})
+            inputs = tmp
+
         result = []
         for i in range(len(inputs)):
             # define input
-            input = inputs[i]
+            input = inputs[i]['filename']
             if osp.isdir(input):
                 imgs = glob.glob(os.path.join(input, '*.jpg'))
                 imgs.sort()
