@@ -513,6 +513,8 @@ CONFIG_TEMPLATE_ZOO = {
     'configs/classification/imagenet/vit/imagenet_vit_base_patch16_224_jpg.py',
     'CLASSIFICATION_SWINT':
     'configs/classification/imagenet/swint/imagenet_swin_tiny_patch4_window7_224_jpg.py',
+    'CLASSIFICATION_M0BILENET':
+    'configs/classification/imagenet/mobilenet/mobilenetv2.py',
 
     # metric learning
     'METRICLEARNING':
