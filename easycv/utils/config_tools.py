@@ -525,7 +525,7 @@ CONFIG_TEMPLATE_ZOO = {
     # detection
     'YOLOX': 'configs/config_templates/yolox.py',
     'YOLOX_ITAG': 'configs/config_templates/yolox_itag.py',
-    'YOLOX_ITAG_EASY': 'configs/config_templates/yolox_itag_easy.py',
+    'YOLOX_EASY': 'configs/detection/yolox/yolox_s_8xb16_300e_coco_pai.py',
 
     # ssl
     'MOCO_R50_TFRECORD': 'configs/config_templates/moco_r50_tfrecord.py',
