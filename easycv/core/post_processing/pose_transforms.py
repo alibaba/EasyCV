@@ -128,7 +128,6 @@ def flip_back(output_flipped, flip_pairs, target_type='GaussianHeatmap'):
     channels = 1
 
     if isinstance(output_flipped, torch.Tensor):
-        # TODO: remove inplace operation for blade, it will cause calculation errors
         if target_type.lower() == 'CombinedTarget'.lower():
             channels = 3
             output_flipped[:, 1::3, ...] = -output_flipped[:, 1::3, ...]
