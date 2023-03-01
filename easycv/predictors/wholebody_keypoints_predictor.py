@@ -86,7 +86,7 @@ class WholeBodyKptsInputProcessor(InputProcessor):
         det_cat_id = 0
 
         det_results = self.detection_predictor(
-            outputs['filename'], keep_inputs=True)
+            outputs['img'], keep_inputs=True)
         person_results = self.process_detection_results(
             det_results, det_cat_id)
 
@@ -174,7 +174,7 @@ class WholeBodyKptsOutputProcessor(OutputProcessor):
         output = {}
         output['keypoints'] = inputs['preds'][:, :, :2]
         output['boxes'] = inputs['boxes']
-        bbx = output['boxes']
+
         for i, bbox in enumerate(output['boxes']):
             center, scale = bbox[:2], bbox[2:4]
             output['boxes'][i][:4] = bbox_cs2xyxy(center, scale)
