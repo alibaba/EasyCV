@@ -645,16 +645,17 @@ def _export_pose_topdown(model, cfg, filename, fp16=False, dummy_inputs=None):
 
     def _dummy_inputs(cfg):
         from easycv.datasets.pose.data_sources.top_down import DatasetInfo
-        from easycv.datasets.pose.data_sources import (
-            WholeBodyCocoTopDownSource, PoseTopDownSourceCoco,
-            HandCocoPoseTopDownSource)
+        from easycv.datasets.pose.data_sources.wholebody.wholebody_coco_source import WHOLEBODY_COCO_DATASET_INFO
+        from easycv.datasets.pose.data_sources.hand.coco_hand import COCO_WHOLEBODY_HAND_DATASET_INFO
+        from easycv.datasets.pose.data_sources.coco import COCO_DATASET_INFO
+
         data_type = cfg.data.train.data_source.type
-        data_source_map = {
-            'WholeBodyCocoTopDownSource': WholeBodyCocoTopDownSource,
-            'PoseTopDownSourceCoco': PoseTopDownSourceCoco,
-            'HandCocoPoseTopDownSource': HandCocoPoseTopDownSource
+        data_info_map = {
+            'WholeBodyCocoTopDownSource': WHOLEBODY_COCO_DATASET_INFO,
+            'PoseTopDownSourceCoco': COCO_DATASET_INFO,
+            'HandCocoPoseTopDownSource': COCO_WHOLEBODY_HAND_DATASET_INFO
         }
-        dataset_info = DatasetInfo(data_source_map[data_type])
+        dataset_info = DatasetInfo(data_info_map[data_type])
         flip_pairs = dataset_info.flip_pairs
         image_size = cfg.data_cfg.image_size
         img = torch.rand([1, 3, image_size[1], image_size[0]]).to(device)
