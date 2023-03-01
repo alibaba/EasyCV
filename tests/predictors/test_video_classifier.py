@@ -2,16 +2,13 @@
 """
 isort:skip_file
 """
-import json
 import os
 import unittest
+import numpy as np
 
-import cv2
-import torch
-from easycv.predictors.video_classifier import VideoClassificationPredictor
-from easycv.utils.test_util import clean_up, get_tmp_dir
+from easycv.predictors.video_classifier import VideoClassificationPredictor, STGCNPredictor
 from tests.ut_config import (PRETRAINED_MODEL_X3D_XS,
-                             VIDEO_DATA_SMALL_RAW_LOCAL)
+                             VIDEO_DATA_SMALL_RAW_LOCAL, BASE_LOCAL_PATH)
 
 
 class VideoClassificationPredictorTest(unittest.TestCase):
@@ -52,6 +49,40 @@ class VideoClassificationPredictorTest(unittest.TestCase):
             # self.assertListEqual(res['class'], [55])
             # self.assertListEqual(res['class_name'], ['55'])
             self.assertEqual(len(res['class_probs']), 400)
+
+
+class STGCNPredictorTest(unittest.TestCase):
+
+    def setUp(self):
+        print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
+
+    def test_single(self):
+        checkpoint = os.path.join(
+            BASE_LOCAL_PATH,
+            'pretrained_models/video/stgcn/stgcn_80e_ntu60_xsub.pth')
+        config_file = 'configs/video_recognition/stgcn/stgcn_80e_ntu60_xsub_keypoint.py'
+        predict_op = STGCNPredictor(
+            model_path=checkpoint, config_file=config_file)
+
+        h, w = 480, 853
+        total_frames = 20
+        num_person = 2
+        inp = dict(
+            frame_dir='',
+            label=-1,
+            img_shape=(h, w),
+            original_shape=(h, w),
+            start_index=0,
+            modality='Pose',
+            total_frames=total_frames,
+            keypoint=np.random.random((num_person, total_frames, 17, 2)),
+            keypoint_score=np.random.random((num_person, total_frames, 17)),
+        )
+
+        results = predict_op([inp])[0]
+        self.assertIn('class', results)
+        self.assertIn('class_name', results)
+        self.assertEqual(len(results['class_probs']), 60)
 
 
 if __name__ == '__main__':
