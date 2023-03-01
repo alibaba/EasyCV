@@ -196,3 +196,95 @@ class VideoClassificationPredictor(PredictorV2):
 
     def get_output_processor(self):
         return VideoClsOutputProcessor(self.label_map, self.topk)
+
+
+class STGCNInputProcessor(InputProcessor):
+
+    def _load_input(self, input):
+        """Prepare input sample.
+        Args:
+            input (dict): Input sample dict. e.g.
+                {
+                    'frame_dir': '',
+                    'img_shape': (1080, 1920),
+                    'original_shape': (1080, 1920),
+                    'total_frames': 40,
+                    'keypoint': (2, 40, 17, 2),  # shape = (num_person, num_frame, num_keypoints, 2)
+                    'keypoint_score': (2, 40, 17),
+                    'modality': 'Pose',
+                    'start_index': 1
+                }.
+        """
+        assert isinstance(input, dict)
+
+        keypoint = input['keypoint']
+
+        assert len(keypoint.shape) == 4
+        assert keypoint.shape[-1] in [2, 3]
+
+        if keypoint.shape[-1] == 3:
+            if input.get('keypoint_score', None) is None:
+                input['keypoint_score'] = keypoint[..., -1]
+
+            keypoint = keypoint[..., :2]
+            input['keypoint'] = keypoint
+
+        return input
+
+
+@PREDICTORS.register_module()
+class STGCNPredictor(PredictorV2):
+
+    def __init__(self,
+                 model_path,
+                 config_file=None,
+                 batch_size=1,
+                 label_map=None,
+                 topk=1,
+                 device=None,
+                 save_results=False,
+                 save_path=None,
+                 pipelines=None,
+                 input_processor_threads=8,
+                 mode='RGB',
+                 *args,
+                 **kwargs):
+        super(STGCNPredictor, self).__init__(
+            model_path,
+            config_file=config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            pipelines=pipelines,
+            input_processor_threads=input_processor_threads,
+            mode=mode,
+            *args,
+            **kwargs)
+        self.topk = topk
+        if label_map is None:
+            if 'CLASSES' in self.cfg:
+                class_list = self.cfg.get('CLASSES', [])
+            elif 'num_classes' in self.cfg:
+                class_list = list(range(self.cfg.num_classes))
+                class_list = [str(i) for i in class_list]
+            else:
+                class_list = []
+        elif isinstance(label_map, str):
+            with io.open(label_map, 'r') as f:
+                class_list = f.readlines()
+        elif isinstance(label_map, (tuple, list)):
+            class_list = label_map
+
+        self.label_map = [i.strip() for i in class_list]
+
+    def get_input_processor(self):
+        return STGCNInputProcessor(
+            self.cfg,
+            pipelines=self.pipelines,
+            batch_size=self.batch_size,
+            threads=self.input_processor_threads,
+            mode=self.mode)
+
+    def get_output_processor(self):
+        return VideoClsOutputProcessor(self.label_map, self.topk)

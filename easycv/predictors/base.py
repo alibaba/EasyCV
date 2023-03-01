@@ -5,6 +5,7 @@ import os
 import pickle
 
 import cv2
+import mmcv
 import numpy as np
 import torch
 from mmcv.parallel import collate, scatter_kwargs
@@ -419,9 +420,14 @@ class PredictorV2(object):
             inputs = [inputs]
 
         results_list = []
+
+        prog_bar = mmcv.ProgressBar(len(inputs))
         for i in range(0, len(inputs), self.batch_size):
             batch_inputs = inputs[i:min(len(inputs), i + self.batch_size)]
             batch_outputs = self.input_processor(batch_inputs)
+            if len(batch_outputs) < 1:
+                results_list.append(batch_outputs)
+                continue
             batch_outputs = self._to_device(batch_outputs)
             batch_outputs = self.model_forward(batch_outputs)
             results = self.output_processor(batch_outputs)
@@ -432,6 +438,8 @@ class PredictorV2(object):
                 results_list.extend(results)
             else:
                 results_list.append(results)
+
+            prog_bar.update(len(batch_inputs))
 
         # TODO: support append to file
         if self.save_results:
