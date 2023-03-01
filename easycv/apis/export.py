@@ -14,7 +14,7 @@ from mmcv.utils import Config
 from easycv.file import io
 from easycv.framework.errors import NotImplementedError, ValueError
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, BEVFormer, Classification,
-                           MoBY, build_model)
+                           MoBY, TopDown, build_model)
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.misc import encode_str_to_tensor
 
@@ -66,6 +66,8 @@ def export(cfg, ckpt_path, filename, model=None, **kwargs):
         _export_yolox(model, cfg, filename, **kwargs)
     elif isinstance(model, BEVFormer):
         _export_bevformer(model, cfg, filename, **kwargs)
+    elif isinstance(model, TopDown):
+        _export_pose_topdown(model, cfg, filename, **kwargs)
     elif hasattr(cfg, 'export') and getattr(cfg.export, 'use_jit', False):
         export_jit_model(model, cfg, filename, **kwargs)
         return
@@ -628,6 +630,92 @@ def _export_bevformer(model, cfg, filename, fp16=False):
     #     ofile.write(blade_model.forward.code)
     # with io.open(filename + '.blade.graph.txt', 'w') as ofile:
     #     ofile.write(blade_model.forward.graph)
+    with io.open(filename + '.blade', 'wb') as ofile:
+        torch.jit.save(blade_model, ofile)
+
+
+def _export_pose_topdown(model, cfg, filename, fp16=False, dummy_inputs=None):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = copy.deepcopy(model)
+    model.eval()
+    model.to(device)
+
+    if hasattr(cfg, 'export') and getattr(cfg.export, 'type', 'raw') == 'raw':
+        return _export_common(model, cfg, filename)
+
+    def _dummy_inputs(cfg):
+        from easycv.datasets.pose.data_sources.top_down import DatasetInfo
+        from easycv.datasets.pose.data_sources import (
+            WholeBodyCocoTopDownSource, PoseTopDownSourceCoco,
+            HandCocoPoseTopDownSource)
+        data_type = cfg.data.train.data_source.type
+        data_source_map = {
+            'WholeBodyCocoTopDownSource': WholeBodyCocoTopDownSource,
+            'PoseTopDownSourceCoco': PoseTopDownSourceCoco,
+            'HandCocoPoseTopDownSource': HandCocoPoseTopDownSource
+        }
+        dataset_info = DatasetInfo(data_source_map[data_type])
+        flip_pairs = dataset_info.flip_pairs
+        image_size = cfg.data_cfg.image_size
+        img = torch.rand([1, 3, image_size[1], image_size[0]]).to(device)
+        img_metas = [{
+            'image_id': torch.tensor(0),
+            'center': torch.tensor([426., 451.]),
+            'scale': torch.tensor([4., 5.]),
+            'rotation': torch.tensor(0),
+            'flip_pairs': torch.tensor(flip_pairs),
+            'bbox_id': torch.tensor(0)
+        }]
+        return img, img_metas
+
+    if dummy_inputs is None:
+        dummy_inputs = _dummy_inputs(cfg)
+
+    def _trace_model():
+        with torch.no_grad():
+            model.forward = model.forward_export
+            trace_model = torch.jit.trace(
+                model, copy.deepcopy(dummy_inputs), strict=False)
+        return trace_model
+
+    export_type = cfg.export.get('type')
+    if export_type in ['jit', 'blade']:
+        if fp16:
+            with torch.cuda.amp.autocast():
+                trace_model = _trace_model()
+        else:
+            trace_model = _trace_model()
+        torch.jit.save(trace_model, filename + '.jit')
+    else:
+        raise NotImplementedError(f'Not support export type {export_type}!')
+
+    if export_type == 'jit':
+        return
+
+    blade_config = cfg.export.get('blade_config')
+
+    from easycv.toolkit.blade import blade_env_assert, blade_optimize
+    assert blade_env_assert()
+
+    def _get_blade_model():
+        blade_model = blade_optimize(
+            speed_test_model=model,
+            model=trace_model,
+            inputs=copy.deepcopy(dummy_inputs),
+            blade_config=blade_config,
+            static_opt=False,
+            min_num_nodes=None,
+            check_inputs=False,
+            fp16=fp16)
+        return blade_model
+
+    # optimize model with blade
+    if fp16:
+        with torch.cuda.amp.autocast():
+            blade_model = _get_blade_model()
+    else:
+        blade_model = _get_blade_model()
+
     with io.open(filename + '.blade', 'wb') as ofile:
         torch.jit.save(blade_model, ofile)
 
