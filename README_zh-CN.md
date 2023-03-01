@@ -222,6 +222,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 - [目标检测模型库](docs/source/model_zoo_det.md)
 - [3D目标检测模型库](docs/source/model_zoo_det3d.md)
 - [图像分割模型库](docs/source/model_zoo_seg.md)
+- [关键点模型库](docs/source/model_zoo_pose.md)
 
 ## 开源许可证
 
