@@ -1,61 +1,20 @@
-import functools
+# Copyright (c) Alibaba, Inc. and its affiliates.
 import json
 
 import mmcv
 import numpy as np
 import torch
-from mmcv.parallel import collate
+from mmcv.image import imwrite
 from mmcv.utils.path import is_filepath
-from torchvision.transforms import Compose
+from mmcv.visualization.image import imshow
 
-from easycv.core.bbox.bbox_util import xywh2xyxy_coco, xyxy2xywh_coco
+from easycv.core.visualization import imshow_bboxes, imshow_keypoints
 from easycv.datasets.pose.data_sources.top_down import DatasetInfo
-from easycv.datasets.registry import PIPELINES
-from easycv.file import io
-from easycv.framework.errors import ModuleNotFoundError, TypeError, ValueError
-from easycv.models import build_model
-from easycv.predictors.builder import PREDICTORS
-from easycv.predictors.detector import TorchYoloXPredictor
-from easycv.utils.checkpoint import load_checkpoint
+from easycv.datasets.pose.pipelines.transforms import bbox_cs2xyxy
+from easycv.predictors.builder import PREDICTORS, build_predictor
 from easycv.utils.config_tools import mmcv_config_fromfile
-from easycv.utils.registry import build_from_cfg
-
-try:
-    from easy_vision.python.inference.predictor import PredictorInterface
-except:
-    from easycv.predictors.interface import PredictorInterface
-
-
-class LoadImage:
-    """A simple pipeline to load image."""
-
-    def __init__(self, color_type='color', channel_order='rgb'):
-        self.color_type = color_type
-        self.channel_order = channel_order
-
-    def __call__(self, results):
-        """Call function to load images into results.
-        Args:
-            results (dict): A result dict contains the img_or_path.
-                if `img_or_path` is str, return self.channel_order mode,
-                if np.ndarray, return raw without process.
-        Returns:
-            dict: ``results`` will be returned containing loaded image.
-        """
-        if isinstance(results['img_or_path'], str):
-            results['image_file'] = results['img_or_path']
-            img = mmcv.imread(results['img_or_path'], self.color_type,
-                              self.channel_order)
-        elif isinstance(results['img_or_path'], np.ndarray):
-            results['image_file'] = ''
-            img = results['img_or_path']
-        else:
-            raise TypeError(
-                '"img_or_path" must be a numpy array or a str or a pathlib.Path object'
-            )
-
-        results['img'] = img
-        return results
+from easycv.utils.misc import deprecated
+from .base import InputProcessor, OutputProcessor, PredictorV2
 
 
 def _box2cs(image_size, box):
@@ -84,422 +43,25 @@ def _box2cs(image_size, box):
     return center, scale
 
 
-def rgetattr(obj, attr, *args):
-
-    def _getattr(obj, attr):
-        return getattr(obj, attr, *args)
-
-    return functools.reduce(_getattr, [obj] + attr.split('.'))
-
-
-class OutputHook:
-
-    def __init__(self, module, outputs=None, as_tensor=False):
-        self.outputs = outputs
-        self.as_tensor = as_tensor
-        self.layer_outputs = {}
-        self.register(module)
-
-    def register(self, module):
-
-        def hook_wrapper(name):
-
-            def hook(model, input, output):
-                if self.as_tensor:
-                    self.layer_outputs[name] = output
-                else:
-                    if isinstance(output, list):
-                        self.layer_outputs[name] = [
-                            out.detach().cpu().numpy() for out in output
-                        ]
-                    else:
-                        self.layer_outputs[name] = output.detach().cpu().numpy(
-                        )
-
-            return hook
-
-        self.handles = []
-        if isinstance(self.outputs, (list, tuple)):
-            for name in self.outputs:
-                try:
-                    layer = rgetattr(module, name)
-                    h = layer.register_forward_hook(hook_wrapper(name))
-                except ModuleNotFoundError as module_not_found:
-                    raise ModuleNotFoundError(
-                        f'Module {name} not found') from module_not_found
-                self.handles.append(h)
-
-    def remove(self):
-        for h in self.handles:
-            h.remove()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.remove()
-
-
-class TorchPoseTopDownPredictor(PredictorInterface):
-    """Inference a single image with a list of bounding boxes.
-    """
-
-    def __init__(self, model_path, model_config=None):
-        """
-        init model
-
-        Args:
-          model_path: model file path
-          model_config: config string for model to init, in json format
-        """
-        bbox_thr = model_config.get('bbox_thr', 0.3)
-        format = model_config.get('format', 'xywh')
-
-        assert format in ['xyxy', 'xywh']
-
-        self.model_path = model_path
-        self.bbox_thr = bbox_thr
-
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.model = None
-        with io.open(self.model_path, 'rb') as infile:
-            checkpoint = torch.load(infile, map_location='cpu')
-
-        assert 'meta' in checkpoint and 'config' in checkpoint[
-            'meta'], 'meta.config is missing from checkpoint'
-        self.cfg = checkpoint['meta']['config']
-
-        assert hasattr(self.cfg, 'dataset_info'), \
-            'Not find dataset_info in checkpoint["meta"]["config"]'
-
-        if is_filepath(self.cfg.dataset_info):
-            cfg = mmcv_config_fromfile(self.cfg.dataset_info)
-            self.cfg.dataset_info = cfg._cfg_dict['dataset_info']
-
-        self.dataset_info = DatasetInfo(self.cfg.dataset_info)
-        self.cfg.model.pretrained = None
-
-        # build model
-        self.model = build_model(self.cfg.model)
-
-        map_location = 'cpu' if self.device == 'cpu' else 'cuda'
-        self.ckpt = load_checkpoint(
-            self.model, self.model_path, map_location=map_location)
-
-        self.model.to(self.device)
-        self.model.eval()
-
-        # build pipeline
-        channel_order = self.cfg.test_pipeline[0].get('channel_order', 'rgb')
-        test_pipeline = [LoadImage(channel_order=channel_order)] + [
-            build_from_cfg(p, PIPELINES) for p in self.cfg.test_pipeline
-        ]
-        self.test_pipeline = Compose(test_pipeline)
-
-    def _inference_single_pose_model(self,
-                                     model,
-                                     img_or_path,
-                                     bboxes,
-                                     dataset_info=None,
-                                     return_heatmap=False):
-        """Inference human bounding boxes.
-
-        num_bboxes: N
-        num_keypoints: K
-
-        Args:
-            model (nn.Module): The loaded pose model.
-            img_or_path (str | np.ndarray): Image filename or loaded image.
-            bboxes (list | np.ndarray): All bounding boxes (with scores),
-                shaped (N, 4) or (N, 5). (left, top, width, height, [score])
-                where N is number of bounding boxes.
-            dataset_info (DatasetInfo): A class containing all dataset info.
-            outputs (list[str] | tuple[str]): Names of layers whose output is
-                to be returned, default: None
-
-        Returns:
-            ndarray[NxKx3]: Predicted pose x, y, score.
-            heatmap[N, K, H, W]: Model output heatmap.
-        """
-
-        cfg = self.cfg
-        device = next(model.parameters()).device
-
-        assert len(bboxes[0]) in [4, 5]
-
-        dataset_name = getattr(dataset_info, 'dataset_name', '')
-        flip_pairs = dataset_info.flip_pairs
-
-        batch_data = []
-        for bbox in bboxes:
-            center, scale = _box2cs(cfg.data_cfg['image_size'], bbox)
-
-            # prepare data
-            data = {
-                'img_or_path':
-                img_or_path,
-                'image_id':
-                0,
-                'center':
-                center,
-                'scale':
-                scale,
-                'bbox_score':
-                bbox[4] if len(bbox) == 5 else 1,
-                'bbox_id':
-                0,  # need to be assigned if batch_size > 1
-                'dataset':
-                dataset_name,
-                'joints_3d':
-                np.zeros((cfg.data_cfg.num_joints, 3), dtype=np.float32),
-                'joints_3d_visible':
-                np.zeros((cfg.data_cfg.num_joints, 3), dtype=np.float32),
-                'rotation':
-                0,
-                'ann_info': {
-                    'image_size': np.array(cfg.data_cfg['image_size']),
-                    'num_joints': cfg.data_cfg['num_joints'],
-                    'flip_pairs': flip_pairs
-                }
-            }
-            data = self.test_pipeline(data)
-            batch_data.append(data)
-
-        batch_data = collate(batch_data, samples_per_gpu=1)
-
-        if next(model.parameters()).is_cuda:
-            # scatter not work so just move image to cuda device
-            batch_data['img'] = batch_data['img'].to(device)
-        # get all img_metas of each bounding box
-        batch_data['img_metas'] = [
-            img_metas[0] for img_metas in batch_data['img_metas'].data
-        ]
-
-        # forward the model
-        with torch.no_grad():
-            result = model(
-                img=batch_data['img'],
-                mode='test',
-                img_metas=batch_data['img_metas'],
-                return_heatmap=return_heatmap)
-
-        if return_heatmap:
-            return result['preds'], result['output_heatmap']
-        else:
-            return result['preds'], None
-
-    def _predict_single_img(self,
-                            img_info,
-                            bbox_thr,
-                            dataset_info,
-                            return_heatmap=False,
-                            outputs=None):
-
-        pose_results = []
-        returned_outputs = []
-        img_or_path = img_info['img']
-        detection_results = img_info['detection_results']
-
-        if not detection_results:
-            return [], []
-
-        # Change for-loop preprocess each bbox to preprocess all bboxes at once.
-        bboxes = np.array([box['bbox'] for box in detection_results])
-
-        # Select bboxes by score threshold
-        if bbox_thr is not None:
-            assert bboxes.shape[1] == 5
-            valid_idx = np.where(bboxes[:, 4] > bbox_thr)[0]
-            bboxes = bboxes[valid_idx]
-            detection_results = [detection_results[i] for i in valid_idx]
-
-        if format == 'xyxy':
-            bboxes_xyxy = bboxes
-            bboxes_xywh = xyxy2xywh_coco(bboxes.copy(), 1)
-        else:
-            # format is already 'xywh'
-            bboxes_xywh = bboxes
-            bboxes_xyxy = xywh2xyxy_coco(bboxes.copy(), -1)
-
-        # if bbox_thr remove all bounding box
-        if len(bboxes_xywh) == 0:
-            return [], []
-
-        with OutputHook(self.model, outputs=outputs, as_tensor=False) as h:
-            # poses is results['pred'] # N x 17x 3
-            poses, heatmap = self._inference_single_pose_model(
-                self.model,
-                img_or_path,
-                bboxes_xywh,
-                dataset_info=dataset_info,
-                return_heatmap=return_heatmap)
-
-            if return_heatmap:
-                h.layer_outputs['heatmap'] = heatmap
-
-            returned_outputs.append(h.layer_outputs)
-
-        assert len(poses) == len(detection_results), print(
-            len(poses), len(detection_results), len(bboxes_xyxy))
-        for pose, detection_result, bbox_xyxy in zip(poses, detection_results,
-                                                     bboxes_xyxy):
-            pose_result = detection_result.copy()
-            pose_result['keypoints'] = pose
-            pose_result['bbox'] = bbox_xyxy
-            pose_results.append(pose_result)
-
-        return pose_results, returned_outputs
-
-    def predict(self, input_data_list, batch_size=-1, return_heatmap=False):
-        """Inference pose.
-
-        Args:
-            input_data_list: A list of image infos, like:
-                [
-                    {
-                        'img' (str | np.ndarray, RGB):
-                            Image filename or loaded image.
-                        'detection_results'(list | np.ndarray):
-                            All bounding boxes (with scores),
-                            shaped (N, 4) or (N, 5). (left, top, width, height, [score])
-                            where N is number of bounding boxes.
-                    },
-                    ...
-                ]
-            batch_size: batch size
-            return_heatmap: return heatmap value or not, default false.
-
-        Returns:
-            {
-                'pose_results': list of ndarray[NxKx3]: Predicted pose x, y, score
-                'pose_heatmap' (optional): list of heatmap[N, K, H, W]: Model output heatmap
-            }
-
-
-        """
-        all_pose_results = []
-
-        for img_info in input_data_list:
-            pose_results, returned_outputs = \
-                self._predict_single_img(img_info, self.bbox_thr, self.dataset_info)
-            output = {'pose_results': pose_results}
-            if return_heatmap:
-                output.update({'pose_heatmap': returned_outputs})
-            # must return dict to adapt to pai
-            all_pose_results.append(output)
-
-        return all_pose_results
-
-
-@PREDICTORS.register_module()
-class TorchPoseTopDownPredictorWithDetector(PredictorInterface):
-
-    SUPPORT_DETECTION_PREDICTORS = {'TorchYoloXPredictor': TorchYoloXPredictor}
-
-    def __init__(
-        self,
-        model_path,
-        model_config={
-            'pose': {
-                'bbox_thr': 0.3,
-                'format': 'xywh'
-            },
-            'detection': {
-                'model_type': None,
-                'reserved_classes': [],
-                'score_thresh': 0.0,
-            }
-        }):
-        """
-        init model
-
-        Args:
-          model_path: pose and detection model file path, split with `,`,
-                      make sure the first is pose model, second is detection model
-          model_config: config string for model to init, in json format
-        """
-        if isinstance(model_config, str):
-            model_config = json.loads(model_config)
-
-        detection_model_type = model_config['detection'].pop('model_type')
-        assert detection_model_type in self.SUPPORT_DETECTION_PREDICTORS
-
-        self.reserved_classes = model_config['detection'].get(
-            'reserved_classes', [])
-
-        model_list = model_path.split(',')
-        assert len(model_list) == 2
-        # first is pose model, second is detection model
-        pose_model_path, detection_model_path = model_list
-
-        detection_obj = self.SUPPORT_DETECTION_PREDICTORS[detection_model_type]
-        self.detection_predictor = detection_obj(
-            detection_model_path, model_config=model_config['detection'])
-        self.pose_predictor = TorchPoseTopDownPredictor(
-            pose_model_path, model_config=model_config['pose'])
-
-    def process_det_results(self,
-                            outputs,
-                            input_data_list,
-                            reserved_classes=[]):
-        filter_outputs = []
-        assert len(outputs) == len(input_data_list)
-        for reserved_class in reserved_classes:
-            assert reserved_class in self.detection_predictor.CLASSES, \
-                '%s not in detection classes %s' % (reserved_class, self.detection_predictor.CLASSES)
-
-        # if reserved_class if [], reserve all classes
-        reserved_classes = reserved_classes or self.detection_predictor.CLASSES
-
-        for i in range(len(outputs)):
-            output = outputs[i]
-            cur_data = {'img': input_data_list[i], 'detection_results': []}
-            for class_name in output['detection_class_names']:
-                if class_name in reserved_classes:
-                    cur_data['detection_results'].append({
-                        'bbox':
-                        np.append(output['detection_boxes'][i],
-                                  output['detection_scores'][i])
-                    })
-            filter_outputs.append(cur_data)
-
-        return filter_outputs
-
-    def predict(self, input_data_list, batch_size=-1, return_heatmap=False):
-        """Inference with pose model and detection model.
-
-        Args:
-            input_data_list: A list of images(np.ndarray, RGB)
-            batch_size: batch size
-            return_heatmap: return heatmap value or not, default false.
-
-        Returns:
-            {
-                'pose_results': list of ndarray[NxKx3]: Predicted pose x, y, score
-                'pose_heatmap' (optional): list of heatmap[N, K, H, W]: Model output heatmap
-            }
-
-
-        """
-        detection_output = self.detection_predictor.predict(input_data_list)
-        output = self.process_det_results(detection_output, input_data_list,
-                                          self.reserved_classes)
-        pose_output = self.pose_predictor.predict(
-            output, return_heatmap=return_heatmap)
-
-        return pose_output
-
-
-def vis_pose_result(model,
-                    img,
-                    result,
-                    radius=4,
-                    thickness=1,
-                    kpt_score_thr=0.3,
-                    bbox_color='green',
-                    dataset_info=None,
-                    show=False,
-                    out_file=None):
+def vis_pose_result(
+    model,
+    img,
+    result,
+    radius=4,
+    thickness=1,
+    kpt_score_thr=0.3,
+    bbox_color='green',
+    dataset_info=None,
+    out_file=None,
+    pose_kpt_color=None,
+    pose_link_color=None,
+    text_color='white',
+    font_scale=0.5,
+    bbox_thickness=1,
+    win_name='',
+    show=False,
+    wait_time=0,
+):
     """Visualize the detection results on the image.
 
     Args:
@@ -511,8 +73,12 @@ def vis_pose_result(model,
         thickness (int): Thickness of lines.
         kpt_score_thr (float): The threshold to visualize the keypoints.
         skeleton (list[tuple()]): Default None.
-        show (bool):  Whether to show the image. Default True.
         out_file (str|None): The filename of the output visualization image.
+        show (bool): Whether to show the image. Default: False.
+        wait_time (int): Value of waitKey param.
+            Default: 0.
+        out_file (str or None): The filename to write the image.
+            Default: None.
     """
 
     # get dataset info
@@ -530,17 +96,429 @@ def vis_pose_result(model,
     if hasattr(model, 'module'):
         model = model.module
 
-    img = model.show_result(
-        img,
-        result,
-        skeleton,
-        radius=radius,
-        thickness=thickness,
-        pose_kpt_color=pose_kpt_color,
-        pose_link_color=pose_link_color,
-        kpt_score_thr=kpt_score_thr,
-        bbox_color=bbox_color,
-        show=show,
-        out_file=out_file)
+    img = mmcv.imread(img)
+    img = img.copy()
+
+    bbox_result = result.get('bbox', [])
+    pose_result = result['keypoints']
+
+    if len(bbox_result) > 0:
+        bboxes = np.vstack(bbox_result)
+        labels = None
+        if 'label' in result:
+            labels = result['label']
+        # draw bounding boxes
+        imshow_bboxes(
+            img,
+            bboxes,
+            labels=labels,
+            colors=bbox_color,
+            text_color=text_color,
+            thickness=bbox_thickness,
+            font_scale=font_scale,
+            show=False)
+
+    imshow_keypoints(img, pose_result, skeleton, kpt_score_thr, pose_kpt_color,
+                     pose_link_color, radius, thickness)
+
+    if show:
+        imshow(img, win_name, wait_time)
+    if out_file is not None:
+        imwrite(img, out_file)
 
     return img
+
+
+class PoseTopDownInputProcessor(InputProcessor):
+
+    def __init__(self,
+                 cfg,
+                 dataset_info,
+                 detection_predictor_config,
+                 bbox_thr=None,
+                 pipelines=None,
+                 batch_size=1,
+                 cat_id=None,
+                 mode='BGR'):
+        self.detection_predictor = build_predictor(detection_predictor_config)
+        self.dataset_info = dataset_info
+        self.bbox_thr = bbox_thr
+        self.cat_id = cat_id
+        super().__init__(
+            cfg,
+            pipelines=pipelines,
+            batch_size=batch_size,
+            threads=1,
+            mode=mode)
+
+    def get_detection_outputs(self, input, cat_id=None):
+        det_results = self.detection_predictor(input['img'], keep_inputs=False)
+        person_results = self._process_detection_results(
+            det_results, cat_id=cat_id)
+        return person_results
+
+    def _process_detection_results(self, det_results, cat_id=None):
+        """Process det results, and return a list of bboxes.
+
+        Args:
+            det_results (list|tuple): det results.
+            cat_id (int | str): category id or name to reserve, if None, reserve all detection results.
+
+        Returns:
+            person_results (list): a list of detected bounding boxes
+        """
+        # Only support one sample/image
+        if isinstance(det_results, tuple):
+            det_results = det_results[0]
+        elif isinstance(det_results, list):
+            det_results = det_results[0]
+        else:
+            det_results = det_results
+
+        bboxes = det_results['detection_boxes']
+        scores = det_results['detection_scores']
+        classes = det_results['detection_classes']
+
+        if cat_id is not None:
+            if isinstance(cat_id, str):
+                assert cat_id in self.detection_predictor.cfg.CLASSES, f'cat_id "{cat_id}" not in detection classes list: {self.detection_predictor.cfg.CLASSES}'
+                assert det_results.get('detection_class_names',
+                                       None) is not None
+                detection_class_names = det_results['detection_class_names']
+                keeped_ids = [
+                    i for i in range(len(detection_class_names))
+                    if str(detection_class_names[i]) == str(cat_id)
+                ]
+            else:
+                keeped_ids = classes == cat_id
+            bboxes = bboxes[keeped_ids]
+            scores = scores[keeped_ids]
+            classes = classes[keeped_ids]
+
+        person_results = []
+        for idx, bbox in enumerate(bboxes):
+            person = {}
+            bbox = np.append(bbox, scores[idx])
+            person['bbox'] = bbox
+            person_results.append(person)
+
+        return person_results
+
+    def process_single(self, input):
+        output = super()._load_input(input)
+
+        person_results = self.get_detection_outputs(output, cat_id=self.cat_id)
+
+        box_id = 0
+
+        # Select bboxes by score threshold
+        bboxes = np.array([res['bbox'] for res in person_results])
+        if self.bbox_thr is not None:
+            assert bboxes.shape[1] == 5
+            valid_idx = np.where(bboxes[:, 4] > self.bbox_thr)[0]
+            bboxes = bboxes[valid_idx]
+            person_results = [person_results[i] for i in valid_idx]
+
+        output_person_info = []
+        for person_result in person_results:
+            box = person_result['bbox']  # x,y,w,h
+            box = [box[0], box[1], box[2] - box[0], box[3] - box[1]]
+            center, scale = _box2cs(self.cfg.data_cfg['image_size'], box)
+            data = {
+                'image_id':
+                0,
+                'center':
+                center,
+                'scale':
+                scale,
+                'bbox':
+                box,
+                'bbox_score':
+                box[4] if len(box) == 5 else 1,
+                'bbox_id':
+                box_id,  # need to be assigned if batch_size > 1
+                'joints_3d':
+                np.zeros((self.cfg.data_cfg.num_joints, 3), dtype=np.float32),
+                'joints_3d_visible':
+                np.zeros((self.cfg.data_cfg.num_joints, 3), dtype=np.float32),
+                'rotation':
+                0,
+                'flip_pairs':
+                self.dataset_info.flip_pairs,
+                'ann_info': {
+                    'image_size': np.array(self.cfg.data_cfg['image_size']),
+                    'num_joints': self.cfg.data_cfg['num_joints'],
+                },
+                'image_file':
+                output['filename'],
+                'img':
+                output['img'],
+                'img_shape':
+                output['img_shape'],
+                'ori_shape':
+                output['ori_shape'],
+                'img_fields':
+                output['img_fields'],
+            }
+            box_id += 1
+            output_person_info.append(data)
+
+        results = []
+        for output in output_person_info:
+            results.append(self.processor(output))
+        return results
+
+    def __call__(self, inputs):
+        """Process all inputs list. And collate to batch and put to target device.
+        If you need custom ops to load or process a batch samples, you need to reimplement it.
+        """
+        batch_outputs = []
+        for inp in inputs:
+            for res in self.process_single(inp):
+                batch_outputs.append(res)
+
+        batch_outputs = self._collate_fn(batch_outputs)
+        batch_outputs['img_metas']._data = [[
+            img_meta[i] for img_meta in batch_outputs['img_metas']._data
+            for i in range(len(img_meta))
+        ]]
+        return batch_outputs
+
+
+class PoseTopDownOutputProcessor(OutputProcessor):
+
+    def __call__(self, inputs):
+        output = {}
+        output['keypoints'] = inputs['preds']
+        output['bbox'] = inputs['boxes']  # c1, c2, s1, s2, area, core
+
+        for i, bbox in enumerate(output['bbox']):
+            center, scale = bbox[:2], bbox[2:4]
+            output['bbox'][i][:4] = bbox_cs2xyxy(center, scale)
+        output['bbox'] = output['bbox'][:, [0, 1, 2, 3, 5]]
+
+        return output
+
+
+@PREDICTORS.register_module()
+class PoseTopDownPredictor(PredictorV2):
+    """Pose topdown predictor.
+        Args:
+            model_path (str): Path of model path.
+            config_file (Optinal[str]): Config file path for model and processor to init. Defaults to None.
+            detection_model_config: Dict of person detection model predictor config,
+                example like ``dict(type="", model_path="", config_file="", ......)``
+            batch_size (int): Batch size for forward.
+            bbox_thr (float): Bounding box threshold to filter output results of detection model
+            cat_id (int | str): Category id or name to filter target objects.
+            device (str | torch.device): Support str('cuda' or 'cpu') or torch.device, if is None, detect device automatically.
+            save_results (bool): Whether to save predict results.
+            save_path (str): File path for saving results, only valid when `save_results` is True.
+            pipelines (list[dict]): Data pipeline configs.
+            mode (str): The image mode into the model.
+    """
+
+    def __init__(self,
+                 model_path,
+                 config_file=None,
+                 detection_predictor_config=None,
+                 batch_size=1,
+                 bbox_thr=None,
+                 cat_id=None,
+                 device=None,
+                 pipelines=None,
+                 save_results=False,
+                 save_path=None,
+                 mode='BGR',
+                 *args,
+                 **kwargs):
+        assert batch_size == 1, 'Only support batch_size=1 now!'
+        self.cat_id = cat_id
+        self.bbox_thr = bbox_thr
+        self.detection_predictor_config = detection_predictor_config
+
+        super(PoseTopDownPredictor, self).__init__(
+            model_path,
+            config_file=config_file,
+            batch_size=batch_size,
+            device=device,
+            save_results=save_results,
+            save_path=save_path,
+            pipelines=pipelines,
+            input_processor_threads=1,
+            mode=mode,
+            *args,
+            **kwargs)
+        if hasattr(self.cfg, 'dataset_info'):
+            dataset_info = self.cfg.dataset_info
+            if is_filepath(dataset_info):
+                cfg = mmcv_config_fromfile(dataset_info)
+                dataset_info = cfg._cfg_dict['dataset_info']
+        else:
+            from easycv.datasets.pose.data_sources.coco import COCO_DATASET_INFO
+            dataset_info = COCO_DATASET_INFO
+
+        self.dataset_info = DatasetInfo(dataset_info)
+
+    def model_forward(self, inputs, return_heatmap=False):
+        with torch.no_grad():
+            result = self.model(
+                **inputs, mode='test', return_heatmap=return_heatmap)
+        return result
+
+    def get_input_processor(self):
+        return PoseTopDownInputProcessor(
+            cfg=self.cfg,
+            dataset_info=self.dataset_info,
+            detection_predictor_config=self.detection_predictor_config,
+            bbox_thr=self.bbox_thr,
+            pipelines=self.pipelines,
+            batch_size=self.batch_size,
+            cat_id=self.cat_id,
+            mode=self.mode)
+
+    def get_output_processor(self):
+        return PoseTopDownOutputProcessor()
+
+    def show_result(self,
+                    image,
+                    keypoints,
+                    radius=4,
+                    thickness=1,
+                    kpt_score_thr=0.3,
+                    bbox_color='green',
+                    show=False,
+                    save_path=None):
+        vis_result = vis_pose_result(
+            self.model,
+            image,
+            keypoints,
+            dataset_info=self.dataset_info,
+            radius=radius,
+            thickness=thickness,
+            kpt_score_thr=kpt_score_thr,
+            bbox_color=bbox_color,
+            show=show,
+            out_file=save_path)
+
+        return vis_result
+
+
+class _TorchPoseTopDownOutputProcessor(PoseTopDownOutputProcessor):
+
+    def __call__(self, inputs):
+        output = super(_TorchPoseTopDownOutputProcessor, self).__call__(inputs)
+
+        bbox = output['bbox']
+        keypoints = output['keypoints']
+        results = []
+        for i in range(len(keypoints)):
+            results.append({'bbox': bbox[i], 'keypoints': keypoints[i]})
+        return {'pose_results': results}
+
+
+@deprecated(reason='Please use PoseTopDownPredictor.')
+@PREDICTORS.register_module()
+class TorchPoseTopDownPredictorWithDetector(PoseTopDownPredictor):
+
+    def __init__(
+        self,
+        model_path,
+        model_config={
+            'pose': {
+                'bbox_thr': 0.3,
+                'format': 'xywh'
+            },
+            'detection': {
+                'model_type': None,
+                'reserved_classes': [],
+                'score_thresh': 0.0,
+            }
+        },
+    ):
+        """
+        init model
+
+        Args:
+          model_path: pose and detection model file path, split with `,`,
+                      make sure the first is pose model, second is detection model
+          model_config: config string for model to init, in json format
+        """
+        if isinstance(model_config, str):
+            model_config = json.loads(model_config)
+
+        reserved_classes = model_config['detection'].pop(
+            'reserved_classes', [])
+        if len(reserved_classes) == 0:
+            reserved_classes = None
+        else:
+            assert len(reserved_classes) == 1
+            reserved_classes = reserved_classes[0]
+
+        model_list = model_path.split(',')
+        assert len(model_list) == 2
+        # first is pose model, second is detection model
+        pose_model_path, detection_model_path = model_list
+
+        detection_model_type = model_config['detection'].pop('model_type')
+        if detection_model_type == 'TorchYoloXPredictor':
+            detection_predictor_config = dict(
+                type=detection_model_type,
+                model_path=detection_model_path,
+                model_config=model_config['detection'])
+        else:
+            detection_predictor_config = dict(
+                model_path=detection_model_path, **model_config['detection'])
+
+        pose_kwargs = model_config['pose']
+        pose_kwargs.pop('format', None)
+
+        super().__init__(
+            model_path=pose_model_path,
+            detection_predictor_config=detection_predictor_config,
+            cat_id=reserved_classes,
+            **pose_kwargs,
+        )
+
+    def get_output_processor(self):
+        return _TorchPoseTopDownOutputProcessor()
+
+    def show_result(self,
+                    image_path,
+                    keypoints,
+                    radius=4,
+                    thickness=1,
+                    kpt_score_thr=0.3,
+                    bbox_color='green',
+                    show=False,
+                    save_path=None):
+        dataset_info = self.dataset_info
+        # get dataset info
+        if (dataset_info is None and hasattr(self.model, 'cfg')
+                and 'dataset_info' in self.model.cfg):
+            dataset_info = DatasetInfo(self.model.cfg.dataset_info)
+
+        if not dataset_info:
+            raise ValueError('Please provide `dataset_info`!')
+
+        skeleton = dataset_info.skeleton
+        pose_kpt_color = dataset_info.pose_kpt_color
+        pose_link_color = dataset_info.pose_link_color
+
+        if hasattr(self.model, 'module'):
+            self.model = self.model.module
+
+        img = self.model.show_result(
+            image_path,
+            keypoints,
+            skeleton,
+            radius=radius,
+            thickness=thickness,
+            pose_kpt_color=pose_kpt_color,
+            pose_link_color=pose_link_color,
+            kpt_score_thr=kpt_score_thr,
+            bbox_color=bbox_color,
+            show=show,
+            out_file=save_path)
+
+        return img

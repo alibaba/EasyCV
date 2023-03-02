@@ -12,7 +12,7 @@ from .hand_keypoints_predictor import HandKeypointsPredictor
 from .mot_predictor import MOTPredictor
 from .ocr import (OCRClsPredictor, OCRDetPredictor, OCRPredictor,
                   OCRRecPredictor)
-from .pose_predictor import (TorchPoseTopDownPredictor,
+from .pose_predictor import (PoseTopDownPredictor,
                              TorchPoseTopDownPredictorWithDetector)
 from .reid_predictor import ReIDPredictor
 from .segmentation import Mask2formerPredictor, SegmentationPredictor
