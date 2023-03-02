@@ -16,10 +16,10 @@ CLASSES = [
 
 # dataset settings
 data_root = 'data/coco/'
-train_ann_file = 'annotations/instances_train2017.json'
-train_img_prefix = 'train2017/'
-val_ann_file = 'annotations/instances_val2017.json'
-val_img_prefix = 'val2017/'
+train_ann_file = data_root + 'annotations/instances_train2017.json'
+train_img_prefix = data_root + 'train2017/'
+val_ann_file = data_root + 'annotations/instances_val2017.json'
+val_img_prefix = data_root + 'val2017/'
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -99,7 +99,6 @@ eval_config = dict(interval=1, gpu_collect=False)
 eval_pipelines = [
     dict(
         mode='test',
-        data=val_dataset,
         evaluators=[
             dict(type='CocoDetectionEvaluator', classes=CLASSES),
         ],

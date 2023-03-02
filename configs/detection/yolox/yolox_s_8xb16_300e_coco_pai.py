@@ -67,63 +67,20 @@ test_batch_size = 2
 train_path = ''
 val_path = ''
 
-train_ann_file = None
-train_img_prefix = None
-test_ann_file = None
-test_img_prefix = None
+# dataset settings
+train_dataset = dict(
+    type='DetImagesMixDataset',
+    data_source=dict(type=data_type, path=train_path, classes=CLASSES),
+    pipeline=train_pipeline,
+    dynamic_scale=img_scale)
 
-if data_type == 'DetSourcePAI':
-
-    # dataset settings
-    train_dataset = dict(
-        type='DetImagesMixDataset',
-        data_source=dict(type=data_type, path=train_path, classes=CLASSES),
-        pipeline=train_pipeline,
-        dynamic_scale=img_scale)
-
-    val_dataset = dict(
-        type='DetImagesMixDataset',
-        imgs_per_gpu=test_batch_size,
-        data_source=dict(type=data_type, path=val_path, classes=CLASSES),
-        pipeline=test_pipeline,
-        dynamic_scale=None,
-        label_padding=False)
-
-elif data_type == 'DetSourceCoco':
-    train_dataset = dict(
-        type='DetImagesMixDataset',
-        data_source=dict(
-            type=data_type,
-            ann_file=train_ann_file,
-            img_prefix=train_img_prefix,
-            pipeline=[
-                dict(type='LoadImageFromFile', to_float32=True),
-                dict(type='LoadAnnotations', with_bbox=True)
-            ],
-            classes=CLASSES,
-            filter_empty_gt=True,
-            iscrowd=False),
-        pipeline=train_pipeline,
-        dynamic_scale=img_scale)
-
-    val_dataset = dict(
-        type='DetImagesMixDataset',
-        imgs_per_gpu=2,
-        data_source=dict(
-            type=data_type,
-            ann_file=test_ann_file,
-            img_prefix=test_img_prefix,
-            pipeline=[
-                dict(type='LoadImageFromFile', to_float32=True),
-                dict(type='LoadAnnotations', with_bbox=True)
-            ],
-            classes=CLASSES,
-            filter_empty_gt=False,
-            test_mode=True,
-            iscrowd=True),
-        pipeline=test_pipeline,
-        dynamic_scale=None,
-        label_padding=False)
+val_dataset = dict(
+    type='DetImagesMixDataset',
+    imgs_per_gpu=test_batch_size,
+    data_source=dict(type=data_type, path=val_path, classes=CLASSES),
+    pipeline=test_pipeline,
+    dynamic_scale=None,
+    label_padding=False)
 
 data = dict(
     imgs_per_gpu=16, workers_per_gpu=4, train=train_dataset, val=val_dataset)

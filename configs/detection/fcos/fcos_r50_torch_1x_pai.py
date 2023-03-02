@@ -83,44 +83,20 @@ test_pipeline = [
 ]
 
 # dataset settings
+data_type = 'DetSourcePAI'
 test_batch_size = 1
-
-train_ann_file = ''
-train_img_prefix = ''
-test_ann_file = ''
-test_img_prefix = ''
-data_type = 'DetSourceCoco'
+train_path = ''
+val_path = ''
 
 train_dataset = dict(
     type='DetDataset',
-    data_source=dict(
-        type=data_type,
-        ann_file=train_ann_file,
-        img_prefix=train_img_prefix,
-        pipeline=[
-            dict(type='LoadImageFromFile'),
-            dict(type='LoadAnnotations', with_bbox=True)
-        ],
-        classes=CLASSES,
-        filter_empty_gt=True,
-        iscrowd=False),
+    data_source=dict(type=data_type, path=train_path, classes=CLASSES),
     pipeline=train_pipeline)
 
 val_dataset = dict(
     type='DetDataset',
     imgs_per_gpu=test_batch_size,
-    data_source=dict(
-        type=data_type,
-        ann_file=test_ann_file,
-        img_prefix=test_img_prefix,
-        pipeline=[
-            dict(type='LoadImageFromFile'),
-            dict(type='LoadAnnotations', with_bbox=True)
-        ],
-        classes=CLASSES,
-        test_mode=True,
-        filter_empty_gt=False,
-        iscrowd=True),
+    data_source=dict(type=data_type, path=val_path, classes=CLASSES),
     pipeline=test_pipeline)
 
 data = dict(
