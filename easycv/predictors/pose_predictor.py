@@ -221,8 +221,8 @@ class PoseTopDownInputProcessor(InputProcessor):
 
         output_person_info = []
         for person_result in person_results:
-            box = person_result['bbox']  # x,y,w,h
-            box = [box[0], box[1], box[2] - box[0], box[3] - box[1]]
+            box = person_result['bbox']  # x,y,x,y
+            box = [box[0], box[1], box[2] - box[0], box[3] - box[1]]  # x,y,w,h
             center, scale = _box2cs(self.cfg.data_cfg['image_size'], box)
             data = {
                 'image_id':
@@ -276,6 +276,9 @@ class PoseTopDownInputProcessor(InputProcessor):
         for inp in inputs:
             for res in self.process_single(inp):
                 batch_outputs.append(res)
+
+        if len(batch_outputs) < 1:
+            return batch_outputs
 
         batch_outputs = self._collate_fn(batch_outputs)
         batch_outputs['img_metas']._data = [[
@@ -384,7 +387,7 @@ class PoseTopDownPredictor(PredictorV2):
                     image,
                     keypoints,
                     radius=4,
-                    thickness=1,
+                    thickness=3,
                     kpt_score_thr=0.3,
                     bbox_color='green',
                     show=False,
