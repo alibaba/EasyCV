@@ -234,10 +234,25 @@ class STGCNInputProcessor(InputProcessor):
 
 @PREDICTORS.register_module()
 class STGCNPredictor(PredictorV2):
+    """STGCN predict pipeline.
+        Args:
+            model_path (str): Path of model path.
+            config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
+            ori_image_size (Optinal[list|tuple]): Original image or video frame size (weight, height).
+            batch_size (int): batch size for forward.
+            label_map ((Optinal[list|tuple])): List or file of labels.
+            device (str | torch.device): Support str('cuda' or 'cpu') or torch.device, if is None, detect device automatically.
+            save_results (bool): Whether to save predict results.
+            save_path (str): File path for saving results, only valid when `save_results` is True.
+            pipelines (list[dict]): Data pipeline configs.
+            input_processor_threads (int): Number of processes to process inputs.
+            mode (str): The image mode into the model.
+    """
 
     def __init__(self,
                  model_path,
                  config_file=None,
+                 ori_image_size=None,
                  batch_size=1,
                  label_map=None,
                  topk=1,
@@ -261,6 +276,14 @@ class STGCNPredictor(PredictorV2):
             mode=mode,
             *args,
             **kwargs)
+
+        if ori_image_size is not None:
+            w, h = ori_image_size
+            for pipeline in self.cfg.test_pipeline:
+                if pipeline['type'] == 'PoseNormalize':
+                    pipeline['mean'] = (w // 2, h // 2, .5)
+                    pipeline['max_value'] = (w, h, 1.)
+
         self.topk = topk
         if label_map is None:
             if 'CLASSES' in self.cfg:

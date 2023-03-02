@@ -11,7 +11,6 @@ import torch
 from easycv.file.utils import is_url_path
 from easycv.predictors.pose_predictor import PoseTopDownPredictor
 from easycv.predictors.video_classifier import STGCNPredictor
-from easycv.utils.config_tools import mmcv_config_fromfile
 
 try:
     import moviepy.editor as mpy
@@ -60,6 +59,10 @@ def parse_args():
         ('http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/detection/yolox/yolox_s_bs16_lr002/epoch_300.pt'
          ),
         help='human detection checkpoint file/url')
+    parser.add_argument(
+        '--det-predictor-type',
+        default='YoloXPredictor',
+        help='detection predictor type')
     parser.add_argument(
         '--pose-config',
         default='configs/pose/hrnet_w48_coco_256x192_udp.py',
@@ -139,19 +142,12 @@ def main():
     num_frame = len(frame_paths)
     h, w, _ = original_frames[0].shape
 
-    # Get clip_len, frame_interval and calculate center index of each clip
-    config = mmcv_config_fromfile(args.config)
-    for component in config.test_pipeline:
-        if component['type'] == 'PoseNormalize':
-            component['mean'] = (w // 2, h // 2, .5)
-            component['max_value'] = (w, h, 1.)
-
     # Get Human detection results
     pose_predictor = PoseTopDownPredictor(
         model_path=args.pose_checkpoint,
         config_file=args.pose_config,
         detection_predictor_config=dict(
-            type='YoloXPredictor',
+            type=args.det_predictor_type,
             model_path=args.det_checkpoint,
             config_file=args.det_config,
         ),
@@ -160,7 +156,10 @@ def main():
     )
 
     video_cls_predictor = STGCNPredictor(
-        model_path=args.checkpoint, config_file=config, label_map=None)
+        model_path=args.checkpoint,
+        config_file=args.config,
+        ori_image_size=(w, h),
+        label_map=None)
 
     pose_results = pose_predictor(original_frames)
 
