@@ -1,4 +1,4 @@
-_base_ = '../../base.py'
+_base_ = 'configs/base.py'
 
 CLASSES = [
     'drink water', 'eat meal/snack', 'brushing teeth', 'brushing hair', 'drop',
