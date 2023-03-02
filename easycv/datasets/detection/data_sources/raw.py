@@ -139,3 +139,21 @@ class DetSourceRaw(DetSourceBase):
         result_dict['gt_bboxes'] = batched_cxcywh2xyxy_with_shape(
             result_dict['gt_bboxes'], shape=result_dict['img_shape'][:2])
         return result_dict
+
+    def get_ann_info(self, idx):
+        """
+        Get raw annotation info, include bounding boxes, labels and so on.
+        `bboxes` format is as [x1, y1, x2, y2] without normalization.
+        """
+        sample_info = self.samples_list[idx]
+        result_dict = self[idx]
+        groundtruth_is_crowd = sample_info.get('groundtruth_is_crowd', None)
+        if groundtruth_is_crowd is None:
+            groundtruth_is_crowd = np.zeros_like(sample_info['gt_labels'])
+
+        annotations = {
+            'bboxes': result_dict['gt_bboxes'],
+            'labels': sample_info['gt_labels'],
+            'groundtruth_is_crowd': groundtruth_is_crowd
+        }
+        return annotations
