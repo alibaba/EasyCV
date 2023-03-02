@@ -12,61 +12,43 @@ import mmcv
 from easycv.predictors import DetectionPredictor
 from easycv.thirdparty.mot.bytetrack.byte_tracker import BYTETracker
 from easycv.thirdparty.mot.utils import detection_result_filter, show_result
-from .base import PredictorV2
 from .builder import PREDICTORS
 
 
 @PREDICTORS.register_module()
-class MOTPredictor(PredictorV2):
-    """Generic MOT Predictor, it will filter bbox results by ``score_threshold`` .
+class MOTPredictor(object):
+    """MOT Predictor.
+
 
     Args:
         model_path (str): Path of model path.
         config_file (Optinal[str]): config file path for model and processor to init. Defaults to None.
-        batch_size (int): batch size for forward.
-        device (str | torch.device): Support str('cuda' or 'cpu') or torch.device, if is None, detect device automatically.
-        save_results (bool): Whether to save predict results.
-        save_path (str): File path for saving results, only valid when `save_results` is True.
-        pipelines (list[dict]): Data pipeline configs.
-        input_processor_threads (int): Number of processes to process inputs.
-        mode (str): The image mode into the model.
+        score_threshold(float): Specifies the filter score threshold for bbox.
+        tracker_config (dict): Specify the parameters of the tracker.
+        save_path (str): File path for saving results.
+        fps: (int): Specify the fps of the output video.
     """
 
-    def __init__(self,
-                 model_path,
-                 config_file=None,
-                 batch_size=1,
-                 device=None,
-                 save_results=False,
-                 save_path=None,
-                 pipelines=None,
-                 score_threshold=0.5,
-                 input_processor_threads=8,
-                 mode='BGR',
-                 fps=24,
-                 *arg,
-                 **kwargs):
-        super(MOTPredictor, self).__init__(
+    def __init__(
+            self,
             model_path,
-            config_file=config_file,
-            batch_size=batch_size,
-            device=device,
-            save_results=save_results,
-            save_path=save_path,
-            pipelines=pipelines,
-            input_processor_threads=input_processor_threads,
-            mode=mode)
+            config_file=None,
+            score_threshold=0.5,
+            tracker_config={
+                'det_high_thresh': 0.2,
+                'det_low_thresh': 0.05,
+                'match_thresh': 1.0,
+                'match_thresh_second': 1.0,
+                'match_thresh_init': 1.0,
+                'track_buffer': 2,
+                'frame_rate': 25
+            },
+            save_path=None,
+            fps=24):
 
         self.model = DetectionPredictor(
             model_path, config_file, score_threshold=score_threshold)
-        self.tracker = BYTETracker(
-            det_high_thresh=0.2,
-            det_low_thresh=0.05,
-            match_thresh=1.0,
-            match_thresh_second=1.0,
-            match_thresh_init=1.0,
-            track_buffer=2,
-            frame_rate=25)
+        self.tracker = BYTETracker(**tracker_config)
         self.fps = fps
         self.output = save_path
 
@@ -157,7 +139,6 @@ class MOTPredictor(PredictorV2):
 
                 prog_bar.update()
 
-            print(track_result_list)
             if self.output and OUT_VIDEO:
                 print(
                     f'making the output video at {self.output} with a FPS of {self.fps}'
