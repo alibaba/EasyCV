@@ -232,6 +232,7 @@ Please refer to the following model zoo for more details.
 - [detection model zoo](docs/source/model_zoo_det.md)
 - [detection3d model zoo](docs/source/model_zoo_det3d.md)
 - [segmentation model zoo](docs/source/model_zoo_seg.md)
+- [pose model zoo](docs/source/model_zoo_pose.md)
 
 ## Data Hub
 

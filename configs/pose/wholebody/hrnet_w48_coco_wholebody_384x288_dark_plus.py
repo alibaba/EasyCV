@@ -185,6 +185,16 @@ eval_pipelines = [
         data=dict(**data['val'], imgs_per_gpu=1),
         evaluators=[dict(type='WholeBodyKeyPointEvaluator', **evaluator_args)])
 ]
-export = dict(use_jit=False)
 checkpoint_sync_export = True
 predict = dict(type='WholeBodyKeypointsPredictor', bbox_thr=0.8)
+
+export = dict(use_jit=False)
+# export = dict(
+#     type='blade',
+#     blade_config=dict(
+#         enable_fp16=True,
+#         fp16_fallback_op_ratio=0.0,
+#         customize_op_black_list=[
+#             'aten::select', 'aten::index', 'aten::slice', 'aten::view',
+#             'aten::upsample', 'aten::clamp', 'aten::clone', 'aten::add@-1'
+#         ]))
