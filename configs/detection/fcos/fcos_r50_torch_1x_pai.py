@@ -1,4 +1,4 @@
-_base_ = ['./fcos.py', './coco_detection.py', 'configs/base.py']
+_base_ = ['./fcos.py', 'configs/base.py']
 
 log_config = dict(
     interval=50, hooks=[
@@ -43,13 +43,72 @@ CLASSES = [
     'hair drier', 'toothbrush'
 ]
 
+img_scale = (1333, 800)
+
+img_norm_cfg = dict(
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
+train_pipeline = [
+    dict(type='MMResize', img_scale=img_scale, keep_ratio=True),
+    dict(type='MMRandomFlip', flip_ratio=0.5),
+    dict(type='MMNormalize', **img_norm_cfg),
+    dict(type='MMPad', size_divisor=32),
+    dict(type='DefaultFormatBundle'),
+    dict(
+        type='Collect',
+        keys=['img', 'gt_bboxes', 'gt_labels'],
+        meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
+                   'img_shape', 'pad_shape', 'scale_factor', 'flip',
+                   'flip_direction', 'img_norm_cfg'))
+]
+test_pipeline = [
+    dict(
+        type='MMMultiScaleFlipAug',
+        img_scale=img_scale,
+        flip=False,
+        transforms=[
+            dict(type='MMResize', keep_ratio=True),
+            dict(type='MMRandomFlip'),
+            dict(type='MMNormalize', **img_norm_cfg),
+            dict(type='MMPad', size_divisor=32),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(
+                type='Collect',
+                keys=['img'],
+                meta_keys=('filename', 'ori_filename', 'ori_shape',
+                           'ori_img_shape', 'img_shape', 'pad_shape',
+                           'scale_factor', 'flip', 'flip_direction',
+                           'img_norm_cfg'))
+        ])
+]
+
 # dataset settings
 data_type = 'DetSourcePAI'
-train_path = None
-val_path = None
+train_path = 'data/coco/train2017.manifest'
+val_path = 'data/coco/val2017.manifest'
+test_batch_size = 1
 
 train_dataset = dict(
-    data_source=dict(type=data_type, path=train_path, classes=CLASSES), )
+    type='DetDataset',
+    data_source=dict(type=data_type, path=train_path, classes=CLASSES),
+    pipeline=train_pipeline)
 
 val_dataset = dict(
-    data_source=dict(type=data_type, path=val_path, classes=CLASSES), )
+    type='DetDataset',
+    imgs_per_gpu=test_batch_size,
+    data_source=dict(type=data_type, path=val_path, classes=CLASSES),
+    pipeline=test_pipeline)
+
+data = dict(
+    imgs_per_gpu=2, workers_per_gpu=2, train=train_dataset, val=val_dataset)
+
+# evaluation
+eval_config = dict(interval=1, gpu_collect=False)
+eval_pipelines = [
+    dict(
+        mode='test',
+        evaluators=[
+            dict(type='CocoDetectionEvaluator', classes=CLASSES),
+        ],
+    )
+]
