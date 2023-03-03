@@ -85,8 +85,8 @@ test_pipeline = [
 # dataset settings
 data_type = 'DetSourcePAI'
 test_batch_size = 1
-train_path = ''
-val_path = ''
+train_path = None
+val_path = None
 
 train_dataset = dict(
     type='DetDataset',

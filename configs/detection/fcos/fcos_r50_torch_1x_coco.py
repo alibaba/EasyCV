@@ -85,10 +85,10 @@ test_pipeline = [
 # dataset settings
 test_batch_size = 1
 
-train_ann_file = ''
-train_img_prefix = ''
-test_ann_file = ''
-test_img_prefix = ''
+train_ann_file = None
+train_img_prefix = None
+test_ann_file = None
+test_img_prefix = None
 data_type = 'DetSourceCoco'
 
 train_dataset = dict(
