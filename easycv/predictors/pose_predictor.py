@@ -339,6 +339,7 @@ class PoseTopDownPredictor(PredictorV2):
                  save_results=False,
                  save_path=None,
                  mode='BGR',
+                 model_type=None,
                  *args,
                  **kwargs):
         assert batch_size == 1, 'Only support batch_size=1 now!'
@@ -346,15 +347,18 @@ class PoseTopDownPredictor(PredictorV2):
         self.bbox_thr = bbox_thr
         self.detection_predictor_config = detection_predictor_config
 
-        if model_path.endswith('jit'):
-            assert config_file is not None
-            self.model_type = 'jit'
-        elif model_path.endswith('blade'):
-            import torch_blade
-            assert config_file is not None
-            self.model_type = 'blade'
-        else:
-            self.model_type = 'raw'
+        self.model_type = model_type
+        if self.model_type is None:
+            if model_path.endswith('jit'):
+                assert config_file is not None
+                self.model_type = 'jit'
+            elif model_path.endswith('blade'):
+                import torch_blade
+                assert config_file is not None
+                self.model_type = 'blade'
+            else:
+                self.model_type = 'raw'
+        assert self.model_type in ['raw', 'jit', 'blade']
 
         super(PoseTopDownPredictor, self).__init__(
             model_path,
