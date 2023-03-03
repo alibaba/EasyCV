@@ -52,6 +52,9 @@ class MOTPredictor(object):
                 'show': False
             },
             save_path=None,
+            IN_VIDEO=False,
+            OUT_VIDEO=False,
+            out_dir=None,
             fps=24):
 
         if model_path is not None:
@@ -63,6 +66,9 @@ class MOTPredictor(object):
         self.fps = fps
         self.show_result_config = show_result_config
         self.output = save_path
+        self.IN_VIDEO = IN_VIDEO
+        self.OUT_VIDEO = OUT_VIDEO
+        self.out_dir = out_dir
 
     def define_input(self, inputs):
         # support list(dict(str)) as input
@@ -79,24 +85,24 @@ class MOTPredictor(object):
         if osp.isdir(input):
             imgs = glob.glob(os.path.join(input, '*.jpg'))
             imgs.sort()
-            IN_VIDEO = False
+            self.IN_VIDEO = False
         else:
             imgs = mmcv.VideoReader(input)
-            IN_VIDEO = True
+            self.IN_VIDEO = True
 
         return imgs, input
 
     def define_output(self):
         if self.output is not None:
             if self.output.endswith('.mp4'):
-                OUT_VIDEO = True
-                out_dir = tempfile.TemporaryDirectory()
-                out_path = out_dir.name
+                self.OUT_VIDEO = True
+                self.out_dir = tempfile.TemporaryDirectory()
+                out_path = self.out_dir.name
                 _out = self.output.rsplit(os.sep, 1)
                 if len(_out) > 1:
                     os.makedirs(_out[0], exist_ok=True)
             else:
-                OUT_VIDEO = False
+                self.OUT_VIDEO = False
                 out_path = self.output
                 os.makedirs(out_path, exist_ok=True)
         else:
@@ -140,7 +146,7 @@ class MOTPredictor(object):
                 track_result_list.append(track_result)
 
             if self.output is not None:
-                if IN_VIDEO or OUT_VIDEO:
+                if self.IN_VIDEO or self.OUT_VIDEO:
                     out_file = osp.join(out_path, f'{frame_id:06d}.jpg')
                 else:
                     out_file = osp.join(out_path, img.rsplit(os.sep, 1)[-1])
@@ -156,12 +162,12 @@ class MOTPredictor(object):
                     **self.show_result_config)
             prog_bar.update()
 
-        if self.output and OUT_VIDEO:
+        if self.output and self.OUT_VIDEO:
             print(
                 f'making the output video at {self.output} with a FPS of {self.fps}'
             )
             mmcv.frames2video(
                 out_path, self.output, fps=self.fps, fourcc='mp4v')
-            out_dir.cleanup()
+            self.out_dir.cleanup()
 
         return [track_result_list]
