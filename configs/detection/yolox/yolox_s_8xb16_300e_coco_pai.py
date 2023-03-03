@@ -63,7 +63,7 @@ test_pipeline = [
 ]
 
 data_type = 'DetSourcePAI'
-test_batch_size = 2
+test_batch_size = 1
 train_path = ''
 val_path = ''
 

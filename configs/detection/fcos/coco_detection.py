@@ -20,12 +20,15 @@ train_ann_file = data_root + 'annotations/instances_train2017.json'
 train_img_prefix = data_root + 'train2017/'
 val_ann_file = data_root + 'annotations/instances_val2017.json'
 val_img_prefix = data_root + 'val2017/'
+img_scale = (1333, 800)
+data_type = 'DetSourceCoco'
+test_batch_size = 1
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 train_pipeline = [
-    dict(type='MMResize', img_scale=(1333, 800), keep_ratio=True),
+    dict(type='MMResize', img_scale=img_scale, keep_ratio=True),
     dict(type='MMRandomFlip', flip_ratio=0.5),
     dict(type='MMNormalize', **img_norm_cfg),
     dict(type='MMPad', size_divisor=32),
@@ -40,7 +43,7 @@ train_pipeline = [
 test_pipeline = [
     dict(
         type='MMMultiScaleFlipAug',
-        img_scale=(1333, 800),
+        img_scale=img_scale,
         flip=False,
         transforms=[
             dict(type='MMResize', keep_ratio=True),
@@ -61,7 +64,7 @@ test_pipeline = [
 train_dataset = dict(
     type='DetDataset',
     data_source=dict(
-        type='DetSourceCoco',
+        type=data_type,
         ann_file=train_ann_file,
         img_prefix=train_img_prefix,
         pipeline=[
@@ -76,9 +79,9 @@ train_dataset = dict(
 
 val_dataset = dict(
     type='DetDataset',
-    imgs_per_gpu=1,
+    imgs_per_gpu=test_batch_size,
     data_source=dict(
-        type='DetSourceCoco',
+        type=data_type,
         ann_file=val_ann_file,
         img_prefix=val_img_prefix,
         pipeline=[

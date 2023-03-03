@@ -43,61 +43,13 @@ CLASSES = [
     'hair drier', 'toothbrush'
 ]
 
-img_scale = (640, 640)
-
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
-
-train_pipeline = [
-    dict(type='MMResize', img_scale=img_scale, keep_ratio=True),
-    dict(type='MMRandomFlip', flip_ratio=0.5),
-    dict(type='MMNormalize', **img_norm_cfg),
-    dict(type='MMPad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(
-        type='Collect',
-        keys=['img', 'gt_bboxes', 'gt_labels'],
-        meta_keys=('filename', 'ori_filename', 'ori_shape', 'ori_img_shape',
-                   'img_shape', 'pad_shape', 'scale_factor', 'flip',
-                   'flip_direction', 'img_norm_cfg'))
-]
-test_pipeline = [
-    dict(
-        type='MMMultiScaleFlipAug',
-        img_scale=img_scale,
-        flip=False,
-        transforms=[
-            dict(type='MMResize', keep_ratio=True),
-            dict(type='MMRandomFlip'),
-            dict(type='MMNormalize', **img_norm_cfg),
-            dict(type='MMPad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(
-                type='Collect',
-                keys=['img'],
-                meta_keys=('filename', 'ori_filename', 'ori_shape',
-                           'ori_img_shape', 'img_shape', 'pad_shape',
-                           'scale_factor', 'flip', 'flip_direction',
-                           'img_norm_cfg'))
-        ])
-]
-
 # dataset settings
 data_type = 'DetSourcePAI'
-test_batch_size = 1
 train_path = None
 val_path = None
 
 train_dataset = dict(
-    type='DetDataset',
-    data_source=dict(type=data_type, path=train_path, classes=CLASSES),
-    pipeline=train_pipeline)
+    data_source=dict(type=data_type, path=train_path, classes=CLASSES), )
 
 val_dataset = dict(
-    type='DetDataset',
-    imgs_per_gpu=test_batch_size,
-    data_source=dict(type=data_type, path=val_path, classes=CLASSES),
-    pipeline=test_pipeline)
-
-data = dict(
-    imgs_per_gpu=2, workers_per_gpu=2, train=train_dataset, val=val_dataset)
+    data_source=dict(type=data_type, path=val_path, classes=CLASSES), )
