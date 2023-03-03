@@ -64,8 +64,8 @@ test_pipeline = [
 
 data_type = 'DetSourcePAI'
 test_batch_size = 1
-train_path = ''
-val_path = ''
+train_path = 'data/coco/train2017.manifest'
+val_path = 'data/coco/val2017.manifest'
 
 # dataset settings
 train_dataset = dict(
