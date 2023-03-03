@@ -118,3 +118,15 @@ eval_pipelines = [
 
 log_config = dict(interval=100, hooks=[dict(type='TextLoggerHook')])
 checkpoint_config = dict(interval=1)
+
+export = dict(type='raw')
+# export = dict(type='jit')
+# export = dict(
+#     type='blade',
+#     blade_config=dict(
+#         enable_fp16=True,
+#         fp16_fallback_op_ratio=0.0,
+#         customize_op_black_list=[
+#             'aten::select', 'aten::index', 'aten::slice', 'aten::view',
+#             'aten::upsample', 'aten::clamp', 'aten::clone'
+#         ]))

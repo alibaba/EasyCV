@@ -187,6 +187,9 @@ class WholeBodyKptsOutputProcessor(OutputProcessor):
         return output
 
 
+# TODO: Fix when multi people are detected in each sample,
+# all the people results will be passed to the pose model,
+# resulting in a dynamic batch_size, which is not supported by jit script model.
 @PREDICTORS.register_module()
 class WholeBodyKeypointsPredictor(PredictorV2):
     """WholeBodyKeypointsPredictor
