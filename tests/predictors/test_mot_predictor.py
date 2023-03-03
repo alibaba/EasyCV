@@ -26,7 +26,15 @@ class MOTPredictorTest(unittest.TestCase):
         output = None  # output video file (mp4 format) or folder or None
         imgs = TEST_MOT_DIR  # input video file or folder
 
-        model = MOTPredictor(checkpoint, save_path=output, score_threshold=0.2)
+        model = MOTPredictor(
+            model_path=checkpoint,
+            detection_predictor_config={
+                'type': 'DetectionPredictor',
+                'model_path': checkpoint,
+                'config_file': None,
+                'score_threshold': 0.2
+            },
+            save_path=output)
 
         track_result_list = model(imgs)
         assert_array_almost_equal(
