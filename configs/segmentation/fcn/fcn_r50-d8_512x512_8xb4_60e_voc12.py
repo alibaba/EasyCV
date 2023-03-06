@@ -1,4 +1,4 @@
-_base_ = './fcn_r50-d8_512x512_8xb4_60e_voc12aug.py'
+_base_ = ['./fcn_r50-d8_512x512_8xb4_60e_voc12aug.py']
 
 CLASSES = [
     'background', 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
@@ -24,8 +24,11 @@ img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 img_scale = (512, 512)
 train_pipeline = [
-    dict(type='MMResize', img_scale=(2048, 512), ratio_range=(0.5, 2.0)),
-    dict(type='SegRandomCrop', crop_size=img_scale / 4, cat_max_ratio=0.75),
+    dict(type='MMResize', img_scale=img_scale, ratio_range=(0.5, 2.0)),
+    dict(
+        type='SegRandomCrop',
+        crop_size=(img_scale[0] / 4, img_scale[1] / 4),
+        cat_max_ratio=0.75),
     dict(type='MMRandomFlip', flip_ratio=0.5),
     dict(type='MMPhotoMetricDistortion'),
     dict(type='MMNormalize', **img_norm_cfg),
