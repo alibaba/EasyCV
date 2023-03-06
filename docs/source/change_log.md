@@ -1,3 +1,29 @@
+# v 0.10.0 (06/03/2023)
+
+## Highlights
+- Support STDC, STGCN, ReID and Multi-len MOT.
+- Support multi processes for predictor data preprocessing. For the model with more time consuming in data preprocessing, the speedup can reach more than 50%.
+
+## New Features
+- Support multi processes for predictor data preprocessing. ([#272](https://github.com/alibaba/EasyCV/pull/272))
+- Support STDC model. ([#284](https://github.com/alibaba/EasyCV/pull/284)) ([#286](https://github.com/alibaba/EasyCV/pull/286))
+- Support ReID and Multi-len MOT. ([#285](https://github.com/alibaba/EasyCV/pull/285)) ([#295](https://github.com/alibaba/EasyCV/pull/295))
+- Support STGCN model, and support export blade model. ([#293](https://github.com/alibaba/EasyCV/pull/293)) ([#299](https://github.com/alibaba/EasyCV/pull/299))
+- Add pose model zoo and support export torch jit and blade model for pose models. ([#294](https://github.com/alibaba/EasyCV/pull/294))
+- Support train motchallenge and crowdhuman datasets for detection models. ([#265](https://github.com/alibaba/EasyCV/pull/265))
+
+## Improvements
+- Speed up inference for face detector when using mtcnn. ([#273](https://github.com/alibaba/EasyCV/pull/273))
+- Add mobilenet config for [itag](https://help.aliyun.com/document_detail/311162.html) and imagenet dataset, and optimize `ClsSourceImageList` api to support string label. ([#276](https://github.com/alibaba/EasyCV/pull/276)) ([#283](https://github.com/alibaba/EasyCV/pull/283))
+- Support multi-rows replacement for first order parameter. ([#282](https://github.com/alibaba/EasyCV/pull/282))
+- Add a tool to convert itag dataset to raw dataset. ([#290](https://github.com/alibaba/EasyCV/pull/290))
+- Add `PoseTopDownPredictor` to replace `TorchPoseTopDownPredictorWithDetector` ([#296](https://github.com/alibaba/EasyCV/pull/296))
+
+## Bug Fixes
+- Remove git lfs dependencies. ([#278](https://github.com/alibaba/EasyCV/pull/278))
+- Fix wholebody keypoints evaluation. ([#287](https://github.com/alibaba/EasyCV/pull/287))
+- Fix DetSourceRaw while label file and image file not match. ([#289](https://github.com/alibaba/EasyCV/pull/289))
+
 # v 0.9.0 (17/01/2023)
 
 ## Highlights
