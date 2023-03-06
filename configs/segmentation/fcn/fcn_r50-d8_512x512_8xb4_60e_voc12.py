@@ -7,7 +7,7 @@ CLASSES = [
 ]
 
 # dataset settings
-dataset_type = 'SegDataset'
+data_type = 'SegSourceRaw'
 data_root = 'data/VOCdevkit/VOC2012'
 
 train_img_root = data_root + 'JPEGImages'
@@ -61,24 +61,21 @@ data = dict(
     imgs_per_gpu=4,
     workers_per_gpu=4,
     train=dict(
-        type=dataset_type,
+        type='SegDataset',
         ignore_index=255,
         data_source=dict(
-            type='SourceConcat',
-            data_source=dict(
-                type='SegSourceRaw',
-                img_root=train_img_root,
-                label_root=train_label_root,
-                split=train_list_file,
-                classes=CLASSES),
-        ),
+            type=data_type,
+            img_root=train_img_root,
+            label_root=train_label_root,
+            split=train_list_file,
+            classes=CLASSES),
         pipeline=train_pipeline),
     val=dict(
         imgs_per_gpu=test_batch_size,
         ignore_index=255,
-        type=dataset_type,
+        type='SegDataset',
         data_source=dict(
-            type='SegSourceRaw',
+            type=data_type,
             img_root=val_img_root,
             label_root=val_label_root,
             split=val_list_file,
