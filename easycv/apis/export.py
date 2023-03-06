@@ -14,7 +14,7 @@ from mmcv.utils import Config
 from easycv.file import io
 from easycv.framework.errors import NotImplementedError, ValueError
 from easycv.models import (DINO, MOCO, SWAV, YOLOX, BEVFormer, Classification,
-                           MoBY, TopDown, build_model)
+                           MoBY, SkeletonGCN, TopDown, build_model)
 from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.misc import encode_str_to_tensor
 
@@ -68,6 +68,8 @@ def export(cfg, ckpt_path, filename, model=None, **kwargs):
         _export_bevformer(model, cfg, filename, **kwargs)
     elif isinstance(model, TopDown):
         _export_pose_topdown(model, cfg, filename, **kwargs)
+    elif isinstance(model, SkeletonGCN):
+        _export_stgcn(model, cfg, filename, **kwargs)
     elif hasattr(cfg, 'export') and getattr(cfg.export, 'use_jit', False):
         export_jit_model(model, cfg, filename, **kwargs)
         return
@@ -96,6 +98,63 @@ def _export_common(model, cfg, filename):
         state_dict=model.state_dict(), meta=meta, author='EvTorch')
     with io.open(filename, 'wb') as ofile:
         torch.save(checkpoint, ofile)
+
+
+def _export_jit_and_blade(model, cfg, filename, dummy_inputs, fp16=False):
+
+    def _trace_model():
+        with torch.no_grad():
+            if hasattr(model, 'forward_export'):
+                model.forward = model.forward_export
+            else:
+                model.forward = model.forward_test
+            trace_model = torch.jit.trace(
+                model,
+                copy.deepcopy(dummy_inputs),
+                strict=False,
+                check_trace=False)
+        return trace_model
+
+    export_type = cfg.export.get('type')
+    if export_type in ['jit', 'blade']:
+        if fp16:
+            with torch.cuda.amp.autocast():
+                trace_model = _trace_model()
+        else:
+            trace_model = _trace_model()
+        torch.jit.save(trace_model, filename + '.jit')
+    else:
+        raise NotImplementedError(f'Not support export type {export_type}!')
+
+    if export_type == 'jit':
+        return
+
+    blade_config = cfg.export.get('blade_config')
+
+    from easycv.toolkit.blade import blade_env_assert, blade_optimize
+    assert blade_env_assert()
+
+    def _get_blade_model():
+        blade_model = blade_optimize(
+            speed_test_model=model,
+            model=trace_model,
+            inputs=copy.deepcopy(dummy_inputs),
+            blade_config=blade_config,
+            static_opt=False,
+            min_num_nodes=None,
+            check_inputs=False,
+            fp16=fp16)
+        return blade_model
+
+    # optimize model with blade
+    if fp16:
+        with torch.cuda.amp.autocast():
+            blade_model = _get_blade_model()
+    else:
+        blade_model = _get_blade_model()
+
+    with io.open(filename + '.blade', 'wb') as ofile:
+        torch.jit.save(blade_model, ofile)
 
 
 def _export_cls(model, cfg, filename):
@@ -540,7 +599,7 @@ def export_jit_model(model, cfg, filename):
         torch.jit.save(model_jit, ofile)
 
 
-def _export_bevformer(model, cfg, filename, fp16=False):
+def _export_bevformer(model, cfg, filename, fp16=False, dummy_inputs=None):
     if not cfg.adapt_jit:
         raise ValueError(
             '"cfg.adapt_jit" must be True when export jit trace or blade model.'
@@ -578,60 +637,10 @@ def _export_bevformer(model, cfg, filename, fp16=False):
         }
         return img, img_metas
 
-    dummy_inputs = _dummy_inputs()
+    if dummy_inputs is None:
+        dummy_inputs = _dummy_inputs()
 
-    def _trace_model():
-        with torch.no_grad():
-            model.forward = model.forward_export
-            trace_model = torch.jit.trace(
-                model, copy.deepcopy(dummy_inputs), check_trace=False)
-        return trace_model
-
-    export_type = cfg.export.get('type')
-    if export_type in ['jit', 'blade']:
-        if fp16:
-            with torch.cuda.amp.autocast():
-                trace_model = _trace_model()
-        else:
-            trace_model = _trace_model()
-        torch.jit.save(trace_model, filename + '.jit')
-    else:
-        raise NotImplementedError(f'Not support export type {export_type}!')
-
-    if export_type == 'jit':
-        return
-
-    blade_config = cfg.export.get('blade_config')
-
-    from easycv.toolkit.blade import blade_env_assert, blade_optimize
-    assert blade_env_assert()
-
-    def _get_blade_model():
-        blade_model = blade_optimize(
-            speed_test_model=model,
-            model=trace_model,
-            inputs=copy.deepcopy(dummy_inputs),
-            blade_config=blade_config,
-            static_opt=False,
-            min_num_nodes=None,  # 50
-            check_inputs=False,
-            fp16=fp16)
-        return blade_model
-
-    # optimize model with blade
-    if fp16:
-        with torch.cuda.amp.autocast():
-            blade_model = _get_blade_model()
-    else:
-        blade_model = _get_blade_model()
-
-    # save blade code and graph
-    # with io.open(filename + '.blade.code.py', 'w') as ofile:
-    #     ofile.write(blade_model.forward.code)
-    # with io.open(filename + '.blade.graph.txt', 'w') as ofile:
-    #     ofile.write(blade_model.forward.graph)
-    with io.open(filename + '.blade', 'wb') as ofile:
-        torch.jit.save(blade_model, ofile)
+    _export_jit_and_blade(model, cfg, filename, dummy_inputs, fp16=fp16)
 
 
 def _export_pose_topdown(model, cfg, filename, fp16=False, dummy_inputs=None):
@@ -672,53 +681,26 @@ def _export_pose_topdown(model, cfg, filename, fp16=False, dummy_inputs=None):
     if dummy_inputs is None:
         dummy_inputs = _dummy_inputs(cfg)
 
-    def _trace_model():
-        with torch.no_grad():
-            model.forward = model.forward_export
-            trace_model = torch.jit.trace(
-                model, copy.deepcopy(dummy_inputs), strict=False)
-        return trace_model
+    _export_jit_and_blade(model, cfg, filename, dummy_inputs, fp16=fp16)
 
-    export_type = cfg.export.get('type')
-    if export_type in ['jit', 'blade']:
-        if fp16:
-            with torch.cuda.amp.autocast():
-                trace_model = _trace_model()
-        else:
-            trace_model = _trace_model()
-        torch.jit.save(trace_model, filename + '.jit')
-    else:
-        raise NotImplementedError(f'Not support export type {export_type}!')
 
-    if export_type == 'jit':
-        return
+def _export_stgcn(model, cfg, filename, fp16=False, dummy_inputs=None):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = copy.deepcopy(model)
+    model.eval()
+    model.to(device)
 
-    blade_config = cfg.export.get('blade_config')
+    if hasattr(cfg, 'export') and getattr(cfg.export, 'type', 'raw') == 'raw':
+        return _export_common(model, cfg, filename)
 
-    from easycv.toolkit.blade import blade_env_assert, blade_optimize
-    assert blade_env_assert()
+    def _dummy_inputs(device):
+        keypoints = torch.randn([1, 3, 300, 17, 2]).to(device)
+        return (keypoints, )
 
-    def _get_blade_model():
-        blade_model = blade_optimize(
-            speed_test_model=model,
-            model=trace_model,
-            inputs=copy.deepcopy(dummy_inputs),
-            blade_config=blade_config,
-            static_opt=False,
-            min_num_nodes=None,
-            check_inputs=False,
-            fp16=fp16)
-        return blade_model
+    if dummy_inputs is None:
+        dummy_inputs = _dummy_inputs(device)
 
-    # optimize model with blade
-    if fp16:
-        with torch.cuda.amp.autocast():
-            blade_model = _get_blade_model()
-    else:
-        blade_model = _get_blade_model()
-
-    with io.open(filename + '.blade', 'wb') as ofile:
-        torch.jit.save(blade_model, ofile)
+    _export_jit_and_blade(model, cfg, filename, dummy_inputs, fp16=fp16)
 
 
 def replace_syncbn(backbone_cfg):

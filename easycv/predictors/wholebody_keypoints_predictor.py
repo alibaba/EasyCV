@@ -187,6 +187,9 @@ class WholeBodyKptsOutputProcessor(OutputProcessor):
         return output
 
 
+# TODO: Fix when multi people are detected in each sample,
+# all the people results will be passed to the pose model,
+# resulting in a dynamic batch_size, which is not supported by jit script model.
 @PREDICTORS.register_module()
 class WholeBodyKeypointsPredictor(PredictorV2):
     """WholeBodyKeypointsPredictor
@@ -213,17 +216,21 @@ class WholeBodyKeypointsPredictor(PredictorV2):
                  save_path=None,
                  bbox_thr=None,
                  mode='BGR',
+                 model_type=None,
                  *args,
                  **kwargs):
-        if model_path.endswith('jit'):
-            assert config_file is not None
-            self.model_type = 'jit'
-        elif model_path.endswith('blade'):
-            import torch_blade
-            assert config_file is not None
-            self.model_type = 'blade'
-        else:
-            self.model_type = 'raw'
+        self.model_type = model_type
+        if self.model_type is None:
+            if model_path.endswith('jit'):
+                assert config_file is not None
+                self.model_type = 'jit'
+            elif model_path.endswith('blade'):
+                import torch_blade
+                assert config_file is not None
+                self.model_type = 'blade'
+            else:
+                self.model_type = 'raw'
+        assert self.model_type in ['raw', 'jit', 'blade']
 
         super(WholeBodyKeypointsPredictor, self).__init__(
             model_path,

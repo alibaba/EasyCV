@@ -6,6 +6,7 @@ import torch
 from easycv.datasets.registry import PIPELINES
 from easycv.file import io
 from easycv.models.builder import build_model
+from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.mmlab_utils import (dynamic_adapt_for_mmlab,
                                       remove_adapt_for_mmlab)
 from easycv.utils.registry import build_from_cfg
@@ -262,8 +263,22 @@ class STGCNPredictor(PredictorV2):
                  pipelines=None,
                  input_processor_threads=8,
                  mode='RGB',
+                 model_type=None,
                  *args,
                  **kwargs):
+        self.model_type = model_type
+        if self.model_type is None:
+            if model_path.endswith('jit'):
+                assert config_file is not None
+                self.model_type = 'jit'
+            elif model_path.endswith('blade'):
+                import torch_blade
+                assert config_file is not None
+                self.model_type = 'blade'
+            else:
+                self.model_type = 'raw'
+        assert self.model_type in ['raw', 'jit', 'blade']
+
         super(STGCNPredictor, self).__init__(
             model_path,
             config_file=config_file,
@@ -300,6 +315,35 @@ class STGCNPredictor(PredictorV2):
             class_list = label_map
 
         self.label_map = [i.strip() for i in class_list]
+
+    def _build_model(self):
+        if self.model_type != 'raw':
+            with io.open(self.model_path, 'rb') as infile:
+                model = torch.jit.load(infile, self.device)
+        else:
+            model = super()._build_model()
+        return model
+
+    def prepare_model(self):
+        """Build model from config file by default.
+        If the model is not loaded from a configuration file, e.g. torch jit model, you need to reimplement it.
+        """
+        model = self._build_model()
+        model.to(self.device)
+        model.eval()
+        if self.model_type == 'raw':
+            load_checkpoint(model, self.model_path, map_location='cpu')
+        return model
+
+    def model_forward(self, inputs):
+        if self.model_type == 'raw':
+            return super().model_forward(inputs)
+        else:
+            with torch.no_grad():
+                keypoint = inputs['keypoint'].to(self.device)
+                result = self.model(keypoint)
+
+        return result
 
     def get_input_processor(self):
         return STGCNInputProcessor(

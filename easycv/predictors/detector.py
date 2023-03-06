@@ -339,16 +339,19 @@ class YoloXPredictor(DetectionPredictor):
                  nms_thresh=None,
                  test_conf=None,
                  input_processor_threads=8,
-                 mode='BGR'):
+                 mode='BGR',
+                 model_type=None):
         self.max_det = max_det
         self.use_trt_efficientnms = use_trt_efficientnms
-
-        if model_path.endswith('jit'):
-            self.model_type = 'jit'
-        elif model_path.endswith('blade'):
-            self.model_type = 'blade'
-        else:
-            self.model_type = 'raw'
+        self.model_type = model_type
+        if self.model_type is None:
+            if model_path.endswith('jit'):
+                self.model_type = 'jit'
+            elif model_path.endswith('blade'):
+                self.model_type = 'blade'
+            else:
+                self.model_type = 'raw'
+        assert self.model_type in ['raw', 'jit', 'blade']
 
         if self.model_type == 'blade' or self.use_trt_efficientnms:
             import torch_blade
