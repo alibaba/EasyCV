@@ -1,4 +1,4 @@
-_base_ = ['./fcn_r50-d8_512x512_8xb4_60e_voc12aug.py']
+_base_ = './fcn_r50-d8_512x512_8xb4_60e_voc12aug.py'
 
 CLASSES = [
     'background', 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
