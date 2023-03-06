@@ -84,6 +84,35 @@ class STGCNPredictorTest(unittest.TestCase):
         self.assertIn('class_name', results)
         self.assertEqual(len(results['class_probs']), 60)
 
+    def test_jit(self):
+        checkpoint = os.path.join(
+            BASE_LOCAL_PATH,
+            'pretrained_models/video/stgcn/stgcn_80e_ntu60_xsub.pth.jit')
+
+        config_file = 'configs/video_recognition/stgcn/stgcn_80e_ntu60_xsub_keypoint.py'
+        predict_op = STGCNPredictor(
+            model_path=checkpoint, config_file=config_file)
+
+        h, w = 480, 853
+        total_frames = 20
+        num_person = 2
+        inp = dict(
+            frame_dir='',
+            label=-1,
+            img_shape=(h, w),
+            original_shape=(h, w),
+            start_index=0,
+            modality='Pose',
+            total_frames=total_frames,
+            keypoint=np.random.random((num_person, total_frames, 17, 2)),
+            keypoint_score=np.random.random((num_person, total_frames, 17)),
+        )
+
+        results = predict_op([inp])[0]
+        self.assertIn('class', results)
+        self.assertIn('class_name', results)
+        self.assertEqual(len(results['class_probs']), 60)
+
 
 if __name__ == '__main__':
     unittest.main()

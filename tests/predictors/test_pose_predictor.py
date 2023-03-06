@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 from PIL import Image
-from tests.ut_config import (POSE_DATA_SMALL_COCO_LOCAL,
+from tests.ut_config import (BASE_LOCAL_PATH, POSE_DATA_SMALL_COCO_LOCAL,
                              PRETRAINED_MODEL_POSE_HRNET_EXPORT,
                              PRETRAINED_MODEL_YOLOXS_EXPORT, TEST_IMAGES_DIR)
 
@@ -20,22 +20,11 @@ class PoseTopDownPredictorTest(unittest.TestCase):
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
 
-    def test_pose_topdown(self):
-        detection_model_path = PRETRAINED_MODEL_YOLOXS_EXPORT
-        pose_model_path = PRETRAINED_MODEL_POSE_HRNET_EXPORT
+    def _base_test(self, predictor):
         img1 = os.path.join(POSE_DATA_SMALL_COCO_LOCAL,
                             'images/000000067078.jpg')
         img2 = os.path.join(TEST_IMAGES_DIR, 'crowdpose_100024.jpg')
         input_data_list = [img1, img2]
-
-        predictor = PoseTopDownPredictor(
-            model_path=pose_model_path,
-            detection_predictor_config=dict(
-                type='YoloXPredictor',
-                model_path=detection_model_path,
-                score_thresh=0.5),
-            cat_id=0,
-            batch_size=1)
 
         results = predictor(input_data_list)
         self.assertEqual(len(results), 2)
@@ -116,6 +105,44 @@ class PoseTopDownPredictorTest(unittest.TestCase):
             # tmp_save_path = './show2.jpg'
             cv2.imwrite(tmp_save_path, vis_result)
             assert os.path.exists(tmp_save_path)
+
+    def test_pose_topdown(self):
+        detection_model_path = PRETRAINED_MODEL_YOLOXS_EXPORT
+        pose_model_path = PRETRAINED_MODEL_POSE_HRNET_EXPORT
+
+        predictor = PoseTopDownPredictor(
+            model_path=pose_model_path,
+            detection_predictor_config=dict(
+                type='YoloXPredictor',
+                model_path=detection_model_path,
+                score_thresh=0.5),
+            cat_id=0,
+            batch_size=1)
+
+        self._base_test(predictor)
+
+    def test_pose_topdown_jit(self):
+        detection_model_path = PRETRAINED_MODEL_YOLOXS_EXPORT
+        pose_model_path = os.path.join(
+            BASE_LOCAL_PATH,
+            'pretrained_models/pose/hrnet/pose_hrnet_epoch_210_export.pth.jit')
+
+        config_file = 'configs/pose/hrnet_w48_coco_256x192_udp.py'
+
+        predictor = PoseTopDownPredictor(
+            model_path=pose_model_path,
+            config_file=config_file,
+            detection_predictor_config=dict(
+                type='YoloXPredictor',
+                model_path=detection_model_path,
+                score_thresh=0.5),
+            cat_id=0,
+            batch_size=1)
+
+        img = os.path.join(TEST_IMAGES_DIR, 'im00025.png')
+        input_data_list = [img, img]
+        results = predictor(input_data_list)
+        self.assertEqual(len(results), 2)
 
 
 class TorchPoseTopDownPredictorWithDetectorTest(unittest.TestCase):

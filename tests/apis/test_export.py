@@ -8,7 +8,7 @@ import unittest
 
 import numpy as np
 import torch
-from tests.ut_config import (IMAGENET_LABEL_TXT,
+from tests.ut_config import (BASE_LOCAL_PATH, IMAGENET_LABEL_TXT,
                              PRETRAINED_MODEL_BEVFORMER_BASE,
                              PRETRAINED_MODEL_MOCO, PRETRAINED_MODEL_RESNET50,
                              PRETRAINED_MODEL_YOLOXS_EXPORT)
@@ -158,6 +158,51 @@ class ModelExportTest(unittest.TestCase):
                 f.write(cfg_str)
 
             cfg = mmcv_config_fromfile(new_config_path)
+            cfg.export.type = 'jit'
+
+            filename = os.path.join(tmpdir, 'model.pth')
+            export(cfg, ckpt_path, filename, fp16=False)
+
+            self.assertTrue(os.path.exists(filename + '.jit'))
+
+    def test_export_topdown_jit(self):
+        ckpt_path = os.path.join(
+            BASE_LOCAL_PATH,
+            'pretrained_models/pose/hrnet/pose_hrnet_epoch_210_export.pt')
+
+        easycv_dir = os.path.dirname(easycv.__file__)
+        if os.path.exists(os.path.join(easycv_dir, 'configs')):
+            config_dir = os.path.join(easycv_dir, 'configs')
+        else:
+            config_dir = os.path.join(os.path.dirname(easycv_dir), 'configs')
+        config_file = os.path.join(config_dir,
+                                   'pose/hrnet_w48_coco_256x192_udp.py')
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = mmcv_config_fromfile(config_file)
+            cfg.export.type = 'jit'
+
+            filename = os.path.join(tmpdir, 'model.pth')
+            export(cfg, ckpt_path, filename, fp16=False)
+
+            self.assertTrue(os.path.exists(filename + '.jit'))
+
+    def test_export_stgcn_jit(self):
+        ckpt_path = os.path.join(
+            BASE_LOCAL_PATH,
+            'pretrained_models/video/stgcn/stgcn_80e_ntu60_xsub.pth')
+
+        easycv_dir = os.path.dirname(easycv.__file__)
+        if os.path.exists(os.path.join(easycv_dir, 'configs')):
+            config_dir = os.path.join(easycv_dir, 'configs')
+        else:
+            config_dir = os.path.join(os.path.dirname(easycv_dir), 'configs')
+        config_file = os.path.join(
+            config_dir,
+            'video_recognition/stgcn/stgcn_80e_ntu60_xsub_keypoint.py')
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = mmcv_config_fromfile(config_file)
             cfg.export.type = 'jit'
 
             filename = os.path.join(tmpdir, 'model.pth')

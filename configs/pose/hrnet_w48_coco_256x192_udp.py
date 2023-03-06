@@ -197,7 +197,8 @@ eval_pipelines = [
         evaluators=[dict(type='CoCoPoseTopDownEvaluator', **evaluator_args)])
 ]
 checkpoint_sync_export = True
-export = dict(use_jit=False)
+export = dict(type='raw')
+# export = dict(type='jit')
 # export = dict(
 #     type='blade',
 #     blade_config=dict(
