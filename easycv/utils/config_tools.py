@@ -533,6 +533,8 @@ CONFIG_TEMPLATE_ZOO = {
 
     # segmentation
     'FCN_SEG': 'configs/segmentation/fcn/fcn_r50-d8_512x512_8xb4_60e_voc12.py',
+    'UPNET_SEG':
+    'configs/segmentation/upernet/upernet_r50_512x512_8xb4_60e_voc12.py',
 
     # ssl
     'MOCO_R50_TFRECORD': 'configs/config_templates/moco_r50_tfrecord.py',
