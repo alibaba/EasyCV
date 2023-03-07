@@ -77,14 +77,11 @@ img_norm_cfg = dict(
 img_scale = (512, 512)
 train_pipeline = [
     dict(type='MMResize', img_scale=img_scale, ratio_range=(0.5, 2.0)),
-    dict(
-        type='SegRandomCrop',
-        crop_size=(img_scale[0] / 4, img_scale[1] / 4),
-        cat_max_ratio=0.75),
+    dict(type='SegRandomCrop', crop_size=(512, 512), cat_max_ratio=0.75),
     dict(type='MMRandomFlip', flip_ratio=0.5),
     dict(type='MMPhotoMetricDistortion'),
     dict(type='MMNormalize', **img_norm_cfg),
-    dict(type='MMPad', size=(img_scale[0] / 4, img_scale[1] / 4)),
+    dict(type='MMPad', size=(512, 512)),
     dict(type='DefaultFormatBundle'),
     dict(
         type='Collect',
