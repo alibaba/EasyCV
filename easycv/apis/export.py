@@ -2,6 +2,7 @@
 import copy
 import json
 import logging
+import os
 import pickle
 from collections import OrderedDict
 from distutils.version import LooseVersion
@@ -62,6 +63,9 @@ def export(cfg, ckpt_path, filename, model=None, **kwargs):
         _export_swav(model, cfg, filename, **kwargs)
     elif isinstance(model, Classification):
         _export_cls(model, cfg, filename, **kwargs)
+        if hasattr(cfg, 'export') and getattr(cfg.export, 'use_jit', False):
+            filename_jit = os.path.splitext(filename)[0] + '.jit'
+            export_jit_model(model, cfg, filename_jit, **kwargs)
     elif isinstance(model, YOLOX):
         _export_yolox(model, cfg, filename, **kwargs)
     elif isinstance(model, BEVFormer):
@@ -597,6 +601,7 @@ def export_jit_model(model, cfg, filename):
     model_jit = torch.jit.script(model)
     with io.open(filename, 'wb') as ofile:
         torch.jit.save(model_jit, ofile)
+        print('jit_successed!')
 
 
 def _export_bevformer(model, cfg, filename, fp16=False, dummy_inputs=None):

@@ -105,6 +105,21 @@ class WrapperConfig(Config):
                         if match_length == 0:
                             value = first_order_params[
                                 first_order_params_traced]
+
+                            if first_order_params_traced in [
+                                    'class_list', 'CLASSES'
+                            ] and not isinstance(value, list):
+                                label_list = []
+                                with open(value, 'r', encoding='utf-8') as f:
+                                    # Setting encoding explicitly to resolve coding issue on windows
+                                    labels = f.readlines()
+                                    for label in labels:
+                                        label = label.strip()
+                                        if len(label) == 0:
+                                            break
+                                        label_list.append(label)
+                                value = label_list
+
                             # repr() is used to convert the data into a string form (in the form of a Python expression) suitable for the interpreter to read
                             line = ' '.join(
                                 [first_order_params_traced, '=',
@@ -504,7 +519,7 @@ CONFIG_TEMPLATE_ZOO = {
 
     # cls
     'CLASSIFICATION_RESNET':
-    'configs/classification/imagenet/resnet/imagenet_resnet50_jpg.py',
+    'configs/classification/imagenet/resnet/imagenet_resnet50_jit_jpg.py',
     'CLASSIFICATION_RESNEXT':
     'configs/classification/imagenet/resnext/imagenet_resnext50-32x4d_jpg.py',
     'CLASSIFICATION_HRNET':
