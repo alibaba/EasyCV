@@ -1,3 +1,32 @@
+_base_ = ['./fcos.py', 'configs/base.py']
+
+log_config = dict(
+    interval=50, hooks=[
+        dict(type='TextLoggerHook'),
+    ])
+
+checkpoint_config = dict(interval=10)
+# optimizer
+optimizer = dict(
+    type='SGD',
+    lr=0.01,
+    momentum=0.9,
+    weight_decay=0.0001,
+    paramwise_options=dict(bias_lr_mult=2., bias_decay_mult=0.))
+optimizer_config = dict(grad_clip=None)
+# learning policy
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=500,
+    warmup_ratio=1.0 / 3,
+    warmup_by_epoch=False,
+    step=[8, 11])
+
+total_epochs = 12
+
+find_unused_parameters = False
+
 CLASSES = [
     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
     'truck', 'boat', 'traffic light', 'fire hydrant', 'stop sign',
@@ -14,15 +43,7 @@ CLASSES = [
     'hair drier', 'toothbrush'
 ]
 
-# dataset settings
-data_root = 'data/coco/'
-train_ann_file = data_root + 'annotations/instances_train2017.json'
-train_img_prefix = data_root + 'train2017/'
-val_ann_file = data_root + 'annotations/instances_val2017.json'
-val_img_prefix = data_root + 'val2017/'
 img_scale = (1333, 800)
-data_type = 'DetSourceCoco'
-test_batch_size = 1
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -61,37 +82,21 @@ test_pipeline = [
         ])
 ]
 
+# dataset settings
+data_type = 'DetSourcePAI'
+train_path = 'data/coco/train2017.manifest'
+val_path = 'data/coco/val2017.manifest'
+test_batch_size = 1
+
 train_dataset = dict(
     type='DetDataset',
-    data_source=dict(
-        type=data_type,
-        ann_file=train_ann_file,
-        img_prefix=train_img_prefix,
-        pipeline=[
-            dict(type='LoadImageFromFile'),
-            dict(type='LoadAnnotations', with_bbox=True)
-        ],
-        classes=CLASSES,
-        test_mode=False,
-        filter_empty_gt=True,
-        iscrowd=False),
+    data_source=dict(type=data_type, path=train_path, classes=CLASSES),
     pipeline=train_pipeline)
 
 val_dataset = dict(
     type='DetDataset',
     imgs_per_gpu=test_batch_size,
-    data_source=dict(
-        type=data_type,
-        ann_file=val_ann_file,
-        img_prefix=val_img_prefix,
-        pipeline=[
-            dict(type='LoadImageFromFile'),
-            dict(type='LoadAnnotations', with_bbox=True)
-        ],
-        classes=CLASSES,
-        test_mode=True,
-        filter_empty_gt=False,
-        iscrowd=True),
+    data_source=dict(type=data_type, path=val_path, classes=CLASSES),
     pipeline=test_pipeline)
 
 data = dict(
