@@ -56,6 +56,7 @@ model = dict(
     test_cfg=dict(mode='whole'))
 
 # dataset settings
+dataset_type = 'SegDataset'
 data_type = 'SegSourceRaw'
 data_root = 'data/VOCdevkit/VOC2012'
 
@@ -111,7 +112,7 @@ data = dict(
     imgs_per_gpu=4,
     workers_per_gpu=4,
     train=dict(
-        type='SegDataset',
+        type=dataset_type,
         ignore_index=255,
         data_source=dict(
             type=data_type,
@@ -123,7 +124,7 @@ data = dict(
     val=dict(
         imgs_per_gpu=test_batch_size,
         ignore_index=255,
-        type='SegDataset',
+        type=dataset_type,
         data_source=dict(
             type=data_type,
             img_root=val_img_root,
