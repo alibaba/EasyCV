@@ -126,3 +126,4 @@ class OSSSyncHook(Hook):
 
         self.upload_export_file(runner, export_ckpt_fname)
         self.upload_export_file(runner, export_ckpt_fname_jit)
+        self.upload_export_file(runner, '.txt')
