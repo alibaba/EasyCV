@@ -1,4 +1,4 @@
-_base_ = ['configs/base.py']
+_base_ = 'configs/base.py'
 
 CLASSES = [
     'background', 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
