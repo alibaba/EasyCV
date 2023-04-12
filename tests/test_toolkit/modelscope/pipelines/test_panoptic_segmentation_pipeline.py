@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
+import tempfile
 import unittest
 
 import cv2
@@ -10,8 +11,6 @@ from modelscope.utils.cv.image_utils import panoptic_seg_masks_to_image
 from modelscope.utils.demo_utils import DemoCompatibilityCheck
 from modelscope.utils.test_utils import test_level
 from tests.ut_config import BASE_LOCAL_PATH
-
-from easycv.toolkit import modelscope
 
 
 class EasyCVPanopticSegmentationPipelineTest(unittest.TestCase,
@@ -28,7 +27,9 @@ class EasyCVPanopticSegmentationPipelineTest(unittest.TestCase,
         segmentor = pipeline(task=self.task, model=self.model_id)
         outputs = segmentor(self.img_path)
         draw_img = panoptic_seg_masks_to_image(outputs[OutputKeys.MASKS])
-        cv2.imwrite('result.jpg', draw_img)
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as tmp_file:
+            tmp_save_path = tmp_file.name
+            cv2.imwrite(tmp_save_path, draw_img)
         print('print ' + self.model_id + ' success')
 
     @unittest.skipUnless(test_level() >= 0, 'skip test in current test level')

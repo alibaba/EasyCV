@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
+import tempfile
 import unittest
 
 import cv2
@@ -12,8 +13,6 @@ from modelscope.utils.demo_utils import DemoCompatibilityCheck
 from modelscope.utils.test_utils import test_level
 from PIL import Image
 from tests.ut_config import BASE_LOCAL_PATH
-
-from easycv.toolkit import modelscope
 
 
 class EasyCVSegmentationPipelineTest(unittest.TestCase,
@@ -30,8 +29,10 @@ class EasyCVSegmentationPipelineTest(unittest.TestCase,
         outputs = semantic_seg(self.img_path)
 
         draw_img = semantic_seg_masks_to_image(outputs[OutputKeys.MASKS])
-        cv2.imwrite('result.jpg', draw_img)
-        print('test ' + model_id + ' DONE')
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as tmp_file:
+            tmp_save_path = tmp_file.name
+            cv2.imwrite(tmp_save_path, draw_img)
+            print('test ' + model_id + ' DONE')
 
     def _internal_test_batch_(self, model_id, num_samples=2, batch_size=2):
         # TODO: support in the future
