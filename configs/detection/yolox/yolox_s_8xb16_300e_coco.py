@@ -1,4 +1,4 @@
-_base_ = '../../base.py'
+_base_ = 'configs/base.py'
 
 num_classes = 80
 # model settings s m l x
