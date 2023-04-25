@@ -100,6 +100,7 @@ def to_ms_config(cfg,
         dict(
             task=task,
             framework='pytorch',
+            plugins=['pai-easycv'],
             preprocessor={},  # adapt to modelscope, do nothing
             model={
                 'type': ms_model_name,
