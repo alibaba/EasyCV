@@ -9,8 +9,6 @@ from modelscope.utils.constant import LogKeys
 from modelscope.utils.logger import get_logger
 from modelscope.utils.test_utils import test_level
 
-from easycv.toolkit import modelscope
-
 
 class EasyCVTrainerTestHandDetection(unittest.TestCase):
     model_id = 'damo/cv_yolox-pai_hand-detection'

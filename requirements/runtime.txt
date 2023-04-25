@@ -8,6 +8,7 @@ fvcore
 h5py
 imgaug
 json_tricks
+jsonplus
 lmdb
 numba
 numpy

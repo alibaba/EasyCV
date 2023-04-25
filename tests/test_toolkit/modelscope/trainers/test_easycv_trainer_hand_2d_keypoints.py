@@ -12,8 +12,6 @@ from modelscope.utils.constant import DownloadMode, LogKeys
 from modelscope.utils.logger import get_logger
 from modelscope.utils.test_utils import test_level
 
-from easycv.toolkit import modelscope
-
 
 @unittest.skipIf(not torch.cuda.is_available(), 'cuda unittest')
 class EasyCVTrainerTestHand2dKeypoints(unittest.TestCase):

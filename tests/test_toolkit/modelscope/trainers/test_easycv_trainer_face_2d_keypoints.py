@@ -10,8 +10,6 @@ from modelscope.trainers import build_trainer
 from modelscope.utils.constant import DownloadMode, LogKeys
 from modelscope.utils.logger import get_logger
 
-from easycv.toolkit import modelscope
-
 
 @unittest.skipIf(not torch.cuda.is_available(), 'cuda unittest')
 class EasyCVTrainerTestFace2DKeypoints(unittest.TestCase):

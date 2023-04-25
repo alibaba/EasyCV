@@ -15,7 +15,6 @@ from modelscope.utils.logger import get_logger
 from modelscope.utils.test_utils import DistributedTestCase, test_level
 from modelscope.utils.torch_utils import is_master
 
-from easycv.toolkit import modelscope
 from easycv.toolkit.modelscope.metainfo import EasyCVModels as Models
 from easycv.toolkit.modelscope.metainfo import EasyCVPipelines as Pipelines
 
