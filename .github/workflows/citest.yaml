@@ -69,6 +69,8 @@ jobs:
 
           # pip install pai-easycv
           pip uninstall -y pai-easycv
+
+          python setup.py sdist bdist_wheel
           python setup.py install
           # move source code, ensure import easycv from site-package
           mv ./easycv ./easycv_src
