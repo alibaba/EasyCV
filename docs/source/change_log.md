@@ -1,3 +1,8 @@
+# v 0.11.0 (09/05/2023)
+
+## Highlights
+- Support EasyCV as a plug-in for [modelscope](https://github.com/modelscope/modelscope.
+
 # v 0.10.0 (06/03/2023)
 
 ## Highlights
