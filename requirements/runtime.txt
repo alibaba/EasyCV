@@ -1,6 +1,5 @@
 albumentations
 cityscapesscripts
-cython_bbox
 dataclasses
 decord
 einops
@@ -9,6 +8,7 @@ fvcore
 h5py
 imgaug
 json_tricks
+jsonplus
 lmdb
 numba
 numpy
