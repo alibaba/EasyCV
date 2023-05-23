@@ -8,12 +8,13 @@ import unittest
 from fnmatch import fnmatch
 
 
-def gather_test_cases(test_dir, pattern, list_tests):
+def gather_test_cases(test_dir, pattern, list_tests, skip_dir):
     case_list = []
     for dirpath, dirnames, filenames in os.walk(test_dir):
         for file in filenames:
             if fnmatch(file, pattern):
-                case_list.append(file)
+                if skip_dir not in file:
+                    case_list.append(file)
 
     test_suite = unittest.TestSuite()
 
@@ -34,7 +35,8 @@ def gather_test_cases(test_dir, pattern, list_tests):
 def main(args):
     runner = unittest.TextTestRunner()
     test_suite = gather_test_cases(
-        os.path.abspath(args.test_dir), args.pattern, args.list_tests)
+        os.path.abspath(args.test_dir), args.pattern, args.list_tests,
+        args.skip_dir)
     if not args.list_tests:
         result = runner.run(test_suite)
         if len(result.failures) > 0 or len(result.errors) > 0:
@@ -49,5 +51,9 @@ if __name__ == '__main__':
         '--pattern', default='test_*.py', help='test file pattern')
     parser.add_argument(
         '--test_dir', default='tests', help='directory to be tested')
+    parser.add_argument(
+        '--skip_dir',
+        default='tests/test_toolkit/modelscope',
+        help='it`s not run testcase')
     args = parser.parse_args()
     main(args)
