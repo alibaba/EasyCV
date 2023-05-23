@@ -140,7 +140,7 @@ class Mask2formerPredictorTest(unittest.TestCase):
         img = cv2.imread(self.img_path)
         predict_out = predictor([self.img_path])
         self.assertEqual(len(predict_out), 1)
-        self.assertEqual(len(predict_out[0]['masks']), 0)
+        self.assertEqual(len(predict_out[0]['masks']), 14)
         self.assertListEqual(
             predict_out[0]['labels_ids'].tolist(),
             [71, 69, 39, 39, 39, 128, 127, 122, 118, 115, 111, 104, 84, 83])
