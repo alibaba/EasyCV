@@ -23,7 +23,7 @@ class SODPredictorTest(unittest.TestCase):
         # bboxes, landmarks = detector.detect(image)
         res = sodpredictor.predict([image])
         bbox = np.array(res[0]['bbox'])
-        # self.assertTrue(np.allclose(bbox, np.array(bbox_res)))
+        self.assertTrue(np.allclose(bbox, np.array(bbox_res)))
 
     def test_ev_sodpredictor(self):
         sod_cfg = dict(type='SODPredictor', model_name='u2netp')
@@ -32,7 +32,7 @@ class SODPredictorTest(unittest.TestCase):
         # bboxes, landmarks = detector.detect(image)
         res = sodpredictor.predict([image])
         bbox = np.array(res[0]['bbox'])
-        # self.assertTrue(np.allclose(bbox, np.array(bbox_res)))
+        self.assertTrue(np.allclose(bbox, np.array(bbox_res)))
 
 
 if __name__ == '__main__':

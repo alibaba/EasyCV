@@ -58,9 +58,9 @@ class MASK2FORMERTrainTest(unittest.TestCase):
         with io.open(json_file[0], 'r') as f:
             content = f.readlines()
             res = json.loads(content[-1])
-            # self.assertGreater(res['DetectionBoxes_Precision/mAP'], 0.4)
-            # self.assertGreater(res['DetectionBoxes_Precision/mAP@.50IOU'], 0.6)
-            # self.assertGreater(res['DetectionBoxes_Precision/mAP@.75IOU'], 0.5)
+            self.assertGreater(res['DetectionBoxes_Precision/mAP'], 0.4)
+            self.assertGreater(res['DetectionBoxes_Precision/mAP@.50IOU'], 0.6)
+            self.assertGreater(res['DetectionBoxes_Precision/mAP@.75IOU'], 0.5)
 
     def _base_train(self, train_cfgs, dist=False, dist_eval=False):
         cfg_file = train_cfgs.pop('config_file')

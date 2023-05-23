@@ -135,4 +135,4 @@ class ReIDPredictorTest(unittest.TestCase):
             CMC[:10].tolist(),
             [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
             decimal=1)
-        # assert_array_almost_equal(mAP, 0.9925018971878582)
+        assert_array_almost_equal(mAP, 0.9925018971878582)

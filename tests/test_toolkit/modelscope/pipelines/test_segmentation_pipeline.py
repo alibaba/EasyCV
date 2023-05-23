@@ -70,7 +70,7 @@ class EasyCVSegmentationPipelineTest(unittest.TestCase,
     @unittest.skipUnless(test_level() >= 0, 'skip test in current test level')
     def test_segformer_b3(self):
         model_id = 'damo/cv_segformer-b3_image_semantic-segmentation_coco-stuff164k'
-        # self._internal_test_(model_id)
+        self._internal_test_(model_id)
 
     @unittest.skipUnless(test_level() >= 0, 'skip test in current test level')
     def test_segformer_b4(self):

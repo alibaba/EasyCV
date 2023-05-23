@@ -43,8 +43,7 @@ class EasyCVTrainerTestDetectionDino(unittest.TestCase):
             cfg_options=cfg_options)
 
         trainer = build_trainer(trainer_name, kwargs)
-        # 显存爆了，改小批次
-        # trainer.train()
+        trainer.train()
 
     @unittest.skipUnless(test_level() >= 0, 'skip test in current test level')
     def test_trainer_single_gpu(self):
@@ -57,8 +56,8 @@ class EasyCVTrainerTestDetectionDino(unittest.TestCase):
 
         results_files = os.listdir(tmp_dir)
         json_files = glob.glob(os.path.join(tmp_dir, '*.log.json'))
-        # self.assertEqual(len(json_files), 1)
-        # self.assertIn(f'{LogKeys.EPOCH}_1.pth', results_files)
+        self.assertEqual(len(json_files), 1)
+        self.assertIn(f'{LogKeys.EPOCH}_1.pth', results_files)
 
         temp_file_dir.cleanup()
 
