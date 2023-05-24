@@ -65,7 +65,7 @@ jobs:
           #run test
           export CUDA_VISIBLE_DEVICES=7
           source ~/workspace/anaconda2/etc/profile.d/conda.sh
-          conda activate easycv_torch1.8.0_py37
+          conda activate easycv_torch1.8.0
 
           # pip install pai-easycv
           pip uninstall -y pai-easycv
@@ -75,7 +75,10 @@ jobs:
           # move source code, ensure import easycv from site-package
           mv ./easycv ./easycv_src
 
-          PYTHONPATH=. python tests/run.py
+          PYTHONPATH=. python tests/run.py --skip_dir tests/test_toolkit/modelscope
+
+          conda activate easycv_torch1.8.0_py37
+          PYTHONPATH=. python tests/run.py --test_dir tests/test_toolkit/modelscope
 
 
 # blade test env will be updated! we do not support test with trt_efficient_nms

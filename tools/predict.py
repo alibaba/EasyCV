@@ -255,7 +255,7 @@ def create_default_predictor_kwargs(model_dir):
     if config_path:
         return {'model_path': model_path, 'config_file': config_path}
     else:
-        return {'model_path': model_path}
+        return {'model_path': model_path, 'config_file': None}
 
 
 def create_predictor_kwargs(model_type, model_dir):
