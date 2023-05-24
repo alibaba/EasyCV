@@ -8,16 +8,26 @@ import unittest
 from fnmatch import fnmatch
 
 
+def get_skip_file(skip_dir, pattern=None):
+    case_list = []
+    if skip_dir:
+        for path in skip_dir:
+            for dirpath, dirnames, filenames in os.walk(path):
+                for file in filenames:
+                    if fnmatch(file, pattern):
+                        case_list.append(file)
+    return case_list
+
+
 def gather_test_cases(test_dir, pattern, list_tests, skip_dir):
     case_list = []
+    skip_list = get_skip_file(skip_dir, pattern)
     for dirpath, dirnames, filenames in os.walk(test_dir):
         for file in filenames:
-            if fnmatch(file, pattern):
-                if skip_dir not in file:
-                    case_list.append(file)
+            if fnmatch(file, pattern) and file not in skip_list:
+                case_list.append(file)
 
     test_suite = unittest.TestSuite()
-
     for case in case_list:
         test_case = unittest.defaultTestLoader.discover(
             start_dir=test_dir, pattern=case)
@@ -52,8 +62,6 @@ if __name__ == '__main__':
     parser.add_argument(
         '--test_dir', default='tests', help='directory to be tested')
     parser.add_argument(
-        '--skip_dir',
-        default='tests/test_toolkit/modelscope',
-        help='it`s not run testcase')
+        '--skip_dir', nargs='+', required=False, help='it`s not run testcase')
     args = parser.parse_args()
     main(args)
