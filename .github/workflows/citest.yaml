@@ -75,8 +75,6 @@ jobs:
           # move source code, ensure import easycv from site-package
           mv ./easycv ./easycv_src
 
-          PYTHONPATH=. python tests/run.py --skip_dir tests/test_toolkit/modelscope
-
           conda activate easycv_torch1.8.0_py37
           PYTHONPATH=. python tests/run.py --test_dir tests/test_toolkit/modelscope/
 
