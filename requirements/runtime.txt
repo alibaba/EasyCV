@@ -23,8 +23,8 @@ pycocotools
 pytorch_metric_learning>=0.9.89
 rapidfuzz
 scikit-image
+scikit-learn
 seaborn
-sklearn
 tensorboard
 thop
 timm==0.5.4
