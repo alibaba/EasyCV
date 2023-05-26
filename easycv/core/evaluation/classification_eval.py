@@ -146,10 +146,14 @@ class ClsEvaluator(Evaluator):
                 matrix = confusion_matrix(
                     valid_true, valid_pred, labels=self.class_list)
 
-                print_log(
-                    'recall:{}\nprecision:{}\nattend:{}\nTP:{}\nFN:{}\nFP:{}\nTN:{}\nrecall/mean:{}\nprecision/mean:{}\nF1/mean:{}\nconfusion_matrix:{}\n'
-                    .format(recall, precision, attend, tp, fn, fp, tn,
-                            recall_mean, precision_mean, f1_mean, matrix))
+                # print_log(
+                #     'recall:{}\nprecision:{}\nattend:{}\nTP:{}\nFN:{}\nFP:{}\nTN:{}\nrecall/mean:{}\nprecision/mean:{}\nF1/mean:{}\nconfusion_matrix:{}\n'
+                #     .format(recall, precision, attend, tp, fn, fp, tn,
+                #             recall_mean, precision_mean, f1_mean, matrix))
+
+                eval_res[key] = \
+                    'recall:{}\nprecision:{}\nattend:{}\nTP:{}\nFN:{}\nFP:{}\nTN:{}\nrecall/mean:{}\nprecision/mean:{}\nF1/mean:{}\nconfusion_matrix:{}\n'\
+                    .format(recall, precision, attend, tp, fn, fp, tn, recall_mean, precision_mean, f1_mean, matrix.tolist())
 
         return eval_res
 
