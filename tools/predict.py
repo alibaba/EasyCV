@@ -307,7 +307,7 @@ def replace_oss_with_local_path(ori_file, dst_file, bucket_prefix,
 def build_and_run_file_io(args):
 
     # check oss_config and init oss io
-    if args.get('oss_io_config', None) is not None:
+    if args.oss_io_config is not None:
         io.access_oss(**args.oss_io_config)
 
     # distribute info
