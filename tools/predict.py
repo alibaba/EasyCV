@@ -299,9 +299,8 @@ def replace_oss_with_local_path(ori_file, dst_file, bucket_prefix,
     with io.open(ori_file, 'r') as infile:
         with open(dst_file, 'w') as ofile:
             for l in infile:
-                if local_prefix in ori_file:
-                    if l.startswith('oss://'):
-                        l = l.replace(bucket_prefix, local_prefix)
+                if l.startswith('oss://'):
+                    l = l.replace(bucket_prefix, local_prefix)
                 ofile.write(l)
 
 
@@ -315,11 +314,19 @@ def build_and_run_file_io(args):
     rank, world_size = get_dist_info()
     worker_id = rank
     # acquire the temporary save path
-    input_oss_file_new_host = os.path.join(
-        args.local_prefix,
-        os.path.basename(args.input_file + '.tmp%d' % worker_id))
-    replace_oss_with_local_path(args.input_file, input_oss_file_new_host,
-                                args.oss_prefix, args.local_prefix)
+    if args.output_file:
+        input_oss_file_new_host = os.path.join(
+            os.path.dirname(args.output_file),
+            os.path.basename(args.input_file + '.tmp%d' % worker_id))
+        replace_oss_with_local_path(args.input_file, input_oss_file_new_host,
+                                    args.oss_prefix, args.local_prefix)
+    else:
+        input_oss_file_new_host = os.path.join(
+            args.output_dir,
+            os.path.basename(args.input_file + '.tmp%d' % worker_id))
+        replace_oss_with_local_path(args.input_file, input_oss_file_new_host,
+                                    args.oss_prefix, args.local_prefix)
+
     args.input_file = input_oss_file_new_host
     num_worker = world_size
     print(f'worker num {num_worker}')
