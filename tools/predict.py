@@ -12,6 +12,7 @@ import threading
 import traceback
 from easycv.file import io
 import torch
+from mmcv import DictAction
 
 try:
     import easy_predict
@@ -115,6 +116,13 @@ def define_args():
         type=str,
         choices=[None, 'pytorch'],
         help='if assigned pytorch, should be used in gpu environment')
+
+    parser.add_argument(
+        '--oss_io_config',
+        nargs='+',
+        action=DictAction,
+        help='designer needs a oss of config to access the data')
+
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -371,6 +379,10 @@ def build_and_run_file_io(args):
 
 def build_and_run_table_io(args):
     os.environ['ODPS_CONFIG_FILE_PATH'] = args.odps_config
+
+    # check oss_config and init oss io
+    if args.get('oss_io_config', None) is not None:
+        io.access_oss(**args.oss_io_config)
 
     rank, world_size = get_dist_info()
     worker_id = rank
