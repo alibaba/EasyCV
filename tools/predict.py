@@ -10,7 +10,7 @@ import logging
 import os
 import threading
 import traceback
-
+from easycv.file import io
 import torch
 
 try:
@@ -288,7 +288,7 @@ def replace_oss_with_local_path(ori_file, dst_file, bucket_prefix,
                                 local_prefix):
     bucket_prefix = bucket_prefix.rstrip('/') + '/'
     local_prefix = local_prefix.rstrip('/') + '/'
-    with open(ori_file, 'r') as infile:
+    with io.open(ori_file, 'r') as infile:
         with open(dst_file, 'w') as ofile:
             for l in infile:
                 if l.startswith('oss://'):
