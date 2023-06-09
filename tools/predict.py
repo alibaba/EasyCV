@@ -305,6 +305,11 @@ def replace_oss_with_local_path(ori_file, dst_file, bucket_prefix,
 
 
 def build_and_run_file_io(args):
+
+    # check oss_config and init oss io
+    if args.get('oss_io_config', None) is not None:
+        io.access_oss(**args.oss_io_config)
+
     # distribute info
     rank, world_size = get_dist_info()
     worker_id = rank
@@ -379,10 +384,6 @@ def build_and_run_file_io(args):
 
 def build_and_run_table_io(args):
     os.environ['ODPS_CONFIG_FILE_PATH'] = args.odps_config
-
-    # check oss_config and init oss io
-    if args.get('oss_io_config', None) is not None:
-        io.access_oss(**args.oss_io_config)
 
     rank, world_size = get_dist_info()
     worker_id = rank
