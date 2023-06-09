@@ -299,8 +299,9 @@ def replace_oss_with_local_path(ori_file, dst_file, bucket_prefix,
     with io.open(ori_file, 'r') as infile:
         with open(dst_file, 'w') as ofile:
             for l in infile:
-                if l.startswith('oss://'):
-                    l = l.replace(bucket_prefix, local_prefix)
+                if local_prefix in ori_file:
+                    if l.startswith('oss://'):
+                        l = l.replace(bucket_prefix, local_prefix)
                 ofile.write(l)
 
 
@@ -313,8 +314,10 @@ def build_and_run_file_io(args):
     # distribute info
     rank, world_size = get_dist_info()
     worker_id = rank
-
-    input_oss_file_new_host = args.input_file + '.tmp%d' % worker_id
+    # acquire the temporary save path
+    input_oss_file_new_host = os.path.join(
+        args.local_prefix,
+        os.path.basename(args.input_file + '.tmp%d' % worker_id))
     replace_oss_with_local_path(args.input_file, input_oss_file_new_host,
                                 args.oss_prefix, args.local_prefix)
     args.input_file = input_oss_file_new_host
