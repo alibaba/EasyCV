@@ -10,8 +10,9 @@ import logging
 import os
 import threading
 import traceback
-
+from easycv.file import io
 import torch
+from mmcv import DictAction
 
 try:
     import easy_predict
@@ -288,7 +289,7 @@ def replace_oss_with_local_path(ori_file, dst_file, bucket_prefix,
                                 local_prefix):
     bucket_prefix = bucket_prefix.rstrip('/') + '/'
     local_prefix = local_prefix.rstrip('/') + '/'
-    with open(ori_file, 'r') as infile:
+    with io.open(ori_file, 'r') as infile:
         with open(dst_file, 'w') as ofile:
             for l in infile:
                 if l.startswith('oss://'):
@@ -301,7 +302,24 @@ def build_and_run_file_io(args):
     rank, world_size = get_dist_info()
     worker_id = rank
 
-    input_oss_file_new_host = args.input_file + '.tmp%d' % worker_id
+    # check oss_config and init oss io
+    if args.oss_io_config is not None:
+        io.access_oss(**args.oss_io_config)
+
+    # acquire the temporary save path
+    if args.output_file:
+        input_oss_file_new_host = os.path.join(
+            os.path.dirname(args.output_file),
+            os.path.basename(args.input_file + '.tmp%d' % worker_id))
+        replace_oss_with_local_path(args.input_file, input_oss_file_new_host,
+                                    args.oss_prefix, args.local_prefix)
+    else:
+        input_oss_file_new_host = os.path.join(
+            args.output_dir,
+            os.path.basename(args.input_file + '.tmp%d' % worker_id))
+        replace_oss_with_local_path(args.input_file, input_oss_file_new_host,
+                                    args.oss_prefix, args.local_prefix)
+
     replace_oss_with_local_path(args.input_file, input_oss_file_new_host,
                                 args.oss_prefix, args.local_prefix)
     args.input_file = input_oss_file_new_host
