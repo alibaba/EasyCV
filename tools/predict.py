@@ -116,6 +116,12 @@ def define_args():
         type=str,
         choices=[None, 'pytorch'],
         help='if assigned pytorch, should be used in gpu environment')
+    parser.add_argument(
+        '--oss_io_config',
+        nargs='+',
+        action=DictAction,
+        help='designer needs a oss of config to access the data')
+
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
