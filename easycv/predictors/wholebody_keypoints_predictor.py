@@ -1,12 +1,17 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import copy
+
 import cv2
 import numpy as np
+import torch
 
 from easycv.datasets.pose.data_sources.top_down import DatasetInfo
 from easycv.datasets.pose.data_sources.wholebody.wholebody_coco_source import \
     WHOLEBODY_COCO_DATASET_INFO
 from easycv.datasets.pose.pipelines.transforms import bbox_cs2xyxy
+from easycv.file import io
 from easycv.predictors.builder import PREDICTORS, build_predictor
+from easycv.utils.checkpoint import load_checkpoint
 from .base import InputProcessor, OutputProcessor, PredictorV2
 
 SKELETON = [[15, 13], [13, 11], [16, 14], [14, 12], [11, 12], [5, 11], [6, 12],
@@ -182,6 +187,9 @@ class WholeBodyKptsOutputProcessor(OutputProcessor):
         return output
 
 
+# TODO: Fix when multi people are detected in each sample,
+# all the people results will be passed to the pose model,
+# resulting in a dynamic batch_size, which is not supported by jit script model.
 @PREDICTORS.register_module()
 class WholeBodyKeypointsPredictor(PredictorV2):
     """WholeBodyKeypointsPredictor
@@ -208,8 +216,22 @@ class WholeBodyKeypointsPredictor(PredictorV2):
                  save_path=None,
                  bbox_thr=None,
                  mode='BGR',
+                 model_type=None,
                  *args,
                  **kwargs):
+        self.model_type = model_type
+        if self.model_type is None:
+            if model_path.endswith('jit'):
+                assert config_file is not None
+                self.model_type = 'jit'
+            elif model_path.endswith('blade'):
+                import torch_blade
+                assert config_file is not None
+                self.model_type = 'blade'
+            else:
+                self.model_type = 'raw'
+        assert self.model_type in ['raw', 'jit', 'blade']
+
         super(WholeBodyKeypointsPredictor, self).__init__(
             model_path,
             config_file=config_file,
@@ -223,6 +245,48 @@ class WholeBodyKeypointsPredictor(PredictorV2):
             **kwargs)
         self.bbox_thr = bbox_thr
         self.detection_predictor_config = detection_predictor_config
+
+    def _build_model(self):
+        if self.model_type != 'raw':
+            with io.open(self.model_path, 'rb') as infile:
+                model = torch.jit.load(infile, self.device)
+        else:
+            model = super()._build_model()
+        return model
+
+    def prepare_model(self):
+        """Build model from config file by default.
+        If the model is not loaded from a configuration file, e.g. torch jit model, you need to reimplement it.
+        """
+        model = self._build_model()
+        model.to(self.device)
+        model.eval()
+        if self.model_type == 'raw':
+            load_checkpoint(model, self.model_path, map_location='cpu')
+        return model
+
+    def model_forward(self, inputs, return_heatmap=False):
+        if self.model_type == 'raw':
+            with torch.no_grad():
+                result = self.model(
+                    **inputs, mode='test', return_heatmap=return_heatmap)
+        else:
+            img_metas = inputs['img_metas']
+            with torch.no_grad():
+                img = inputs['img'].to(self.device)
+                tensor_img_metas = copy.deepcopy(img_metas)
+                for meta in tensor_img_metas:
+                    meta.pop('image_file')
+                    for k, v in meta.items():
+                        meta[k] = torch.tensor(v)
+                output_heatmap = self.model(img, tensor_img_metas)
+
+            from easycv.models.pose.heads.topdown_heatmap_base_head import decode_heatmap
+            output_heatmap = output_heatmap.cpu().numpy()
+            result = decode_heatmap(output_heatmap, img_metas,
+                                    self.cfg.model.test_cfg)
+
+        return result
 
     def get_input_processor(self):
         return WholeBodyKptsInputProcessor(

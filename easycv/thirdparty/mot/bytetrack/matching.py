@@ -25,7 +25,6 @@ import time
 import cv2
 import numpy as np
 import scipy
-from cython_bbox import bbox_overlaps as bbox_ious
 from scipy.spatial.distance import cdist
 
 from easycv.thirdparty.mot.bytetrack import kalman_filter
@@ -91,6 +90,8 @@ def ious(atlbrs, btlbrs):
     if ious.size == 0:
         return ious
 
+    from cython_bbox import bbox_overlaps as bbox_ious
+    
     ious = bbox_ious(
         np.ascontiguousarray(atlbrs, dtype=np.float),
         np.ascontiguousarray(btlbrs, dtype=np.float))

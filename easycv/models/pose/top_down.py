@@ -5,6 +5,7 @@ import warnings
 
 import mmcv
 import numpy as np
+import torch
 from mmcv.image import imwrite
 from mmcv.utils.misc import deprecated_api_warning
 from mmcv.visualization.image import imshow
@@ -133,8 +134,14 @@ class TopDown(BaseModel):
             if self.with_keypoint:
                 output_flipped_heatmap = self.keypoint_head.inference_model(
                     features_flipped, img_metas[0]['flip_pairs'])
-                output_heatmap = (output_heatmap +
-                                  output_flipped_heatmap) * 0.5
+                # remove inplace operation for blade, it will cause calculation errors
+                _tmp = (output_heatmap + output_flipped_heatmap) * 0.5
+                output_heatmap = _tmp
+
+        if torch.jit.is_scripting() or torch.jit.is_tracing():
+            return output_heatmap
+
+        output_heatmap = output_heatmap.numpy()
 
         if self.with_keypoint:
             keypoint_result = self.keypoint_head.decode(
@@ -148,6 +155,9 @@ class TopDown(BaseModel):
                 result['output_heatmap'] = output_heatmap
 
         return result
+
+    def forward_export(self, img, img_metas, return_heatmap=False):
+        return self.forward_test(img, img_metas, return_heatmap=return_heatmap)
 
     @deprecated_api_warning({'pose_limb_color': 'pose_link_color'},
                             cls_name='TopDown')

@@ -46,6 +46,18 @@ EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focuses
 
 
 ## What's New
+[🔥 2023.05.09]
+
+* 09/05/2023 EasyCV v0.11.0 was released.
+- Support EasyCV as a plug-in for [modelscope](https://github.com/modelscope/modelscope.
+
+[🔥 2023.03.06]
+
+* 06/03/2023 EasyCV v0.10.0 was released.
+- Add segmentation model STDC
+- Add skeleton based video recognition model STGCN
+- Support ReID and Multi-len MOT
+
 [🔥 2023.01.17]
 
 * 17/01/2023 EasyCV v0.9.0 was released.
@@ -232,6 +244,7 @@ Please refer to the following model zoo for more details.
 - [detection model zoo](docs/source/model_zoo_det.md)
 - [detection3d model zoo](docs/source/model_zoo_det3d.md)
 - [segmentation model zoo](docs/source/model_zoo_seg.md)
+- [pose model zoo](docs/source/model_zoo_pose.md)
 
 ## Data Hub
 

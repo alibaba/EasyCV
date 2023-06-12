@@ -45,6 +45,18 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 
 ## 最新进展
+[🔥 2023.05.09]
+
+* 09/05/2023 EasyCV v0.11.0 was released.
+- 支持EasyCV作为[modelscope](https://github.com/modelscope/modelscope)插件接入模型.
+
+[🔥 2023.03.06]
+
+* 06/03/2023 EasyCV v0.10.0 was released.
+- 增加分割模型STDC
+- 增加基于关键点的视频分类模型STGCN
+- 支持多镜头多目标跟踪
+
 [🔥 2023.01.17]
 
 * 17/01/2023 EasyCV v0.9.0 was released.
@@ -222,6 +234,7 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 - [目标检测模型库](docs/source/model_zoo_det.md)
 - [3D目标检测模型库](docs/source/model_zoo_det3d.md)
 - [图像分割模型库](docs/source/model_zoo_seg.md)
+- [关键点模型库](docs/source/model_zoo_pose.md)
 
 ## 开源许可证
 

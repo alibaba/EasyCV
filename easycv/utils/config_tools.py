@@ -525,6 +525,17 @@ CONFIG_TEMPLATE_ZOO = {
     # detection
     'YOLOX': 'configs/config_templates/yolox.py',
     'YOLOX_ITAG': 'configs/config_templates/yolox_itag.py',
+    'YOLOX_ITAG_EASY':
+    'configs/detection/yolox/yolox_s_8xb16_300e_coco_pai.py',
+    'YOLOX_COCO_EASY': 'configs/detection/yolox/yolox_s_8xb16_300e_coco.py',
+    'FCOS_ITAG_EASY': 'configs/detection/fcos/fcos_r50_torch_1x_pai.py',
+    'FCOS_COCO_EASY': 'configs/detection/fcos/fcos_r50_torch_1x_coco.py',
+
+    # segmentation
+    'FCN_SEG': 'configs/segmentation/fcn/fcn_r50-d8_512x512_8xb4_60e_voc12.py',
+    'UPERNET_SEG':
+    'configs/segmentation/upernet/upernet_r50_512x512_8xb4_60e_voc12.py',
+    'SEGFORMER_SEG': 'configs/segmentation/segformer/segformer_b5_coco.py',
 
     # ssl
     'MOCO_R50_TFRECORD': 'configs/config_templates/moco_r50_tfrecord.py',

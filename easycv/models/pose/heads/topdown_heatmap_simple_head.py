@@ -214,14 +214,17 @@ class TopdownHeatmapSimpleHead(TopdownHeatmapBaseHead):
 
         if flip_pairs is not None:
             output_heatmap = flip_back(
-                output.detach().cpu().numpy(),
+                output.detach().cpu(),
                 flip_pairs,
                 target_type=self.target_type)
             # feature is not aligned, shift flipped heatmap for higher accuracy
             if self.test_cfg.get('shift_heatmap', False):
-                output_heatmap[:, :, :, 1:] = output_heatmap[:, :, :, :-1]
+                # remove inplace operation for blade, it will cause calculation errors
+                _tmp = output_heatmap[:, :, :, :-1]
+                output_heatmap[:, :, :, 1:] = _tmp
         else:
-            output_heatmap = output.detach().cpu().numpy()
+            output_heatmap = output.detach().cpu()
+
         return output_heatmap
 
     def _init_inputs(self, in_channels, in_index, input_transform):

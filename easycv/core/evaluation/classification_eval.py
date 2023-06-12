@@ -50,11 +50,17 @@ class ClsEvaluator(Evaluator):
             a dict,  each key is metric_name, value is metric value
         '''
         eval_res = OrderedDict()
+
+        if isinstance(gt_labels, dict):
+            assert len(gt_labels) == 1
+            gt_labels = list(gt_labels.values())[0]
+
         target = gt_labels.long()
 
         # if self.neck_num is not None:
         if self.neck_num is None:
-            predictions = {'neck': predictions['neck']}
+            if len(predictions) > 1:
+                predictions = {'neck': predictions['neck']}
         else:
             predictions = {
                 'neck_%d_0' % self.neck_num:
@@ -140,10 +146,14 @@ class ClsEvaluator(Evaluator):
                 matrix = confusion_matrix(
                     valid_true, valid_pred, labels=self.class_list)
 
-                print_log(
-                    'recall:{}\nprecision:{}\nattend:{}\nTP:{}\nFN:{}\nFP:{}\nTN:{}\nrecall/mean:{}\nprecision/mean:{}\nF1/mean:{}\nconfusion_matrix:{}\n'
-                    .format(recall, precision, attend, tp, fn, fp, tn,
-                            recall_mean, precision_mean, f1_mean, matrix))
+                # print_log(
+                #     'recall:{}\nprecision:{}\nattend:{}\nTP:{}\nFN:{}\nFP:{}\nTN:{}\nrecall/mean:{}\nprecision/mean:{}\nF1/mean:{}\nconfusion_matrix:{}\n'
+                #     .format(recall, precision, attend, tp, fn, fp, tn,
+                #             recall_mean, precision_mean, f1_mean, matrix))
+
+                eval_res[key] = \
+                    'recall:{}\nprecision:{}\nattend:{}\nTP:{}\nFN:{}\nFP:{}\nTN:{}\nrecall/mean:{}\nprecision/mean:{}\nF1/mean:{}\nconfusion_matrix:{}\n'\
+                    .format(recall, precision, attend, tp, fn, fp, tn, recall_mean, precision_mean, f1_mean, matrix.tolist())
 
         return eval_res
 

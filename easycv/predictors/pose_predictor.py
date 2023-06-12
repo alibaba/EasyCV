@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import copy
 import json
 
 import mmcv
@@ -11,7 +12,9 @@ from mmcv.visualization.image import imshow
 from easycv.core.visualization import imshow_bboxes, imshow_keypoints
 from easycv.datasets.pose.data_sources.top_down import DatasetInfo
 from easycv.datasets.pose.pipelines.transforms import bbox_cs2xyxy
+from easycv.file import io
 from easycv.predictors.builder import PREDICTORS, build_predictor
+from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.misc import deprecated
 from .base import InputProcessor, OutputProcessor, PredictorV2
@@ -221,8 +224,8 @@ class PoseTopDownInputProcessor(InputProcessor):
 
         output_person_info = []
         for person_result in person_results:
-            box = person_result['bbox']  # x,y,w,h
-            box = [box[0], box[1], box[2] - box[0], box[3] - box[1]]
+            box = person_result['bbox']  # x,y,x,y
+            box = [box[0], box[1], box[2] - box[0], box[3] - box[1]]  # x,y,w,h
             center, scale = _box2cs(self.cfg.data_cfg['image_size'], box)
             data = {
                 'image_id':
@@ -277,6 +280,9 @@ class PoseTopDownInputProcessor(InputProcessor):
             for res in self.process_single(inp):
                 batch_outputs.append(res)
 
+        if len(batch_outputs) < 1:
+            return batch_outputs
+
         batch_outputs = self._collate_fn(batch_outputs)
         batch_outputs['img_metas']._data = [[
             img_meta[i] for img_meta in batch_outputs['img_metas']._data
@@ -300,6 +306,9 @@ class PoseTopDownOutputProcessor(OutputProcessor):
         return output
 
 
+# TODO: Fix when multi people are detected in each sample,
+# all the people results will be passed to the pose model,
+# resulting in a dynamic batch_size, which is not supported by jit script model.
 @PREDICTORS.register_module()
 class PoseTopDownPredictor(PredictorV2):
     """Pose topdown predictor.
@@ -330,12 +339,26 @@ class PoseTopDownPredictor(PredictorV2):
                  save_results=False,
                  save_path=None,
                  mode='BGR',
+                 model_type=None,
                  *args,
                  **kwargs):
         assert batch_size == 1, 'Only support batch_size=1 now!'
         self.cat_id = cat_id
         self.bbox_thr = bbox_thr
         self.detection_predictor_config = detection_predictor_config
+
+        self.model_type = model_type
+        if self.model_type is None:
+            if model_path.endswith('jit'):
+                assert config_file is not None
+                self.model_type = 'jit'
+            elif model_path.endswith('blade'):
+                import torch_blade
+                assert config_file is not None
+                self.model_type = 'blade'
+            else:
+                self.model_type = 'raw'
+        assert self.model_type in ['raw', 'jit', 'blade']
 
         super(PoseTopDownPredictor, self).__init__(
             model_path,
@@ -360,10 +383,46 @@ class PoseTopDownPredictor(PredictorV2):
 
         self.dataset_info = DatasetInfo(dataset_info)
 
+    def _build_model(self):
+        if self.model_type != 'raw':
+            with io.open(self.model_path, 'rb') as infile:
+                model = torch.jit.load(infile, self.device)
+        else:
+            model = super()._build_model()
+        return model
+
+    def prepare_model(self):
+        """Build model from config file by default.
+        If the model is not loaded from a configuration file, e.g. torch jit model, you need to reimplement it.
+        """
+        model = self._build_model()
+        model.to(self.device)
+        model.eval()
+        if self.model_type == 'raw':
+            load_checkpoint(model, self.model_path, map_location='cpu')
+        return model
+
     def model_forward(self, inputs, return_heatmap=False):
-        with torch.no_grad():
-            result = self.model(
-                **inputs, mode='test', return_heatmap=return_heatmap)
+        if self.model_type == 'raw':
+            with torch.no_grad():
+                result = self.model(
+                    **inputs, mode='test', return_heatmap=return_heatmap)
+        else:
+            img_metas = inputs['img_metas']
+            with torch.no_grad():
+                img = inputs['img'].to(self.device)
+                tensor_img_metas = copy.deepcopy(img_metas)
+                for meta in tensor_img_metas:
+                    meta.pop('image_file')
+                    for k, v in meta.items():
+                        meta[k] = torch.tensor(v)
+                output_heatmap = self.model(img, tensor_img_metas)
+
+            from easycv.models.pose.heads.topdown_heatmap_base_head import decode_heatmap
+            output_heatmap = output_heatmap.cpu().numpy()
+            result = decode_heatmap(output_heatmap, img_metas,
+                                    self.cfg.model.test_cfg)
+
         return result
 
     def get_input_processor(self):
@@ -384,7 +443,7 @@ class PoseTopDownPredictor(PredictorV2):
                     image,
                     keypoints,
                     radius=4,
-                    thickness=1,
+                    thickness=3,
                     kpt_score_thr=0.3,
                     bbox_color='green',
                     show=False,
