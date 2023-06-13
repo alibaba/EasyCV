@@ -10,9 +10,9 @@ import logging
 import os
 import threading
 import traceback
-from easycv.file import io
 import torch
 from mmcv import DictAction
+from easycv.file import io
 
 try:
     import easy_predict
