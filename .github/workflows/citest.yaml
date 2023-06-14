@@ -39,7 +39,7 @@ concurrency:
 jobs:
   ut-torch180:
     # The type of runner that the job will run on
-    runs-on: [unittest-t4]
+    runs-on: [self-hosted]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -64,7 +64,7 @@ jobs:
           # pip install -r requirements.txt
           #run test
           export CUDA_VISIBLE_DEVICES=7
-          source ~/workspace/anaconda2/etc/profile.d/conda.sh
+          source ~/anaconda3/etc/profile.d/conda.sh
           conda activate easycv_torch1.8.0
 
           # pip install pai-easycv
@@ -84,7 +84,7 @@ jobs:
 # blade test env will be updated! we do not support test with trt_efficient_nms
   ut-torch181-blade:
     # The type of runner that the job will run on
-    runs-on: [unittest-t4]
+    runs-on: [self-hosted]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -110,7 +110,7 @@ jobs:
           # pip install -r requirements.txt
           #run test
           export CUDA_VISIBLE_DEVICES=6
-          source ~/workspace/anaconda2/etc/profile.d/conda.sh
+          source ~/anaconda3/etc/profile.d/conda.sh
           conda activate torch1.8.1_blade
           PYTHONPATH=. python tests/test_predictors/test_detector_blade.py
           PYTHONPATH=. python tests/test_apis/test_export_blade.py
