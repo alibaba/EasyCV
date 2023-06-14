@@ -40,6 +40,7 @@ class EasyCVTrainerTestDetectionDino(unittest.TestCase):
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
             work_dir=tmp_dir,
+            use_fp16=True,
             cfg_options=cfg_options)
 
         trainer = build_trainer(trainer_name, kwargs)
