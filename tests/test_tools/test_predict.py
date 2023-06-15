@@ -83,10 +83,9 @@ class PredictTest(unittest.TestCase):
         oss_config = get_oss_config()
         ak_id = oss_config['ak_id']
         ak_secret = oss_config['ak_secret']
-        hosts = oss_config['hosts']
-        hosts = 'oss-cn-hangzhou-internal.aliyuncs.com'
-        buckets = oss_config['buckets']
-        buckets.append('easycv')
+        hosts = oss_config['hosts'] + 'oss-cn-hangzhou.aliyuncs.com'
+        hosts = ''.join(_ for _ in hosts)
+        buckets = oss_config['buckets'] + ['easycv']
         buckets = ','.join(_ for _ in buckets)
 
         input_file = 'oss://easycv/data/small_test_data/test_images/http_image_list.txt'
@@ -98,11 +97,9 @@ class PredictTest(unittest.TestCase):
                     --model_path {model_path} \
                     --oss_io_config ak_id={ak_id} ak_secret={ak_secret} hosts={hosts} buckets={buckets}'
 
-        print('&' * 78)
-        print(cmd)
-
         logging.info('run command: %s' % cmd)
         run_in_subprocess(cmd)
+        io.remove(output_file)
 
 
 if __name__ == '__main__':
