@@ -84,7 +84,8 @@ class PredictTest(unittest.TestCase):
         ak_id = oss_config['ak_id']
         ak_secret = oss_config['ak_secret']
         hosts = oss_config['hosts']
-        buckets = oss_config['buckets'].append('easycv')
+        buckets = oss_config['buckets']
+        buckets.append('easycv')
         buckets = ','.join(_ for _ in buckets)
 
         input_file = 'oss://easycv/data/small_imagenet_raw/meta/val_labeled_100_ap_no_label.txt'
