@@ -98,6 +98,9 @@ class PredictTest(unittest.TestCase):
                     --model_path {model_path} \
                     --oss_io_config ak_id={ak_id} ak_secret={ak_secret} hosts={hosts} buckets={buckets}'
 
+        print('&' * 78)
+        print(cmd)
+
         logging.info('run command: %s' % cmd)
         run_in_subprocess(cmd)
 
