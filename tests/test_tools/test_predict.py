@@ -84,7 +84,7 @@ class PredictTest(unittest.TestCase):
         ak_id = oss_config['ak_id']
         ak_secret = oss_config['ak_secret']
         hosts = oss_config['hosts']
-        hosts = ','.join(_ for _ in hosts)
+        hosts = 'oss-cn-hangzhou-internal.aliyuncs.com'
         buckets = oss_config['buckets']
         buckets.append('easycv')
         buckets = ','.join(_ for _ in buckets)
