@@ -84,6 +84,7 @@ class PredictTest(unittest.TestCase):
         ak_id = oss_config['ak_id']
         ak_secret = oss_config['ak_secret']
         hosts = oss_config['hosts']
+        hosts = ','.join(_ for _ in hosts)
         buckets = oss_config['buckets']
         buckets.append('easycv')
         buckets = ','.join(_ for _ in buckets)
@@ -95,7 +96,7 @@ class PredictTest(unittest.TestCase):
                     --output_file {output_file} \
                     --model_type {model_type} \
                     --model_path {model_path} \
-                    --oss_io_config ak_id={ak_id} ak_secret={ak_secret} hosts={hosts} buckets={buckets}'
+                    --oss_io_config ak_id={ak_id} ak_secret={ak_secret} hosts={hosts[0]} buckets={buckets}'
 
         logging.info('run command: %s' % cmd)
         run_in_subprocess(cmd)
