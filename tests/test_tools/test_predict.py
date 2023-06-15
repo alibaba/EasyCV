@@ -89,7 +89,7 @@ class PredictTest(unittest.TestCase):
         buckets.append('easycv')
         buckets = ','.join(_ for _ in buckets)
 
-        input_file = 'oss://easycv/data/small_imagenet_raw/meta/val_labeled_100_ap_no_label.txt'
+        input_file = 'oss://easycv/data/small_test_data/test_images/http_image_list.txt'
         output_file = tempfile.NamedTemporaryFile('w').name
         cmd = f'PYTHONPATH=. python tools/predict.py \
                     --input_file {input_file} \
