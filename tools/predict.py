@@ -314,12 +314,14 @@ def build_and_run_file_io(args):
 
     # acquire the temporary save path
     if args.output_file:
+        io.makedirs(os.path.dirname(args.output_file))
         input_oss_file_new_host = os.path.join(
             os.path.dirname(args.output_file),
             os.path.basename(args.input_file + '.tmp%d' % worker_id))
         replace_oss_with_local_path(args.input_file, input_oss_file_new_host,
                                     args.oss_prefix, args.local_prefix)
     else:
+        io.makedirs(args.output_dir)
         input_oss_file_new_host = os.path.join(
             args.output_dir,
             os.path.basename(args.input_file + '.tmp%d' % worker_id))
