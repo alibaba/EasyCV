@@ -36,7 +36,7 @@ class EasyCVSegmentationPipeline(EasyCVPipeline):
         legal_indices = ids != len(self.predict_op.CLASSES)  # for VOID label
         ids = ids[legal_indices]
         segms = (semantic_result[None] == ids[:, None, None])
-        masks = [it.astype(np.int) for it in segms]
+        masks = [it.astype(np.int32) for it in segms]
         labels_txt = np.array(self.predict_op.CLASSES)[ids].tolist()
 
         results = {

@@ -246,7 +246,7 @@ class DistributedSampler(_DistributedSampler):
                     l, size_per_label, replace=(len(l) <= size_per_label)))
         indices = np.array(indices)
         np.random.shuffle(indices)
-        indices = indices[:N].astype(np.int).tolist()
+        indices = indices[:N].astype(np.int64).tolist()
 
         # add extra samples to make it evenly divisible
         assert len(indices) <= self.total_size, \
@@ -438,7 +438,7 @@ class DistributedGivenIterationSampler(Sampler):
                     l, size_per_label, replace=(len(l) <= size_per_label)))
         indices = np.array(indices)
         np.random.shuffle(indices)
-        indices = indices[:N].astype(np.int)
+        indices = indices[:N].astype(np.int64)
         # repeat
         all_size = self.total_size * self.world_size
         indices = indices[:all_size]
