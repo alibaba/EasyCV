@@ -98,7 +98,9 @@ class ClassificationTrainTest(unittest.TestCase):
               (tmp_cfg_file, work_dir, args_str)
 
         logging.info('run command: %s' % cmd)
-        run_in_subprocess(cmd)
+        # run_in_subprocess(cmd)  # 管道缓冲区被写满，后面的写入请求都hang住了
+        import subprocess
+        subprocess.call(cmd, shell=True)
 
         output_files = io.listdir(work_dir)
         self.assertIn('epoch_1.pth', output_files)
