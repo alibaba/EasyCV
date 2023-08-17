@@ -40,9 +40,9 @@ class YOLOXTest(unittest.TestCase):
             }
             output = model(imgs, mode='train', **kwargs)
             self.assertEqual(output['img_h'].cpu().numpy(),
-                             np.array(640, dtype=np.float))
+                             np.array(640, dtype=np.float32))
             self.assertEqual(output['img_w'].cpu().numpy(),
-                             np.array(640, dtype=np.float))
+                             np.array(640, dtype=np.float32))
             self.assertEqual(output['total_loss'].shape, torch.Size([]))
             self.assertEqual(output['iou_l'].shape, torch.Size([]))
             self.assertEqual(output['conf_l'].shape, torch.Size([]))

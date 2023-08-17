@@ -89,8 +89,8 @@ class CocoToolsTest(unittest.TestCase):
     def testExportGroundtruthToCOCO(self):
         image_ids = ['first', 'second']
         groundtruth_boxes = [
-            np.array([[100, 100, 200, 200]], np.float),
-            np.array([[50, 50, 100, 100]], np.float)
+            np.array([[100, 100, 200, 200]], np.float32),
+            np.array([[50, 50, 100, 100]], np.float32)
         ]
         groundtruth_classes = [
             np.array([1], np.int32),
@@ -126,12 +126,12 @@ class CocoToolsTest(unittest.TestCase):
     def testExportDetectionsToCOCO(self):
         image_ids = ['first', 'second']
         detections_boxes = [
-            np.array([[100, 100, 200, 200]], np.float),
-            np.array([[50, 50, 100, 100]], np.float)
+            np.array([[100, 100, 200, 200]], np.float32),
+            np.array([[50, 50, 100, 100]], np.float32)
         ]
         detections_scores = [
-            np.array([.8], np.float),
-            np.array([.7], np.float)
+            np.array([.8], np.float32),
+            np.array([.7], np.float32)
         ]
         detections_classes = [np.array([1], np.int32), np.array([1], np.int32)]
         categories = [{
@@ -176,7 +176,7 @@ class CocoToolsTest(unittest.TestCase):
         for i, detection_mask in enumerate(detection_masks):
             detection_masks[i] = detection_mask[:, :, :, None]
 
-        detection_scores = [np.array([.8], np.float), np.array([.7], np.float)]
+        detection_scores = [np.array([.8], np.float32), np.array([.7], np.float32)]
         detection_classes = [np.array([1], np.int32), np.array([1], np.int32)]
 
         categories = [{
@@ -216,8 +216,8 @@ class CocoToolsTest(unittest.TestCase):
         ]
 
         detection_scores = [
-            np.array([.8, 0.2], np.float),
-            np.array([.7, 0.3], np.float)
+            np.array([.8, 0.2], np.float32),
+            np.array([.7, 0.3], np.float32)
         ]
         detection_classes = [
             np.array([1, 1], np.int32),

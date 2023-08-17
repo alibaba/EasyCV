@@ -252,7 +252,7 @@ class FaceKeypointsDataAugumentation:
             skin_factor_list = [0.6, 0.8, 1.0, 1.2, 1.4]
             skin_factor = np.random.choice(skin_factor_list)
             img_ycrcb_raw[:, :, 0:1] = np.clip(
-                img_ycrcb_raw[:, :, 0:1].astype(np.float) * skin_factor, 0,
+                img_ycrcb_raw[:, :, 0:1].astype(np.float32) * skin_factor, 0,
                 255).astype(np.uint8)
             img = cv2.cvtColor(img_ycrcb_raw, cv2.COLOR_YCR_CB2BGR)
 

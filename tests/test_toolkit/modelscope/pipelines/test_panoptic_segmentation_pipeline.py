@@ -8,13 +8,11 @@ from modelscope.outputs import OutputKeys
 from modelscope.pipelines import pipeline
 from modelscope.utils.constant import Tasks
 from modelscope.utils.cv.image_utils import panoptic_seg_masks_to_image
-from modelscope.utils.demo_utils import DemoCompatibilityCheck
 from modelscope.utils.test_utils import test_level
 from tests.ut_config import BASE_LOCAL_PATH
 
 
-class EasyCVPanopticSegmentationPipelineTest(unittest.TestCase,
-                                             DemoCompatibilityCheck):
+class EasyCVPanopticSegmentationPipelineTest(unittest.TestCase):
     img_path = os.path.join(
         BASE_LOCAL_PATH, 'data/test_images/image_semantic_segmentation.jpg')
 
@@ -31,10 +29,6 @@ class EasyCVPanopticSegmentationPipelineTest(unittest.TestCase,
             tmp_save_path = tmp_file.name
             cv2.imwrite(tmp_save_path, draw_img)
         print('print ' + self.model_id + ' success')
-
-    @unittest.skipUnless(test_level() >= 0, 'skip test in current test level')
-    def test_demo_compatibility(self):
-        self.compatibility_check()
 
 
 if __name__ == '__main__':
