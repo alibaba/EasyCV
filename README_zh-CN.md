@@ -45,6 +45,11 @@ EasyCV是一个涵盖多个领域的基于Pytorch的计算机视觉工具箱，�
 
 
 ## 最新进展
+[🔥 2023.05.09]
+
+* 09/05/2023 EasyCV v0.11.0 was released.
+- 支持EasyCV作为[modelscope](https://github.com/modelscope/modelscope)插件接入模型.
+
 [🔥 2023.03.06]
 
 * 06/03/2023 EasyCV v0.10.0 was released.

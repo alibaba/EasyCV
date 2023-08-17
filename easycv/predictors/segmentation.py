@@ -156,7 +156,7 @@ class Mask2formerOutputProcessor(OutputProcessor):
             ids = ids[legal_indices]
             labels = np.array([id % 1000 for id in ids], dtype=np.int64)
             segms = (pan_results[None] == ids[:, None, None])
-            masks = [it.astype(np.int) for it in segms]
+            masks = [it.astype(np.int32) for it in segms]
             labels_txt = np.array(self.classes)[labels].tolist()
 
             output['masks'] = masks

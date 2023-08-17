@@ -46,6 +46,11 @@ EasyCV is an all-in-one computer vision toolbox based on PyTorch, mainly focuses
 
 
 ## What's New
+[🔥 2023.05.09]
+
+* 09/05/2023 EasyCV v0.11.0 was released.
+- Support EasyCV as a plug-in for [modelscope](https://github.com/modelscope/modelscope.
+
 [🔥 2023.03.06]
 
 * 06/03/2023 EasyCV v0.10.0 was released.
