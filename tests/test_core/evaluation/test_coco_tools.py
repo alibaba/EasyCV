@@ -176,7 +176,10 @@ class CocoToolsTest(unittest.TestCase):
         for i, detection_mask in enumerate(detection_masks):
             detection_masks[i] = detection_mask[:, :, :, None]
 
-        detection_scores = [np.array([.8], np.float32), np.array([.7], np.float32)]
+        detection_scores = [
+            np.array([.8], np.float32),
+            np.array([.7], np.float32)
+        ]
         detection_classes = [np.array([1], np.int32), np.array([1], np.int32)]
 
         categories = [{
