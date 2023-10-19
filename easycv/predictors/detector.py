@@ -391,7 +391,10 @@ class YoloXPredictor(DetectionPredictor):
                 with io.open(self.model_path, 'rb') as infile:
                     model = torch.jit.load(infile, self.device)
             else:
-                model = onnxruntime.InferenceSession(self.model_path)
+                if torch.cuda.is_available():
+                    model = onnxruntime.InferenceSession(self.model_path, providers=['CUDAExecutionProvider'])
+                else:
+                    model = onnxruntime.InferenceSession(self.model_path, providers=['CPUExecutionProvider'])
         else:
             from easycv.utils.misc import reparameterize_models
             model = super()._build_model()
@@ -403,8 +406,9 @@ class YoloXPredictor(DetectionPredictor):
         If the model is not loaded from a configuration file, e.g. torch jit model, you need to reimplement it.
         """
         model = self._build_model()
-        model.to(self.device)
-        model.eval()
+        if self.model_type != 'onnx':
+            model.to(self.device)
+            model.eval()
         if self.model_type == 'raw':
             load_checkpoint(model, self.model_path, map_location='cpu')
         return model
@@ -419,6 +423,7 @@ class YoloXPredictor(DetectionPredictor):
                     outputs = self.model(inputs['img'])
                 else:
                     outputs = self.model.run(None,  {self.model.get_inputs()[0].name : onnx_to_numpy(inputs['img'])})[0]
+                    outputs = torch.from_numpy(outputs)
                 outputs = {'results': outputs}  # convert to dict format
         else:
             outputs = super().model_forward(inputs)
