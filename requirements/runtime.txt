@@ -33,3 +33,4 @@ transformers
 wget
 xtcocotools
 yacs
+onnxruntime-gpu
