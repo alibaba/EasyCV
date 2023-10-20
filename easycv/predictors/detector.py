@@ -391,10 +391,10 @@ class YoloXPredictor(DetectionPredictor):
                 with io.open(self.model_path, 'rb') as infile:
                     model = torch.jit.load(infile, self.device)
             else:
-                if torch.cuda.is_available():
+                if onnxruntime.get_device() == 'GPU':
                     model = onnxruntime.InferenceSession(self.model_path, providers=['CUDAExecutionProvider'])
                 else:
-                    model = onnxruntime.InferenceSession(self.model_path, providers=['CPUExecutionProvider'])
+                    model = onnxruntime.InferenceSession(self.model_path)
         else:
             from easycv.utils.misc import reparameterize_models
             model = super()._build_model()
