@@ -91,27 +91,31 @@ test_pipeline = [
 train_path = 'data/coco/train2017.manifest'
 val_path = 'data/coco/val2017.manifest'
 
+train_dataset=dict(
+    type='DetImagesMixDataset',
+    data_source=dict(
+        type='DetSourcePAI',
+        path=train_path,
+        classes=CLASSES),
+    pipeline=train_pipeline,
+    dynamic_scale=tuple(img_scale))
+
+val_dataset=dict(
+    type='DetImagesMixDataset',
+    imgs_per_gpu=2,
+    data_source=dict(
+        type='DetSourcePAI',
+        path=val_path,
+        classes=CLASSES),
+    pipeline=test_pipeline,
+    dynamic_scale=None,
+    label_padding=False)
+
 data = dict(
     imgs_per_gpu=16,
     workers_per_gpu=4,
-    train=dict(
-        type='DetImagesMixDataset',
-        data_source=dict(
-            type='DetSourcePAI',
-            path=train_path,
-            classes=CLASSES),
-        pipeline=train_pipeline,
-        dynamic_scale=tuple(img_scale)),
-    val=dict(
-        type='DetImagesMixDataset',
-        imgs_per_gpu=2,
-        data_source=dict(
-            type='DetSourcePAI',
-            path=val_path,
-            classes=CLASSES),
-        pipeline=test_pipeline,
-        dynamic_scale=None,
-        label_padding=False))
+    train=train_dataset,
+    val=val_dataset)
 
 # additional hooks
 interval = 10
@@ -149,7 +153,7 @@ eval_config = dict(
 eval_pipelines = [
     dict(
         mode='test',
-        data=data['val'],
+        data=val_dataset,
         evaluators=[dict(type='CocoDetectionEvaluator', classes=CLASSES)],
     )
 ]
