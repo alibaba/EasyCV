@@ -49,14 +49,14 @@ img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 train_pipeline = [
-    dict(type='MMMosaic', img_scale=img_scale, pad_val=114.0),
+    dict(type='MMMosaic', img_scale=tuple(img_scale), pad_val=114.0),
     dict(
         type='MMRandomAffine',
         scaling_ratio_range=scale_ratio,
         border=[img_scale[0] // 2, img_scale[1] // 2]),
     dict(
         type='MMMixUp',  # s m x l; tiny nano will detele
-        img_scale=img_scale,
+        img_scale=tuple(img_scale),
         ratio_range=(0.8, 1.6),
         pad_val=114.0),
     dict(
