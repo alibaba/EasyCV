@@ -49,7 +49,7 @@ img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 train_pipeline = [
-    dict(type='MMMosaic', img_scale=tuple(img_scale[0]), pad_val=114.0),
+    dict(type='MMMosaic', img_scale=tuple(img_scale), pad_val=114.0),
     dict(
         type='MMRandomAffine',
         scaling_ratio_range=scale_ratio,
@@ -88,6 +88,9 @@ test_pipeline = [
     dict(type='Collect', keys=['img'])
 ]
 
+train_path = 'data/coco/train2017.manifest'
+val_path = 'data/coco/val2017.manifest'
+
 data = dict(
     imgs_per_gpu=16,
     workers_per_gpu=4,
@@ -95,7 +98,7 @@ data = dict(
         type='DetImagesMixDataset',
         data_source=dict(
             type='DetSourcePAI',
-            path='data/coco/train2017.manifest',
+            path=train_path,
             classes=CLASSES),
         pipeline=train_pipeline,
         dynamic_scale=tuple(img_scale)),
@@ -104,7 +107,7 @@ data = dict(
         imgs_per_gpu=2,
         data_source=dict(
             type='DetSourcePAI',
-            path='data/coco/val2017.manifest',
+            path=val_path,
             classes=CLASSES),
         pipeline=test_pipeline,
         dynamic_scale=None,
