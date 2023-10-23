@@ -49,14 +49,14 @@ img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 train_pipeline = [
-    dict(type='MMMosaic', img_scale='${img_scale}', pad_val=114.0),
+    dict(type='MMMosaic', img_scale=img_scale, pad_val=114.0),
     dict(
         type='MMRandomAffine',
-        scaling_ratio_range='${scale_ratio}',
-        border=['-${img_scale}[0] // 2', '-${img_scale}[1] // 2']),
+        scaling_ratio_range=scale_ratio,
+        border=[img_scale[0] // 2, img_scale[1] // 2]),
     dict(
         type='MMMixUp',  # s m x l; tiny nano will detele
-        img_scale='${img_scale}',
+        img_scale=img_scale,
         ratio_range=(0.8, 1.6),
         pad_val=114.0),
     dict(
@@ -70,20 +70,20 @@ train_pipeline = [
     dict(type='MMPad', pad_to_square=True, pad_val=(114.0, 114.0, 114.0)),
     dict(
         type='MMNormalize',
-        mean='${img_norm_cfg.mean}',
-        std='${img_norm_cfg.std}',
-        to_rgb='${img_norm_cfg.to_rgb}'),
+        mean=img_norm_cfg['mean'],
+        std=img_norm_cfg['std'],
+        to_rgb=img_norm_cfg['to_rgb']),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
 ]
 test_pipeline = [
-    dict(type='MMResize', img_scale='${img_scale}', keep_ratio=True),
+    dict(type='MMResize', img_scale=img_scale, keep_ratio=True),
     dict(type='MMPad', pad_to_square=True, pad_val=(114.0, 114.0, 114.0)),
     dict(
         type='MMNormalize',
-        mean='${img_norm_cfg.mean}',
-        std='${img_norm_cfg.std}',
-        to_rgb='${img_norm_cfg.to_rgb}'),
+        mean=img_norm_cfg['mean'],
+        std=img_norm_cfg['std'],
+        to_rgb=img_norm_cfg['to_rgb']),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img'])
 ]
@@ -96,17 +96,17 @@ data = dict(
         data_source=dict(
             type='DetSourcePAI',
             path='data/coco/train2017.manifest',
-            classes='${CLASSES}'),
-        pipeline='${train_pipeline}',
-        dynamic_scale='${img_scale}'),
+            classes=CLASSES),
+        pipeline=train_pipeline,
+        dynamic_scale=img_scale),
     val=dict(
         type='DetImagesMixDataset',
         imgs_per_gpu=2,
         data_source=dict(
             type='DetSourcePAI',
             path='data/coco/val2017.manifest',
-            classes='${CLASSES}'),
-        pipeline='${test_pipeline}',
+            classes=CLASSES),
+        pipeline=test_pipeline,
         dynamic_scale=None,
         label_padding=False))
 
@@ -120,14 +120,14 @@ custom_hooks = [
         priority=48),
     dict(
         type='SyncRandomSizeHook',
-        ratio_range='${random_size}',
-        img_scale='${img_scale}',
-        interval='${interval}',
+        ratio_range=random_size,
+        img_scale=img_scale,
+        interval=interval,
         priority=48),
     dict(
         type='SyncNormHook',
         num_last_epochs=15,
-        interval='${interval}',
+        interval=interval,
         priority=48)
 ]
 
@@ -135,23 +135,23 @@ custom_hooks = [
 vis_num = 20
 score_thr = 0.5
 eval_config = dict(
-    interval='${interval}',
+    interval=interval,
     gpu_collect=False,
     visualization_config=dict(
-        vis_num='${vis_num}',
-        score_thr='${score_thr}',
+        vis_num=vis_num,
+        score_thr=score_thr,
     )  # show by TensorboardLoggerHookV2
 )
 
 eval_pipelines = [
     dict(
         mode='test',
-        data='${data.val}',
+        data=data['val'],
         evaluators=[dict(type='CocoDetectionEvaluator', classes=CLASSES)],
     )
 ]
 
-checkpoint_config = dict(interval='${interval}')
+checkpoint_config = dict(interval=interval)
 # optimizer
 # basic_lr_per_img = 0.01 / 64.0
 optimizer = dict(
