@@ -276,7 +276,7 @@ def _export_yolox(model, cfg, filename):
                 len(img_scale) == 2
             ), 'Export YoloX predictor config contains img_scale must be (int, int) tuple!'
 
-            input = 255 * torch.rand((batch_size, 3) + img_scale)
+            input = 255 * torch.rand((batch_size, 3) + tuple(img_scale))
 
             # assert use_trt_efficientnms only happens when static_opt=True
             if static_opt is not True:
