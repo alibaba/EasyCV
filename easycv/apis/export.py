@@ -354,10 +354,12 @@ def _export_yolox(model, cfg, filename):
                         classes=cfg.CLASSES)
 
                     json.dump(config, ofile)
-            
+
             if export_type == 'onnx':
-                
-                with io.open(filename+'.config.json' if filename.endswith('onnx') else filename + '.onnx.config.json', 'w') as ofile:
+
+                with io.open(
+                        filename + '.config.json' if filename.endswith('onnx')
+                        else filename + '.onnx.config.json', 'w') as ofile:
                     config = dict(
                         model=cfg.model,
                         export=cfg.export,
@@ -365,16 +367,19 @@ def _export_yolox(model, cfg, filename):
                         classes=cfg.CLASSES)
 
                     json.dump(config, ofile)
-                
-                torch.onnx.export(model,        # 模型的名称
-                  input.to(device),   # 一组实例化输入
-                  filename if filename.endswith('onnx') else filename + '.onnx',   # 文件保存路径/名称
-                  export_params=True,        #  如果指定为True或默认, 参数也会被导出. 如果你要导出一个没训练过的就设为 False.
-                  opset_version=12,          # ONNX 算子集的版本，当前已更新到15
-                  do_constant_folding=True,  # 是否执行常量折叠优化
-                  input_names = ['input'],   # 输入模型的张量的名称
-                  output_names = ['output'], # 输出模型的张量的名称
-                  )
+
+                torch.onnx.export(
+                    model,  # 模型的名称
+                    input.to(device),  # 一组实例化输入
+                    filename if filename.endswith('onnx') else filename +
+                    '.onnx',  # 文件保存路径/名称
+                    export_params=
+                    True,  #  如果指定为True或默认, 参数也会被导出. 如果你要导出一个没训练过的就设为 False.
+                    opset_version=12,  # ONNX 算子集的版本，当前已更新到15
+                    do_constant_folding=True,  # 是否执行常量折叠优化
+                    input_names=['input'],  # 输入模型的张量的名称
+                    output_names=['output'],  # 输出模型的张量的名称
+                )
 
             if export_type == 'jit':
                 with io.open(filename + '.jit', 'wb') as ofile:

@@ -4,7 +4,8 @@ import os
 from glob import glob
 
 import numpy as np
-import torch, onnxruntime
+import onnxruntime
+import torch
 
 from easycv.core.visualization import imshow_bboxes
 from easycv.datasets.utils import replace_ImageToTensor
@@ -22,9 +23,11 @@ try:
 except Exception:
     from .interface import PredictorInterface
 
+
 # 将张量转化为ndarray格式
 def onnx_to_numpy(tensor):
-    return tensor.detach().cpu().numpy() if tensor.requires_grad else tensor.cpu().numpy()
+    return tensor.detach().cpu().numpy(
+    ) if tensor.requires_grad else tensor.cpu().numpy()
 
 
 class DetInputProcessor(InputProcessor):
@@ -392,7 +395,8 @@ class YoloXPredictor(DetectionPredictor):
                     model = torch.jit.load(infile, self.device)
             else:
                 if onnxruntime.get_device() == 'GPU':
-                    model = onnxruntime.InferenceSession(self.model_path, providers=['CUDAExecutionProvider'])
+                    model = onnxruntime.InferenceSession(
+                        self.model_path, providers=['CUDAExecutionProvider'])
                 else:
                     model = onnxruntime.InferenceSession(self.model_path)
         else:
@@ -422,7 +426,11 @@ class YoloXPredictor(DetectionPredictor):
                 if self.model_type != 'onnx':
                     outputs = self.model(inputs['img'])
                 else:
-                    outputs = self.model.run(None,  {self.model.get_inputs()[0].name : onnx_to_numpy(inputs['img'])})[0]
+                    outputs = self.model.run(
+                        None, {
+                            self.model.get_inputs()[0].name:
+                            onnx_to_numpy(inputs['img'])
+                        })[0]
                     outputs = torch.from_numpy(outputs)
                 outputs = {'results': outputs}  # convert to dict format
         else:

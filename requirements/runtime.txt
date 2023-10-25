@@ -13,6 +13,7 @@ lmdb
 numba
 numpy
 nuscenes-devkit
+onnxruntime-gpu
 opencv-python
 oss2
 packaging
@@ -33,4 +34,3 @@ transformers
 wget
 xtcocotools
 yacs
-onnxruntime-gpu
