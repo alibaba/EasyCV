@@ -13,7 +13,7 @@ lmdb
 numba
 numpy
 nuscenes-devkit
-onnxruntime-gpu
+onnxruntime
 opencv-python
 oss2
 packaging
