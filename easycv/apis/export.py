@@ -369,16 +369,15 @@ def _export_yolox(model, cfg, filename):
                     json.dump(config, ofile)
 
                 torch.onnx.export(
-                    model,  
-                    input.to(device), 
+                    model,
+                    input.to(device),
                     filename if filename.endswith('onnx') else filename +
-                    '.onnx',  
-                    export_params=
-                    True,  
-                    opset_version=12,  
-                    do_constant_folding=True,  
-                    input_names=['input'],  
-                    output_names=['output'],  
+                    '.onnx',
+                    export_params=True,
+                    opset_version=12,
+                    do_constant_folding=True,
+                    input_names=['input'],
+                    output_names=['output'],
                 )
 
             if export_type == 'jit':
