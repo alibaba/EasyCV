@@ -1,14 +1,19 @@
 # Copyright (c) 2022 Snap Inc. All rights reserved.
 import itertools
 import os
+from distutils.version import LooseVersion
 
 import torch
 import torch.nn as nn
 from timm.models.layers import DropPath, trunc_normal_
-from timm.models.layers.helpers import to_2tuple
 
 from ..modelzoo import efficientformer as model_urls
 from ..registry import BACKBONES
+
+if LooseVersion(torch.__version__) <= LooseVersion('0.8.2'):
+    from timm.models.layers.helpers import to_2tuple
+else:
+    from timm.layers.helpers import to_2tuple
 
 
 class Attention(torch.nn.Module):
