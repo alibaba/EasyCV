@@ -4,7 +4,6 @@ import os
 from glob import glob
 
 import numpy as np
-import onnxruntime
 import torch
 
 from easycv.core.visualization import imshow_bboxes
@@ -394,6 +393,7 @@ class YoloXPredictor(DetectionPredictor):
                 with io.open(self.model_path, 'rb') as infile:
                     model = torch.jit.load(infile, self.device)
             else:
+                import onnxruntime
                 if onnxruntime.get_device() == 'GPU':
                     model = onnxruntime.InferenceSession(
                         self.model_path, providers=['CUDAExecutionProvider'])
