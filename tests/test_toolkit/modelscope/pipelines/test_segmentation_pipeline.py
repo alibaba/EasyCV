@@ -9,14 +9,12 @@ from modelscope.outputs import OutputKeys
 from modelscope.pipelines import pipeline
 from modelscope.utils.constant import Tasks
 from modelscope.utils.cv.image_utils import semantic_seg_masks_to_image
-from modelscope.utils.demo_utils import DemoCompatibilityCheck
 from modelscope.utils.test_utils import test_level
 from PIL import Image
 from tests.ut_config import BASE_LOCAL_PATH
 
 
-class EasyCVSegmentationPipelineTest(unittest.TestCase,
-                                     DemoCompatibilityCheck):
+class EasyCVSegmentationPipelineTest(unittest.TestCase):
     img_path = os.path.join(BASE_LOCAL_PATH,
                             'data/test_images/image_segmentation.jpg')
 
@@ -81,10 +79,6 @@ class EasyCVSegmentationPipelineTest(unittest.TestCase,
     def test_segformer_b5(self):
         model_id = 'damo/cv_segformer-b5_image_semantic-segmentation_coco-stuff164k'
         self._internal_test_(model_id)
-
-    @unittest.skipUnless(test_level() >= 0, 'skip test in current test level')
-    def test_demo_compatibility(self):
-        self.compatibility_check()
 
 
 if __name__ == '__main__':

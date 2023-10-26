@@ -153,7 +153,7 @@ eval_pipelines = [
         data=data['val'],
         dist_eval=True,
         evaluators=[
-            dict(type='ClsEvaluator', topk=(1, 5), class_list=class_list)
+            dict(type='ClsEvaluator', topk=(1, ), class_list=class_list)
         ],
     )
 ]

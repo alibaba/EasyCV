@@ -34,7 +34,7 @@ class PaddingWithLoop:
         inds = np.arange(start, start + self.clip_len)
         inds = np.mod(inds, num_frames)
 
-        results['frame_inds'] = inds.astype(np.int)
+        results['frame_inds'] = inds.astype(np.int64)
         results['clip_len'] = self.clip_len
         results['frame_interval'] = None
         results['num_clips'] = self.num_clips
