@@ -85,10 +85,10 @@ class PredictTest(unittest.TestCase):
         ak_secret = oss_config['ak_secret']
         hosts = oss_config['hosts'] + ['oss-cn-hangzhou.aliyuncs.com']
         hosts = ','.join(_ for _ in hosts)
-        buckets = oss_config['buckets'] + ['easycv']
+        buckets = oss_config['buckets']
         buckets = ','.join(_ for _ in buckets)
 
-        input_file = 'oss://easycv/data/small_test_data/test_images/http_image_list.txt'
+        input_file = 'oss://pai-vision-data-hz.oss-cn-hangzhou-internal.aliyuncs.com/data/small_test_data/test_images/http_image_list.txt'
         output_file = tempfile.NamedTemporaryFile('w').name
         cmd = f'PYTHONPATH=. python tools/predict.py \
                     --input_file {input_file} \
