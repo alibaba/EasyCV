@@ -41,7 +41,7 @@ class ClsSourceCaltechTest(unittest.TestCase):
             results = data_source[idx]
             img = results['img']
             label = results['gt_labels']
-            self.assertEqual(img.mode, 'L')
+            self.assertEqual(img.mode, 'RGB')
             self.assertIn(label, list(range(len(data_source.CLASSES))))
             img.close()
 
