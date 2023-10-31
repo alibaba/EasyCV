@@ -23,6 +23,12 @@ except Exception:
     from .interface import PredictorInterface
 
 
+# 将张量转化为ndarray格式
+def onnx_to_numpy(tensor):
+    return tensor.detach().cpu().numpy(
+    ) if tensor.requires_grad else tensor.cpu().numpy()
+
+
 class DetInputProcessor(InputProcessor):
 
     def build_processor(self):
@@ -349,9 +355,11 @@ class YoloXPredictor(DetectionPredictor):
                 self.model_type = 'jit'
             elif model_path.endswith('blade'):
                 self.model_type = 'blade'
+            elif model_path.endswith('onnx'):
+                self.model_type = 'onnx'
             else:
                 self.model_type = 'raw'
-        assert self.model_type in ['raw', 'jit', 'blade']
+        assert self.model_type in ['raw', 'jit', 'blade', 'onnx']
 
         if self.model_type == 'blade' or self.use_trt_efficientnms:
             import torch_blade
@@ -381,8 +389,16 @@ class YoloXPredictor(DetectionPredictor):
 
     def _build_model(self):
         if self.model_type != 'raw':
-            with io.open(self.model_path, 'rb') as infile:
-                model = torch.jit.load(infile, self.device)
+            if self.model_type != 'onnx':
+                with io.open(self.model_path, 'rb') as infile:
+                    model = torch.jit.load(infile, self.device)
+            else:
+                import onnxruntime
+                if onnxruntime.get_device() == 'GPU':
+                    model = onnxruntime.InferenceSession(
+                        self.model_path, providers=['CUDAExecutionProvider'])
+                else:
+                    model = onnxruntime.InferenceSession(self.model_path)
         else:
             from easycv.utils.misc import reparameterize_models
             model = super()._build_model()
@@ -394,8 +410,9 @@ class YoloXPredictor(DetectionPredictor):
         If the model is not loaded from a configuration file, e.g. torch jit model, you need to reimplement it.
         """
         model = self._build_model()
-        model.to(self.device)
-        model.eval()
+        if self.model_type != 'onnx':
+            model.to(self.device)
+            model.eval()
         if self.model_type == 'raw':
             load_checkpoint(model, self.model_path, map_location='cpu')
         return model
@@ -406,7 +423,15 @@ class YoloXPredictor(DetectionPredictor):
         """
         if self.model_type != 'raw':
             with torch.no_grad():
-                outputs = self.model(inputs['img'])
+                if self.model_type != 'onnx':
+                    outputs = self.model(inputs['img'])
+                else:
+                    outputs = self.model.run(
+                        None, {
+                            self.model.get_inputs()[0].name:
+                            onnx_to_numpy(inputs['img'])
+                        })[0]
+                    outputs = torch.from_numpy(outputs)
                 outputs = {'results': outputs}  # convert to dict format
         else:
             outputs = super().model_forward(inputs)
