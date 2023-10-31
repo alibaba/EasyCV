@@ -1,1 +1,1 @@
--r requirements/runtime.txt -i https://mirrors.aliyun.com/pypi/simple
+-r requirements/runtime.txt
