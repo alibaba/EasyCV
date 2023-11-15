@@ -89,8 +89,8 @@ class CocoToolsTest(unittest.TestCase):
     def testExportGroundtruthToCOCO(self):
         image_ids = ['first', 'second']
         groundtruth_boxes = [
-            np.array([[100, 100, 200, 200]], np.float),
-            np.array([[50, 50, 100, 100]], np.float)
+            np.array([[100, 100, 200, 200]], np.float32),
+            np.array([[50, 50, 100, 100]], np.float32)
         ]
         groundtruth_classes = [
             np.array([1], np.int32),
@@ -126,12 +126,12 @@ class CocoToolsTest(unittest.TestCase):
     def testExportDetectionsToCOCO(self):
         image_ids = ['first', 'second']
         detections_boxes = [
-            np.array([[100, 100, 200, 200]], np.float),
-            np.array([[50, 50, 100, 100]], np.float)
+            np.array([[100, 100, 200, 200]], np.float32),
+            np.array([[50, 50, 100, 100]], np.float32)
         ]
         detections_scores = [
-            np.array([.8], np.float),
-            np.array([.7], np.float)
+            np.array([.8], np.float32),
+            np.array([.7], np.float32)
         ]
         detections_classes = [np.array([1], np.int32), np.array([1], np.int32)]
         categories = [{
@@ -152,7 +152,17 @@ class CocoToolsTest(unittest.TestCase):
             detections_classes,
             categories,
             output_path=output_path)
-        self.assertListEqual(result, self._detections_list)
+
+        self.assertEqual(len(result), len(detections_boxes))
+        self.assertEqual(len(detections_boxes), len(detections_boxes))
+
+        score_list = []
+        for i in range(len(detections_boxes)):
+            score = self._detections_list[i].pop('score')
+            score_list.append(score)
+            self.assertAlmostEqual(result[i].pop('score'), score)
+            self.assertDictEqual(result[i], self._detections_list[i])
+
         with io.open(output_path, 'r') as f:
             written_result = f.read()
             # The json output should have floats written to 4 digits of precision.
@@ -160,7 +170,10 @@ class CocoToolsTest(unittest.TestCase):
                                  re.MULTILINE)
             self.assertTrue(matcher.findall(written_result))
             written_result = json.loads(written_result)
-            self.assertAlmostEqual(result, written_result)
+            for i in range(len(result)):
+                self.assertAlmostEqual(written_result[i].pop('score'),
+                                       score_list[i])
+                self.assertDictEqual(result[i], written_result[i])
 
     def testExportSegmentsToCOCO(self):
         image_ids = ['first', 'second']
@@ -176,7 +189,10 @@ class CocoToolsTest(unittest.TestCase):
         for i, detection_mask in enumerate(detection_masks):
             detection_masks[i] = detection_mask[:, :, :, None]
 
-        detection_scores = [np.array([.8], np.float), np.array([.7], np.float)]
+        detection_scores = [
+            np.array([.8], np.float32),
+            np.array([.7], np.float32)
+        ]
         detection_classes = [np.array([1], np.int32), np.array([1], np.int32)]
 
         categories = [{
@@ -202,7 +218,12 @@ class CocoToolsTest(unittest.TestCase):
             written_result = json.loads(written_result)
             mask_load = mask.decode([written_result[0]['segmentation']])
             self.assertTrue(np.allclose(mask_load, detection_masks[0]))
-            self.assertAlmostEqual(result, written_result)
+            self.assertEqual(len(result), len(detection_masks))
+            self.assertEqual(len(written_result), len(detection_masks))
+            for i in range(len(detection_masks)):
+                self.assertAlmostEqual(result[i].pop('score'),
+                                       written_result[i].pop('score'))
+                self.assertDictEqual(result[i], written_result[i])
 
     def testExportKeypointsToCOCO(self):
         image_ids = ['first', 'second']
@@ -216,8 +237,8 @@ class CocoToolsTest(unittest.TestCase):
         ]
 
         detection_scores = [
-            np.array([.8, 0.2], np.float),
-            np.array([.7, 0.3], np.float)
+            np.array([.8, 0.2], np.float32),
+            np.array([.7, 0.3], np.float32)
         ]
         detection_classes = [
             np.array([1, 1], np.int32),
@@ -248,7 +269,12 @@ class CocoToolsTest(unittest.TestCase):
         with io.open(output_path, 'r') as f:
             written_result = f.read()
             written_result = json.loads(written_result)
-            self.assertAlmostEqual(result, written_result)
+            self.assertEqual(len(result), 4)
+            self.assertEqual(len(written_result), 4)
+            for i in range(4):
+                self.assertAlmostEqual(result[i].pop('score'),
+                                       written_result[i].pop('score'))
+                self.assertDictEqual(result[i], written_result[i])
 
     def testSingleImageDetectionBoxesExport(self):
         boxes = np.array([[0, 0, 1, 1], [0, 0, .5, .5], [.5, .5, 1, 1]],

@@ -247,10 +247,10 @@ def _export_yolox(model, cfg, filename):
 
     if hasattr(cfg, 'export'):
         export_type = getattr(cfg.export, 'export_type', 'raw')
-        default_export_type_list = ['raw', 'jit', 'blade']
+        default_export_type_list = ['raw', 'jit', 'blade', 'onnx']
         if export_type not in default_export_type_list:
             logging.warning(
-                'YOLOX-PAI only supports the export type as  [raw,jit,blade], otherwise we use raw as default'
+                'YOLOX-PAI only supports the export type as  [raw,jit,blade,onnx], otherwise we use raw as default'
             )
             export_type = 'raw'
 
@@ -276,7 +276,7 @@ def _export_yolox(model, cfg, filename):
                 len(img_scale) == 2
             ), 'Export YoloX predictor config contains img_scale must be (int, int) tuple!'
 
-            input = 255 * torch.rand((batch_size, 3) + img_scale)
+            input = 255 * torch.rand((batch_size, 3) + tuple(img_scale))
 
             # assert use_trt_efficientnms only happens when static_opt=True
             if static_opt is not True:
@@ -354,6 +354,31 @@ def _export_yolox(model, cfg, filename):
                         classes=cfg.CLASSES)
 
                     json.dump(config, ofile)
+
+            if export_type == 'onnx':
+
+                with io.open(
+                        filename + '.config.json' if filename.endswith('onnx')
+                        else filename + '.onnx.config.json', 'w') as ofile:
+                    config = dict(
+                        model=cfg.model,
+                        export=cfg.export,
+                        test_pipeline=cfg.test_pipeline,
+                        classes=cfg.CLASSES)
+
+                    json.dump(config, ofile)
+
+                torch.onnx.export(
+                    model,
+                    input.to(device),
+                    filename if filename.endswith('onnx') else filename +
+                    '.onnx',
+                    export_params=True,
+                    opset_version=12,
+                    do_constant_folding=True,
+                    input_names=['input'],
+                    output_names=['output'],
+                )
 
             if export_type == 'jit':
                 with io.open(filename + '.jit', 'wb') as ofile:
