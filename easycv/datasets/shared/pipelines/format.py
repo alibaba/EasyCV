@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab and Alibaba. All rights reserved.
-from collections import Sequence
+from collections.abc import Sequence
 
 import mmcv
 import numpy as np
