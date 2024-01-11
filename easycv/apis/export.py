@@ -675,6 +675,12 @@ def _export_pose_topdown(model, cfg, filename, fp16=False, dummy_inputs=None):
     model.to(device)
 
     if hasattr(cfg, 'export') and getattr(cfg.export, 'type', 'raw') == 'raw':
+        from mmcv.utils.path import is_filepath
+
+        if hasattr(cfg, 'dataset_info') and is_filepath(cfg.dataset_info):
+            dataset_info_cfg = Config.fromfile(cfg.dataset_info)
+            cfg.dataset_info = dataset_info_cfg._cfg_dict['dataset_info']
+
         return _export_common(model, cfg, filename)
 
     def _dummy_inputs(cfg):
