@@ -248,7 +248,7 @@ Please refer to the following model zoo for more details.
 
 ## Data Hub
 
-EasyCV have collected dataset info for different senarios, making it easy for users to finetune or evaluate models in EasyCV model zoo.
+EasyCV have collected dataset info for different scenarios, making it easy for users to finetune or evaluate models in EasyCV model zoo.
 
 Please refer to [data_hub.md](docs/source/data_hub.md).
 
