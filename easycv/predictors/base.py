@@ -424,12 +424,23 @@ class PredictorV2(object):
         prog_bar = mmcv.ProgressBar(len(inputs))
         for i in range(0, len(inputs), self.batch_size):
             batch_inputs = inputs[i:min(len(inputs), i + self.batch_size)]
-            batch_outputs = self.input_processor(batch_inputs)
+
+            # Distinguish between detections and keypoints
+            if self.cfg.model.type == 'TopDown':
+                batch_outputs , self.person_results = self.input_processor(batch_inputs)
+            else:
+                batch_outputs  = self.input_processor(batch_inputs)
+
             if len(batch_outputs) < 1:
                 results_list.append(batch_outputs)
                 continue
             batch_outputs = self._to_device(batch_outputs)
             batch_outputs = self.model_forward(batch_outputs)
+            
+            # Pass the keypoint's box
+            if self.cfg.model.type == 'TopDown':
+                batch_outputs['boxer'] = [box.data['bbox'] for box in self.person_results]
+
             results = self.output_processor(batch_outputs)
             if keep_inputs:
                 for i in range(len(batch_inputs)):

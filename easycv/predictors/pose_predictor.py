@@ -18,7 +18,7 @@ from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.misc import deprecated
 from .base import InputProcessor, OutputProcessor, PredictorV2
-
+np.set_printoptions(suppress=True)
 
 def _box2cs(image_size, box):
     """This encodes bbox(x,y,w,h) into (center, scale)
@@ -224,9 +224,9 @@ class PoseTopDownInputProcessor(InputProcessor):
 
         output_person_info = []
         for person_result in person_results:
-            box = person_result['bbox']  # x,y,x,y
-            box = [box[0], box[1], box[2] - box[0], box[3] - box[1]]  # x,y,w,h
-            center, scale = _box2cs(self.cfg.data_cfg['image_size'], box)
+            box = person_result['bbox']  # x,y,x,y,s
+            boxc = [box[0], box[1], box[2] - box[0], box[3] - box[1]]  # x,y,w,h
+            center, scale = _box2cs(self.cfg.data_cfg['image_size'], boxc)
             data = {
                 'image_id':
                 0,
@@ -275,10 +275,12 @@ class PoseTopDownInputProcessor(InputProcessor):
         """Process all inputs list. And collate to batch and put to target device.
         If you need custom ops to load or process a batch samples, you need to reimplement it.
         """
+        person_results = []
         batch_outputs = []
         for inp in inputs:
             for res in self.process_single(inp):
                 batch_outputs.append(res)
+                person_results.append(res['img_metas'])
 
         if len(batch_outputs) < 1:
             return batch_outputs
@@ -288,7 +290,7 @@ class PoseTopDownInputProcessor(InputProcessor):
             img_meta[i] for img_meta in batch_outputs['img_metas']._data
             for i in range(len(img_meta))
         ]]
-        return batch_outputs
+        return batch_outputs, person_results
 
 
 class PoseTopDownOutputProcessor(OutputProcessor):
@@ -296,12 +298,7 @@ class PoseTopDownOutputProcessor(OutputProcessor):
     def __call__(self, inputs):
         output = {}
         output['keypoints'] = inputs['preds']
-        output['bbox'] = inputs['boxes']  # c1, c2, s1, s2, area, core
-
-        for i, bbox in enumerate(output['bbox']):
-            center, scale = bbox[:2], bbox[2:4]
-            output['bbox'][i][:4] = bbox_cs2xyxy(center, scale)
-        output['bbox'] = output['bbox'][:, [0, 1, 2, 3, 5]]
+        output['bbox'] = np.array(inputs['boxer']) # x1, y1, x2, y2 score
 
         return output
 
@@ -531,11 +528,27 @@ class TorchPoseTopDownPredictorWithDetector(PoseTopDownPredictor):
 
         pose_kwargs = model_config['pose']
         pose_kwargs.pop('format', None)
+        test_pipeline = [
+                    dict(type='TopDownAffine', use_udp=True),
+                    dict(type='MMToTensor'),
+                    dict(
+                        type='NormalizeTensor',
+                        mean=[0.485, 0.456, 0.406],
+                        std=[0.229, 0.224, 0.225]),
+                    dict(
+                        type='PoseCollect',
+                        keys=['img'],
+                        meta_keys=[
+                            'image_file', 'image_id', 'center', 'scale', 'rotation',
+                            'bbox_score', 'flip_pairs', 'bbox'
+                        ]),
+            ]
 
         super().__init__(
             model_path=pose_model_path,
             detection_predictor_config=detection_predictor_config,
             cat_id=reserved_classes,
+            pipelines=test_pipeline,
             **pose_kwargs,
         )
 
