@@ -18,7 +18,9 @@ from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.misc import deprecated
 from .base import InputProcessor, OutputProcessor, PredictorV2
+
 np.set_printoptions(suppress=True)
+
 
 def _box2cs(image_size, box):
     """This encodes bbox(x,y,w,h) into (center, scale)
@@ -225,7 +227,8 @@ class PoseTopDownInputProcessor(InputProcessor):
         output_person_info = []
         for person_result in person_results:
             box = person_result['bbox']  # x,y,x,y,s
-            boxc = [box[0], box[1], box[2] - box[0], box[3] - box[1]]  # x,y,w,h
+            boxc = [box[0], box[1], box[2] - box[0],
+                    box[3] - box[1]]  # x,y,w,h
             center, scale = _box2cs(self.cfg.data_cfg['image_size'], boxc)
             data = {
                 'image_id':
@@ -275,12 +278,10 @@ class PoseTopDownInputProcessor(InputProcessor):
         """Process all inputs list. And collate to batch and put to target device.
         If you need custom ops to load or process a batch samples, you need to reimplement it.
         """
-        person_results = []
         batch_outputs = []
         for inp in inputs:
             for res in self.process_single(inp):
                 batch_outputs.append(res)
-                person_results.append(res['img_metas'])
 
         if len(batch_outputs) < 1:
             return batch_outputs
@@ -290,7 +291,7 @@ class PoseTopDownInputProcessor(InputProcessor):
             img_meta[i] for img_meta in batch_outputs['img_metas']._data
             for i in range(len(img_meta))
         ]]
-        return batch_outputs, person_results
+        return batch_outputs
 
 
 class PoseTopDownOutputProcessor(OutputProcessor):
@@ -298,7 +299,7 @@ class PoseTopDownOutputProcessor(OutputProcessor):
     def __call__(self, inputs):
         output = {}
         output['keypoints'] = inputs['preds']
-        output['bbox'] = np.array(inputs['boxer']) # x1, y1, x2, y2 score
+        output['bbox'] = np.array(inputs['boxes'])  # x1, y1, x2, y2 score
 
         return output
 
@@ -400,6 +401,7 @@ class PoseTopDownPredictor(PredictorV2):
         return model
 
     def model_forward(self, inputs, return_heatmap=False):
+        boxes = [_['bbox'] for _ in inputs['img_metas']]
         if self.model_type == 'raw':
             with torch.no_grad():
                 result = self.model(
@@ -420,6 +422,7 @@ class PoseTopDownPredictor(PredictorV2):
             result = decode_heatmap(output_heatmap, img_metas,
                                     self.cfg.model.test_cfg)
 
+        result['boxes'] = np.array(boxes)
         return result
 
     def get_input_processor(self):
@@ -529,20 +532,20 @@ class TorchPoseTopDownPredictorWithDetector(PoseTopDownPredictor):
         pose_kwargs = model_config['pose']
         pose_kwargs.pop('format', None)
         test_pipeline = [
-                    dict(type='TopDownAffine', use_udp=True),
-                    dict(type='MMToTensor'),
-                    dict(
-                        type='NormalizeTensor',
-                        mean=[0.485, 0.456, 0.406],
-                        std=[0.229, 0.224, 0.225]),
-                    dict(
-                        type='PoseCollect',
-                        keys=['img'],
-                        meta_keys=[
-                            'image_file', 'image_id', 'center', 'scale', 'rotation',
-                            'bbox_score', 'flip_pairs', 'bbox'
-                        ]),
-            ]
+            dict(type='TopDownAffine', use_udp=True),
+            dict(type='MMToTensor'),
+            dict(
+                type='NormalizeTensor',
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]),
+            dict(
+                type='PoseCollect',
+                keys=['img'],
+                meta_keys=[
+                    'image_file', 'image_id', 'center', 'scale', 'rotation',
+                    'bbox_score', 'flip_pairs', 'bbox'
+                ]),
+        ]
 
         super().__init__(
             model_path=pose_model_path,
