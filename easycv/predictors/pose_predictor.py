@@ -224,7 +224,7 @@ class PoseTopDownInputProcessor(InputProcessor):
             bboxes = bboxes[valid_idx]
             person_results = [person_results[i] for i in valid_idx]
 
-        output_person_info = []
+        results = []
         for person_result in person_results:
             box = person_result['bbox']  # x,y,x,y,s
             boxc = [box[0], box[1], box[2] - box[0],
@@ -267,11 +267,10 @@ class PoseTopDownInputProcessor(InputProcessor):
                 output['img_fields'],
             }
             box_id += 1
-            output_person_info.append(data)
+            data_processor = self.processor(data)
+            data_processor['bbox'] = box
+            results.append(data_processor)
 
-        results = []
-        for output in output_person_info:
-            results.append(self.processor(output))
         return results
 
     def __call__(self, inputs):
@@ -401,7 +400,7 @@ class PoseTopDownPredictor(PredictorV2):
         return model
 
     def model_forward(self, inputs, return_heatmap=False):
-        boxes = [_['bbox'] for _ in inputs['img_metas']]
+        boxes = inputs['bbox'].cpu().numpy()
         if self.model_type == 'raw':
             with torch.no_grad():
                 result = self.model(
@@ -531,27 +530,11 @@ class TorchPoseTopDownPredictorWithDetector(PoseTopDownPredictor):
 
         pose_kwargs = model_config['pose']
         pose_kwargs.pop('format', None)
-        test_pipeline = [
-            dict(type='TopDownAffine', use_udp=True),
-            dict(type='MMToTensor'),
-            dict(
-                type='NormalizeTensor',
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225]),
-            dict(
-                type='PoseCollect',
-                keys=['img'],
-                meta_keys=[
-                    'image_file', 'image_id', 'center', 'scale', 'rotation',
-                    'bbox_score', 'flip_pairs', 'bbox'
-                ]),
-        ]
 
         super().__init__(
             model_path=pose_model_path,
             detection_predictor_config=detection_predictor_config,
             cat_id=reserved_classes,
-            pipelines=test_pipeline,
             **pose_kwargs,
         )
 
