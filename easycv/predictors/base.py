@@ -159,7 +159,6 @@ class InputProcessor(object):
             }
         """
         if self._load_op is None:
-
             load_cfg = dict(type='LoadImage', mode=self.mode)
             self._load_op = build_from_cfg(load_cfg, PIPELINES)
 
