@@ -18,7 +18,6 @@ from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.config_tools import mmcv_config_fromfile
 from easycv.utils.misc import deprecated
 from .base import InputProcessor, OutputProcessor, PredictorV2
-
 np.set_printoptions(suppress=True)
 
 
