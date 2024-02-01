@@ -110,16 +110,16 @@ class SegSourceCityscapes(SegSourceRaw):
                                         '')[:-len(self.img_suffix[0])]
             find_label_path = False
             for label_format in self.label_suffix:
-                lable_path = os.path.join(self.label_root,
+                label_path = os.path.join(self.label_root,
                                           img_name + label_format)
-                if io.exists(lable_path):
+                if io.exists(label_path):
                     find_label_path = True
-                    self.label_files.append(lable_path)
+                    self.label_files.append(label_path)
                     break
             if not find_label_path:
                 logging.warning(
                     'Not find label file %s for img: %s, skip the sample!' %
-                    (lable_path, img_path))
+                    (label_path, img_path))
                 self.img_files.remove(img_path)
 
         assert len(self.img_files) == len(self.label_files)
