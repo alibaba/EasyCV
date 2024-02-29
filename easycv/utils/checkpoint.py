@@ -136,7 +136,7 @@ def load_and_check_state_dict(module: nn.Module,
             err_msg_list = err_msg.split('\n')
 
             for error_msg_info in err_msg_list:
-                if 'size mis match' in error_msg_info and 'cls' not in error_msg_info:
+                if 'size mismatch' in error_msg_info and 'cls' not in error_msg_info:
                     raise RuntimeError(
                         'Please check your pretrained model. The parameters do not match outside of the cls layer.'
                     )
