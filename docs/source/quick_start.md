@@ -92,13 +92,13 @@
 
 ### Verification
 
-    Simple verification
+  Simple verification
 
-    ```python
-    from easycv.apis import *
-    ```
+```python
+from easycv.apis import *
+```
 
-    You can also verify your installation using following quick-start examples
+  You can also verify your installation using following quick-start examples
 
 
 ## Examples
