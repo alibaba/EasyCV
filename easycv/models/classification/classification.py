@@ -241,25 +241,53 @@ class Classification(BaseModel):
         """Forward feature  means forward backbone  + neck/multineck ,get dict of output feature,
             self.neck_num = 0: means only forward backbone, output backbone feature with avgpool, with key neck,
             self.neck_num > 0: means has 1/multi neck, output neck's feature with key neck_neckidx_featureidx, suck as neck_0_0
+
+            Can also forward head (predictor) when export_head=True in the config file
+            for self-supervised learning MoBY algorithm (one neck + one head),
+            head feature could be used for searching images by image
+
+            Modified by YANG Ruixin
+            GitHub: https://github.com/yang-ruixin
+            Email: yang_ruixin@126.com
+            Date: 2023/01/05
+
         Returns:
             x (torch.Tensor): feature tensor
         """
         return_dict = {}
         x = self.backbone(img)
         # return_dict['backbone'] = x[-1]
+
         if hasattr(self, 'neck_0'):
-            tmp = []
+            tmp_neck = []
             for idx in range(self.neck_num):
                 neck_name = 'neck_%d' % idx
                 h = getattr(self, neck_name)
                 neck_h = h([i for i in x])
-                tmp = tmp + neck_h
+                tmp_neck = tmp_neck + neck_h
                 for j in range(len(neck_h)):
                     neck_name = 'neck_%d_%d' % (idx, j)
                     return_dict['neck_%d_%d' % (idx, j)] = neck_h[j]
                     if neck_name not in self.extract_list:
                         self.extract_list.append(neck_name)
-            return_dict['neck'] = tmp[0]
+
+            if (hasattr(self, 'head_0')
+                    and 'MoBYMLP' in str(self.__dict__['_modules']['head_0'])
+                    and 'MoBYMLP' in str(self.__dict__['_modules']['neck_0'])):
+                tmp_head = []
+                for idx in range(self.head_num):
+                    head_name = 'head_%d' % idx
+                    h = getattr(self, head_name)
+                    head_h = h([i for i in tmp_neck])
+                    tmp_head = tmp_head + head_h
+                    for j in range(len(head_h)):
+                        head_name = 'head_%d_%d' % (idx, j)
+                        return_dict['head_%d_%d' % (idx, j)] = head_h[j]
+                        if head_name not in self.extract_list:
+                            self.extract_list.append(head_name)
+                return_dict['neck'] = tmp_head[0]  # actually we return return_dict['head']
+            else:
+                return_dict['neck'] = tmp_neck[0]
         else:
             feature = self.avg_pool(x[-1])
             feature = feature.view(feature.size(0), -1)

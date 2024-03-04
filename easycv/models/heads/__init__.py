@@ -4,3 +4,4 @@ from .contrastive_head import ContrastiveHead, DebiasedContrastiveHead
 from .latent_pred_head import LatentPredictHead
 from .mp_metric_head import MpMetrixHead
 from .multi_cls_head import MultiClsHead
+from .moby_head import MoBYMLP
