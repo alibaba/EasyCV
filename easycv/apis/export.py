@@ -235,7 +235,23 @@ def _export_cls(model, cfg, filename):
     checkpoint = dict(state_dict=state_dict, meta=meta, author='EasyCV')
     with io.open(filename, 'wb') as ofile:
         torch.save(checkpoint, ofile)
+    
+    if model_config['backbone'].get('type', None)  == 'ResNet' and model_config['backbone'].get('depth', None) == 50:
 
+        model.eval()
+        img_size = int(cfg.image_size2)
+        x_input =torch.randn((1,3,img_size,img_size))
+        torch.onnx.export(
+                    model,
+                    x_input),
+                    filename if filename.endswith('onnx') else filename +
+                    '.onnx',
+                    export_params=True,
+                    opset_version=12,
+                    do_constant_folding=True,
+                    input_names=['input'],
+                    output_names=['output'],
+                )
 
 def _export_yolox(model, cfg, filename):
     """ export cls (cls & metric learning)model and preprocess config
