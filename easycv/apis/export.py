@@ -239,10 +239,11 @@ def _export_cls(model, cfg, filename):
     if model_config['backbone'].get(
             'type', None) == 'ResNet' and model_config['backbone'].get(
                 'depth', None) == 50:
-
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
         model.eval()
+        model.to(device)
         img_size = int(cfg.image_size2)
-        x_input = torch.randn((1, 3, img_size, img_size))
+        x_input = torch.randn((1, 3, img_size, img_size)).to(device)
         torch.onnx.export(
             model,
             (x_input, 'test'),
