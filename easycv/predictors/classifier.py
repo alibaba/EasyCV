@@ -227,7 +227,7 @@ class TorchClassifier(PredictorInterface):
                 self.onnx_model = onnxruntime.InferenceSession(model_path)
 
             pwd_model = os.path.dirname(model_path)
-            raw_model = glob.glob(os.path.join(pwd_model, '*.pb'))
+            raw_model = glob.glob(os.path.join(pwd_model, '*.pt'))
             if len(raw_model) != 0:
                 self.predictor = Predictor(raw_model[0])
             else:
