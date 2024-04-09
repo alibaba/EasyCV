@@ -1,5 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+import glob
 import math
+import os
 
 import numpy as np
 import torch
@@ -10,6 +12,12 @@ from easycv.framework.errors import ValueError
 from easycv.utils.misc import deprecated
 from .base import InputProcessor, OutputProcessor, Predictor, PredictorV2
 from .builder import PREDICTORS
+
+
+# onnx specific
+def onnx_to_numpy(tensor):
+    return tensor.detach().cpu().numpy(
+    ) if tensor.requires_grad else tensor.cpu().numpy()
 
 
 class ClsInputProcessor(InputProcessor):
@@ -209,7 +217,27 @@ class TorchClassifier(PredictorInterface):
       model_path: model file path
       model_config: config string for model to init, in json format
     """
-        self.predictor = Predictor(model_path)
+        if model_path.endswith('onnx'):
+            self.model_type = 'onnx'
+            import onnxruntime
+            if onnxruntime.get_device() == 'GPU':
+                self.onnx_model = onnxruntime.InferenceSession(
+                    model_path, providers=['CUDAExecutionProvider'])
+            else:
+                self.onnx_model = onnxruntime.InferenceSession(model_path)
+
+            pwd_model = os.path.dirname(model_path)
+            raw_model = glob.glob(os.path.join(pwd_model, '*.pb'))
+            if len(raw_model) != 0:
+                self.predictor = Predictor(raw_model[0])
+            else:
+                assert len(
+                    raw_model
+                ) == 0, 'Please have a file with the .pb extension in your directory'
+        else:
+            self.model_type = 'raw'
+            self.predictor = Predictor(model_path)
+
         if 'class_list' not in self.predictor.cfg and \
             'CLASSES' not in self.predictor.cfg and \
                 label_map_path is None:
@@ -285,8 +313,17 @@ class TorchClassifier(PredictorInterface):
                 (batch_idx + 1) * batch_size, len(image_list))]
             image_tensor_list = self.predictor.preprocess(batch_image_list)
             input_data = self.batch(image_tensor_list)
-            output_prob = self.predictor.predict_batch(
-                input_data, mode='test')['prob'].data.cpu()
+            if self.model_type != 'onnx':
+                output_prob = self.predictor.predict_batch(
+                    input_data, mode='test')['prob'].data.cpu()
+            else:
+                print('运行onnx导出图片')
+                output_prob = self.onnx_model.run(
+                    None, {
+                        self.onnx_model.get_inputs()[0].name:
+                        onnx_to_numpy(input_data)
+                    })[0]
+                output_prob = torch.from_numpy(output_prob)
 
             topk_prob = torch.topk(output_prob, self.topk).values.numpy()
             topk_class = torch.topk(output_prob, self.topk).indices.numpy()
