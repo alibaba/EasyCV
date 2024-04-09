@@ -317,7 +317,6 @@ class TorchClassifier(PredictorInterface):
                 output_prob = self.predictor.predict_batch(
                     input_data, mode='test')['prob'].data.cpu()
             else:
-                print('运行onnx导出图片')
                 output_prob = self.onnx_model.run(
                     None, {
                         self.onnx_model.get_inputs()[0].name:
