@@ -9,6 +9,7 @@ from PIL import Image
 
 from easycv.file import io
 from easycv.framework.errors import ValueError
+from easycv.utils.checkpoint import load_checkpoint
 from easycv.utils.misc import deprecated
 from .base import InputProcessor, OutputProcessor, Predictor, PredictorV2
 from .builder import PREDICTORS
@@ -154,6 +155,20 @@ class ClassificationPredictor(PredictorV2):
         self.pil_input = pil_input
         self.label_map_path = label_map_path
 
+        if model_path.endswith('onnx'):
+            self.model_type = 'onnx'
+            pwd_model = os.path.dirname(model_path)
+            raw_model = glob.glob(
+                os.path.join(pwd_model, '*.onnx.config.json'))
+            if len(raw_model) != 0:
+                config_file = raw_model[0]
+            else:
+                assert len(
+                    raw_model
+                ) == 0, 'Please have a file with the .onnx.config.json extension in your directory'
+        else:
+            self.model_type = 'raw'
+
         if self.pil_input:
             mode = 'RGB'
         super(ClassificationPredictor, self).__init__(
@@ -193,6 +208,41 @@ class ClassificationPredictor(PredictorV2):
         self.label_map = [i.strip() for i in class_list]
 
         return ClsOutputProcessor(topk=self.topk, label_map=self.label_map)
+
+    def prepare_model(self):
+        """Build model from config file by default.
+        If the model is not loaded from a configuration file, e.g. torch jit model, you need to reimplement it.
+        """
+        if self.model_type == 'raw':
+            model = self._build_model()
+            model.to(self.device)
+            model.eval()
+            load_checkpoint(model, self.model_path, map_location='cpu')
+            return model
+        else:
+            import onnxruntime
+            if onnxruntime.get_device() == 'GPU':
+                onnx_model = onnxruntime.InferenceSession(
+                    self.model_path, providers=['CUDAExecutionProvider'])
+            else:
+                onnx_model = onnxruntime.InferenceSession(self.model_path)
+
+            return onnx_model
+
+    def model_forward(self, inputs):
+        """Model forward.
+        If you need refactor model forward, you need to reimplement it.
+        """
+        with torch.no_grad():
+            if self.model_type == 'raw':
+                outputs = self.model(**inputs, mode='test')
+            else:
+                outputs = self.model.run(None, {
+                    self.model.get_inputs()[0].name:
+                    onnx_to_numpy(inputs['img'])
+                })[0]
+                outputs = dict(prob=torch.from_numpy(outputs))
+        return outputs
 
 
 try:

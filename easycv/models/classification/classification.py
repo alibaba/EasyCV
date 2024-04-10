@@ -151,6 +151,20 @@ class Classification(BaseModel):
         x = self.backbone(img)
         return x
 
+    def forward_onnx(self, img: torch.Tensor) -> Dict[str, torch.Tensor]:
+        """
+            forward_onnx means generate prob from image only support one neck  + one head
+        """
+        x = self.forward_backbone(img)  # tuple
+
+        # if self.neck_num > 0:
+        if hasattr(self, 'neck_0'):
+            x = self.neck_0([i for i in x])
+
+        out = self.head_0(x)[0].cpu()
+        out = self.activate_fn(out)
+        return out
+
     @torch.jit.unused
     def forward_train(self, img, gt_labels) -> Dict[str, torch.Tensor]:
         """
@@ -290,6 +304,9 @@ class Classification(BaseModel):
                 return self.forward_test_label(img, gt_labels)
             else:
                 return self.forward_test(img)
+        elif mode == 'onnx':
+            return self.forward_onnx(img)
+
         elif mode == 'extract':
             rd = self.forward_feature(img)
             rv = {}
