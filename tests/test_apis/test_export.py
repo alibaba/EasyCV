@@ -118,7 +118,6 @@ class ModelExportTest(unittest.TestCase):
             'model.backbone.norm_cfg.type': 'SyncBN',
             'export.export_type': 'raw'
         }
-
         if cfg_options is not None:
             cfg.merge_from_dict(cfg_options)
 

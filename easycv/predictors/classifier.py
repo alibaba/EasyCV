@@ -268,7 +268,6 @@ class TorchClassifier(PredictorInterface):
       model_config: config string for model to init, in json format
     """
         self.predictor = Predictor(model_path)
-
         if 'class_list' not in self.predictor.cfg and \
             'CLASSES' not in self.predictor.cfg and \
                 label_map_path is None:
@@ -346,6 +345,7 @@ class TorchClassifier(PredictorInterface):
             input_data = self.batch(image_tensor_list)
             output_prob = self.predictor.predict_batch(
                 input_data, mode='test')['prob'].data.cpu()
+
             topk_prob = torch.topk(output_prob, self.topk).values.numpy()
             topk_class = torch.topk(output_prob, self.topk).indices.numpy()
             output_prob = output_prob.numpy()
