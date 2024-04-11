@@ -11,7 +11,8 @@ import torch
 from easycv.predictors.classifier import ClassificationPredictor
 from easycv.utils.test_util import clean_up, get_tmp_dir
 from tests.ut_config import (PRETRAINED_MODEL_RESNET50_WITHOUTHEAD,
-                             IMAGENET_LABEL_TXT, TEST_IMAGES_DIR)
+                             IMAGENET_LABEL_TXT, TEST_IMAGES_DIR,
+                             PRETRAINED_MODEL_RESNET50_ONNX_WITHOUTHEAD)
 
 
 class ClassificationPredictorTest(unittest.TestCase):
@@ -31,6 +32,17 @@ class ClassificationPredictorTest(unittest.TestCase):
         results = predict_op([img_path])[0]
         self.assertListEqual(results['class'], [283])
         self.assertListEqual(results['class_name'], ['"Persian cat",'])
+        self.assertEqual(len(results['class_probs']), 1000)
+
+    def test_onnx_single(self):
+        checkpoint = PRETRAINED_MODEL_RESNET50_ONNX_WITHOUTHEAD
+        predict_op = ClassificationPredictor(model_path=checkpoint)
+
+        img_path = os.path.join(TEST_IMAGES_DIR, 'catb.jpg')
+
+        results = predict_op([img_path])[0]
+        self.assertListEqual(results['class'], [578])
+        self.assertListEqual(results['class_name'], ['gown'])
         self.assertEqual(len(results['class_probs']), 1000)
 
     def test_batch(self):
