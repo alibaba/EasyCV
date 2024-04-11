@@ -119,7 +119,7 @@ class PoseTopDownPredictorTest(unittest.TestCase):
             cat_id=0,
             batch_size=1)
 
-        # self._base_test(predictor)
+        self._base_test(predictor)
 
     def test_pose_topdown_jit(self):
         detection_model_path = PRETRAINED_MODEL_YOLOXS_EXPORT
