@@ -7,5 +7,4 @@ model = dict(
         out_indices=[4],  # 0: conv-1, x: stage-x
         norm_cfg=dict(type='BN')))
 
-export_type = 'onnx'
-export = dict(export_type=export_type)
+export = dict(export_type='raw')
