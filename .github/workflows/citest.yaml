@@ -65,7 +65,7 @@ jobs:
           #run test
           export CUDA_VISIBLE_DEVICES=7
           source ~/anaconda3/etc/profile.d/conda.sh
-          conda activate easycv_torch1.8.0_py37
+          conda activate easycv_torch1.8.0
 
           # pip install pai-easycv
           pip uninstall -y pai-easycv
