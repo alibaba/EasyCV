@@ -157,6 +157,37 @@ def _export_jit_and_blade(model, cfg, filename, dummy_inputs, fp16=False):
         torch.jit.save(blade_model, ofile)
 
 
+def _export_onnx_cls(model, model_config, cfg, filename, meta):
+
+    if model_config['backbone'].get(
+            'type', None) == 'ResNet' and model_config['backbone'].get(
+                'depth', None) == 50:
+        # save json config for test_pipline and class
+        with io.open(
+                filename +
+                '.config.json' if filename.endswith('onnx') else filename +
+                '.onnx.config.json', 'w') as ofile:
+            json.dump(meta, ofile)
+
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        model.eval()
+        model.to(device)
+        img_size = int(cfg.image_size2)
+        x_input = torch.randn((1, 3, img_size, img_size)).to(device)
+        torch.onnx.export(
+            model,
+            (x_input, 'onnx'),
+            filename if filename.endswith('onnx') else filename + '.onnx',
+            export_params=True,
+            opset_version=12,
+            do_constant_folding=True,
+            input_names=['input'],
+            output_names=['output'],
+        )
+    else:
+        raise ValueError('Only support export onnx model for ResNet now!')
+
+
 def _export_cls(model, cfg, filename):
     """ export cls (cls & metric learning)model and preprocess config
 
@@ -170,6 +201,7 @@ def _export_cls(model, cfg, filename):
     else:
         export_cfg = dict(export_neck=False)
 
+    export_type = export_cfg.get('export_type', 'raw')
     export_neck = export_cfg.get('export_neck', True)
     label_map_path = cfg.get('label_map_path', None)
     class_list = None
@@ -232,9 +264,14 @@ def _export_cls(model, cfg, filename):
         if export_neck and (k.startswith('neck') or k.startswith('head')):
             state_dict[k] = v
 
-    checkpoint = dict(state_dict=state_dict, meta=meta, author='EasyCV')
-    with io.open(filename, 'wb') as ofile:
-        torch.save(checkpoint, ofile)
+    if export_type == 'raw':
+        checkpoint = dict(state_dict=state_dict, meta=meta, author='EasyCV')
+        with io.open(filename, 'wb') as ofile:
+            torch.save(checkpoint, ofile)
+    elif export_type == 'onnx':
+        _export_onnx_cls(model, model_config, cfg, filename, config)
+    else:
+        raise ValueError('Only support export onnx/raw model!')
 
 
 def _export_yolox(model, cfg, filename):
