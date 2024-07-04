@@ -79,6 +79,11 @@ inceptionv3 = {
     'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/inceptionv3/inception_v3.pth',
 }
 
+inceptionv4 = {
+    # Inception v4 ported from http://data.lip6.fr/cadene/pretrainedmodels/inceptionv4-8e4777a0.pth
+    'Inception4': '',
+}
+
 genet = {
     'PlainNetnormal':
     'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/genet/GENet_normal.pth',
