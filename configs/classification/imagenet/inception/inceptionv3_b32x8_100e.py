@@ -4,16 +4,31 @@ num_classes = 1000
 # model settings
 model = dict(
     type='Classification',
-    backbone=dict(type='Inception3'),
-    head=dict(
+    backbone=dict(type='Inception3', num_classes=1000),
+    head=[dict(
         type='ClsHead',
-        with_avg_pool=True,
+        with_fc=False,
         in_channels=2048,
         loss_config=dict(
             type='CrossEntropyLossWithLabelSmooth',
             label_smooth=0,
         ),
-        num_classes=num_classes))
+        num_classes=num_classes,
+        input_feature_index=[1],
+    ),
+    dict(
+        type='ClsHead',
+        with_fc=False,
+        in_channels=768,
+        loss_config=dict(
+            type='CrossEntropyLossWithLabelSmooth',
+            label_smooth=0,
+        ),
+        num_classes=num_classes,
+        input_feature_index=[0],
+    )
+    ]
+    )
 
 class_list = [
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13',
