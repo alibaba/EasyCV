@@ -4,7 +4,7 @@ num_classes = 1000
 # model settings
 model = dict(
     type='Classification',
-    backbone=dict(type='Inception3', num_classes=num_classes),
+    backbone=dict(type='Inception4', num_classes=num_classes),
     head=[dict(
         type='ClsHead',
         with_fc=False,
