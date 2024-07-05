@@ -10,7 +10,6 @@ from mmcv.cnn import constant_init, kaiming_init
 from ..registry import BACKBONES
 
 
-_InceptionOutputs = namedtuple('InceptionOutputs', ['logits', 'aux_logits'])
 __all__ = ['Inception4']
 
 class BasicConv2d(nn.Module):
@@ -372,9 +371,7 @@ class Inception4(nn.Module):
         if self.fc is not None:
             x = self.logits(x)
 
-        if self.training and self.aux_logits and self.fc is not None:
-            return [_InceptionOutputs(x, aux)]
-        return [x]
+        return [aux, x]
 
 
 
