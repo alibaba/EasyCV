@@ -2,9 +2,6 @@
 r""" This model is taken from the official PyTorch model zoo.
      - torchvision.models.inception.py on 31th Aug, 2019
 """
-
-from collections import namedtuple
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -15,9 +12,6 @@ from ..modelzoo import inceptionv3 as model_urls
 from ..registry import BACKBONES
 
 __all__ = ['Inception3']
-
-_InceptionOutputs = namedtuple('InceptionOutputs', ['logits', 'aux_logits'])
-
 
 @BACKBONES.register_module
 class Inception3(nn.Module):
@@ -113,6 +107,7 @@ class Inception3(nn.Module):
         # N x 768 x 17 x 17
         x = self.Mixed_6e(x)
         # N x 768 x 17 x 17
+        aux = None
         if self.training and self.aux_logits:
             aux = self.AuxLogits(x)
         # N x 768 x 17 x 17
@@ -132,10 +127,7 @@ class Inception3(nn.Module):
         if hasattr(self, 'fc'):
             x = self.fc(x)
 
-        # N x 1000 (num_classes)
-        if self.training and self.aux_logits and hasattr(self, 'fc'):
-            return [_InceptionOutputs(x, aux)]
-        return [x]
+        return [aux, x]
 
 
 class InceptionA(nn.Module):
