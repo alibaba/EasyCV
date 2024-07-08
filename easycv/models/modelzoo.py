@@ -81,7 +81,8 @@ inceptionv3 = {
 
 inceptionv4 = {
     # Inception v4 ported from http://data.lip6.fr/cadene/pretrainedmodels/inceptionv4-8e4777a0.pth
-    'Inception4': '',
+    'Inception4':
+    'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/inceptionv4/inception_v4.pth',
 }
 
 genet = {

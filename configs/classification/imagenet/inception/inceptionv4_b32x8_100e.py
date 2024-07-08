@@ -5,30 +5,30 @@ num_classes = 1000
 model = dict(
     type='Classification',
     backbone=dict(type='Inception4', num_classes=num_classes),
-    head=[dict(
-        type='ClsHead',
-        with_fc=False,
-        in_channels=1536,
-        loss_config=dict(
-            type='CrossEntropyLossWithLabelSmooth',
-            label_smooth=0,
+    head=[
+        dict(
+            type='ClsHead',
+            with_fc=False,
+            in_channels=1536,
+            loss_config=dict(
+                type='CrossEntropyLossWithLabelSmooth',
+                label_smooth=0,
+            ),
+            num_classes=num_classes,
+            input_feature_index=[1],
         ),
-        num_classes=num_classes,
-        input_feature_index=[1],
-    ),
-    dict(
-        type='ClsHead',
-        with_fc=False,
-        in_channels=768,
-        loss_config=dict(
-            type='CrossEntropyLossWithLabelSmooth',
-            label_smooth=0,
-        ),
-        num_classes=num_classes,
-        input_feature_index=[0],
-    )
-    ]
-    )
+        dict(
+            type='ClsHead',
+            with_fc=False,
+            in_channels=768,
+            loss_config=dict(
+                type='CrossEntropyLossWithLabelSmooth',
+                label_smooth=0,
+            ),
+            num_classes=num_classes,
+            input_feature_index=[0],
+        )
+    ])
 
 class_list = [
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13',
@@ -141,7 +141,7 @@ image_size2 = 299
 image_size1 = int((256 / 224) * image_size2)
 
 dataset_type = 'ClsDataset'
-img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+img_norm_cfg = dict(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
 train_pipeline = [
     dict(type='RandomResizedCrop', size=image_size2),
     dict(type='RandomHorizontalFlip'),
