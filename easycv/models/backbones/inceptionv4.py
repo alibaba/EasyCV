@@ -15,7 +15,12 @@ __all__ = ['Inception4']
 
 class BasicConv2d(nn.Module):
 
-    def __init__(self, in_planes, out_planes, kernel_size, stride, padding=0):
+    def __init__(self,
+                 in_planes,
+                 out_planes,
+                 kernel_size,
+                 stride=1,
+                 padding=0):
         super(BasicConv2d, self).__init__()
         self.conv = nn.Conv2d(
             in_planes,
@@ -357,9 +362,8 @@ class Inception4(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
     def logits(self, features):
-        # Allows image of any size to be processed
-        adaptiveAvgPoolWidth = features.shape[2]
-        x = F.avg_pool2d(features, kernel_size=adaptiveAvgPoolWidth)
+        x = F.adaptive_avg_pool2d(features, output_size=(1, 1))
+        # x = F.avg_pool2d(features, kernel_size=adaptiveAvgPoolWidth)
         x = x.view(x.size(0), -1)  # B x 1536
         x = self.fc(x)
         # B x num_classes
