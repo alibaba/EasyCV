@@ -158,34 +158,49 @@ def _export_jit_and_blade(model, cfg, filename, dummy_inputs, fp16=False):
 
 
 def _export_onnx_cls(model, model_config, cfg, filename, meta):
+    support_backbones = {
+        'ResNet': {
+            'depth': [50]
+        },
+        'MobileNetV2': {},
+        'Inception3': {},
+        'Inception4': {},
+        'ResNeXt': {
+            'depth': [50]
+        }
+    }
+    if model_config['backbone'].get('type', None) not in support_backbones:
+        tmp = ' '.join(support_backbones.keys())
+        info_str = f'Only support export onnx model for {tmp} now!'
+        raise ValueError(info_str)
+    configs = support_backbones[model_config['backbone'].get('type')]
+    for k, v in configs.items():
+        if v[0].__class__(model_config['backbone'].get(k, None)) not in v:
+            raise ValueError(
+                f"Unsupport config for {model_config['backbone'].get('type')}")
 
-    if model_config['backbone'].get(
-            'type', None) == 'ResNet' and model_config['backbone'].get(
-                'depth', None) == 50:
-        # save json config for test_pipline and class
-        with io.open(
-                filename +
-                '.config.json' if filename.endswith('onnx') else filename +
-                '.onnx.config.json', 'w') as ofile:
-            json.dump(meta, ofile)
+    # save json config for test_pipline and class
+    with io.open(
+            filename +
+            '.config.json' if filename.endswith('onnx') else filename +
+            '.onnx.config.json', 'w') as ofile:
+        json.dump(meta, ofile)
 
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        model.eval()
-        model.to(device)
-        img_size = int(cfg.image_size2)
-        x_input = torch.randn((1, 3, img_size, img_size)).to(device)
-        torch.onnx.export(
-            model,
-            (x_input, 'onnx'),
-            filename if filename.endswith('onnx') else filename + '.onnx',
-            export_params=True,
-            opset_version=12,
-            do_constant_folding=True,
-            input_names=['input'],
-            output_names=['output'],
-        )
-    else:
-        raise ValueError('Only support export onnx model for ResNet now!')
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model.eval()
+    model.to(device)
+    img_size = int(cfg.image_size2)
+    x_input = torch.randn((1, 3, img_size, img_size)).to(device)
+    torch.onnx.export(
+        model,
+        (x_input, 'onnx'),
+        filename if filename.endswith('onnx') else filename + '.onnx',
+        export_params=True,
+        opset_version=12,
+        do_constant_folding=True,
+        input_names=['input'],
+        output_names=['output'],
+    )
 
 
 def _export_cls(model, cfg, filename):

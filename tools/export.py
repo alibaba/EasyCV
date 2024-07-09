@@ -80,7 +80,7 @@ def main():
     cfg = mmcv_config_fromfile(args.config)
 
     if args.user_config_params is not None:
-        assert args.model_type is not None, 'model_type must be setted'
+        # assert args.model_type is not None, 'model_type must be setted'
         # rebuild config by user config params
         cfg = rebuild_config(cfg, args.user_config_params)
 

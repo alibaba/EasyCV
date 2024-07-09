@@ -211,3 +211,5 @@ log_config = dict(
     interval=10,
     hooks=[dict(type='TextLoggerHook'),
            dict(type='TensorboardLoggerHook')])
+
+export = dict(export_type='raw', export_neck=True)
