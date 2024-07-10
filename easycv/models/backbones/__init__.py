@@ -10,6 +10,7 @@ from .face_keypoint_backbone import FaceKeypointBackbone
 from .genet import PlainNet
 from .hrnet import HRNet
 from .inceptionv3 import Inception3
+from .inceptionv4 import Inception4
 from .lighthrnet import LiteHRNet
 from .mae_vit_transformer import *
 from .mit import MixVisionTransformer
@@ -28,4 +29,3 @@ from .swin_transformer3d import SwinTransformer3D
 from .vision_transformer import VisionTransformer
 from .vitdet import ViTDet
 from .x3d import X3D
-from .inceptionv4 import Inception4

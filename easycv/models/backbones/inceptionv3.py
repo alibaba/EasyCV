@@ -13,6 +13,7 @@ from ..registry import BACKBONES
 
 __all__ = ['Inception3']
 
+
 @BACKBONES.register_module
 class Inception3(nn.Module):
 
