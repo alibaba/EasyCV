@@ -515,6 +515,10 @@ CONFIG_TEMPLATE_ZOO = {
     'configs/classification/imagenet/swint/imagenet_swin_tiny_patch4_window7_224_jpg.py',
     'CLASSIFICATION_M0BILENET':
     'configs/classification/imagenet/mobilenet/mobilenetv2.py',
+    'CLASSIFICATION_INCEPTIONV4':
+    'configs/classification/imagenet/inception/inceptionv4_b32x8_100e.py',
+    'CLASSIFICATION_INCEPTIONV3':
+    'configs/classification/imagenet/inception/inceptionv3_b32x8_100e.py',
 
     # metric learning
     'METRICLEARNING':

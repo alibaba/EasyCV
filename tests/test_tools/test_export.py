@@ -24,11 +24,12 @@ BASIC_EXPORT_CONFIGS = {
 }
 
 
-def build_cmd(export_configs) -> str:
+def build_cmd(export_configs, MODEL_TYPE) -> str:
     base_cmd = 'python tools/export.py'
     base_cmd += f" {export_configs['config_file']}"
     base_cmd += f" {export_configs['checkpoint']}"
     base_cmd += f" {export_configs['output_filename']}"
+    base_cmd += f' --model_type {MODEL_TYPE}'
     user_params = ' '.join(export_configs['user_config_params'])
     base_cmd += f' --user_config_params {user_params}'
     return base_cmd
@@ -45,13 +46,17 @@ class ExportTest(unittest.TestCase):
     def tearDown(self):
         super().tearDown()
 
-    def run_test(self, CONFIG_FILE, img_size: int = 224, **override_configs):
+    def run_test(self,
+                 CONFIG_FILE,
+                 MODEL_TYPE,
+                 img_size: int = 224,
+                 **override_configs):
         configs = BASIC_EXPORT_CONFIGS.copy()
         configs['config_file'] = CONFIG_FILE
 
         configs.update(override_configs)
 
-        cmd = build_cmd(configs)
+        cmd = build_cmd(configs, MODEL_TYPE)
         logging.info(f'Export with commands: {cmd}')
         run_in_subprocess(cmd)
 
@@ -101,16 +106,17 @@ class ExportTest(unittest.TestCase):
 
     def test_inceptionv3(self):
         CONFIG_FILE = 'configs/classification/imagenet/inception/inceptionv3_b32x8_100e.py'
-        self.run_test(CONFIG_FILE, 299)
+        self.run_test(CONFIG_FILE, 'CLASSIFICATION_INCEPTIONV3', 299)
 
     def test_inceptionv4(self):
         CONFIG_FILE = 'configs/classification/imagenet/inception/inceptionv4_b32x8_100e.py'
-        self.run_test(CONFIG_FILE, 299)
+        self.run_test(CONFIG_FILE, 'CLASSIFICATION_INCEPTIONV4', 299)
 
     def test_resnext50(self):
         CONFIG_FILE = 'configs/classification/imagenet/resnext/imagenet_resnext50-32x4d_jpg.py'
         self.run_test(
             CONFIG_FILE,
+            'CLASSIFICATION_RESNEXT',
             checkpoint=
             'https://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/EasyCV/modelzoo/classification/resnext/resnext50-32x4d/epoch_100.pth'
         )
@@ -119,6 +125,7 @@ class ExportTest(unittest.TestCase):
         CONFIG_FILE = 'configs/classification/imagenet/mobilenet/mobilenetv2.py'
         self.run_test(
             CONFIG_FILE,
+            'CLASSIFICATION_M0BILENET',
             checkpoint=
             'http://pai-vision-data-hz.oss-cn-zhangjiakou.aliyuncs.com/pretrained_models/easycv/mobilenetv2/mobilenet_v2.pth'
         )
