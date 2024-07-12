@@ -16,10 +16,12 @@ from easycv.utils.test_util import run_in_subprocess
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 logging.basicConfig(level=logging.INFO)
 
+WORK_DIRECTORY = 'work_dir3'
+
 BASIC_EXPORT_CONFIGS = {
     'config_file': None,
     'checkpoint': 'dummy',
-    'output_filename': 'work_dir/test_out.pth',
+    'output_filename': f'{WORK_DIRECTORY}/test_out.pth',
     'user_config_params': ['--export.export_type', 'onnx']
 }
 
@@ -42,6 +44,7 @@ class ExportTest(unittest.TestCase):
 
     def setUp(self):
         print(('Testing %s.%s' % (type(self).__name__, self._testMethodName)))
+        os.makedirs(WORK_DIRECTORY, exist_ok=True)
 
     def tearDown(self):
         super().tearDown()
