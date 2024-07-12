@@ -179,6 +179,9 @@ PRETRAINED_MODEL_RESNET50 = os.path.join(
 PRETRAINED_MODEL_RESNET50_WITHOUTHEAD = os.path.join(
     BASE_LOCAL_PATH,
     'pretrained_models/classification/resnet/resnet50_withhead.pth')
+PRETRAINED_MODEL_RESNET50_ONNX_WITHOUTHEAD = os.path.join(
+    BASE_LOCAL_PATH,
+    'pretrained_models/classification/resnet/imagenet_resnet50.onnx')
 PRETRAINED_MODEL_FACEID = os.path.join(BASE_LOCAL_PATH,
                                        'pretrained_models/faceid')
 PRETRAINED_MODEL_YOLOXS_EXPORT = os.path.join(

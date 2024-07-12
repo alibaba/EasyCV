@@ -116,6 +116,7 @@ class ModelExportTest(unittest.TestCase):
         cfg = mmcv_config_fromfile(config_file)
         cfg_options = {
             'model.backbone.norm_cfg.type': 'SyncBN',
+            'export.export_type': 'raw'
         }
         if cfg_options is not None:
             cfg.merge_from_dict(cfg_options)
@@ -209,6 +210,27 @@ class ModelExportTest(unittest.TestCase):
             export(cfg, ckpt_path, filename, fp16=False)
 
             self.assertTrue(os.path.exists(filename + '.jit'))
+
+    def test_export_resnet_onnx(self):
+
+        ckpt_path = PRETRAINED_MODEL_RESNET50
+
+        easycv_dir = os.path.dirname(easycv.__file__)
+
+        if os.path.exists(os.path.join(easycv_dir, 'configs')):
+            config_dir = os.path.join(easycv_dir, 'configs')
+        else:
+            config_dir = os.path.join(os.path.dirname(easycv_dir), 'configs')
+        config_file = os.path.join(
+            config_dir,
+            'classification/imagenet/resnet/imagenet_resnet50_jpg.py')
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = mmcv_config_fromfile(config_file)
+            cfg.export.export_type = 'onnx'
+            filename = os.path.join(tmpdir, 'imagenet_resnet50')
+            export(cfg, ckpt_path, filename)
+            self.assertTrue(os.path.exists(filename + '.onnx'))
 
 
 if __name__ == '__main__':
