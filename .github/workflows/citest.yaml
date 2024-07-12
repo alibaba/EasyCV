@@ -42,7 +42,10 @@ jobs:
     runs-on: [self-hosted]
     steps:
       - name: Set ENV
-        run: export ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true
+        run: |
+          export ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true
+          export ACTIONS_RUNNER_FORCED_INTERNAL_NODE_VERSION=node16
+          export ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION=node16
       - name: Checkout
         uses: actions/checkout@v2
         with:
