@@ -41,6 +41,8 @@ jobs:
     # The type of runner that the job will run on
     runs-on: [self-hosted]
     steps:
+      - name: Set ENV
+        run: export ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true
       - name: Checkout
         uses: actions/checkout@v2
         with:
