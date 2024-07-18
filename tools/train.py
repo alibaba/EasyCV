@@ -20,6 +20,7 @@ if is_torchacc_enabled():
     from easycv.toolkit.torchacc import torchacc_init
     torchacc_init()
 
+import shutil
 import time
 import requests
 import torch
@@ -141,6 +142,8 @@ def main():
     if args.user_config_params is None:
         cfg = mmcv_config_fromfile(args.config)
     else:
+        if args.user_config_params.get('class_list', None) and not isinstance(args.user_config_params, list):
+            shutil.copy(args.user_config_params['class_list'], args.user_config_params['work_dir'])
         cfg = pai_config_fromfile(args.config, args.user_config_params,
                                   args.model_type)
 
