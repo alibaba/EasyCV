@@ -151,6 +151,7 @@ class Classification(BaseModel):
         x = self.backbone(img)
         return x
 
+    @torch.jit.unused
     def forward_onnx(self, img: torch.Tensor) -> Dict[str, torch.Tensor]:
         """
             forward_onnx means generate prob from image only support one neck  + one head
