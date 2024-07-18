@@ -10,6 +10,7 @@ from .face_keypoint_backbone import FaceKeypointBackbone
 from .genet import PlainNet
 from .hrnet import HRNet
 from .inceptionv3 import Inception3
+from .inceptionv4 import Inception4
 from .lighthrnet import LiteHRNet
 from .mae_vit_transformer import *
 from .mit import MixVisionTransformer
