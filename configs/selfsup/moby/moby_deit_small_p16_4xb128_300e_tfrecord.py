@@ -104,5 +104,5 @@ checkpoint_config = dict(interval=10)
 total_epochs = 300
 
 # export config
-export = dict(export_neck=False)
+export = dict(export_neck=False, export_head=False)
 checkpoint_sync_export = True

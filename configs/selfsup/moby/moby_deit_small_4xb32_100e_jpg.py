@@ -88,5 +88,5 @@ total_epochs = 100
 
 # export config
 # export = dict(export_neck=True)
-export = dict(export_neck=False)
+export = dict(export_neck=False, export_head=False)
 checkpoint_sync_export = True
