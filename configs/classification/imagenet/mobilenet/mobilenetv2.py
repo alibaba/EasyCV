@@ -13,7 +13,8 @@ model = dict(
             type='CrossEntropyLossWithLabelSmooth',
             label_smooth=0,
         ),
-        num_classes=num_classes))
+        num_classes=num_classes),
+    pretrained=True)
 
 # optimizer
 optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.0001)
@@ -25,4 +26,4 @@ checkpoint_config = dict(interval=5)
 # runtime settings
 total_epochs = 100
 checkpoint_sync_export = True
-export = dict(export_neck=True)
+export = dict(export_type='raw', export_neck=True)
