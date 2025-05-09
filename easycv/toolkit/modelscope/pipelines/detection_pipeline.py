@@ -48,9 +48,15 @@ class EasyCVDetectionPipeline(EasyCVPipeline):
         labels = []
         boxes = []
         for output in outputs:
-            for score, label, box in zip(output['detection_scores'],
-                                         output['detection_classes'],
-                                         output['detection_boxes']):
+            scores_list = output['detection_scores'] if output[
+                'detection_scores'] is not None else []
+            classes_list = output['detection_classes'] if output[
+                'detection_classes'] is not None else []
+            boxes_list = output['detection_boxes'] if output[
+                'detection_boxes'] is not None else []
+
+            for score, label, box in zip(scores_list, classes_list,
+                                         boxes_list):
                 scores.append(score)
                 labels.append(self.cfg.CLASSES[label])
                 boxes.append([b for b in box])
