@@ -7,6 +7,7 @@ from mmcv.cnn import constant_init, kaiming_init
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from easycv.framework.errors import KeyError
+from ..modelzoo import resnet as model_urls
 from ..registry import BACKBONES
 from ..utils import build_conv_layer, build_norm_layer
 
@@ -347,6 +348,9 @@ class ResNetJIT(nn.Module):
 
         self.feat_dim = self.block.expansion * 64 * 2**(
             len(self.stage_blocks) - 1)
+
+        self.default_pretrained_model_path = model_urls.get(
+            self.__class__.__name__ + str(depth), None)
 
     @property
     def norm1(self):

@@ -73,6 +73,17 @@ class OSSSyncHook(Hook):
         # runner.logger.info(f'upload directory {local_tf_logs} to {oss_tf_logs}')
         # io.copytree(local_tf_logs, oss_tf_logs)
 
+    def upload_export_file(self, runner, export_ckpt_fname):
+        # upload all export files
+        export_files = glob.glob(
+            os.path.join(self.work_dir, '*{}*'.format(export_ckpt_fname)),
+            recursive=True)
+        for export_file in export_files:
+            rel_path = os.path.relpath(export_file, self.work_dir)
+            target_oss_path = os.path.join(self.oss_work_dir, rel_path)
+            runner.logger.info(f'upload {export_file} to {target_oss_path}')
+            io.safe_copy(export_file, target_oss_path)
+
     # we still use oss sdk to upload pth, log, by default iter 1000, which
     @master_only
     def after_train_iter(self, runner):
@@ -111,13 +122,8 @@ class OSSSyncHook(Hook):
         # try to upload exported model
         epoch = runner.epoch
         export_ckpt_fname = self.export_ckpt_filename_tmpl.format(epoch)
+        export_ckpt_fname_jit = os.path.splitext(export_ckpt_fname)[0] + '.jit'
 
-        # upload all export files
-        export_files = glob.glob(
-            os.path.join(self.work_dir, '*{}*'.format(export_ckpt_fname)),
-            recursive=True)
-        for export_file in export_files:
-            rel_path = os.path.relpath(export_file, self.work_dir)
-            target_oss_path = os.path.join(self.oss_work_dir, rel_path)
-            runner.logger.info(f'upload {export_file} to {target_oss_path}')
-            io.safe_copy(export_file, target_oss_path)
+        self.upload_export_file(runner, export_ckpt_fname)
+        self.upload_export_file(runner, export_ckpt_fname_jit)
+        self.upload_export_file(runner, '.txt')
